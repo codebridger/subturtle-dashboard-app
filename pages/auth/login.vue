@@ -14,6 +14,12 @@ definePageMeta({
   },
 });
 
+const runtimeConfig = useRuntimeConfig();
+
+function loginRegisterWithGoogle() {
+  window.location.href = `${runtimeConfig.public.API_URL}/auth/google`;
+}
+
 const VALIDATION_TEXT = {
   EMAIL_REQUIRED: "A valid email is required",
   PASSWORD_REQUIRED: "A password is required",
@@ -124,6 +130,7 @@ const onSubmit = handleSubmit(async (values) => {
             <!--Google button-->
             <button
               class="dark:bg-muted-700 text-muted-800 border-muted-300 dark:border-muted-600 nui-focus relative inline-flex grow items-center justify-center gap-2 rounded border bg-white px-6 py-4 dark:text-white"
+              @click="loginRegisterWithGoogle"
             >
               <Icon name="logos:google-icon" class="h-5 w-5" />
               <div>Login / Register with Google</div>

@@ -1,4 +1,12 @@
 export default defineNuxtConfig({
+  ssr: false,
+
+  runtimeConfig: {
+    public: {
+      API_URL: process.env.NUXT_API_URL,
+    },
+  },
+
   extends: [
     /**
      * This extends the base Tairo layer.

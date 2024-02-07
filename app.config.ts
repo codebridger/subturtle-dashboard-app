@@ -10,7 +10,7 @@
 
 export default defineAppConfig({
   tairo: {
-    title: "Tairo Quick Starter",
+    title: "Subturtle",
     panels: [
       {
         // Unique name of the panel, used to open it
