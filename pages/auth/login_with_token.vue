@@ -15,7 +15,7 @@ async function handleToken(token: string | null) {
   await loginWithLastSession(token!);
 
   if (isLogin.value) {
-    router.push("/");
+    router.push("/dashboard");
   } else {
     router.push("/auth/login");
   }
