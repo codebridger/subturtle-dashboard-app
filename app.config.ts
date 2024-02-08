@@ -11,16 +11,27 @@
 export default defineAppConfig({
   tairo: {
     title: "Subturtle",
-    panels: [
-      {
-        // Unique name of the panel, used to open it
-        name: "menu",
-        component: "PanelComponent",
-        // The position of the panel
-        position: "left",
-        // Whether to show an overlay when the panel is open
-        overlay: true,
+    collapse: {
+      navigation: {
+        enabled: true,
+        header: {
+          component: "Header",
+        },
+        footer: {
+          component: "Footer",
+        },
+        items: [],
       },
-    ],
+      circularMenu: {
+        enabled: true,
+        tools: [],
+      },
+      toolbar: {
+        enabled: true,
+        showTitle: true,
+        showNavBurger: true,
+        tools: [],
+      },
+    },
   },
 });

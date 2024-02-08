@@ -3,8 +3,8 @@
 definePageMeta({
   // static meta information can be added to vue-router, we use it
   // to generate the search index in the demo
-  title: "Home",
-  layout: "main",
+  title: "Dashboard",
+  layout: "collapse",
 });
 
 // meta information can also be added to the head
