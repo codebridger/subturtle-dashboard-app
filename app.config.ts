@@ -12,25 +12,29 @@ export default defineAppConfig({
   tairo: {
     title: "Subturtle",
     collapse: {
-      navigation: {
-        enabled: true,
-        header: {
-          component: "Header",
-        },
-        footer: {
-          component: "Footer",
-        },
-        items: [],
-      },
       circularMenu: {
         enabled: true,
-        tools: [],
+        tools: [
+          {
+            component: "ThemeToggle",
+          },
+          {
+            component: "ToolbarAccountMenu",
+          },
+        ],
       },
       toolbar: {
         enabled: true,
         showTitle: true,
         showNavBurger: true,
-        tools: [],
+        tools: [
+          {
+            component: "ThemeToggle",
+          },
+          {
+            component: "ToolbarAccountMenu",
+          },
+        ],
       },
     },
   },

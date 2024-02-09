@@ -2,6 +2,7 @@ import { loginWithLastSession } from "~/utils/auth";
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   if (to.path.includes("/login")) {
+    logout();
     return true;
   }
 
