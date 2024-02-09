@@ -15,16 +15,4 @@ useHead({
 // Here you can define your page logic
 </script>
 
-<template>
-  <TairoContentWrapper>
-    <div class="flex flex-wrap items-end gap-4">
-      <BaseButton shape="straight">Button</BaseButton>
-
-      <BaseButton shape="rounded">Button</BaseButton>
-
-      <BaseButton shape="curved">Button</BaseButton>
-
-      <BaseButton shape="full">Button</BaseButton>
-    </div>
-  </TairoContentWrapper>
-</template>
+<template></template>
