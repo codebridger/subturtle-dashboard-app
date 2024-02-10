@@ -38,6 +38,7 @@ export default defineAppConfig({
       },
       navigation: {
         enabled: true,
+
         items: [
           {
             name: "Dashboard",

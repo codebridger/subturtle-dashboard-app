@@ -4,7 +4,6 @@ definePageMeta({
   // static meta information can be added to vue-router, we use it
   // to generate the search index in the demo
   title: "Dashboard",
-  layout: "collapse",
 });
 
 // meta information can also be added to the head
@@ -15,4 +14,6 @@ useHead({
 // Here you can define your page logic
 </script>
 
-<template></template>
+<template>
+  <div></div>
+</template>
