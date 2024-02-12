@@ -121,6 +121,25 @@ export const useBundleStore = defineStore("bundle", () => {
       });
   }
 
+  function removePhrase(id: string) {
+    return dataProvider
+      .updateOne({
+        database: DATABASE.USER_CONTENT,
+        collection: COLLECTIONS.PHRASE_BUNDLE,
+        query: {
+          _id: bundleDetail.value?._id,
+          refId: authUser.value?.id,
+        },
+        update: {
+          $pull: { phrases: id },
+        },
+      })
+      .then((_data) => {
+        const index = phrases.value.findIndex((p) => p._id === id);
+        phrases.value.splice(index, 1);
+      });
+  }
+
   return {
     bundleDetail,
     phrases,
@@ -130,6 +149,7 @@ export const useBundleStore = defineStore("bundle", () => {
     getPhraseNumber,
     fetchPhrases,
     updatePhrase,
+    removePhrase,
     clear,
   };
 });

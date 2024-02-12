@@ -4,7 +4,13 @@
       class="flex justify-between items-center border-muted-200 dark:border-muted-700 border-b py-3 px-5"
     >
       <div>{{ props.number }}</div>
-      <BaseButtonIcon rounded="full" size="sm" :disabled="isSubmitting">
+
+      <BaseButtonIcon
+        rounded="full"
+        size="sm"
+        :disabled="isSubmitting"
+        @click="removePhrase"
+      >
         <Icon name="ph:trash-simple" class="size-5" />
       </BaseButtonIcon>
     </div>
@@ -90,4 +96,12 @@ const onSubmit = handleSubmit(async () => {
       isSubmitting.value = false;
     });
 });
+
+function removePhrase() {
+  isSubmitting.value = true;
+
+  bundleStore.removePhrase(props.phrase._id).finally(() => {
+    isSubmitting.value = false;
+  });
+}
 </script>

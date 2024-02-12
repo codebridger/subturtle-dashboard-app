@@ -45,8 +45,8 @@ function fetchPhraseList(page: number = 1) {
       <!-- Empty -->
       <div v-if="!isPhraseListLoading && !bundleStore.phrases.length">
         <BasePlaceholderPage
-          title="No matching results"
-          subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
+          title="No Phrases Available"
+          subtitle="Looks like we couldn't find any phrases in this bundle. Try to add some phrases first."
         >
           <template #image>
             <img
