@@ -4,7 +4,7 @@
     @submit="onSubmit"
     v-slot="{ handleSubmit }"
   >
-    <BaseCard class="px-8 py-5 flex justify-between items-start">
+    <BaseCard class="p-5 flex justify-between items-start">
       <div class="flex-1">
         <Field
           v-if="isEditMode"

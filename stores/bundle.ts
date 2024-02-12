@@ -22,6 +22,12 @@ export const useBundleStore = defineStore("bundle", () => {
     phrases.value = [];
   }
 
+  function getPhraseNumber(phraseId: string) {
+    let index =
+      bundleDetail.value?.phrases.findIndex((id) => id === phraseId) || 0;
+    return (bundleDetail.value?.phrases?.length ?? 0) - index;
+  }
+
   function fetchBundleDetail(id: string) {
     clear();
 
@@ -46,24 +52,21 @@ export const useBundleStore = defineStore("bundle", () => {
       });
   }
 
-  function updateBundleDetail(
-    id: string,
-    update: Record<keyof PhraseBundleType, any>
-  ) {
+  function updateBundleDetail(id: string, updated: { [key: string]: any }) {
     return dataProvider
       .updateOne({
         database: DATABASE.USER_CONTENT,
         collection: COLLECTIONS.PHRASE_BUNDLE,
         query: {
-          id,
+          _id: id,
           refId: authUser.value?.id,
         },
-        update,
+        update: updated,
       })
       .then((_data) => {
-        Object.keys(update).forEach((key: string, i) => {
+        Object.keys(updated).forEach((key: string, i) => {
           bundleDetail.value![key as keyof PhraseBundleType] =
-            update[key as keyof PhraseBundleType];
+            updated[key as keyof PhraseBundleType];
         });
       });
   }
@@ -98,16 +101,24 @@ export const useBundleStore = defineStore("bundle", () => {
       });
   }
 
-  function updatePhrase(id: string, phrase: Record<keyof PhraseType, any>) {
-    return dataProvider.updateOne({
-      database: DATABASE.USER_CONTENT,
-      collection: COLLECTIONS.PHRASE,
-      query: {
-        id,
-        refId: authUser.value?.id,
-      },
-      update: phrase,
-    });
+  function updatePhrase(id: string, updated: { [key: string]: any }) {
+    return dataProvider
+      .updateOne({
+        database: DATABASE.USER_CONTENT,
+        collection: COLLECTIONS.PHRASE,
+        query: {
+          _id: id,
+          refId: authUser.value?.id,
+        },
+        update: updated,
+      })
+      .then((_data) => {
+        const index = phrases.value.findIndex((p) => p._id === id);
+        Object.keys(updated).forEach((key: string, i) => {
+          phrases.value[index][key as keyof PhraseType] =
+            updated[key as keyof PhraseType];
+        });
+      });
   }
 
   return {
@@ -116,6 +127,7 @@ export const useBundleStore = defineStore("bundle", () => {
     fetchBundleDetail,
     updateBundleDetail,
     phrasePagination,
+    getPhraseNumber,
     fetchPhrases,
     updatePhrase,
     clear,

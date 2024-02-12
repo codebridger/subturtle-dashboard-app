@@ -34,7 +34,7 @@ function fetchPhraseList(page: number = 1) {
 
 <template>
   <TairoContentWrapper>
-    <BundleDetailSection
+    <BundleDetailCard
       v-if="bundleStore.bundleDetail"
       :bundle-detail="bundleStore.bundleDetail"
       @changed="bundleStore.updateBundleDetail(id, $event)"
@@ -73,14 +73,12 @@ function fetchPhraseList(page: number = 1) {
           leave-from-class="opacity-100 translate-x-0"
           leave-to-class="opacity-0 -translate-x-full"
         >
-          <BaseCard
+          <BundlePhraseCard
             v-for="phrase in bundleStore.phrases"
             :key="phrase._id"
-            shape="curved"
-            class="flex flex-col p-5 sm:flex-row sm:items-center"
-          >
-            {{ phrase.phrase }}
-          </BaseCard>
+            :phrase="phrase"
+            :number="bundleStore.getPhraseNumber(phrase._id)"
+          />
         </TransitionGroup>
 
         <div class="mt-6">
