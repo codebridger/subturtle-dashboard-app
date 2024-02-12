@@ -14,7 +14,7 @@ definePageMeta({
 });
 
 const filter = ref("");
-const perPage = ref(2);
+const perPage = ref(20);
 const bundleList = ref<PhraseBundleType[]>([]);
 const pagination = ref<PaginationType | null>(null);
 
@@ -47,54 +47,57 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <TairoContentWrapper>
-      <template #left>
-        <BaseInput
-          v-model="filter"
-          icon="lucide:search"
-          placeholder="Filter bundles..."
-          :classes="{
-            wrapper: 'w-full sm:w-auto',
-          }"
-        />
-      </template>
-      <template #right>
-        <BaseButton color="primary" class="w-full" disabled>
-          <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Add New</span>
-        </BaseButton>
-      </template>
-
-      <section class="ltablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-2">
-        <BaseCard rounded="none" class="p-6" v-for="bundle of bundleList">
-          <BaseHeading
-            as="h4"
-            size="sm"
-            weight="semibold"
-            lead="tight"
-            class="text-muted-800 mb-2 dark:text-white"
-          >
-            {{ bundle.title }}
-          </BaseHeading>
-
-          <!-- <BaseParagraph size="sm" lead="tight" class="text-muted-400">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-          </BaseParagraph> -->
-        </BaseCard>
-      </section>
-
-      <BasePagination
-        class="mt-4"
-        v-if="pagination"
-        :item-per-page="controller.pagination.limit"
-        :total-items="controller.pagination.total"
-        :current-page="controller.pagination.page"
-        :max-links-displayed="5"
-        rounded="lg"
-        :no-router="false"
-        @update:currentPage="controller.fetchPage($event)"
+  <TairoContentWrapper>
+    <template #left>
+      <BaseInput
+        v-model="filter"
+        icon="lucide:search"
+        placeholder="Filter bundles..."
+        :classes="{
+          wrapper: 'w-full sm:w-auto',
+        }"
       />
-    </TairoContentWrapper>
-  </div>
+    </template>
+
+    <template #right>
+      <BaseButton color="primary" class="w-full" disabled>
+        <Icon name="lucide:plus" class="h-4 w-4" />
+        <span>Add New</span>
+      </BaseButton>
+    </template>
+
+    <section class="ltablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-2">
+      <template v-for="bundle of bundleList">
+        <NuxtLink :to="`/dashboard/bundles/${bundle._id}`">
+          <BaseCard rounded="none" class="p-6">
+            <BaseHeading
+              as="h4"
+              size="sm"
+              weight="semibold"
+              lead="tight"
+              class="text-muted-800 mb-2 dark:text-white"
+            >
+              {{ bundle.title }}
+            </BaseHeading>
+
+            <!-- <BaseParagraph size="sm" lead="tight" class="text-muted-400">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            </BaseParagraph> -->
+          </BaseCard>
+        </NuxtLink>
+      </template>
+    </section>
+
+    <BasePagination
+      class="mt-6"
+      v-if="pagination"
+      :item-per-page="controller.pagination.limit"
+      :total-items="controller.pagination.total"
+      :current-page="controller.pagination.page"
+      :max-links-displayed="5"
+      rounded="lg"
+      :no-router="false"
+      @update:currentPage="controller.fetchPage($event)"
+    />
+  </TairoContentWrapper>
 </template>

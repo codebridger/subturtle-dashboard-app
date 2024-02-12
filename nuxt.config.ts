@@ -1,12 +1,14 @@
 export default defineNuxtConfig({
   ssr: false,
-  devtools: { enabled: false },
+  devtools: { enabled: true },
 
   runtimeConfig: {
     public: {
       API_URL: process.env.NUXT_API_URL,
     },
   },
+
+  modules: ["@pinia/nuxt"],
 
   extends: [
     /**

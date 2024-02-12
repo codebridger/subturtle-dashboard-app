@@ -15,21 +15,21 @@ export interface PhraseType {
   phrase: string;
   translation: string;
   translation_language: string;
-  images?: [FileDocument];
+  images?: FileDocument[];
 }
 
 export interface PhraseBundleType {
   _id: string;
   refId: string;
   title: string;
-  image: [FileDocument];
-  phrases: [string];
+  image: FileDocument[];
+  phrases: string[];
 }
 
 export interface PopulatedPhraseBundleType {
   _id: string;
   refId: string;
   title: string;
-  image: [FileDocument];
-  phrases: [PhraseType];
+  image: FileDocument[];
+  phrases: PhraseType[];
 }
