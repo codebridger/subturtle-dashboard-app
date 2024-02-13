@@ -18,6 +18,12 @@ export interface PhraseType {
   images?: FileDocument[];
 }
 
+export interface NewPhraseType {
+  id: string;
+  phrase: string;
+  translation: string;
+}
+
 export interface PhraseBundleType {
   _id: string;
   refId: string;

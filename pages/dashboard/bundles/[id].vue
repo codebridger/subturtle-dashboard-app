@@ -41,9 +41,24 @@ function fetchPhraseList(page: number = 1) {
     />
 
     <!-- Phrase List -->
-    <section class="mt-6">
+    <section class="mt-8">
+      <BaseButtonAction
+        class="mb-4"
+        rounded="sm"
+        color="info"
+        @click="bundleStore.addEmptyTemporarilyPhrase()"
+      >
+        Add Phrase
+      </BaseButtonAction>
+
       <!-- Empty -->
-      <div v-if="!isPhraseListLoading && !bundleStore.phrases.length">
+      <div
+        v-if="
+          !isPhraseListLoading &&
+          !bundleStore.phrases.length &&
+          !bundleStore.tempPhrases.length
+        "
+      >
         <BasePlaceholderPage
           title="No Phrases Available"
           subtitle="Looks like we couldn't find any phrases in this bundle. Try to add some phrases first."
@@ -73,15 +88,28 @@ function fetchPhraseList(page: number = 1) {
           leave-from-class="opacity-100 translate-x-0"
           leave-to-class="opacity-0 -translate-x-full"
         >
-          <BundlePhraseCard
-            v-for="phrase in bundleStore.phrases"
-            :key="phrase._id"
-            :phrase="phrase"
-            :number="bundleStore.getPhraseNumber(phrase._id)"
+          <template
+            v-for="tempPhrase in bundleStore.tempPhrases"
+            :key="tempPhrase.id"
+          >
+            <BundlePhraseCard :newPhrase="tempPhrase" />
+          </template>
+
+          <div
+            v-if="bundleStore.tempPhrases.length"
+            class="border-muted-200 dark:border-muted-700 border-b"
           />
+
+          <template v-for="phrase in bundleStore.phrases" :key="phrase._id">
+            <BundlePhraseCard
+              v-if="phrase"
+              :phrase="phrase"
+              :number="bundleStore.getPhraseNumber(phrase._id)"
+            />
+          </template>
         </TransitionGroup>
 
-        <div class="mt-6">
+        <div class="mt-6" v-if="(bundleStore.phrasePagination?.pages || 0) > 1">
           <BasePagination
             v-if="bundleStore.phrasePagination"
             :item-per-page="bundleStore.phrasePagination.limit"

@@ -1,5 +1,9 @@
 <template>
-  <BaseCard shape="curved" @mouseleave="onSubmit">
+  <BaseCard
+    shape="curved"
+    :color="props.newPhrase ? 'info' : 'white'"
+    @mouseleave="onSubmit"
+  >
     <div
       class="flex justify-between items-center border-muted-200 dark:border-muted-700 border-b py-3 px-5"
     >
@@ -43,19 +47,21 @@
 <script setup lang="ts">
 import { useForm } from "vee-validate";
 import * as yup from "yup";
-import type { PhraseType } from "~/types/database.type";
+import type { NewPhraseType, PhraseType } from "~/types/database.type";
 
 const bundleStore = useBundleStore();
 const isSubmitting = ref(false);
 
 const props = defineProps({
+  newPhrase: {
+    type: Object as PropType<NewPhraseType>,
+    default: false,
+  },
   phrase: {
     type: Object as PropType<PhraseType>,
-    required: true,
   },
   number: {
     type: Number as PropType<number>,
-    required: true,
   },
 });
 
@@ -72,10 +78,27 @@ const [translation] = defineField("translation");
 watch(
   () => props.phrase,
   () => {
+    if (!props.phrase) return;
+
     resetForm({
       values: {
-        phrase: props.phrase.phrase,
-        translation: props.phrase.translation,
+        phrase: props.phrase?.phrase || "",
+        translation: props.phrase?.translation || "",
+      },
+    });
+  },
+  { immediate: true, deep: true }
+);
+
+watch(
+  () => props.newPhrase,
+  () => {
+    if (!props.newPhrase) return;
+
+    resetForm({
+      values: {
+        phrase: props.newPhrase?.phrase || "",
+        translation: props.newPhrase?.translation || "",
       },
     });
   },
@@ -87,20 +110,36 @@ const onSubmit = handleSubmit(async () => {
 
   isSubmitting.value = true;
 
-  bundleStore
-    .updatePhrase(props.phrase._id, {
-      phrase: phrase.value,
-      translation: translation.value,
-    })
-    .finally(() => {
-      isSubmitting.value = false;
-    });
+  // Update phrase
+  if (props.phrase) {
+    bundleStore
+      .updatePhrase(props.phrase._id, {
+        phrase: phrase.value,
+        translation: translation.value,
+      })
+      .finally(() => {
+        isSubmitting.value = false;
+      });
+  }
+
+  // Create new phrase
+  else if (props.newPhrase) {
+    bundleStore
+      .createPhrase({
+        phrase: phrase.value,
+        translation: translation.value,
+        id: props.newPhrase.id,
+      })
+      .finally(() => {
+        isSubmitting.value = false;
+      });
+  }
 });
 
 function removePhrase() {
   isSubmitting.value = true;
 
-  bundleStore.removePhrase(props.phrase._id).finally(() => {
+  bundleStore.removePhrase(props.phrase!._id).finally(() => {
     isSubmitting.value = false;
   });
 }

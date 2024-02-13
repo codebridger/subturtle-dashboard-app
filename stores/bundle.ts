@@ -6,6 +6,7 @@ import {
   DATABASE,
   COLLECTIONS,
   type PhraseType,
+  type NewPhraseType,
 } from "~/types/database.type";
 
 export const useBundleStore = defineStore("bundle", () => {
@@ -13,13 +14,15 @@ export const useBundleStore = defineStore("bundle", () => {
 
   const phrasePagination = ref<PaginationType | null>(null);
 
-  const phrases = ref<PhraseType[]>([]);
-  const PhrasesPerPage = 50;
+  const tempPhrases = ref<Array<NewPhraseType>>([]);
+  const phrases = ref<Array<PhraseType>>([]);
+  const PhrasesPerPage = 500;
 
   function clear() {
     bundleDetail.value = null;
     phrasePagination.value = null;
     phrases.value = [];
+    tempPhrases.value = [];
   }
 
   function getPhraseNumber(phraseId: string) {
@@ -140,9 +143,62 @@ export const useBundleStore = defineStore("bundle", () => {
       });
   }
 
+  function addEmptyTemporarilyPhrase() {
+    tempPhrases.value.unshift({
+      phrase: "",
+      translation: "",
+      id: new Date().getTime().toString(),
+    });
+  }
+
+  async function createPhrase(newPhrase: NewPhraseType) {
+    const newDoc = {
+      ...newPhrase,
+      refId: authUser.value?.id,
+    } as { [ket: string]: any };
+
+    delete newDoc["id"];
+
+    return new Promise(async (resolve, reject) => {
+      const insertedPhrase = await dataProvider
+        .insertOne({
+          database: DATABASE.USER_CONTENT,
+          collection: COLLECTIONS.PHRASE,
+          doc: newDoc,
+        })
+        .catch(reject);
+
+      if (!insertedPhrase) return;
+
+      await dataProvider
+        .updateOne({
+          database: DATABASE.USER_CONTENT,
+          collection: COLLECTIONS.PHRASE_BUNDLE,
+          query: {
+            _id: bundleDetail.value?._id,
+            refId: authUser.value?.id,
+          },
+          update: {
+            $push: { phrases: insertedPhrase._id },
+          },
+        })
+        .then((data: PhraseType) => {
+          tempPhrases.value = tempPhrases.value.filter(
+            (p) => p.id !== newPhrase.id
+          );
+
+          bundleDetail.value?.phrases.unshift(insertedPhrase._id);
+          phrases.value.unshift(insertedPhrase);
+        })
+        .then(resolve)
+        .catch(reject);
+    });
+  }
+
   return {
     bundleDetail,
     phrases,
+    tempPhrases,
     fetchBundleDetail,
     updateBundleDetail,
     phrasePagination,
@@ -150,6 +206,8 @@ export const useBundleStore = defineStore("bundle", () => {
     fetchPhrases,
     updatePhrase,
     removePhrase,
+    addEmptyTemporarilyPhrase,
+    createPhrase,
     clear,
   };
 });
