@@ -139,8 +139,15 @@ const onSubmit = handleSubmit(async () => {
 function removePhrase() {
   isSubmitting.value = true;
 
-  bundleStore.removePhrase(props.phrase!._id).finally(() => {
-    isSubmitting.value = false;
-  });
+  if (props.phrase) {
+    bundleStore.removePhrase(props.phrase!._id).finally(() => {
+      isSubmitting.value = false;
+    });
+  }
+
+  // Remove new phrase
+  else if (props.newPhrase) {
+    bundleStore.removeTemporarilyPhrase(props.newPhrase.id);
+  }
 }
 </script>

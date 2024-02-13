@@ -151,6 +151,10 @@ export const useBundleStore = defineStore("bundle", () => {
     });
   }
 
+  function removeTemporarilyPhrase(id: string) {
+    tempPhrases.value = tempPhrases.value.filter((p) => p.id !== id);
+  }
+
   async function createPhrase(newPhrase: NewPhraseType) {
     const newDoc = {
       ...newPhrase,
@@ -207,6 +211,7 @@ export const useBundleStore = defineStore("bundle", () => {
     updatePhrase,
     removePhrase,
     addEmptyTemporarilyPhrase,
+    removeTemporarilyPhrase,
     createPhrase,
     clear,
   };
