@@ -710,12 +710,6 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@modular-rest/client@/Users/navid-shad/Projects/Personal/modular-rest/packages/client":
-  version "1.5.2"
-  dependencies:
-    axios "^0.21.0"
-    ts-bus "^2.3.1"
-
 "@modular-rest/client@file:../../modular-rest/packages/client":
   version "1.5.2"
   dependencies:

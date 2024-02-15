@@ -54,11 +54,10 @@ const isSubmitting = ref(false);
 
 const props = defineProps({
   newPhrase: {
-    type: Object as PropType<NewPhraseType>,
-    default: false,
+    type: Object as PropType<NewPhraseType | null>,
   },
   phrase: {
-    type: Object as PropType<PhraseType>,
+    type: Object as PropType<PhraseType | null>,
   },
   number: {
     type: Number as PropType<number>,
