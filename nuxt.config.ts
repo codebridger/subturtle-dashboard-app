@@ -27,14 +27,14 @@ export default defineNuxtConfig({
       "gh:cssninjaStudio/tairo/layers/tairo-layout-collapse#v1.4.0",
       {
         install: true,
-        giget: { auth: process.env.GIGET_AUTH },
+        giget: { auth: process.env.GIGET_AUTH_TOKEN },
       },
     ],
     [
       "gh:cssninjaStudio/tairo/layers/tairo#v1.4.0",
       {
         install: true,
-        giget: { auth: process.env.GIGET_AUTH },
+        giget: { auth: process.env.GIGET_AUTH_TOKEN },
       },
     ],
   ] as any[],
