@@ -37,7 +37,7 @@ jobs:
 
       # build docker image
       - name: Build Docker image
-        run: docker build -t ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} .
+        run: docker build -t ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} -env-file .env .
 
       # push docker image
       - name: Push Docker image
