@@ -4,6 +4,8 @@ on:
     branches:
       - master
 
+  workflow_dispatch:
+
 env:
   GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
   NUXT_API_URL: ${{ vars.NUXT_API_URL }}
