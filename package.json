@@ -1,17 +1,31 @@
 {
-  "name": "nuxt-app",
+  "name": "tairo-quickstarter",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "prepare": "nuxi prepare",
+    "dev": "nuxi dev --open",
+    "build": "nuxi build",
+    "generate": "nuxi generate",
+    "clean": "rimraf .nuxt .output node_modules"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.0.8",
+    "@fontsource-variable/karla": "^5.0.13",
+    "nuxt-security": "^1.0.1"
   },
   "dependencies": {
-    "nuxt": "^3.10.1",
-    "vue": "^3.4.15",
-    "vue-router": "^4.2.5"
+    "@cssninja/nuxt-toaster": "^0.3.12",
+    "@modular-rest/client": "^1.5.3",
+    "@pinia/nuxt": "^0.5.1",
+    "@shuriken-ui/nuxt": "1.1.3",
+    "@vee-validate/zod": "^4.12.5",
+    "@vueuse/nuxt": "^10.7.2",
+    "fast-copy": "^3.0.1",
+    "nuxt": "^3.6.5",
+    "pinia": "^2.1.7",
+    "vee-validate": "^4.11.6",
+    "yup": "^1.3.3",
+    "zod": "^3.22.4"
   }
 }
