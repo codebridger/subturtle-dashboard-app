@@ -27,7 +27,6 @@ jobs:
       - name: Create .env file
         run: |
           echo "NUXT_API_URL=${NUXT_API_URL}" > .env
-          echo "GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN}"
 
       # login to docker
       - name: Login to Docker Hub
@@ -38,7 +37,7 @@ jobs:
 
       # build docker image
       - name: Build Docker image
-        run: docker build -t ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} .
+        run: docker build -t ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} --build-arg GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN} .
 
       # push docker image
       - name: Push Docker image
