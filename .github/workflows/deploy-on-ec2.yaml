@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v2
 
       # Create env file
+      # This file goes to docker and used in building the image
       - name: Create .env file
         run: |
           echo "NUXT_API_URL=${NUXT_API_URL}" > .env
@@ -37,7 +38,7 @@ jobs:
 
       # build docker image
       - name: Build Docker image
-        run: docker build -t ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} --env-file .env .
+        run: docker build -t ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} .
 
       # push docker image
       - name: Push Docker image
