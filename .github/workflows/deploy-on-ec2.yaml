@@ -8,6 +8,7 @@ on:
 
 env:
   GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
+  GITHUB_PUBLISH_TOKEN: ${{ secrets.GIGET_PUBLISH_TOKEN }}
   NUXT_API_URL: ${{ vars.NUXT_API_URL }}
   IMAGE_TAG_SERVER: dashboard-${{ github.sha }}
   REGISTRY: ghcr.io
@@ -32,11 +33,11 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GIGET_AUTH_TOKEN }}
+          password: ${{ env.GITHUB_PUBLISH_TOKEN }}
 
       # build docker image
       - name: Build Docker image
-        run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG_SERVER }} --build-arg GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN} .
+        run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG_SERVER }} --build-arg GIGET_AUTH_TOKEN=${{env.GIGET_AUTH_TOKEN}} .
 
       # push docker image
       - name: Push Docker image
