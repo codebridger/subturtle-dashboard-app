@@ -1,4 +1,4 @@
-name: Deploy on EC2
+name: Deploy on EC2 From GHC Registry
 on:
   push:
     branches:
