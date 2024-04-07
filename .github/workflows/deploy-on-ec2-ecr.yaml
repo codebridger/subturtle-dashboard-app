@@ -41,8 +41,8 @@ jobs:
       - name: Build, tag, and push docker image to Amazon ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: my-ecr-repo
-          IMAGE_TAG: ${{ github.sha }}
+          REPOSITORY: subturtle
+          IMAGE_TAG: dashboard-lastest
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --build-arg GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN} .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
