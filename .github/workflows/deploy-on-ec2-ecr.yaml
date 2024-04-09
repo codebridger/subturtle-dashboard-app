@@ -22,12 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # Create env file
-      # This file goes to docker and used in building the image
-      - name: Create .env file
-        run: |
-          echo "NUXT_API_URL=${NUXT_API_URL}" > .env
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -39,11 +33,23 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # Create env file
+      # This file goes to docker and used in building the image
+      - name: Create .env file
+        run: |
+          echo "NUXT_API_URL=${NUXT_API_URL}" > .env
+          echo "GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN}" >> .env
+
+      - name: Build Nuxt.js project
+        run: |
+          npm install
+          npm run build
+
       - name: Build, tag, and push docker image to Amazon ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: ${{ env.AWS_CONTAINER_REGISTRY }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --build-arg GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN} .
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
