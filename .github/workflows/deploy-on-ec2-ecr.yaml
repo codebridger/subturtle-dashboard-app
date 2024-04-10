@@ -48,3 +48,16 @@ jobs:
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+  deploy:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: SSH to EC2
+        uses: appleboy/ssh-action@v2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            docker-compose pull dashboard
+            docker-compose up -d --force-recreate dashboard
