@@ -46,7 +46,7 @@ jobs:
           REPOSITORY: ${{ env.AWS_CONTAINER_REGISTRY }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker build --platform linux/arm64 -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
   deploy:
