@@ -38,6 +38,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "NUXT_API_URL=${NUXT_API_URL}" > .env
+          echo "GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN}" >> .env
 
       - name: Build, tag, and push docker image to Amazon ECR
         env:
@@ -45,5 +46,5 @@ jobs:
           REPOSITORY: ${{ env.AWS_CONTAINER_REGISTRY }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --build-arg GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN} .
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
