@@ -11,7 +11,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: me-south-1 # Bahrain region
   AWS_CONTAINER_REGISTRY: subturtle
-  IMAGE_TAG: dashboard-lastest
+  IMAGE_TAG: dashboard-latest
   GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
   NUXT_API_URL: ${{ vars.NUXT_API_URL }}
 
@@ -60,5 +60,5 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
-            docker-compose pull dashboard
-            docker-compose up -d --force-recreate dashboard
+            docker compose pull dashboard
+            docker compose up -d --force-recreate dashboard
