@@ -14,6 +14,7 @@ env:
   IMAGE_TAG: dashboard-latest
   GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
   NUXT_API_URL: ${{ vars.NUXT_API_URL }}
+  REGISTRY: ${{ vars.ECR_ADDRESS }}
 
 jobs:
   build:
@@ -60,7 +61,20 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build
     steps:
-      - name: SSH to EC2
+      - name: SSH - Login to Amazon ECR
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          REGISTRY: ${{ env.REGISTRY }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          envs: AWS_REGION,REGISTRY
+          script: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY
+
+      - name: SSH - Pull and run the latest image
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
