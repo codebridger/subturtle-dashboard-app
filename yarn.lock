@@ -710,8 +710,10 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@modular-rest/client@file:../../modular-rest/packages/client":
-  version "1.5.2"
+"@modular-rest/client@^1.5.3":
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/@modular-rest/client/-/client-1.5.3.tgz#8bab0b60a3805e8f51b50226e2a3098587cd9942"
+  integrity sha512-5dI4vZxTnpbS+3+ZrE+e6SuoT7Qv9IaM5HdNvwhAec4Xygtmc654erG+xS3zrW47NTwunUv5e/jvdYypX2g61w==
   dependencies:
     axios "^0.21.0"
     ts-bus "^2.3.1"
