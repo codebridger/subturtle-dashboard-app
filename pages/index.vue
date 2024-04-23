@@ -1,4 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+onMounted(() => {
+  useRouter().push("/dashboard");
+});
+</script>
 
 <template>
   <div>
