@@ -2,9 +2,9 @@ import { loginWithLastSession } from "~/utils/auth";
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
   // Redirects
-  if (to.path == "/") {
-    return navigateTo("/dashboard");
-  }
+  // if (to.path == "/") {
+  //   return navigateTo("/dashboard");
+  // }
 
   if (to.path.includes("/login")) {
     logout();
