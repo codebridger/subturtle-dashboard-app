@@ -60,10 +60,7 @@ onMounted(async () => {
     </template>
 
     <template #right>
-      <BaseButton color="primary" class="w-full" disabled>
-        <Icon name="lucide:plus" class="h-4 w-4" />
-        <span>Add New</span>
-      </BaseButton>
+      <BundleAddNew />
     </template>
 
     <section class="ltablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-2">
