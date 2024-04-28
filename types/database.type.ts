@@ -7,7 +7,16 @@ export const DATABASE = {
 export const COLLECTIONS = {
   PHRASE: "phrase",
   PHRASE_BUNDLE: "phrase_bundle",
+  PROFILE: "profile",
 };
+
+export interface ProfileType {
+  _id: string;
+  refId: string;
+  name: string;
+  gPicture: string;
+  images: FileDocument[];
+}
 
 export interface PhraseType {
   _id: string;
