@@ -35,14 +35,34 @@
           Submit
         </BaseButton>
 
-        <BaseButton v-else @click="isEditMode = true">Edit</BaseButton>
+        <BaseDropdown
+          :loading="true"
+          v-else
+          variant="context"
+          label="Options"
+          placement="bottom-start"
+        >
+          <BaseDropdownItem
+            title="Edit"
+            text="The title and description"
+            rounded="sm"
+            @click="isEditMode = true"
+          />
+
+          <BaseDropdownItem
+            title="Remove"
+            text="The Bundle and phrases"
+            rounded="sm"
+            @click="onRemove"
+          />
+        </BaseDropdown>
       </div>
     </BaseCard>
   </VeeForm>
 </template>
 
 <script setup lang="ts">
-import { dataProvider } from "@modular-rest/client";
+import { functionProvider } from "@modular-rest/client";
 import { Field, Form as VeeForm } from "vee-validate";
 import * as yup from "yup";
 import {
@@ -50,6 +70,8 @@ import {
   DATABASE,
   type PhraseBundleType,
 } from "~/types/database.type";
+
+const router = useRouter();
 
 const props = defineProps({
   bundleDetail: {
@@ -60,6 +82,7 @@ const props = defineProps({
 
 const emit = defineEmits<{
   changed: [values: { [key: string]: any }];
+  removed: [];
 }>();
 
 const isSubmitting = ref(false);
@@ -91,6 +114,20 @@ function onSubmit(values: any) {
     })
     .finally(() => {
       isSubmitting.value = false;
+    });
+}
+
+function onRemove() {
+  functionProvider
+    .run({
+      name: "removeBundle",
+      args: {
+        _id: props.bundleDetail._id,
+        refId: authUser.value?.id,
+      },
+    })
+    .then(() => {
+      router.push("/dashboard/bundles");
     });
 }
 </script>

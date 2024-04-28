@@ -20,7 +20,7 @@
     "tailwindcss": "^3.4.3"
   },
   "dependencies": {
-    "@modular-rest/client": "^1.5.3",
+    "@modular-rest/client": "^1.6.0",
     "@pinia/nuxt": "^0.5.1",
     "@vee-validate/zod": "^4.12.6",
     "@vueuse/nuxt": "^10.9.0",

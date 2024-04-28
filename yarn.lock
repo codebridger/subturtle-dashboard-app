@@ -864,6 +864,12 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
+"@modular-rest/client@/Users/navid-shad/Projects/Personal/modular-rest/packages/client":
+  version "1.5.3"
+  dependencies:
+    axios "^0.21.0"
+    ts-bus "^2.3.1"
+
 "@modular-rest/client@^1.5.3":
   version "1.5.3"
   resolved "https://registry.yarnpkg.com/@modular-rest/client/-/client-1.5.3.tgz#8bab0b60a3805e8f51b50226e2a3098587cd9942"
