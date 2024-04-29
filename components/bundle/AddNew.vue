@@ -48,12 +48,6 @@ function createBundle() {
     })
     .then(({ _id }) => {
       isPending.value = false;
-
-      toastSuccess({
-        title: `${title.value} created successfully`,
-        message: "You can now add phrases to this bundle.",
-      });
-
       router.push({ path: "/dashboard/bundles/" + _id });
     })
     .catch(({ error }) => {

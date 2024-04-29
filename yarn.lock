@@ -864,10 +864,10 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@modular-rest/client@^1.6.0":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@modular-rest/client/-/client-1.6.0.tgz#49fd98b12450ff259fc066b67aac039eaeafff59"
-  integrity sha512-pWoMbgNnPJqveHS30gShF85tvzG9+vyF9V13fJDAuo+vfEAWl2j5l/Lo1SYCtJGhk0j/0fhyXFUVgnHcXdXt3g==
+"@modular-rest/client@1.6.1":
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/@modular-rest/client/-/client-1.6.1.tgz#e1c3178e66b4700a5ec7bd97e5e40166d63738d2"
+  integrity sha512-kXcjvCtHE9lnSpNc8DYbWKAKKgckPLkgXhCD5vWfnpwqrhjwCTqBY3b8DV4B4VhH07sRmNV+2MNeC5etcM6f0Q==
   dependencies:
     axios "^0.21.0"
     ts-bus "^2.3.1"

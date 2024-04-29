@@ -128,6 +128,13 @@ function onRemove() {
     })
     .then(() => {
       router.push("/dashboard/bundles");
+    })
+    .catch((error) => {
+      debugger;
+      toastError({
+        title: "Error",
+        message: error.error,
+      });
     });
 }
 </script>
