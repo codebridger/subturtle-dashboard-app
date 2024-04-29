@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { dataProvider } from "@modular-rest/client";
+import {
+  COLLECTIONS,
+  DATABASE,
+  type PhraseBundleType,
+} from "~/types/database.type";
+
 // set compile time meta information
 definePageMeta({
   // static meta information can be added to vue-router, we use it
@@ -11,9 +18,42 @@ useHead({
   meta: [{ name: "description", content: "Subturtle popup app" }],
 });
 
-// Here you can define your page logic
+const recentBundles = ref<PhraseBundleType[]>([]);
+
+function getRecentBundles() {
+  dataProvider
+    .find<PhraseBundleType>({
+      database: DATABASE.USER_CONTENT,
+      collection: COLLECTIONS.PHRASE_BUNDLE,
+      query: {
+        refId: authUser.value?.id,
+      },
+      options: {
+        limit: 3,
+        sort: {
+          updatedAt: -1,
+        },
+      },
+    })
+    .then((data) => {
+      recentBundles.value = data;
+    });
+}
+
+onMounted(() => {
+  getRecentBundles();
+});
 </script>
 
 <template>
-  <div></div>
+  <div class="flex justify-between">
+    <BaseHeading>Recent</BaseHeading>
+  </div>
+  <section class="tablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-3">
+    <BundleGenerativeCard
+      v-for="bundle in recentBundles"
+      :key="bundle._id"
+      :bundle="bundle"
+    />
+  </section>
 </template>

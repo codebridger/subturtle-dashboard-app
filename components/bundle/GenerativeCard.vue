@@ -42,36 +42,38 @@ onMounted(async () => {
 </script>
 
 <template>
-  <BaseCard rounded="md" shadow="hover" class="overflow-hidden">
-    <section class="relative">
-      <BaseTag
-        class="absolute top-2 right-2"
-        rounded="md"
-        variant="pastel"
-        color="primary"
-      >
-        {{ bundle.phrases.length }}
-      </BaseTag>
-      <MaterialWordGenerativeCover
-        :words="phraseList"
-        :classes="['h-24 w-full']"
-      />
-    </section>
+  <NuxtLink :to="`/dashboard/bundles/${props.bundle._id}`">
+    <BaseCard rounded="md" shadow="hover" class="overflow-hidden">
+      <section class="relative">
+        <BaseTag
+          class="absolute top-2 right-2"
+          rounded="md"
+          variant="pastel"
+          color="primary"
+        >
+          {{ bundle.phrases.length }}
+        </BaseTag>
+        <MaterialWordGenerativeCover
+          :words="phraseList"
+          :classes="['h-24 w-full']"
+        />
+      </section>
 
-    <section class="p-6">
-      <BaseHeading
-        as="h4"
-        size="sm"
-        weight="semibold"
-        lead="tight"
-        class="text-muted-800 mb-2 dark:text-white"
-      >
-        {{ props.bundle.title }}
-      </BaseHeading>
+      <section class="p-6">
+        <BaseHeading
+          as="h4"
+          size="sm"
+          weight="semibold"
+          lead="tight"
+          class="text-muted-800 mb-2 dark:text-white"
+        >
+          {{ props.bundle.title }}
+        </BaseHeading>
 
-      <BaseParagraph size="sm" lead="tight" class="text-muted-400">
-        {{ props.bundle.desc }}
-      </BaseParagraph>
-    </section>
-  </BaseCard>
+        <BaseParagraph size="sm" lead="tight" class="text-muted-400">
+          {{ props.bundle.desc }}
+        </BaseParagraph>
+      </section>
+    </BaseCard>
+  </NuxtLink>
 </template>
