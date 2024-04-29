@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { functionProvider } from "@modular-rest/client";
+import { functionProvider, dataProvider } from "@modular-rest/client";
 import { Field, Form as VeeForm } from "vee-validate";
 import * as yup from "yup";
 import {

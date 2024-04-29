@@ -66,7 +66,7 @@ onMounted(async () => {
     <section class="ltablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-2">
       <template v-for="bundle of bundleList">
         <NuxtLink :to="`/dashboard/bundles/${bundle._id}`">
-          <BaseCard rounded="none" class="p-6">
+          <!-- <BaseCard rounded="none" class="p-6">
             <BaseHeading
               as="h4"
               size="sm"
@@ -76,11 +76,8 @@ onMounted(async () => {
             >
               {{ bundle.title }}
             </BaseHeading>
-
-            <!-- <BaseParagraph size="sm" lead="tight" class="text-muted-400">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </BaseParagraph> -->
-          </BaseCard>
+          </BaseCard> -->
+          <BundleGenerativeCard :bundle="bundle" />
         </NuxtLink>
       </template>
     </section>

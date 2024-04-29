@@ -37,6 +37,7 @@ export interface PhraseBundleType {
   _id: string;
   refId: string;
   title: string;
+  desc: string;
   image: FileDocument[];
   phrases: string[];
 }

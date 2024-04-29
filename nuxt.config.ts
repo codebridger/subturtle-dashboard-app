@@ -2,6 +2,16 @@ export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: process.env.NODE_ENV === "development" },
 
+  app: {
+    head: {
+      script: [
+        {
+          src: "https://raw.githubusercontent.com/timdream/wordcloud2.js/gh-pages/src/wordcloud2.js",
+        },
+      ],
+    },
+  },
+
   runtimeConfig: {
     public: {
       API_URL: process.env.NUXT_API_URL,

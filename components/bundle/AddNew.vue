@@ -11,7 +11,7 @@ const isPending = ref(false);
 const { errors, values, defineField, resetForm } = useForm({
   validationSchema: yup.object({
     title: yup.string().required("Title name is required"),
-    description: yup.string(),
+    description: yup.string().max(130, "Description is too long"),
   }),
 });
 
