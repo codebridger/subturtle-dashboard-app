@@ -84,7 +84,7 @@ function getSeries(collection: string) {
       database: DATABASE.USER_CONTENT,
       collection: collection,
       userId: authUser.value?.id,
-      days: 30,
+      days: 7,
     },
   });
 }
