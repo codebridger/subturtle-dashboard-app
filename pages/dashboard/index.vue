@@ -47,7 +47,7 @@ onMounted(() => {
 
 <template>
   <div class="flex justify-between mt-4 mb-2">
-    <BaseHeading>You last 7 days</BaseHeading>
+    <BaseHeading>Your last 7 days</BaseHeading>
   </div>
   <WidgetActivityChartOverview />
 
