@@ -156,6 +156,9 @@ export const useBundleStore = defineStore("bundle", () => {
   }
 
   async function createPhrase(newPhrase: NewPhraseType) {
+    const index = tempPhrases.value.findIndex((p) => p.id === newPhrase.id);
+    tempPhrases.value = tempPhrases.value.filter((p) => p.id !== newPhrase.id);
+
     const newDoc = {
       ...newPhrase,
       refId: authUser.value?.id,
@@ -163,7 +166,8 @@ export const useBundleStore = defineStore("bundle", () => {
 
     delete newDoc["id"];
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise<PhraseType>(async (resolve, reject) => {
+      // Insert new phrase
       const insertedPhrase = await dataProvider
         .insertOne({
           database: DATABASE.USER_CONTENT,
@@ -174,6 +178,7 @@ export const useBundleStore = defineStore("bundle", () => {
 
       if (!insertedPhrase) return;
 
+      // Update phrase bundle
       await dataProvider
         .updateOne({
           database: DATABASE.USER_CONTENT,
@@ -186,17 +191,17 @@ export const useBundleStore = defineStore("bundle", () => {
             $push: { phrases: insertedPhrase._id },
           },
         })
-        .then((data: PhraseType) => {
-          tempPhrases.value = tempPhrases.value.filter(
-            (p) => p.id !== newPhrase.id
-          );
-
-          bundleDetail.value?.phrases.unshift(insertedPhrase._id);
-          phrases.value.unshift(insertedPhrase);
-        })
-        .then(resolve)
+        .then(() => resolve(insertedPhrase))
         .catch(reject);
-    });
+    })
+      .then((insertedPhrase) => {
+        bundleDetail.value?.phrases.unshift(insertedPhrase._id);
+        phrases.value.unshift(insertedPhrase);
+      })
+      .catch((error) => {
+        // add back the phrase if there is an error
+        tempPhrases.value.splice(index, 0, newPhrase);
+      });
   }
 
   return {

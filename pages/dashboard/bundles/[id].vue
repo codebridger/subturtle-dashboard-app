@@ -119,10 +119,10 @@ function fetchPhraseList(page: number = 1) {
             <BundlePhraseCard :newPhrase="tempPhrase" />
           </template>
 
-          <div
+          <!-- <div
             v-if="bundleStore.tempPhrases.length"
             class="border-muted-200 dark:border-muted-700 border-b"
-          />
+          /> -->
 
           <template v-for="phrase in bundleStore.phrases" :key="phrase._id">
             <BundlePhraseCard
