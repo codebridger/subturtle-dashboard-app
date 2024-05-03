@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { dataProvider } from "@modular-rest/client";
+import { dataProvider, functionProvider } from "@modular-rest/client";
 import {
   COLLECTIONS,
   DATABASE,
   type PhraseBundleType,
 } from "~/types/database.type";
+import { FN, type UserStatisticType } from "~/types/function.type";
 
 // set compile time meta information
 definePageMeta({
@@ -19,6 +20,10 @@ useHead({
 });
 
 const recentBundles = ref<PhraseBundleType[]>([]);
+const statistics = ref<UserStatisticType>({
+  totalPhrases: 0,
+  totalBundles: 0,
+});
 
 function getRecentBundles() {
   dataProvider
@@ -40,16 +45,79 @@ function getRecentBundles() {
     });
 }
 
+function getUserStatistics() {
+  functionProvider
+    .run<UserStatisticType>({
+      name: FN.getUserStatistic,
+      args: {
+        userId: authUser.value?.id,
+      },
+    })
+    .then((data) => {
+      statistics.value = data;
+    });
+}
+
 onMounted(() => {
   getRecentBundles();
+  getUserStatistics();
 });
 </script>
 
 <template>
-  <div class="flex justify-between mt-4 mb-2">
-    <BaseHeading>Your last 7 days</BaseHeading>
-  </div>
-  <WidgetActivityChartOverview />
+  <section class="w-full flex space-x-4 items-start">
+    <WidgetActivityChartOverview class="flex-1" title="Your last 7 days" />
+
+    <BaseCard class="w-64 p-6 flax flex-col space-y-2">
+      <BaseHeading>Your Quick Stats</BaseHeading>
+
+      <div class="bg-muted-100 flex p-3 space-x-2 items-center rounded-md">
+        <BaseIconBox
+          size="lg"
+          rounded="full"
+          class="bg-muted-200 text-muted-500 dark:bg-muted-800"
+          color="primary"
+          variant="pastel"
+        >
+          <Icon name="fluent:playing-cards-20-filled" class="size-8" />
+        </BaseIconBox>
+        <div>
+          <BaseHeading>
+            {{ statistics.totalBundles }}
+          </BaseHeading>
+
+          <BaseText
+            class="py-0 my-0 text-muted-500 dark:text-muted-400 text-base"
+          >
+            Bundles
+          </BaseText>
+        </div>
+      </div>
+
+      <div class="bg-muted-100 flex p-3 space-x-2 items-center rounded-md">
+        <BaseIconBox
+          size="lg"
+          rounded="full"
+          class="bg-muted-200 text-muted-500 dark:bg-muted-800"
+          color="info"
+          variant="pastel"
+        >
+          <Icon name="i-tabler-vocabulary" class="size-8" />
+        </BaseIconBox>
+        <div>
+          <BaseHeading>
+            {{ statistics.totalPhrases }}
+          </BaseHeading>
+
+          <BaseText
+            class="py-0 my-0 text-muted-500 dark:text-muted-400 text-base"
+          >
+            Phrases
+          </BaseText>
+        </div>
+      </div>
+    </BaseCard>
+  </section>
 
   <div class="flex justify-between mt-4 mb-2">
     <BaseHeading>Recent</BaseHeading>

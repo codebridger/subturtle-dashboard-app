@@ -1,5 +1,8 @@
 <template>
   <BaseCard class="p-6">
+    <div class="flex justify-between">
+      <BaseHeading>{{ props.title }}</BaseHeading>
+    </div>
     <MaterialAddonApexcharts
       type="area"
       :height="400"
@@ -12,6 +15,10 @@
 <script setup lang="ts">
 import { functionProvider } from "@modular-rest/client";
 import { COLLECTIONS, DATABASE } from "~/types/database.type";
+
+const props = defineProps<{
+  title: string;
+}>();
 
 const { primary, info, success } = useTailwindColors();
 
