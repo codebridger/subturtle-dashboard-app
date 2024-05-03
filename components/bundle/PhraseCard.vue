@@ -11,6 +11,7 @@
             v-if="getSubmitButtonStatus()"
             rounded="full"
             size="sm"
+            :color="props.newPhrase ? 'default' : 'warning'"
             @click="onSubmit"
           >
             <span class="i-ph-check-bold size-5" />
