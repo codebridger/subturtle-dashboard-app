@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({
-  title: "Phrase Bundle Detail",
+  title: "Bundle Detail",
 });
 
 const bundleStore = useBundleStore();
@@ -12,10 +12,15 @@ const isPhraseListLoading = ref(false);
 onMounted(() => {
   if (id.value) {
     isBundleDetailLoading.value = true;
-    bundleStore.fetchBundleDetail(id.value).finally(() => {
-      isBundleDetailLoading.value = false;
-      fetchPhraseList(1);
-    });
+    bundleStore
+      .fetchBundleDetail(id.value)
+      .then(() => {
+        // useRoute().meta.title = bundleStore.bundleDetail?.title;
+      })
+      .finally(() => {
+        isBundleDetailLoading.value = false;
+        fetchPhraseList(1);
+      });
   }
 });
 
@@ -40,17 +45,36 @@ function fetchPhraseList(page: number = 1) {
       @changed="bundleStore.updateBundleDetail(id, $event)"
     />
 
-    <!-- Phrase List -->
-    <section class="mt-8">
-      <BaseButtonAction
-        class="mb-4"
-        rounded="sm"
-        color="info"
+    <!-- Practice Features -->
+    <section class="flex justify-between items-center">
+      <section class="my-4 flex-1 flex space-x-4">
+        <BaseButton disabled>
+          <span class="i-ph-cards-duotone text-primary-500"></span>
+          <span>FlashCards</span>
+        </BaseButton>
+
+        <BaseButton disabled>
+          <span class="i-icon-park-twotone-card-two text-primary-500"></span>
+          <span>Match</span>
+        </BaseButton>
+
+        <BaseButton disabled>
+          <span class="i-ph-open-ai-logo-duotone text-primary-500"></span>
+          <span>Learn</span>
+        </BaseButton>
+      </section>
+
+      <BaseButton
+        color="primary"
         @click="bundleStore.addEmptyTemporarilyPhrase()"
       >
-        Add Phrase
-      </BaseButtonAction>
+        <span class="i-tabler-vocabulary"></span>
+        <span>Add Phrase</span>
+      </BaseButton>
+    </section>
 
+    <!-- Phrase List -->
+    <section class="mt-8">
       <!-- Empty -->
       <div
         v-if="

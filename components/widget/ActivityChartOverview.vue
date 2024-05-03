@@ -96,7 +96,6 @@ function prepareData() {
   ]).then(([phrase, bundle]) => {
     series.value[0].data = phrase;
     series.value[1].data = bundle;
-    console.log(series);
   });
 }
 </script>

@@ -12,8 +12,10 @@
   },
   "devDependencies": {
     "@cssninja/nuxt-toaster": "^0.3.12",
+    "@egoist/tailwindcss-icons": "^1.7.4",
     "@fontsource-variable/inter": "^5.0.18",
     "@fontsource-variable/karla": "^5.0.21",
+    "@iconify/json": "^2.2.206",
     "@modular-rest/client": "^1.6.2",
     "@pinia/nuxt": "^0.5.1",
     "@shuriken-ui/nuxt": "^3.1.5",

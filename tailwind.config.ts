@@ -1,6 +1,11 @@
 import { withShurikenUI } from "@shuriken-ui/tailwind";
 import colors from "tailwindcss/colors";
 
+const {
+  iconsPlugin,
+  getIconCollections,
+} = require("@egoist/tailwindcss-icons");
+
 /**
  * This is the Tailwind config file for the demo.
  * It extends the default config from @shuriken-ui/tailwind
@@ -38,5 +43,17 @@ export default withShurikenUI({
       },
     },
   },
-  plugins: [],
+  plugins: [
+    iconsPlugin({
+      // Select the icon collections you want to use
+      // You can also ignore this option to automatically discover all icon collections you have installed
+      collections: getIconCollections([
+        "ph",
+        "mdi",
+        "icon-park-twotone",
+        "tabler",
+      ]),
+      scale: 1.4,
+    }),
+  ],
 });

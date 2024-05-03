@@ -23,6 +23,7 @@
           />
         </Field>
         <BaseHeading v-else>{{ bundleDetail.title }}</BaseHeading>
+        <BaseParagraph>{{ bundleDetail.desc }}</BaseParagraph>
       </div>
 
       <div class="flex-1 flex justify-end">
