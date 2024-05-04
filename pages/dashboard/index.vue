@@ -65,10 +65,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="w-full flex space-x-4 items-start">
+  <section
+    :class="[
+      'w-full flex flex-col space-y-4 items-start',
+      'md:flex-row md:space-x-4 md:space-y-0',
+    ]"
+  >
     <WidgetActivityChartOverview class="flex-1" title="Your last 7 days" />
 
-    <BaseCard class="w-64 p-6 flax flex-col space-y-2">
+    <BaseCard class="w-full md:w-64 p-6 flax flex-col space-y-2">
       <BaseHeading>Your Quick Stats</BaseHeading>
 
       <div class="bg-muted-100 flex p-3 space-x-2 items-center rounded-md">
