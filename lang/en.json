@@ -1,0 +1,11 @@
+{
+	"flashcard-tool": {
+		"tooltip": "Memorize this bundle of flashcards"
+	},
+	"match-tool": {
+		"tooltip": "Practice this bundle trough matching game"
+	},
+	"learn-tool": {
+		"tooltip": "Learn this bundle of phrases by Artificial Intelligence"
+	}
+}

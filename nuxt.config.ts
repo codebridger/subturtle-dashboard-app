@@ -1,3 +1,20 @@
+const fs = require("fs");
+const path = require("path");
+
+function getLocals() {
+  const langDir = path.resolve(__dirname, "lang");
+  const files = fs.readdirSync(langDir);
+
+  return files
+    .filter((file: string) => file.endsWith(".json"))
+    .map((file: string) => {
+      const iso = file.replace(".json", "");
+      const code = iso.split("-")[0];
+
+      return { code, iso: code, file };
+    });
+}
+
 export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: process.env.NODE_ENV === "development" },
@@ -18,7 +35,14 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["@pinia/nuxt"],
+  modules: ["@pinia/nuxt", "@nuxtjs/i18n"],
+
+  // @ts-ignore
+  i18n: {
+    locales: getLocals(),
+    defaultLocale: "en",
+    langDir: "lang",
+  },
 
   extends: [
     /**

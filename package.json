@@ -17,6 +17,7 @@
     "@fontsource-variable/karla": "^5.0.21",
     "@iconify/json": "^2.2.206",
     "@modular-rest/client": "^1.6.2",
+    "@nuxtjs/i18n": "^8.3.1",
     "@pinia/nuxt": "^0.5.1",
     "@shuriken-ui/nuxt": "^3.1.5",
     "@types/jquery": "^3.5.29",

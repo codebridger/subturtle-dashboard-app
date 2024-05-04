@@ -48,17 +48,17 @@ function fetchPhraseList(page: number = 1) {
     <!-- Practice Features -->
     <section class="flex justify-between items-center">
       <section class="my-4 flex-1 flex space-x-4">
-        <BaseButton disabled>
+        <BaseButton disabled :data-nui-tooltip="$t('flashcard-tool.tooltip')">
           <span class="i-ph-cards-duotone text-primary-500"></span>
           <span>FlashCards</span>
         </BaseButton>
 
-        <BaseButton disabled>
+        <BaseButton disabled :data-nui-tooltip="$t('match-tool.tooltip')">
           <span class="i-icon-park-twotone-card-two text-primary-500"></span>
           <span>Match</span>
         </BaseButton>
 
-        <BaseButton disabled>
+        <BaseButton disabled :data-nui-tooltip="$t('learn-tool.tooltip')">
           <span class="i-ph-open-ai-logo-duotone text-primary-500"></span>
           <span>Learn</span>
         </BaseButton>
