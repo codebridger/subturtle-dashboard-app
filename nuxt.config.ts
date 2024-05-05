@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
 function getLocals(ext = ".js") {
   const langDir = path.resolve(__dirname, "lang");

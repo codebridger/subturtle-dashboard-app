@@ -2,7 +2,7 @@ FROM node:18-alpine as build-stage
 
 WORKDIR /app
 
-COPY package*.json yarn.lock .env ./
+COPY package*.json .env ./
 RUN yarn install
 
 COPY . .
