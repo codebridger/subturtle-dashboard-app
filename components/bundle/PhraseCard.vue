@@ -33,7 +33,7 @@
         <BaseTextarea
           type="text"
           label="Phrase"
-          placeholder="Avengers - Season 1"
+          :placeholder="$t('comp.bundle.phrase_card.phrase_placeholder')"
           v-model="phrase"
           :error="errors.phrase"
           :loading="!!props.newPhrase && isSubmitting"
@@ -44,7 +44,7 @@
         <BaseTextarea
           type="text"
           label="Translation"
-          placeholder="Avengers - Season 1"
+          :placeholder="$t('comp.bundle.phrase_card.translation_placeholder')"
           v-model="translation"
           :error="errors.translation"
           :loading="!!props.newPhrase && isSubmitting"

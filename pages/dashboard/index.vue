@@ -74,7 +74,7 @@ onMounted(() => {
     <WidgetActivityChartOverview class="flex-1" title="Your last 7 days" />
 
     <BaseCard class="w-full md:w-64 p-6 flax flex-col space-y-2">
-      <BaseHeading>Your Quick Stats</BaseHeading>
+      <BaseHeading>{{ $t("page.dashboard.quick-states.label") }}</BaseHeading>
 
       <div class="bg-muted-100 flex p-3 space-x-2 items-center rounded-md">
         <BaseIconBox
@@ -94,7 +94,7 @@ onMounted(() => {
           <BaseText
             class="py-0 my-0 text-muted-500 dark:text-muted-400 text-base"
           >
-            Bundles
+            {{ $t("page.dashboard.quick-states.total-bundles") }}
           </BaseText>
         </div>
       </div>
@@ -117,7 +117,7 @@ onMounted(() => {
           <BaseText
             class="py-0 my-0 text-muted-500 dark:text-muted-400 text-base"
           >
-            Phrases
+            {{ $t("page.dashboard.quick-states.total-phrases") }}
           </BaseText>
         </div>
       </div>
@@ -125,7 +125,7 @@ onMounted(() => {
   </section>
 
   <div class="flex justify-between mt-4 mb-2">
-    <BaseHeading>Recent</BaseHeading>
+    <BaseHeading>{{ $t("page.dashboard.recent") }}</BaseHeading>
   </div>
   <section class="tablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-3">
     <BundleGenerativeCard

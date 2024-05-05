@@ -1,14 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 
-function getLocals() {
+function getLocals(ext = ".js") {
   const langDir = path.resolve(__dirname, "lang");
   const files = fs.readdirSync(langDir);
 
   return files
-    .filter((file: string) => file.endsWith(".json"))
+    .filter((file: string) => file.endsWith(ext))
     .map((file: string) => {
-      const iso = file.replace(".json", "");
+      const iso = file.replace(ext, "");
       const code = iso.split("-")[0];
 
       return { code, iso: code, file };

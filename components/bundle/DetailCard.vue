@@ -33,7 +33,7 @@
           :loading="isSubmitting"
           @click="handleSubmit(onSubmit)"
         >
-          Submit
+          {{ $t("comp.bundle.detail.card.submit") }}
         </BaseButton>
 
         <BaseDropdown
@@ -89,7 +89,7 @@ const emit = defineEmits<{
 const isSubmitting = ref(false);
 const isEditMode = ref(false);
 const schema = yup.object({
-  title: yup.string().required("Title name is required"),
+  title: yup.string().required($t("comp.bundle.detail.card.title_required")),
 });
 
 function onSubmit(values: any) {

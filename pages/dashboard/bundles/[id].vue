@@ -50,17 +50,17 @@ function fetchPhraseList(page: number = 1) {
       <section class="my-4 flex-1 flex space-x-4">
         <BaseButton disabled :data-nui-tooltip="$t('flashcard-tool.tooltip')">
           <span class="i-ph-cards-duotone text-primary-500"></span>
-          <span>FlashCards</span>
+          <span>{{ $t("flashcard-tool.label") }}</span>
         </BaseButton>
 
         <BaseButton disabled :data-nui-tooltip="$t('match-tool.tooltip')">
           <span class="i-icon-park-twotone-card-two text-primary-500"></span>
-          <span>Match</span>
+          <span>{{ $t("match-tool.label") }}</span>
         </BaseButton>
 
         <BaseButton disabled :data-nui-tooltip="$t('learn-tool.tooltip')">
           <span class="i-ph-open-ai-logo-duotone text-primary-500"></span>
-          <span>Learn</span>
+          <span>{{ $t("learn-tool.label") }}</span>
         </BaseButton>
       </section>
 
