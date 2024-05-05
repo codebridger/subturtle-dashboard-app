@@ -76,7 +76,9 @@ onMounted(() => {
     <BaseCard class="w-full md:w-64 p-6 flax flex-col space-y-2">
       <BaseHeading>{{ $t("page.dashboard.quick-states.label") }}</BaseHeading>
 
-      <div class="bg-muted-100 flex p-3 space-x-2 items-center rounded-md">
+      <div
+        class="bg-muted-100 dark:bg-muted-900 flex p-3 space-x-2 items-center rounded-md"
+      >
         <BaseIconBox
           size="lg"
           rounded="full"
@@ -99,7 +101,9 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="bg-muted-100 flex p-3 space-x-2 items-center rounded-md">
+      <div
+        class="bg-muted-100 dark:bg-muted-900 flex p-3 space-x-2 items-center rounded-md"
+      >
         <BaseIconBox
           size="lg"
           rounded="full"
