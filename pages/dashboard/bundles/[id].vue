@@ -48,7 +48,10 @@ function fetchPhraseList(page: number = 1) {
     <!-- Practice Features -->
     <section class="flex justify-between items-center">
       <section class="my-4 flex-1 flex space-x-4">
-        <BaseButton disabled :data-nui-tooltip="$t('flashcard-tool.tooltip')">
+        <BaseButton
+          :data-nui-tooltip="$t('flashcard-tool.tooltip')"
+          :to="`/dashboard/practice/flashcards-${id}`"
+        >
           <span class="i-ph-cards-duotone text-primary-500"></span>
           <span>{{ $t("flashcard-tool.label") }}</span>
         </BaseButton>
