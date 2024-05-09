@@ -76,10 +76,21 @@ function prevCard() {
     :title="bundle?.title || 'Flashcards'"
     :activePhrase="phraseIndex + 1"
     :totalPhrases="totalPhrases"
-    :bundleId="id"
+    :bundleId="id as string"
   >
-    <div class="w-full h-full py-14 px-16 flex flex-col items-center">
-      <div class="flex-1 w-full max-w-[65%] max-h-[65%]">
+    <div
+      :class="[
+        'w-full h-full p-5 flex flex-col items-center',
+        'md:py-14 md:px-16',
+      ]"
+    >
+      <div
+        :class="[
+          'flex-1 w-full ',
+          'md:max-w-[80%] md:max-h-[80%]',
+          'lg:max-w-[65%] lg:max-h-[65%]',
+        ]"
+      >
         <WidgetFlashCard
           v-if="phrase"
           :key="phraseIndex"
@@ -92,7 +103,7 @@ function prevCard() {
         class="w-full my-6 flex justify-between items-center max-w-[65%] max-h-[65%]"
       >
         <div>
-          <BaseButtonIcon rounded="md" color="muted" size="lg">
+          <BaseButtonIcon rounded="md" color="muted" size="lg" disabled>
             <Icon name="ph:play-fill" />
           </BaseButtonIcon>
         </div>
@@ -120,7 +131,7 @@ function prevCard() {
         </div>
 
         <div>
-          <BaseButtonIcon rounded="md" color="muted" size="lg">
+          <BaseButtonIcon rounded="md" color="muted" size="lg" disabled>
             <Icon name="ph:shuffle-bold" />
           </BaseButtonIcon>
         </div>
