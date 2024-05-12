@@ -13,42 +13,5 @@
       background: transparent;
     }
   </style>
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const wordsData = urlParams.get("words");
-    const backgroundColor = decodeURIComponent(
-      urlParams.get("backgroundColor")
-    );
-
-    let wordsList = JSON.parse(decodeURIComponent(wordsData));
-    wordsList = wordsList.map((word) => {
-      const { innerHeight, innerWidth } = window;
-      // generate random weight for each word based on the screen width
-      const weight = Math.floor((Math.random() * innerWidth) / 10);
-
-      return [word, weight];
-    });
-
-    const canvas = document.getElementById("wordcloud");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    function getColor() {
-      const lightColors = [
-        "#e8f964",
-        "#9acd83",
-        "#ffd3ea",
-        "#dcf0ea",
-        "#b9d9fb",
-        "#b996ec",
-      ];
-
-      return lightColors[Math.floor(Math.random() * lightColors.length)];
-    }
-
-    WordCloud(document.getElementById("wordcloud"), {
-      list: wordsList,
-      backgroundColor: getColor(),
-    });
-  </script>
+  <script src="./cover-generator.js"></script>
 </html>
