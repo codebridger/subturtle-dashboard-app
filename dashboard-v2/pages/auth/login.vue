@@ -66,8 +66,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue';
-  import appSetting from '@/app-setting';
   import { useAppStore } from '@/stores/index';
   import { useRouter } from 'vue-router';
   import { Icon, Button } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
