@@ -51,7 +51,7 @@
 
 <script lang="ts" setup>
   import { useProfileStore } from '@/stores/profile';
-  import { Dropdown, IconButton, Icon } from '@tiny-ideas-ir/lib-vue-components/components.ts';
+  import { Dropdown, IconButton, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
 
   const router = useRouter();
 

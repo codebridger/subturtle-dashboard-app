@@ -51,7 +51,7 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
 
-  import { useAppStore } from '@/stores/index';
+  import { useAppStore } from '@tiny-ideas-ir/lib-vue-components/store.ts';
 
   const store = useAppStore();
   const showTopButton = ref(false);

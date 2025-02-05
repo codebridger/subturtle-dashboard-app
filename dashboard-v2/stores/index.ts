@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import appSetting from '@/app-setting';
+
 export const useAppStore = defineStore('app', {
   state: () => ({
     languageList: [
@@ -28,22 +28,10 @@ export const useAppStore = defineStore('app', {
 
   actions: {
     toggleLocale(payload: any = null, setLocale: any) {
-      payload = payload || this.locale;
-      localStorage.setItem('i18n_locale', payload);
-      this.locale = payload;
-      setLocale(payload);
-      if (this.locale?.toLowerCase() === 'ae') {
-        this.toggleRTL('rtl');
-      } else {
-        this.toggleRTL('ltr');
-      }
-    },
-
-    toggleMainLoader(state: boolean = false) {
-      this.isShowMainLoader = true;
-      setTimeout(() => {
-        this.isShowMainLoader = false;
-      }, 500);
+      // payload = payload || this.locale;
+      // localStorage.setItem('i18n_locale', payload);
+      // this.locale = payload;
+      // setLocale(payload);
     },
   },
   getters: {},
