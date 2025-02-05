@@ -1,32 +1,42 @@
 <template>
-  <BaseCard
-    shape="curved"
-    :color="props.newPhrase ? 'info' : 'white'"
-    @mouseleave="onSubmit"
-  >
+  <BaseCard shape="curved" :color="props.newPhrase ? 'primary' : 'default'">
     <div
       class="flex justify-between items-center border-muted-200 dark:border-muted-700 border-b py-3 px-5"
     >
       <div>{{ props.number }}</div>
 
-      <BaseButtonIcon
-        rounded="full"
-        size="sm"
-        :disabled="isSubmitting"
-        @click="removePhrase"
-      >
-        <Icon name="ph:trash-simple" class="size-5" />
-      </BaseButtonIcon>
+      <div class="flex space-x-2">
+        <transition name="fade">
+          <BaseButtonIcon
+            v-if="getSubmitButtonStatus()"
+            rounded="full"
+            size="sm"
+            :color="props.newPhrase ? 'default' : 'warning'"
+            @click="onSubmit"
+          >
+            <span class="i-ph-check-bold size-5" />
+          </BaseButtonIcon>
+        </transition>
+
+        <BaseButtonIcon
+          rounded="full"
+          size="sm"
+          :disabled="isSubmitting"
+          @click="removePhrase"
+        >
+          <Icon name="ph:trash-simple" class="size-5" />
+        </BaseButtonIcon>
+      </div>
     </div>
     <div class="flex flex-col p-5 sm:flex-row sm:items-center space-x-4">
       <div class="flex-1">
         <BaseTextarea
           type="text"
           label="Phrase"
-          placeholder="Avengers - Season 1"
+          :placeholder="$t('comp.bundle.phrase_card.phrase_placeholder')"
           v-model="phrase"
           :error="errors.phrase"
-          :loading="isSubmitting"
+          :loading="!!props.newPhrase && isSubmitting"
         />
       </div>
 
@@ -34,10 +44,10 @@
         <BaseTextarea
           type="text"
           label="Translation"
-          placeholder="Avengers - Season 1"
+          :placeholder="$t('comp.bundle.phrase_card.translation_placeholder')"
           v-model="translation"
           :error="errors.translation"
-          :loading="isSubmitting"
+          :loading="!!props.newPhrase && isSubmitting"
         />
       </div>
     </div>
@@ -64,48 +74,46 @@ const props = defineProps({
   },
 });
 
-const { defineField, errors, handleSubmit, resetForm, meta } = useForm({
+const {
+  defineField,
+  errors,
+  handleSubmit,
+  resetForm,
+  meta,
+  isFieldDirty,
+  validate,
+} = useForm({
   validationSchema: yup.object({
     phrase: yup.string().required("Phrase is required"),
     translation: yup.string().required("Translation is required"),
   }),
+  initialTouched: {
+    phrase: false,
+    translation: false,
+  },
+  initialValues: {
+    phrase: props.phrase?.phrase || "",
+    translation: props.phrase?.translation || "",
+  },
 });
 
 const [phrase] = defineField("phrase");
 const [translation] = defineField("translation");
 
-watch(
-  () => props.phrase,
-  () => {
-    if (!props.phrase) return;
+function getSubmitButtonStatus() {
+  const conditions = [
+    isFieldDirty("phrase"),
+    isFieldDirty("translation"),
+    Object.keys(errors.value).length > 0,
+  ];
 
-    resetForm({
-      values: {
-        phrase: props.phrase?.phrase || "",
-        translation: props.phrase?.translation || "",
-      },
-    });
-  },
-  { immediate: true, deep: true }
-);
-
-watch(
-  () => props.newPhrase,
-  () => {
-    if (!props.newPhrase) return;
-
-    resetForm({
-      values: {
-        phrase: props.newPhrase?.phrase || "",
-        translation: props.newPhrase?.translation || "",
-      },
-    });
-  },
-  { immediate: true, deep: true }
-);
+  return conditions.some((condition) => condition);
+}
 
 const onSubmit = handleSubmit(async () => {
-  if (!meta.value.dirty) return;
+  const validated = await validate();
+
+  if (!validated.valid || !meta.value.dirty) return;
 
   isSubmitting.value = true;
 
@@ -119,6 +127,13 @@ const onSubmit = handleSubmit(async () => {
       .finally(() => {
         isSubmitting.value = false;
       });
+
+    resetForm({
+      values: {
+        phrase: phrase?.value || "",
+        translation: translation?.value || "",
+      },
+    });
   }
 
   // Create new phrase

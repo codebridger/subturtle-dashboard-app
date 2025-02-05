@@ -41,12 +41,12 @@ export default defineAppConfig({
 
         items: [
           {
-            name: "Dashboard",
+            name: "page.dashboard.nav",
             icon: { name: "fluent:home-20-filled", class: "w-6 h-6" },
             to: "/dashboard/",
           },
           {
-            name: "Phrase Bundles",
+            name: "page.dashboard-bundle.nav",
             icon: { name: "fluent:playing-cards-20-filled", class: "w-6 h-6" },
             to: "/dashboard/bundles/",
           },

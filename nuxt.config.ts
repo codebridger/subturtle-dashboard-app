@@ -1,6 +1,33 @@
+import fs from "fs";
+import path from "path";
+
+function getLocals(ext = ".js") {
+  const langDir = path.resolve(__dirname, "lang");
+  const files = fs.readdirSync(langDir);
+
+  return files
+    .filter((file: string) => file.endsWith(ext))
+    .map((file: string) => {
+      const iso = file.replace(ext, "");
+      const code = iso.split("-")[0];
+
+      return { code, iso: code, file };
+    });
+}
+
 export default defineNuxtConfig({
   ssr: false,
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV === "development" },
+
+  app: {
+    head: {
+      script: [
+        {
+          src: "https://raw.githubusercontent.com/timdream/wordcloud2.js/gh-pages/src/wordcloud2.js",
+        },
+      ],
+    },
+  },
 
   runtimeConfig: {
     public: {
@@ -8,7 +35,14 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["@pinia/nuxt"],
+  modules: ["@pinia/nuxt", "@nuxtjs/i18n"],
+
+  // @ts-ignore
+  i18n: {
+    locales: getLocals(),
+    defaultLocale: "en",
+    langDir: "lang",
+  },
 
   extends: [
     /**

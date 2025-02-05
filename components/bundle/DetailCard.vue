@@ -23,6 +23,7 @@
           />
         </Field>
         <BaseHeading v-else>{{ bundleDetail.title }}</BaseHeading>
+        <BaseParagraph>{{ bundleDetail.desc }}</BaseParagraph>
       </div>
 
       <div class="flex-1 flex justify-end">
@@ -32,17 +33,37 @@
           :loading="isSubmitting"
           @click="handleSubmit(onSubmit)"
         >
-          Submit
+          {{ $t("comp.bundle.detail.card.submit") }}
         </BaseButton>
 
-        <BaseButton v-else @click="isEditMode = true">Edit</BaseButton>
+        <BaseDropdown
+          :loading="true"
+          v-else
+          variant="context"
+          label="Options"
+          placement="bottom-start"
+        >
+          <BaseDropdownItem
+            title="Edit"
+            text="The title and description"
+            rounded="sm"
+            @click="isEditMode = true"
+          />
+
+          <BaseDropdownItem
+            title="Remove"
+            text="The Bundle and phrases"
+            rounded="sm"
+            @click="onRemove"
+          />
+        </BaseDropdown>
       </div>
     </BaseCard>
   </VeeForm>
 </template>
 
 <script setup lang="ts">
-import { dataProvider } from "@modular-rest/client";
+import { functionProvider, dataProvider } from "@modular-rest/client";
 import { Field, Form as VeeForm } from "vee-validate";
 import * as yup from "yup";
 import {
@@ -50,6 +71,8 @@ import {
   DATABASE,
   type PhraseBundleType,
 } from "~/types/database.type";
+
+const router = useRouter();
 
 const props = defineProps({
   bundleDetail: {
@@ -60,12 +83,13 @@ const props = defineProps({
 
 const emit = defineEmits<{
   changed: [values: { [key: string]: any }];
+  removed: [];
 }>();
 
 const isSubmitting = ref(false);
 const isEditMode = ref(false);
 const schema = yup.object({
-  title: yup.string().required("Title name is required"),
+  title: yup.string().required($t("comp.bundle.detail.card.title_required")),
 });
 
 function onSubmit(values: any) {
@@ -91,6 +115,27 @@ function onSubmit(values: any) {
     })
     .finally(() => {
       isSubmitting.value = false;
+    });
+}
+
+function onRemove() {
+  functionProvider
+    .run({
+      name: "removeBundle",
+      args: {
+        _id: props.bundleDetail._id,
+        refId: authUser.value?.id,
+      },
+    })
+    .then(() => {
+      router.push("/dashboard/bundles");
+    })
+    .catch((error) => {
+      debugger;
+      toastError({
+        title: "Error",
+        message: error.error,
+      });
     });
 }
 </script>

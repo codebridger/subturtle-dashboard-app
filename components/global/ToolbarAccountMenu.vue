@@ -20,7 +20,7 @@ function handleLogout() {
             class="relative inline-flex h-9 w-9 items-center justify-center rounded-full"
           >
             <img
-              src="/img/avatars/2.svg"
+              :src="profileInfo?.gPicture || '/img/avatars/2.svg'"
               class="max-w-full rounded-full object-cover shadow-sm dark:border-transparent"
               alt=""
             />
@@ -29,6 +29,7 @@ function handleLogout() {
       </MenuButton>
 
       <Transition
+        class="z-[9999]"
         enter-active-class="transition duration-100 ease-out"
         enter-from-class="transform scale-95 opacity-0"
         enter-to-class="transform scale-100 opacity-100"
@@ -44,18 +45,21 @@ function handleLogout() {
               class="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full"
             >
               <img
-                src="/img/avatars/2.svg"
+                :src="profileInfo?.gPicture || '/img/avatars/2.svg'"
                 class="max-w-full rounded-full object-cover shadow-sm dark:border-transparent"
                 alt=""
               />
             </div>
             <div class="mt-3">
               <h6
+                v-if="profileInfo?.name"
                 class="font-heading text-muted-800 text-sm font-medium dark:text-white"
               >
-                Maya Rosselini
+                {{ profileInfo?.name }}
               </h6>
-              <p class="text-muted-400 mb-4 font-sans text-xs">maya@tairo.io</p>
+              <p class="text-muted-400 mb-4 font-sans text-xs">
+                {{ authUser?.email }}
+              </p>
               <!-- <BaseButton
                 to="/layouts/profile-edit"
                 shape="curved"

@@ -1,0 +1,1 @@
+Any components have it's own logic and depends on the project data like database, API, etc.
