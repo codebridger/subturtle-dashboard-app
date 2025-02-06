@@ -11,6 +11,7 @@
     "clean": "rimraf .nuxt .output node_modules"
   },
   "devDependencies": {
+    "string-width": "4.2.3",
     "@cssninja/nuxt-toaster": "^0.3.12",
     "@egoist/tailwindcss-icons": "^1.7.4",
     "@fontsource-variable/inter": "^5.0.18",
@@ -33,5 +34,6 @@
     "vue3-apexcharts": "^1.5.2",
     "yup": "^1.4.0",
     "zod": "^3.23.3"
-  }
+  },
+  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }
