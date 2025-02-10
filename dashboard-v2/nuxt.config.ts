@@ -54,7 +54,7 @@ export default defineNuxtConfig({
         },
     },
 
-    modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
+    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
 
     i18n: {
         locales: [{ code: 'en', file: 'en.json' }],
