@@ -35,6 +35,7 @@
         "vue-height-collapsible": "^0.1.1",
         "vue-i18n": "^9.2.2",
         "vue-router": "latest",
+        "vue3-apexcharts": "^1.8.0",
         "vue3-perfect-scrollbar": "^1.6.0",
         "vue3-popper": "^1.5.0",
         "yup": "^1.6.1"
