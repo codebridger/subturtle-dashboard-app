@@ -1,15 +1,16 @@
 <template>
-    <BaseCard class="p-6">
+    <Card class="p-6">
         <div class="flex justify-between">
-            <BaseHeading>{{ props.title }}</BaseHeading>
+            <h1>{{ props.title }}</h1>
         </div>
         <MaterialAddonApexcharts type="area" :height="400" :options="chartOption" :series="series" />
-    </BaseCard>
+    </Card>
 </template>
 
 <script setup lang="ts">
     import { functionProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE } from '~/types/database.type';
+    import { Card } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
 
     const props = defineProps<{
         title: string;
