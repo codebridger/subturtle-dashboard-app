@@ -1,15 +1,17 @@
 <template>
     <div ref="target">
-        <BasePlaceload class="m-4 w-[calc(100%-32px)]" v-if="!isLoaded && !targetIsVisible" :style="{ height: `${height - 32}px` }" />
+        <Card class="m-4 w-[calc(100%-32px)]" v-if="!isLoaded && !targetIsVisible" :style="{ height: `${height - 32}px` }" />
         <ClientOnly>
             <LazyApexCharts v-if="targetIsVisible" v-show="isLoaded" v-bind="props" />
-            <BasePlaceload class="m-4 w-[calc(100%-32px)]" v-else :style="{ height: `${height - 32}px` }" />
+            <Card class="m-4 w-[calc(100%-32px)]" v-else :style="{ height: `${height - 32}px` }" />
         </ClientOnly>
     </div>
 </template>
 
 <script setup lang="ts">
     import '~/assets/css/apexcharts.css';
+    import { useIntersectionObserver } from '@vueuse/core';
+    import { Card } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
 
     const props = defineProps<{
         type: string;
