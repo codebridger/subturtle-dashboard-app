@@ -1,8 +1,6 @@
 <template>
     <Card class="p-6">
-        <div class="flex justify-between">
-            <h1>{{ props.title }}</h1>
-        </div>
+        <h1 class="text-lg font-bold">{{ props.title }}</h1>
         <MaterialAddonApexcharts type="area" :height="400" :options="chartOption" :series="series" />
     </Card>
 </template>
