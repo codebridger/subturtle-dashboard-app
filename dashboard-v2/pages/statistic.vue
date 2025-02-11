@@ -1,37 +1,43 @@
 <template>
-    <section :class="['flex w-full flex-col items-start space-y-4', 'md:flex-row md:space-x-4 md:space-y-0']">
-        <!-- <WidgetActivityChartOverview class="flex-1" title="Your last 7 days" /> -->
-
-        <Card class="flax w-full flex-col space-y-2 p-6 md:w-64">
-            <h1>{{ t('dashboard.quick-states.label') }}</h1>
-
-            <div class="flex items-center space-x-2 rounded-md bg-gray-100 p-3 dark:bg-gray-900">
-                <Icon name="IconNotes" />
-                {{ statistics.totalBundles }}
-                {{ t('dashboard.quick-states.total-bundles') }}
+    <div class="p-6">
+        <h1 class="mb-6 text-lg font-bold">{{ t('dashboard.nav') }}</h1>
+        <section class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
+            <Card class="col-span-1 rounded-md shadow-none lg:col-span-3">
+                <WidgetActivityChartOverview class="flex-1" title="Your last 7 days" />
+            </Card>
+            <Card class="max-h-min rounded-md shadow-none">
+                <h1 class="text-lg font-bold">{{ t('dashboard.quick-states.label') }}</h1>
+                <div class="flex items-center space-x-2 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
+                    <IconButton icon="IconNotes" rounded="full" size="lg" />
+                    <div class="flex items-center space-x-2">
+                        {{ statistics.totalBundles }}
+                        {{ t('dashboard.quick-states.total-bundles') }}
+                    </div>
+                </div>
+                <div class="mt-2 flex items-center space-x-2 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
+                    <IconButton icon="IconClipboardText" rounded="full" size="lg" />
+                    <div class="flex items-center space-x-2">
+                        {{ statistics.totalPhrases }}
+                        {{ t('dashboard.quick-states.total-phrases') }}
+                    </div>
+                </div>
+            </Card>
+        </section>
+        <section>
+            <h1 class="text-lg font-bold">{{ t('dashboard.recent') }}</h1>
+            <div class="grid w-full grid-cols-2 gap-4 lg:grid-cols-3">
+                <!-- <BundleGenerativeCard v-for="bundle in recentBundles" :key="bundle._id" :bundle="bundle" /> -->
+                <BundleGenerativeCard />
             </div>
-
-            <div class="flex items-center space-x-2 rounded-md bg-gray-100 p-3 dark:bg-gray-900">
-                <Icon name="IconClipboardText" />
-                {{ statistics.totalPhrases }}
-                {{ t('dashboard.quick-states.total-phrases') }}
-            </div>
-        </Card>
-    </section>
-
-    <div class="mb-2 mt-4 flex justify-between">
-        <h1>{{ t('dashboard.recent') }}</h1>
+        </section>
     </div>
-    <section class="tablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-3">
-        <BundleGenerativeCard v-for="bundle in recentBundles" :key="bundle._id" :bundle="bundle" />
-    </section>
 </template>
 
 <script setup lang="ts">
     import { dataProvider, functionProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
     import { FN, type UserStatisticType } from '~/types/function.type';
-    import { Card, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Card, IconButton, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     const { t } = useI18n();
 
     definePageMeta({
