@@ -7,17 +7,17 @@ export const authUser = ref<User | null>(null);
 export const profileInfo = ref<ProfileType | null>(null);
 
 export function getProfileInfo() {
-  return dataProvider.findOne<ProfileType>({
-    database: DATABASE.USER_CONTENT,
-    collection: COLLECTIONS.PROFILE,
-    query: {
-      refId: authentication.user?.id,
-    },
-  });
-  // .then((profile) => {
-  //   profileInfo.value = profile;
-  //   return profile;
-  // });
+  return dataProvider
+    .findOne<ProfileType>({
+      database: DATABASE.USER_CONTENT,
+      collection: COLLECTIONS.PROFILE,
+      query: {
+        refId: authentication.user?.id,
+      },
+    })
+    .then((profile) => {
+      authUser.value = authentication.user;
+    });
 }
 
 export function loginWithLastSession(token?: string) {
