@@ -1,7 +1,7 @@
 export function getQueryParams() {
-  return new URLSearchParams(window.location.search);
+    return new URLSearchParams(window.location.search);
 }
 
 export function getQueryParam(key: string) {
-  return getQueryParams().get(key);
+    return getQueryParams().get(key);
 }
