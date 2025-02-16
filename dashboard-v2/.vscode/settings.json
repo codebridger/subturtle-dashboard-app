@@ -1,4 +1,6 @@
 {
-  "cSpell.words": ["Nuxt"],
-  "prettier.configPath": ".prettierrc"
+    "cSpell.words": ["Nuxt"],
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "prettier.configPath": ".prettierrc"
 }

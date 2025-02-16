@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>{{ t('membership-plans') }}</h1>
+        <h1>Bundles list</h1>
     </div>
 </template>
 
@@ -9,7 +9,7 @@
 
     definePageMeta({
         layout: 'default',
-        title: () => t('membership-plans'),
+        title: () => t('bundle.list'),
         // @ts-ignore
         middleware: ['auth'],
     });
