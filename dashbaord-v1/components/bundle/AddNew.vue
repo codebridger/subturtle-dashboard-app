@@ -1,3 +1,54 @@
+<template>
+  <BaseButton color="primary" class="w-full" @click="openForm">
+    <Icon name="lucide:plus" class="h-4 w-4" />
+    <span>{{ $t("comp.bundle.add_new.action_add_new") }}</span>
+  </BaseButton>
+
+  <TairoModal :open="isFormOpen">
+    <template #header>
+      <!-- Header -->
+      <div class="flex w-full items-center justify-between p-4 md:p-6">
+        <h3
+          class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+        >
+          {{ $t("comp.bundle.add_new.title") }}
+        </h3>
+      </div>
+    </template>
+
+    <div class="p-4 flex flex-col space-y-2">
+      <BaseInput
+        :placeholder="$t('comp.bundle.add_new.title_placeholder')"
+        v-model="title"
+        :error="errors.title"
+      />
+      <BaseTextarea
+        :placeholder="$t('comp.bundle.add_new.desc_placeholder')"
+        v-model="description"
+        :error="errors.description"
+      />
+    </div>
+
+    <template #footer>
+      <!-- Footer -->
+      <div class="flex justify-end p-4 md:p-6 space-x-2">
+        <BaseButton color="default" @click="closeForm">
+          <span>{{ $t("comp.bundle.add_new.action_cancel") }}</span>
+        </BaseButton>
+
+        <BaseButton
+          color="primary"
+          @click="createBundle"
+          :loading="isPending"
+          :disabled="!isValidForm"
+        >
+          <span>{{ $t("comp.bundle.add_new.action_create") }}</span>
+        </BaseButton>
+      </div>
+    </template>
+  </TairoModal>
+</template>
+
 <script setup lang="ts">
 import { dataProvider } from "@modular-rest/client";
 import { useForm } from "vee-validate";
@@ -68,57 +119,6 @@ function createBundle() {
     });
 }
 </script>
-
-<template>
-  <BaseButton color="primary" class="w-full" @click="openForm">
-    <Icon name="lucide:plus" class="h-4 w-4" />
-    <span>{{ $t("comp.bundle.add_new.action_add_new") }}</span>
-  </BaseButton>
-
-  <TairoModal :open="isFormOpen">
-    <template #header>
-      <!-- Header -->
-      <div class="flex w-full items-center justify-between p-4 md:p-6">
-        <h3
-          class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-        >
-          {{ $t("comp.bundle.add_new.title") }}
-        </h3>
-      </div>
-    </template>
-
-    <div class="p-4 flex flex-col space-y-2">
-      <BaseInput
-        :placeholder="$t('comp.bundle.add_new.title_placeholder')"
-        v-model="title"
-        :error="errors.title"
-      />
-      <BaseTextarea
-        :placeholder="$t('comp.bundle.add_new.desc_placeholder')"
-        v-model="description"
-        :error="errors.description"
-      />
-    </div>
-
-    <template #footer>
-      <!-- Footer -->
-      <div class="flex justify-end p-4 md:p-6 space-x-2">
-        <BaseButton color="default" @click="closeForm">
-          <span>{{ $t("comp.bundle.add_new.action_cancel") }}</span>
-        </BaseButton>
-
-        <BaseButton
-          color="primary"
-          @click="createBundle"
-          :loading="isPending"
-          :disabled="!isValidForm"
-        >
-          <span>{{ $t("comp.bundle.add_new.action_create") }}</span>
-        </BaseButton>
-      </div>
-    </template>
-  </TairoModal>
-</template>
 
 <style>
 [role="dialog"] {

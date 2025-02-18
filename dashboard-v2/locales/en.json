@@ -22,7 +22,8 @@
         "phrase_card": {
             "phrase_placeholder": "Type your phrase here",
             "translation_placeholder": "Type your translation here"
-        }
+        },
+        "filter_bundles": "Filter bundles..."
     },
     "dashboard": {
         "nav": "Dashboard",
