@@ -1,41 +1,36 @@
 <template>
-    <TairoContentWrapper>
-        <template #left>
-            <!-- <Input
-                icon="lucide:search"
-            /> -->
-            <Input
-                :class="{ wrapper: 'w-full sm:w-auto' }"
-                :label="t('bundle.filter_bundles')"
-                v-model="filter"
-                disabled
-                :error="!!error"
-                :error-message="error || ''"
-            />
-        </template>
+    <div class="p-4">
+        <!-- Left section -->
+        <div class="mb-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div class="w-full sm:w-auto">
+                <Input v-model="filter" :label="t('bundle.filter_bundles')" disabled :error="!!error" :error-message="error || ''" />
+            </div>
 
-        <template #right>
-            <BundleAddNew />
-        </template>
+            <!-- Right section -->
+            <div>
+                <BundleAddNew />
+            </div>
+        </div>
 
-        <section class="tablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-3">
+        <!-- Grid section -->
+        <section class="tablet:grid-cols-2 grid w-full grid-cols-1 gap-4 lg:grid-cols-3">
             <template v-for="bundle of bundleList">
                 <BundleGenerativeCard :bundle="bundle" />
             </template>
         </section>
 
-        <BasePagination
-            class="mt-6"
-            v-if="pagination"
-            :item-per-page="controller.pagination.limit"
-            :total-items="controller.pagination.total"
-            :current-page="controller.pagination.page"
-            :max-links-displayed="5"
-            rounded="lg"
-            :no-router="false"
-            @update:currentPage="controller.fetchPage($event)"
-        />
-    </TairoContentWrapper>
+        <!-- Pagination -->
+        <div v-if="pagination" class="mt-6">
+            <Pagination
+                :current-page="controller.pagination.page"
+                :total="controller.pagination.total"
+                :per-page="controller.pagination.limit"
+                :max-visible-pages="5"
+                class="rounded-lg"
+                @page-change="controller.fetchPage($event)"
+            />
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -45,6 +40,8 @@
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
 
     const { t } = useI18n();
+
+    const error = ref<string | null>(null);
 
     definePageMeta({
         layout: 'default',
