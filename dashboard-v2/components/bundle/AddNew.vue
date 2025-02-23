@@ -1,25 +1,18 @@
 <template>
-    <Button color="primary" class="w-full" @click="openForm">
-        <Icon name="plus" />
-        {{ t('bundle.add_new.action_add_new') }}
-    </Button>
-
-    <Modal v-model="isFormOpen">
-        <template #header>
-            <!-- Header -->
-            <div class="flex w-full items-center justify-between p-4 md:p-6">
-                <h3 class="font-heading text-lg font-medium leading-6 text-gray-900 dark:text-white">
-                    {{ t('bundle.add_new.title') }}
-                </h3>
+    <Modal v-model="isFormOpen" :title="t('bundle.add_new.title')">
+        <template #trigger>
+            <IconButton icon="IconPlus" rounded="sm" size="xl" class="w-full" @click="openForm">
+                {{ t('bundle.add_new.action_add_new') }}
+            </IconButton>
+        </template>
+        <template #default>
+            <div class="flex flex-col space-y-2 p-4">
+                <Input :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="!!error" :error-message="error || ''" />
+                <TextArea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="!!error" :error-message="error || ''" />
             </div>
         </template>
 
-        <div class="flex flex-col space-y-2 p-4">
-            <Input :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="!!error" :error-message="error || ''" />
-            <TextArea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="!!error" :error-message="error || ''" />
-        </div>
-
-        <template #footer="{ toggleModal }">
+        <template #footer>
             <!-- Footer -->
             <div class="flex justify-end space-x-2">
                 <Button @click="closeForm">
@@ -35,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Icon, Input, TextArea } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Button, IconButton, Input, TextArea } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     import { Modal } from '@tiny-ideas-ir/lib-vue-components/complex.ts';
     import { dataProvider } from '@modular-rest/client';
     import { useForm } from 'vee-validate';

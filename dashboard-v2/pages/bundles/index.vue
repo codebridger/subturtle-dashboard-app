@@ -1,9 +1,9 @@
 <template>
     <div class="p-4">
         <!-- Left section -->
-        <div class="mb-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div class="w-full sm:w-auto">
-                <Input v-model="filter" :label="t('bundle.filter_bundles')" disabled :error="!!error" :error-message="error || ''" />
+        <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+                <Input v-model="filter" :placeholder="t('bundle.filter_bundles')" disabled :error="!!error" :error-message="error || ''" />
             </div>
 
             <!-- Right section -->
