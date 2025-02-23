@@ -1,38 +1,40 @@
 <template>
     <VeeForm :validation-schema="schema" @submit="onSubmit" v-slot="{ handleSubmit }">
-        <BaseCard class="flex items-start justify-between p-5">
+        <Card class="flex items-start justify-between p-5">
             <div class="flex-1">
                 <Field v-if="isEditMode" name="title" :model-value="props.bundleDetail.title" v-slot="{ field, errors }">
-                    <BaseInput
+                    <Input
                         label="Title"
                         placeholder="Avengers - Season 1"
                         :model-value="field.value"
-                        :error="errors[0]"
+                        :error="!!error"
+                        :error-message="error || ''"
                         :disabled="isSubmitting"
                         type="text"
                         v-bind="field"
                     />
                 </Field>
-                <BaseHeading v-else>{{ bundleDetail.title }}</BaseHeading>
-                <BaseParagraph>{{ bundleDetail.desc }}</BaseParagraph>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white" v-else>{{ bundleDetail.title }}</h2>
+                <p class="mt-2 text-gray-600 dark:text-gray-300">{{ bundleDetail.desc }}</p>
             </div>
 
             <div class="flex flex-1 justify-end">
-                <BaseButton v-if="isSubmitting || isEditMode" color="primary" :loading="isSubmitting" @click="handleSubmit(onSubmit)">
+                <Button v-if="isSubmitting || isEditMode" color="primary" :loading="isSubmitting" @click="handleSubmit(onSubmit)">
                     {{ t('bundle.detail.card.submit') }}
-                </BaseButton>
+                </Button>
 
-                <BaseDropdown :loading="true" v-else variant="context" label="Options" placement="bottom-start">
-                    <BaseDropdownItem title="Edit" text="The title and description" rounded="sm" @click="isEditMode = true" />
+                <Dropdown :loading="true" v-else variant="context" label="Options" placement="bottom-start">
+                    <DropdownItem title="Edit" text="The title and description" rounded="sm" @click="isEditMode = true" />
 
-                    <BaseDropdownItem title="Remove" text="The Bundle and phrases" rounded="sm" @click="onRemove" />
-                </BaseDropdown>
+                    <DropdownItem title="Remove" text="The Bundle and phrases" rounded="sm" @click="onRemove" />
+                </Dropdown>
             </div>
-        </BaseCard>
+        </Card>
     </VeeForm>
 </template>
 
 <script setup lang="ts">
+    import { Button, Card, Input, Dropdown } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';
@@ -41,6 +43,8 @@
     const { t } = useI18n();
 
     const router = useRouter();
+
+    const error = ref<string | null>(null);
 
     const props = defineProps({
         bundleDetail: {
@@ -96,7 +100,7 @@
                 },
             })
             .then(() => {
-                router.push('/dashboard/bundles');
+                router.push('/bundles');
             })
             .catch((error) => {
                 debugger;

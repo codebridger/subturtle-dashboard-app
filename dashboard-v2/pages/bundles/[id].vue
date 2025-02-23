@@ -1,0 +1,130 @@
+<template>
+    <div class="p-4">
+        <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" @changed="bundleStore.updateBundleDetail(id, $event)" />
+
+        <!-- Practice Features -->
+        <section class="flex items-center justify-between">
+            <section class="my-4 flex flex-1 space-x-4">
+                <Button :to="`/practice/flashcards-${id}`">
+                    <Icon name="IconOpenBook" />
+                    {{ t('flashcard-tool.label') }}
+                </Button>
+                <Button disabled>
+                    <Icon name="IconListCheck" />
+                    {{ t('match-tool.label') }}
+                </Button>
+                <Button disabled>
+                    <Icon name="IconNotesEdit" />
+                    {{ t('learn-tool.label') }}
+                </Button>
+            </section>
+
+            <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()">
+                <Icon name="IconFolderMinus" />
+                {{ t('bundle.add_phrase') }}
+            </Button>
+        </section>
+
+        <!-- Phrase List -->
+        <section class="mt-8">
+            <!-- Empty State -->
+            <div v-if="!isPhraseListLoading && !bundleStore.phrases.length && !bundleStore.tempPhrases.length">
+                <div class="py-12 text-center">
+                    <img
+                        class="mx-auto h-48 w-auto dark:hidden"
+                        src="/assets/images/illustrations/placeholders/flat/placeholder-search-3.svg"
+                        alt="No phrases available"
+                    />
+                    <img
+                        class="mx-auto hidden h-48 w-auto dark:block"
+                        src="/assets/images/illustrations/placeholders/flat/placeholder-search-3-dark.svg"
+                        alt="No phrases available"
+                    />
+                    <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">No Phrases Available</h3>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Looks like we couldn't find any phrases in this bundle. Try to add some phrases first.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Phrases List -->
+            <div v-else class="space-y-4">
+                <TransitionGroup
+                    enter-active-class="transform-gpu"
+                    enter-from-class="opacity-0 -translate-x-full"
+                    enter-to-class="opacity-100 translate-x-0"
+                    leave-active-class="absolute transform-gpu"
+                    leave-from-class="opacity-100 translate-x-0"
+                    leave-to-class="opacity-0 -translate-x-full"
+                >
+                    <template v-for="tempPhrase in bundleStore.tempPhrases" :key="tempPhrase.id">
+                        <BundlePhraseCard :newPhrase="tempPhrase" />
+                    </template>
+
+                    <template v-for="phrase in bundleStore.phrases" :key="phrase._id">
+                        <BundlePhraseCard v-if="phrase" :phrase="phrase" :number="bundleStore.getPhraseNumber(phrase._id)" />
+                    </template>
+                </TransitionGroup>
+
+                <!-- Pagination -->
+                <div v-if="(bundleStore.phrasePagination?.pages || 0) > 1" class="mt-6">
+                    <Pagination
+                        v-if="bundleStore.phrasePagination"
+                        :current-page="bundleStore.phrasePagination.page"
+                        :total="bundleStore.phrasePagination.total"
+                        :per-page="bundleStore.phrasePagination.limit"
+                        class="rounded-lg"
+                        @page-change="fetchPhraseList($event)"
+                    />
+                </div>
+            </div>
+        </section>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { Button, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { useBundleStore } from '@/stores/bundle';
+
+    const { t } = useI18n();
+
+    definePageMeta({
+        layout: 'default',
+        title: () => t('bundle.detail'),
+        // @ts-ignore
+        middleware: ['auth'],
+    });
+
+    const bundleStore = useBundleStore();
+    const route = useRoute();
+    const id = computed(() => route.params.id?.toString() || '');
+    const isBundleDetailLoading = ref(false);
+    const isPhraseListLoading = ref(false);
+
+    onMounted(() => {
+        if (id.value) {
+            isBundleDetailLoading.value = true;
+            bundleStore
+                .fetchBundleDetail(id.value)
+                .then(() => {
+                    // useRoute().meta.title = bundleStore.bundleDetail?.title;
+                })
+                .finally(() => {
+                    isBundleDetailLoading.value = false;
+                    fetchPhraseList(1);
+                });
+        }
+    });
+
+    onBeforeRouteLeave(() => {
+        bundleStore.clear();
+    });
+
+    function fetchPhraseList(page: number = 1) {
+        isPhraseListLoading.value = true;
+
+        bundleStore.fetchPhrases(page).finally(() => {
+            isPhraseListLoading.value = false;
+        });
+    }
+</script>

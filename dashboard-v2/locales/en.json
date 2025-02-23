@@ -2,6 +2,8 @@
     "bundle": {
         "nav": "Phrase Bundles",
         "list": "Bundle List",
+        "detail": "Bundle Detail",
+        "add_phrase": "Add Phrase",
         "add_new": {
             "title_placeholder": "My new Tiny set",
             "title_required": "Title is required",
