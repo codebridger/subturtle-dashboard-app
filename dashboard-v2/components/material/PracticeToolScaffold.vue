@@ -1,6 +1,6 @@
 <template>
     <div class="flex h-screen flex-col bg-gray-100">
-        <BaseCard rounded="none" class="flex w-full items-center justify-between px-3 py-3">
+        <Card rounded="none" class="flex w-full items-center justify-between px-3 py-3">
             <div></div>
 
             <div class="text-center">
@@ -9,11 +9,9 @@
             </div>
 
             <div>
-                <BaseButtonIcon rounded="md" color="default" size="md" :to="`/dashboard/bundles/${bundleId}`">
-                    <Icon name="ph:x-bold" />
-                </BaseButtonIcon>
+                <IconButton icon="IconX" rounded="md" color="default" size="md" :to="`/bundles/${bundleId}`" />
             </div>
-        </BaseCard>
+        </Card>
 
         <section class="flex-1">
             <slot />
@@ -21,6 +19,7 @@
     </div>
 </template>
 <script setup lang="ts">
+    import { Card, IconButton } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     const props = defineProps<{
         title: string;
         activePhrase: number;
