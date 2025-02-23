@@ -1,5 +1,5 @@
 <template>
-    <NuxtLink :to="`/dashboard/bundles/${props.bundle._id}`">
+    <NuxtLink :to="`/bundles/${props.bundle._id}`">
         <Card class="overflow-hidden rounded-md shadow-none hover:shadow-lg">
             <section class="relative">
                 <IconButton class="absolute right-2 top-2 p-2" rounded="md">

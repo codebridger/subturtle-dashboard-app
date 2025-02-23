@@ -89,7 +89,7 @@
             })
             .then(({ _id }) => {
                 isPending.value = false;
-                router.push({ path: '/dashboard/bundles/' + _id });
+                router.push({ path: '/bundles/' + _id });
             })
             .catch(({ error }) => {
                 isPending.value = false;
