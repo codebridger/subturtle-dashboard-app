@@ -19,14 +19,48 @@
             </div>
 
             <div class="flex flex-1 justify-end">
-                <Button v-if="isSubmitting || isEditMode" color="primary" :loading="isSubmitting" @click="handleSubmit(onSubmit)">
+                <Button v-if="isSubmitting || isEditMode" type="primary" :loading="isSubmitting" @click="handleSubmit(onSubmit)">
                     {{ t('bundle.detail.card.submit') }}
                 </Button>
 
-                <Dropdown :loading="true" v-else variant="context" label="Options" placement="bottom-start">
-                    <DropdownItem title="Edit" text="The title and description" rounded="sm" @click="isEditMode = true" />
+                <Dropdown v-else>
+                    <template #trigger>
+                        <IconButton size="sm" rounded="full" icon="IconHorizontalDots" />
+                    </template>
 
-                    <DropdownItem title="Remove" text="The Bundle and phrases" rounded="sm" @click="onRemove" />
+                    <template #body="{ close }">
+                        <ul class="w-[200px] !py-0 font-semibold text-dark dark:text-white-dark">
+                            <li class="cursor-pointer">
+                                <a
+                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="
+                                        isEditMode = true;
+                                        close();
+                                    "
+                                >
+                                    <div>
+                                        <div class="font-semibold">{{ t('edit') }}</div>
+                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
+                                    </div>
+                                </a>
+                            </li>
+
+                            <li class="cursor-pointer">
+                                <a
+                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="
+                                        onRemove;
+                                        close();
+                                    "
+                                >
+                                    <div>
+                                        <div class="font-semibold">{{ t('remove') }}</div>
+                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </template>
                 </Dropdown>
             </div>
         </Card>
@@ -34,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Card, Input, Dropdown } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { IconButton, Card, Input, Dropdown, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';
