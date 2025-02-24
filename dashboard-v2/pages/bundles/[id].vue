@@ -5,10 +5,12 @@
         <!-- Practice Features -->
         <section class="flex items-center justify-between">
             <section class="my-4 flex flex-1 space-x-4">
-                <Button :to="`/practice/flashcards-${id}`">
-                    <Icon name="IconOpenBook" />
-                    {{ t('flashcard-tool.label') }}
-                </Button>
+                <NuxtLink :to="`/practice/flashcards-${id}`">
+                    <Button>
+                        <Icon name="IconOpenBook" />
+                        {{ t('flashcard-tool.label') }}
+                    </Button>
+                </NuxtLink>
                 <Button disabled>
                     <Icon name="IconListCheck" />
                     {{ t('match-tool.label') }}
@@ -97,7 +99,8 @@
 
     const bundleStore = useBundleStore();
     const route = useRoute();
-    const id = computed(() => route.params.id?.toString() || '');
+    // const id = computed(() => route.params.id?.toString() || '');
+    const id = ref(route.params.id?.toString() || '');
     const isBundleDetailLoading = ref(false);
     const isPhraseListLoading = ref(false);
 
