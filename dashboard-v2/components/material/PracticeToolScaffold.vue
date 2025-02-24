@@ -9,7 +9,9 @@
             </div>
 
             <div>
-                <IconButton icon="IconX" rounded="md" color="default" size="md" :to="`/bundles/${bundleId}`" />
+                <NuxtLink :to="`/bundles/${bundleId}`">
+                    <IconButton icon="IconX" rounded="md" color="default" size="md" />
+                </NuxtLink>
             </div>
         </Card>
 
