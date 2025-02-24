@@ -18,7 +18,7 @@
                 <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="removePhrase" />
             </div>
         </div>
-        <div class="flex flex-col space-x-4 p-5 sm:flex-row sm:items-center">
+        <div class="flex space-x-4 p-5">
             <div class="flex-1">
                 <TextArea
                     type="text"
