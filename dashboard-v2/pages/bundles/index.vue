@@ -20,7 +20,7 @@
         </section>
 
         <!-- Pagination -->
-        <div v-if="pagination" class="mt-6">
+        <!-- <div v-if="pagination" class="mt-6">
             <Pagination
                 :current-page="controller.pagination.page"
                 :total="controller.pagination.total"
@@ -29,7 +29,7 @@
                 class="rounded-lg"
                 @page-change="controller.fetchPage($event)"
             />
-        </div>
+        </div> -->
     </div>
 </template>
 

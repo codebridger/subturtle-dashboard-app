@@ -9,9 +9,7 @@
             </div>
 
             <div>
-                <NuxtLink :to="`/bundles/${bundleId}`">
-                    <IconButton icon="IconX" rounded="md" color="default" size="md" />
-                </NuxtLink>
+                <Button color="default" rounded="md" size="md" iconName="IconX" :to="`/bundles/${bundleId}`" />
             </div>
         </Card>
 
@@ -21,7 +19,7 @@
     </div>
 </template>
 <script setup lang="ts">
-    import { Card, IconButton } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Card } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     const props = defineProps<{
         title: string;
         activePhrase: number;

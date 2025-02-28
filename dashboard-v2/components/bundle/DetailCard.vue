@@ -19,9 +19,13 @@
             </div>
 
             <div class="flex flex-1 justify-end">
-                <Button v-if="isSubmitting || isEditMode" type="primary" :loading="isSubmitting" @click="handleSubmit(onSubmit)">
-                    {{ t('bundle.detail.card.submit') }}
-                </Button>
+                <Button
+                    v-if="isSubmitting || isEditMode"
+                    type="primary"
+                    :loading="isSubmitting"
+                    @click="handleSubmit(onSubmit)"
+                    :label="t('bundle.detail.card.submit')"
+                />
 
                 <Dropdown v-else>
                     <template #trigger>
@@ -68,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-    import { IconButton, Card, Input, Dropdown, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { IconButton, Card, Input, Dropdown, Button } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';
@@ -95,7 +99,7 @@
     const isSubmitting = ref(false);
     const isEditMode = ref(false);
     const schema = yup.object({
-        title: yup.string().required(t('bundle.detail.card.title_required')),
+        title: yup.string().required(t('bundle.detail_card.title_required')),
     });
 
     function onSubmit(values: any) {

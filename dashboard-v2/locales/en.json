@@ -61,6 +61,11 @@
         "enter-account-numbers": "Enter your account numbers:",
         "buy-now": "Buy Now"
     },
+    "auth": {
+        "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
+        "signin_with_google": "SIGN IN WITH GOOGLE",
+        "login_boxed": "Login Boxed"
+    },
     "statistic": "Statistic",
     "starter-page": "Starter Page",
     "or": "or",

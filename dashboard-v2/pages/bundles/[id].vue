@@ -5,26 +5,14 @@
         <!-- Practice Features -->
         <section class="flex items-center justify-between">
             <section class="my-4 flex flex-1 space-x-4">
-                <NuxtLink :to="`/practice/flashcards-${id}`">
-                    <Button>
-                        <Icon name="IconOpenBook" />
-                        {{ t('flashcard-tool.label') }}
-                    </Button>
-                </NuxtLink>
-                <Button disabled>
-                    <Icon name="IconListCheck" />
-                    {{ t('match-tool.label') }}
-                </Button>
-                <Button disabled>
-                    <Icon name="IconNotesEdit" />
-                    {{ t('learn-tool.label') }}
-                </Button>
+                <Button :to="`/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
+
+                <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" />
+
+                <Button disabled iconName="IconNotesEdit" :label="t('learn-tool.label')" />
             </section>
 
-            <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()">
-                <Icon name="IconFolderMinus" />
-                {{ t('bundle.add_phrase') }}
-            </Button>
+            <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
         </section>
 
         <!-- Phrase List -->
@@ -69,7 +57,7 @@
                 </TransitionGroup>
 
                 <!-- Pagination -->
-                <div v-if="(bundleStore.phrasePagination?.pages || 0) > 1" class="mt-6">
+                <!-- <div v-if="(bundleStore.phrasePagination?.pages || 0) > 1" class="mt-6">
                     <Pagination
                         v-if="bundleStore.phrasePagination"
                         :current-page="bundleStore.phrasePagination.page"
@@ -78,14 +66,14 @@
                         class="rounded-lg"
                         @page-change="fetchPhraseList($event)"
                     />
-                </div>
+                </div> -->
             </div>
         </section>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { Button, Icon } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Button } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
     import { useBundleStore } from '@/stores/bundle';
 
     const { t } = useI18n();
