@@ -1,79 +1,79 @@
 export default defineNuxtConfig({
-    compatibilityDate: '2024-10-13',
-    devtools: { enabled: true },
-    ssr: false,
-    sourcemap: {
-        server: true,
-        client: true,
-    },
+  compatibilityDate: '2024-10-13',
+  devtools: { enabled: true },
+  ssr: false,
+  sourcemap: {
+    server: true,
+    client: true,
+  },
 
-    runtimeConfig: {
-        public: {
-            BASE_URL_API: process.env.BASE_URL_API,
+  runtimeConfig: {
+    public: {
+      BASE_URL_API: process.env.BASE_URL_API,
+    },
+  },
+
+  vite: {
+    ssr: {
+      noExternal: ['@codebridger/lib-vue-components'],
+    },
+  },
+
+  app: {
+    head: {
+      title: 'Subturtle Dashboard',
+      titleTemplate: '%s | Subturtle Dashboard',
+      htmlAttrs: {
+        lang: 'en',
+      },
+      meta: [
+        { charset: 'utf-8' },
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no',
         },
-    },
-
-    vite: {
-        ssr: {
-            noExternal: ['@tiny-ideas-ir/lib-vue-components'],
+        { hid: 'description', name: 'description', content: '' },
+        { name: 'format-detection', content: 'telephone=no' },
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
         },
+      ],
     },
+  },
 
-    app: {
-        head: {
-            title: 'Subturtle Dashboard',
-            titleTemplate: '%s | Subturtle Dashboard',
-            htmlAttrs: {
-                lang: 'en',
-            },
-            meta: [
-                { charset: 'utf-8' },
-                {
-                    name: 'viewport',
-                    content: 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no',
-                },
-                { hid: 'description', name: 'description', content: '' },
-                { name: 'format-detection', content: 'telephone=no' },
-            ],
-            link: [
-                { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
-                {
-                    rel: 'stylesheet',
-                    href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
-                },
-            ],
-        },
+  css: ['~/assets/css/app.css', '@codebridger/lib-vue-components/style.css'],
+
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
     },
+  },
 
-    css: ['~/assets/css/app.css', '@tiny-ideas-ir/lib-vue-components/style.css'],
+  modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
 
-    postcss: {
-        plugins: {
-            tailwindcss: {},
-            autoprefixer: {},
-        },
-    },
+  i18n: {
+    locales: [{ code: 'en', file: 'en.json' }],
+    lazy: true,
+    defaultLocale: 'en',
+    strategy: 'no_prefix',
+    langDir: 'locales/',
+  },
 
-    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
+  //   vite: {
+  //     optimizeDeps: { include: ['quill'] },
+  //   },
 
-    i18n: {
-        locales: [{ code: 'en', file: 'en.json' }],
-        lazy: true,
-        defaultLocale: 'en',
-        strategy: 'no_prefix',
-        langDir: 'locales/',
-    },
+  router: {
+    options: { linkExactActiveClass: 'active' },
+  },
 
-    //   vite: {
-    //     optimizeDeps: { include: ['quill'] },
-    //   },
-
-    router: {
-        options: { linkExactActiveClass: 'active' },
-    },
-
-    // Make sure your build options are properly set
-    build: {
-        transpile: ['@tiny-ideas-lr/lib-vue-components'],
-    },
+  // Make sure your build options are properly set
+  build: {
+    transpile: ['@tiny-ideas-lr/lib-vue-components'],
+  },
 });

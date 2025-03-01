@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
   import { dataProvider } from '@modular-rest/client';
-  import { IconButton } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+  import { IconButton } from '@codebridger/lib-vue-components/elements.ts';
   import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
 
   definePageMeta({
