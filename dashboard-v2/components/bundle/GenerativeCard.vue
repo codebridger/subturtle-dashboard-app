@@ -22,7 +22,7 @@
 <script setup lang="ts">
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType, type PhraseType } from '~/types/database.type';
-    import { Card, IconButton } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Card, IconButton } from '@codebridger/lib-vue-components/elements.ts';
 
     const props = defineProps<{
         bundle: PhraseBundleType;

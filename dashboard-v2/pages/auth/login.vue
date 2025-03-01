@@ -1,6 +1,6 @@
 <template>
-    <div class="relative flex w-full flex-col items-center justify-center space-y-10 overflow-hidden bg-white/60 p-5 dark:bg-black/50 md:justify-start md:p-10">
-        <!-- <div class="dropdown ms-auto w-max">
+  <div class="relative flex w-full flex-col items-center justify-center space-y-10 overflow-hidden bg-white/60 p-5 dark:bg-black/50 md:justify-start md:p-10">
+    <!-- <div class="dropdown ms-auto w-max">
             <client-only>
                 <Popper :placement="store.rtlClass === 'rtl' ? 'bottom-start' : 'bottom-end'" offsetDistance="8">
                     <Button
@@ -38,65 +38,57 @@
             </client-only>
         </div> -->
 
-        <div class="mx-auto w-full max-w-[440px]">
-            <div class="mb-10 sm:mb-40">
-                <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
-                <p class="text-base font-bold leading-normal text-white-dark">Use one of your social accounts to sing-in / sign-up.</p>
-            </div>
-            <form class="space-y-5 dark:text-white" @submit.prevent="router.push('/')">
-                <Button disabled color="gradient" shadow uppercase block iconName="IconInstagram" :label="t('auth.signin_with_instagram')" />
-                <Button
-                    @click="triggerGoogleLoginProcess"
-                    color="gradient"
-                    shadow
-                    uppercase
-                    block
-                    iconName="IconGoogle"
-                    :label="t('auth.signin_with_google')"
-                />
-            </form>
-            <div class="relative my-7 text-center md:mb-9">
-                <span class="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
-                <span class="relative bg-white px-2 font-bold uppercase text-white-dark dark:bg-dark dark:text-white-light">or</span>
-            </div>
-            <div class="text-center dark:text-white">
-                Don't have an account ?
-                <span class="text-primary"> Just sign-in you will get a new account. </span>
-            </div>
-        </div>
+    <div class="mx-auto w-full max-w-[440px]">
+      <div class="mb-10 sm:mb-40">
+        <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
+        <p class="text-base font-bold leading-normal text-white-dark">Use one of your social accounts to sing-in / sign-up.</p>
+      </div>
+      <form class="space-y-5 dark:text-white" @submit.prevent="router.push('/')">
+        <Button disabled color="gradient" shadow uppercase block iconName="IconInstagram" :label="t('auth.signin_with_instagram')" />
+        <Button @click="triggerGoogleLoginProcess" color="gradient" shadow uppercase block iconName="IconGoogle" :label="t('auth.signin_with_google')" />
+      </form>
+      <div class="relative my-7 text-center md:mb-9">
+        <span class="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
+        <span class="relative bg-white px-2 font-bold uppercase text-white-dark dark:bg-dark dark:text-white-light">or</span>
+      </div>
+      <div class="text-center dark:text-white">
+        Don't have an account ?
+        <span class="text-primary"> Just sign-in you will get a new account. </span>
+      </div>
     </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
-    import { useAppStore } from '@/stores/index';
-    import { useRouter } from 'vue-router';
-    import { Button } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+  import { useAppStore } from '@/stores/index';
+  import { useRouter } from 'vue-router';
+  import { Button } from '@codebridger/lib-vue-components/elements.ts';
 
-    const { t } = useI18n();
+  const { t } = useI18n();
 
-    useHead({ title: t('auth.login_boxed') });
+  useHead({ title: t('auth.login_boxed') });
 
-    const router = useRouter();
+  const router = useRouter();
 
-    definePageMeta({
-        layout: 'spotlight',
-    });
+  definePageMeta({
+    layout: 'spotlight',
+  });
 
-    const store = useAppStore();
-    const { setLocale } = useI18n();
+  const store = useAppStore();
+  const { setLocale } = useI18n();
 
-    // multi language
-    //   const changeLanguage = (item: any) => {
-    //     appSetting.toggleLanguage(item, setLocale);
-    //   };
+  // multi language
+  //   const changeLanguage = (item: any) => {
+  //     appSetting.toggleLanguage(item, setLocale);
+  //   };
 
-    //   const currentFlag = computed(() => {
-    //     return `/assets/images/flags/${store.locale?.toUpperCase()}.svg`;
-    //   });
+  //   const currentFlag = computed(() => {
+  //     return `/assets/images/flags/${store.locale?.toUpperCase()}.svg`;
+  //   });
 
-    function triggerGoogleLoginProcess() {
-        const config = useRuntimeConfig();
-        const url = `${config.public.BASE_URL_API}/auth/google`;
-        window.open(url, '_self');
-    }
+  function triggerGoogleLoginProcess() {
+    const config = useRuntimeConfig();
+    const url = `${config.public.BASE_URL_API}/auth/google`;
+    window.open(url, '_self');
+  }
 </script>

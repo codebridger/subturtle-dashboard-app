@@ -27,9 +27,9 @@
         "vue-tsc": "^0.40.4"
     },
     "dependencies": {
+        "@codebridger/lib-vue-components": "^1.14.1",
         "@modular-rest/client": "^1.6.2",
         "@pinia/nuxt": "^0.4.6",
-        "@tiny-ideas-ir/lib-vue-components": "^1.17.0-dev.5",
         "apexcharts": "^4.4.0",
         "nuxt": "^3.13.2",
         "pinia": "^2.0.22",

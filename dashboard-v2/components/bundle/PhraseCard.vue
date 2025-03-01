@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, IconButton, TextArea } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Card, IconButton, TextArea } from '@codebridger/lib-vue-components/elements.ts';
     import { useForm } from 'vee-validate';
     import { useBundleStore } from '~/stores/bundle';
     import * as yup from 'yup';
