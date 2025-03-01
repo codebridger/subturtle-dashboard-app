@@ -7,18 +7,26 @@
             </Card>
             <Card class="max-h-min rounded-md shadow-none">
                 <h1 class="text-lg font-bold">{{ t('dashboard.quick-states.label') }}</h1>
-                <div class="flex items-center space-x-2 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
-                    <IconButton icon="IconNotes" rounded="full" size="lg" />
-                    <div class="flex items-center space-x-2">
-                        {{ statistics.totalBundles }}
-                        {{ t('dashboard.quick-states.total-bundles') }}
+                <div class="flex items-center space-x-4 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
+                    <IconButton icon="IconNotes" rounded="full" size="lg" class="text-secondary" />
+                    <div class="flex flex-col items-start space-y-2">
+                        <h1 class="text-lg font-bold">
+                            {{ statistics.totalBundles }}
+                        </h1>
+                        <span class="text-gray-500">
+                            {{ t('dashboard.quick-states.total-bundles') }}
+                        </span>
                     </div>
                 </div>
-                <div class="mt-2 flex items-center space-x-2 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
-                    <IconButton icon="IconClipboardText" rounded="full" size="lg" />
-                    <div class="flex items-center space-x-2">
-                        {{ statistics.totalPhrases }}
-                        {{ t('dashboard.quick-states.total-phrases') }}
+                <div class="mt-2 flex items-center space-x-4 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
+                    <IconButton icon="IconClipboardText" rounded="full" size="lg" class="text-info" />
+                    <div class="flex flex-col items-start space-y-2">
+                        <h1 class="text-lg font-bold">
+                            {{ statistics.totalPhrases }}
+                        </h1>
+                        <span class="text-gray-500">
+                            {{ t('dashboard.quick-states.total-phrases') }}
+                        </span>
                     </div>
                 </div>
             </Card>

@@ -1,5 +1,5 @@
 <template>
-    <Card shape="curved" :color="props.newPhrase ? 'primary' : 'default'">
+    <Card class="shadow-none" shape="curved" :color="props.newPhrase ? 'primary' : 'default'">
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3 dark:border-gray-700">
             <div>{{ props.number }}</div>
 

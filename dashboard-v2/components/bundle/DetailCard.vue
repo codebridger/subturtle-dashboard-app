@@ -1,6 +1,6 @@
 <template>
     <VeeForm :validation-schema="schema" @submit="onSubmit" v-slot="{ handleSubmit }">
-        <Card class="flex items-start justify-between p-5">
+        <Card class="flex items-start justify-between p-5 shadow-none">
             <div class="flex-1">
                 <Field v-if="isEditMode" name="title" :model-value="props.bundleDetail.title" v-slot="{ field, errors }">
                     <Input

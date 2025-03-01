@@ -1,7 +1,7 @@
 <template>
     <Modal v-model="isFormOpen" :title="t('bundle.add_new.title')">
         <template #trigger>
-            <Button color="primary" rounded="sm" class="w-full" @click="openForm" iconName="IconPlus" :label="t('bundle.add_new.action_add_new')" />
+            <Button color="primary" rounded="lg" class="w-full" @click="openForm" iconName="IconPlus" :label="t('bundle.add_new.action_add_new')" />
         </template>
         <template #default>
             <div class="flex flex-col space-y-2 p-4">
