@@ -9,7 +9,7 @@
       </div>
 
       <div>
-        <Button color="default" rounded="md" size="md" iconName="IconX" :to="`/bundles/${bundleId}`" />
+        <Button rounded="md" size="md" iconName="IconX" :to="`/bundles/${bundleId}`" />
       </div>
     </Card>
 
@@ -19,7 +19,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { Card } from '@codebridger/lib-vue-components/elements.ts';
+  import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
   const props = defineProps<{
     title: string;
     activePhrase: number;
