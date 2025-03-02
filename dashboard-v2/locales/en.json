@@ -78,5 +78,8 @@
     "instagram": "Instagram",
     "remove": "Remove",
     "bundle_pharase": "The Bundle and phrases",
-    "title_description": "The title and description"
+    "title_description": "The title and description",
+    "title": "Title",
+    "phrase": "Phrase",
+    "translation": "Translation"
 }

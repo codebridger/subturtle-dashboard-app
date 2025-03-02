@@ -22,7 +22,7 @@
             <div class="flex-1">
                 <TextArea
                     type="text"
-                    label="Phrase"
+                    :label="t('phrase')"
                     :placeholder="t('bundle.phrase_card.phrase_placeholder')"
                     v-model="phrase"
                     :error="!!error"
@@ -34,7 +34,7 @@
             <div class="flex-1">
                 <TextArea
                     type="text"
-                    label="Translation"
+                    :label="t('translation')"
                     :placeholder="t('bundle.phrase_card.translation_placeholder')"
                     v-model="translation"
                     :error="!!error"

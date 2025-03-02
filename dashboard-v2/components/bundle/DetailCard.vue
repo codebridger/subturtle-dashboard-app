@@ -4,8 +4,8 @@
             <div class="flex-1">
                 <Field v-if="isEditMode" name="title" :model-value="props.bundleDetail.title" v-slot="{ field, errors }">
                     <Input
-                        label="Title"
-                        placeholder="Avengers - Season 1"
+                        :label="t('title')"
+                        placeholder=""
                         :model-value="field.value"
                         :error="!!error"
                         :error-message="error || ''"
