@@ -24,7 +24,7 @@
                     type="primary"
                     :loading="isSubmitting"
                     @click="handleSubmit(onSubmit)"
-                    :label="t('bundle.detail.card.submit')"
+                    :label="t('bundle.detail_card.submit')"
                 />
 
                 <Dropdown v-else>
