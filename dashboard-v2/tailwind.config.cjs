@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+const { addIconSelectors } = require('@iconify/tailwind');
 module.exports = {
     content: [
         './components/**/*.{js,vue,ts}',
@@ -95,5 +96,6 @@ module.exports = {
             strategy: 'class',
         }),
         require('@tailwindcss/typography'),
+        addIconSelectors(['solar']),
     ],
 };
