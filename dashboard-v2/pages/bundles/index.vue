@@ -27,21 +27,15 @@
         </section>
 
         <!-- Pagination -->
-        <!-- <div v-if="pagination" class="mt-6">
-            <Pagination
-                :current-page="controller.pagination.page"
-                :total="controller.pagination.total"
-                :per-page="controller.pagination.limit"
-                :max-visible-pages="5"
-                class="rounded-lg"
-                @page-change="controller.fetchPage($event)"
-            />
-        </div> -->
+        <div v-if="pagination" class="mt-6">
+            <Pagination v-model="controller.pagination.page" :totalPages="controller.pagination.pages" @change-page="controller.fetchPage($event)" />
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { Input } from '@codebridger/lib-vue-components/elements.ts';
+    import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { dataProvider } from '@modular-rest/client';
     import type { PaginationType } from '@modular-rest/client/dist/types/types';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
