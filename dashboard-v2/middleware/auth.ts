@@ -1,27 +1,26 @@
 import { useProfileStore } from '~/stores/profile';
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
-  // Redirects
-  // if (to.path == "/") {
-  //   return navigateTo("/dashboard");
-  // }
+    // Redirects
+    // if (to.path == "/") {
+    //   return navigateTo("/dashboard");
+    // }
 
-  const profileStore = useProfileStore();
-  const loginRoute = '/auth/login';
+    const profileStore = useProfileStore();
+    const loginRoute = '/auth/login';
 
-  if (to.path === loginRoute) {
-    profileStore.logout();
-    return true;
-  }
+    if (to.path === loginRoute) {
+        profileStore.logout();
+        return true;
+    }
 
-  if (!profileStore.isLogin) {
-    debugger;
-    await profileStore.loginWithLastSession();
-  }
+    if (!profileStore.isLogin) {
+        await profileStore.loginWithLastSession();
+    }
 
-  if (profileStore.isLogin) {
-    return true;
-  }
+    if (profileStore.isLogin) {
+        return true;
+    }
 
-  return navigateTo(loginRoute);
+    return navigateTo(loginRoute);
 });

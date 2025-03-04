@@ -141,7 +141,6 @@
                 router.push('/bundles');
             })
             .catch((error) => {
-                debugger;
                 toastError({
                     title: 'Error',
                     message: error.error,
