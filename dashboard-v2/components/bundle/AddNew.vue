@@ -1,40 +1,28 @@
 <template>
-    <BaseButton color="primary" class="w-full" @click="openForm">
-        <Icon name="lucide:plus" class="h-4 w-4" />
-        <span>{{ t('bundle.add_new.action_add_new') }}</span>
-    </BaseButton>
-
-    <TairoModal :open="isFormOpen">
-        <template #header>
-            <!-- Header -->
-            <div class="flex w-full items-center justify-between p-4 md:p-6">
-                <h3 class="font-heading text-lg font-medium leading-6 text-gray-900 dark:text-white">
-                    {{ t('bundle.add_new.title') }}
-                </h3>
+    <Modal v-model="isFormOpen" :title="t('bundle.add_new.title')">
+        <template #trigger>
+            <Button color="primary" rounded="lg" class="w-full" @click="openForm" iconName="IconPlus" :label="t('bundle.add_new.action_add_new')" />
+        </template>
+        <template #default>
+            <div class="flex flex-col space-y-2 p-4">
+                <Input :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="!!error" :error-message="error || ''" />
+                <TextArea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="!!error" :error-message="error || ''" />
             </div>
         </template>
-
-        <div class="flex flex-col space-y-2 p-4">
-            <BaseInput :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="errors.title" />
-            <BaseTextarea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="errors.description" />
-        </div>
 
         <template #footer>
             <!-- Footer -->
-            <div class="flex justify-end space-x-2 p-4 md:p-6">
-                <BaseButton color="default" @click="closeForm">
-                    <span>{{ t('bundle.add_new.action_cancel') }}</span>
-                </BaseButton>
-
-                <BaseButton color="primary" @click="createBundle" :loading="isPending" :disabled="!isValidForm">
-                    <span>{{ t('bundle.add_new.action_create') }}</span>
-                </BaseButton>
+            <div class="flex justify-end space-x-2">
+                <Button @click="closeForm" :label="t('bundle.add_new.action_cancel')" />
+                <Button color="primary" @click="createBundle" :loading="isPending" :disabled="!isValidForm" :label="t('bundle.add_new.action_create')" />
             </div>
         </template>
-    </TairoModal>
+    </Modal>
 </template>
 
 <script setup lang="ts">
+    import { Button, Input, TextArea } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { dataProvider } from '@modular-rest/client';
     import { useForm } from 'vee-validate';
     import * as yup from 'yup';
@@ -42,6 +30,8 @@
     const { t } = useI18n();
 
     const router = useRouter();
+
+    const error = ref<string | null>(null);
     const isFormOpen = ref(false);
     const isPending = ref(false);
 
@@ -85,7 +75,7 @@
             })
             .then(({ _id }) => {
                 isPending.value = false;
-                router.push({ path: '/dashboard/bundles/' + _id });
+                router.push({ path: '/bundles/' + _id });
             })
             .catch(({ error }) => {
                 isPending.value = false;

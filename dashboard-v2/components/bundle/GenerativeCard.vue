@@ -1,14 +1,14 @@
 <template>
-    <NuxtLink :to="`/dashboard/bundles/${props.bundle._id}`">
-        <Card class="overflow-hidden rounded-md shadow-none hover:shadow-lg">
+    <NuxtLink :to="`/bundles/${props.bundle._id}`">
+        <Card class="no-padding min-h-full rounded-md shadow-none hover:shadow-lg">
             <section class="relative">
-                <IconButton class="absolute right-2 top-2 p-2" rounded="md">
+                <IconButton class="absolute right-2 top-2 min-w-10 justify-center p-2" rounded="md">
                     {{ bundle.phrases.length }}
                 </IconButton>
-                <MaterialWordGenerativeCover :words="phraseList" :classes="['h-24 w-full']" />
+                <MaterialWordGenerativeCover :words="phraseList" :classes="['h-fit w-full']" />
             </section>
             <section class="p-6">
-                <span class="mb-2 text-sm text-gray-800 dark:text-white">
+                <span class="mb-2 text-sm font-bold text-gray-800 dark:text-white">
                     {{ props.bundle.title }}
                 </span>
 
@@ -22,7 +22,7 @@
 <script setup lang="ts">
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType, type PhraseType } from '~/types/database.type';
-    import { Card, IconButton } from '@tiny-ideas-ir/lib-vue-components/elements.ts';
+    import { Card, IconButton } from '@codebridger/lib-vue-components/elements.ts';
 
     const props = defineProps<{
         bundle: PhraseBundleType;
@@ -57,3 +57,9 @@
         getWords();
     });
 </script>
+
+<style lang="css" scoped>
+    .no-padding {
+        padding: 0 !important;
+    }
+</style>

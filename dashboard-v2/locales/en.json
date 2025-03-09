@@ -2,6 +2,8 @@
     "bundle": {
         "nav": "Phrase Bundles",
         "list": "Bundle List",
+        "detail": "Bundle Detail",
+        "add_phrase": "Add Phrase",
         "add_new": {
             "title_placeholder": "My new Tiny set",
             "title_required": "Title is required",
@@ -22,7 +24,8 @@
         "phrase_card": {
             "phrase_placeholder": "Type your phrase here",
             "translation_placeholder": "Type your translation here"
-        }
+        },
+        "filter_bundles": "Filter bundles..."
     },
     "dashboard": {
         "nav": "Dashboard",
@@ -58,6 +61,11 @@
         "enter-account-numbers": "Enter your account numbers:",
         "buy-now": "Buy Now"
     },
+    "auth": {
+        "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
+        "signin_with_google": "SIGN IN WITH GOOGLE",
+        "login_boxed": "Login Boxed"
+    },
     "statistic": "Statistic",
     "starter-page": "Starter Page",
     "or": "or",
@@ -67,5 +75,11 @@
     "edit": "Edit",
     "create": "Create",
     "update": "Update",
-    "instagram": "Instagram"
+    "instagram": "Instagram",
+    "remove": "Remove",
+    "bundle_pharase": "The Bundle and phrases",
+    "title_description": "The title and description",
+    "title": "Title",
+    "phrase": "Phrase",
+    "translation": "Translation"
 }
