@@ -127,8 +127,8 @@
     dc.addEventListener('message', (e) => {
       // Realtime server events appear here!
       const data = JSON.parse(e.data);
-      if (data.type === 'response.audio_transcript.done' || data.type.includes('input_audio_')) {
-        console.log(e.data);
+      if (data.type === 'response.audio_transcript.done' || data.type.includes('conversation.item.input_audio_transcription.completed')) {
+        console.log(data.transcript);
       }
     });
 
