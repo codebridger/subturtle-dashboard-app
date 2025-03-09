@@ -398,10 +398,10 @@
   dependencies:
     mime "^3.0.0"
 
-"@codebridger/lib-vue-components@^1.14.1":
-  version "1.14.1"
-  resolved "https://npm.pkg.github.com/download/@codebridger/lib-vue-components/1.14.1/11d3867e76b1e75680045416d68709c8a1f1cef5#11d3867e76b1e75680045416d68709c8a1f1cef5"
-  integrity sha512-NNdwmyZhit06YcQXoP+lJ+aZDhBWUitMfCc/d/CJ7Hzd9VVhTuusgIxaH1taM4z58o541xKtkbg7pP/3tXvl4Q==
+"@codebridger/lib-vue-components@1.15.0":
+  version "1.15.0"
+  resolved "https://npm.pkg.github.com/download/@codebridger/lib-vue-components/1.15.0/d0bd21fecb92555249324bc9f5b152370c2b29c9#d0bd21fecb92555249324bc9f5b152370c2b29c9"
+  integrity sha512-QeBPGJYO5JAQo4L8k5MyzvcmqlbOg8qiPYF7ivZAUqwSLAilDrNyzUg0E5c6uZtHdltU0cuhcgToiE98lPVygg==
   dependencies:
     "@headlessui/vue" "^1.7.23"
     "@storybook/builder-vite" "^8.4.5"
@@ -785,6 +785,25 @@
   integrity sha512-JzdCNqurrtuu0YW6QaDtR2PIYCKPUWq28csDyMvN4zmGccmE7lz40Is6hc3LA4HFeCI7sekZ/PQMTNmn9I/4Wg==
   dependencies:
     "@tanstack/vue-virtual" "^3.0.0-beta.60"
+
+"@iconify-json/solar@^1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@iconify-json/solar/-/solar-1.2.2.tgz#510651545d75c4fe2c43e531da743016df5a188c"
+  integrity sha512-lcTb6DWL4HZObiY1W3fHfuxxuQHUc6CFHFeywKEx7Ry0k+dU6POZCMC7oVLr0F8vuf+KgaQ3oOoGO/yFzOwrNg==
+  dependencies:
+    "@iconify/types" "*"
+
+"@iconify/tailwind@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@iconify/tailwind/-/tailwind-1.2.0.tgz#13e14892eaa3304739121379af866d64b4941e55"
+  integrity sha512-KgpIHWOTcRYw1XcoUqyNSrmYyfLLqZYu3AmP8zdfLk0F5TqRO8YerhlvlQmGfn7rJXgPeZN569xPAJnJ53zZxA==
+  dependencies:
+    "@iconify/types" "^2.0.0"
+
+"@iconify/types@*", "@iconify/types@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@iconify/types/-/types-2.0.0.tgz#ab0e9ea681d6c8a1214f30cd741fe3a20cc57f57"
+  integrity sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==
 
 "@intlify/bundle-utils@^7.4.0":
   version "7.5.1"
