@@ -1,14 +1,17 @@
 <template>
   <div>
-    <Button v-if="!sessionStarted" @click="createLiveSession">Start Live Session</Button>
-    <Button v-else @click="endLiveSession">End Live Session</Button>
-    <audio ref="ai-agent"></audio>
+    <template v-if="bundle">
+      <Button v-if="!sessionStarted" @click="createLiveSession">Start Live Session</Button>
+      <Button v-else @click="endLiveSession">End Live Session</Button>
+      <audio ref="ai-agent"></audio>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
   import { Button } from '@codebridger/lib-vue-components/elements.ts';
-  import { functionProvider } from '@modular-rest/client';
+  import { dataProvider, functionProvider } from '@modular-rest/client';
+  import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
 
   import type { LiveSessionType } from '~/types/live-session.type';
 
@@ -19,6 +22,8 @@
     middleware: ['auth'],
   });
 
+  const { id } = useRoute().params;
+  const bundle = ref<PopulatedPhraseBundleType | null>(null);
   const liveSession = ref<LiveSessionType | null>(null);
   const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
   const sessionStarted = ref(false);
@@ -28,25 +33,7 @@
    You are a friendly and engaging AI language English tutor. Your goal is to help me practice and reinforce my understanding of the following vocabulary words in an English natural conversations:
 
    # start the list
-   Fuck off
-   Kick it off
-   We continue to labor
-   Different tact on this
-   They're dead wrong
-   He's being briefed
-   You're gonna gain wisdom from that
-   Instincts
-   I'm very suspicious of money
-   Sounds really like privileged
-   Sleazy
-   But I have a hunch
-   But back then
-   Follow along
-   The beach only gets better the further you walk
-   They were brutal
-   That's adorable
-   I always come by
-   Integrity
+   [phrases]
    # end of the list
 
    Please create dynamic and engaging dialogues where you naturally incorporate these words. Ask me follow-up questions, encourage me to use the words in my own responses, and correct my mistakes when necessary. Keep the conversation lively and interactive, adjusting to my responses to make it feel like a real conversation!
@@ -60,14 +47,44 @@
    6. dont sensor anything from the user list, remember it's a english practice and a language has bad and good phrases, but all should be given a lecture.
    `;
 
+  onMounted(() => {
+    fetchFlashcard();
+  });
+
+  function fetchFlashcard() {
+    dataProvider
+      .findOne<PopulatedPhraseBundleType>({
+        database: DATABASE.USER_CONTENT,
+        collection: COLLECTIONS.PHRASE_BUNDLE,
+        query: {
+          _id: id,
+          refId: authUser.value?.id,
+        },
+        populates: ['phrases'],
+      })
+      .then((res) => {
+        if (!res) throw new Error('Bundle not found');
+        bundle.value = res;
+      })
+      .catch((err) => {
+        toastError({ title: 'Failed to fetch flashcard' });
+      })
+      .finally(() => {
+        console.log(bundle.value);
+      });
+  }
+
   function createLiveSession() {
     if (peerConnection == null) {
+      const phrases = (bundle.value?.phrases.map((p) => p.phrase) || []).join('\n');
+      const tempInstructions = instructions.replace('[phrases]', phrases);
+
       functionProvider
         .run<LiveSessionType>({
           name: 'create-practice-live-session',
           args: {
             voice: 'alloy',
-            instructions,
+            instructions: tempInstructions,
           },
         })
         .then((session) => {
