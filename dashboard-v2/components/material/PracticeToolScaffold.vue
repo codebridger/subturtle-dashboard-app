@@ -13,17 +13,19 @@
       </div>
     </Card>
 
-    <section class="flex-1">
+    <section :class="['flex-1', bodyClass]">
       <slot />
     </section>
   </div>
 </template>
 <script setup lang="ts">
   import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
+
   const props = defineProps<{
     title: string;
     activePhrase: number;
     totalPhrases: number;
     bundleId: string;
+    bodyClass?: string;
   }>();
 </script>

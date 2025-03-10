@@ -1,11 +1,17 @@
 <template>
-  <div>
+  <MaterialPracticeToolScaffold
+    :title="bundle?.title || 'Flashcards'"
+    :activePhrase="phraseIndex + 1"
+    :totalPhrases="totalPhrases"
+    :bundleId="id"
+    :body-class="'flex flex-col items-center justify-center'"
+  >
     <template v-if="bundle">
       <Button v-if="!sessionStarted" @click="createLiveSession">Start Live Session</Button>
       <Button v-else @click="endLiveSession">End Live Session</Button>
       <audio ref="ai-agent"></audio>
     </template>
-  </div>
+  </MaterialPracticeToolScaffold>
 </template>
 
 <script setup lang="ts">
@@ -17,13 +23,23 @@
 
   definePageMeta({
     // @ts-ignore
-    // layout: 'empty',
+    layout: 'empty',
     // @ts-ignore
     middleware: ['auth'],
   });
 
   const { id } = useRoute().params;
+
   const bundle = ref<PopulatedPhraseBundleType | null>(null);
+  const phraseIndex = ref(0);
+  const phrase = computed(() => {
+    if (!bundle.value) return null;
+    return bundle.value.phrases[phraseIndex.value];
+  });
+  const totalPhrases = computed<number>(() => {
+    return bundle.value?.phrases.length || 0;
+  });
+
   const liveSession = ref<LiveSessionType | null>(null);
   const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
   const sessionStarted = ref(false);
