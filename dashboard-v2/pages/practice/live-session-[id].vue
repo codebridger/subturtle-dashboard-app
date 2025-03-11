@@ -143,9 +143,7 @@
     dc.addEventListener('message', (e) => {
       // Realtime server events appear here!
       const data = JSON.parse(e.data);
-      if (data.type === 'response.audio_transcript.done' || data.type.includes('conversation.item.input_audio_transcription.completed')) {
-        console.log(data.transcript);
-      }
+      onSessionEvent(data);
     });
 
     // Start the session using the Session Description Protocol (SDP)
@@ -178,5 +176,21 @@
     if (peerConnection === null) return;
     peerConnection.close();
     sessionStarted.value = false;
+  }
+
+  function onSessionEvent(eventData: any) {
+    // Ref: https://platform.openai.com/docs/api-reference/realtime-server-events
+    const { type, event_id } = eventData;
+
+    // Speech parts of AI
+    if (type === 'response.audio_transcript.delta') {
+      const { delta, response_id } = eventData;
+      // console.log(response_id, delta);
+    }
+
+    if (type == 'conversation.item.input_audio_transcription.completed') {
+      const { item_id, transcript } = eventData;
+      console.log(item_id, transcript);
+    }
   }
 </script>
