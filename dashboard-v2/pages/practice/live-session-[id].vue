@@ -4,18 +4,53 @@
     :activePhrase="phraseIndex + 1"
     :totalPhrases="totalPhrases"
     :bundleId="id"
-    :body-class="'flex flex-col items-center justify-center'"
+    :body-class="'flex flex-col items-center justify-start'"
   >
     <template v-if="bundle">
-      <Button v-if="!sessionStarted" @click="createLiveSession">Start Live Session</Button>
-      <Button v-else @click="endLiveSession">End Live Session</Button>
-      <audio ref="ai-agent"></audio>
+      <section class="py-10">
+        <div v-if="phraseIndex == -1" class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
+          <Card
+            v-for="phrase in bundle.phrases"
+            :key="phrase._id"
+            :class="[
+              // size
+              'min-w-9 rounded-lg !p-10 text-center',
+              // '!border-4 border-dashed !border-primary',
+
+              '!dark:bg-transparent bg-transparent text-black-light dark:text-white-light',
+            ]"
+          >
+            <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
+            <p class="text-lg">{{ phrase.translation }}</p>
+          </Card>
+        </div>
+
+        <Card
+          v-else
+          :class="[
+            // size
+            'min-w-72 rounded-lg !p-10 text-center',
+            '!border-4 border-dashed !border-primary',
+
+            '!dark:bg-transparent bg-transparent text-black-light dark:text-white-light',
+          ]"
+        >
+          <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
+          <p class="text-lg">{{ phrase.translation }}</p>
+        </Card>
+      </section>
+
+      <section class="flex-1">
+        <Button v-if="!sessionStarted" @click="createLiveSession">Start Live Session</Button>
+        <Button v-else @click="endLiveSession">End Live Session</Button>
+        <audio ref="ai-agent"></audio>
+      </section>
     </template>
   </MaterialPracticeToolScaffold>
 </template>
 
 <script setup lang="ts">
-  import { Button } from '@codebridger/lib-vue-components/elements.ts';
+  import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
   import { dataProvider, functionProvider } from '@modular-rest/client';
   import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
 
@@ -23,7 +58,7 @@
 
   definePageMeta({
     // @ts-ignore
-    layout: 'empty',
+    layout: 'blank',
     // @ts-ignore
     middleware: ['auth'],
   });
@@ -52,12 +87,12 @@
   Your goal is to help the user practice and reinforce understanding vocabularies in an English natural conversations.
 
   Instructions:
-  1. call get_next_word function to get the active word.
+  1. call get_next_word function from your tools to get a new word to practice.
   2. give practice to user with the active word.
-  3. call get_next_word function to set the next active word.
+  3. call get_next_word function from your tools to set the next active word.
   4. if user ask to practice another word just call set_active_word function with the word. the the activation would be successful continue the practice, otherwise, ask the user to pick a word from the list.
 
-  There are [phrases] vocabularies to practice, your get_next_word function to get the first word.
+  There are [phrases] vocabularies to practice, call the get_next_word function from your tools to get the first word.
 
   Practice Instructions:
   - Please create dynamic and engaging dialogues where you naturally incorporate these words. Ask me follow-up questions, encourage me to use the words in my own responses, and correct my mistakes when necessary. Keep the conversation lively and interactive, adjusting to my responses to make it feel like a real conversation!
@@ -71,6 +106,7 @@
   7. don't guess any word, just get the word by calling get_next_word function from your tools.
   8. Finish the practice session with a good bye message after the last word, consider the word numbers.
   9. you get 'no more word' if there is no more word to practice.
+  10. don't ask user what he wants, you have to select the word and start the practice.
 `;
 
   onMounted(() => {
@@ -162,7 +198,7 @@
   function createLiveSession() {
     if (peerConnection == null) {
       const phrases = (bundle.value?.phrases.map((p) => p.phrase) || []).join('\n');
-      const tempInstructions = instructions.replace('[phrases]', phrases.length.toString()).replace('[first_phrase]', phrases[0]);
+      const tempInstructions = instructions.replace('[phrases]', phrases.length.toString());
 
       functionProvider
         .run<LiveSessionType>({
@@ -172,6 +208,10 @@
             instructions: tempInstructions,
             tools: Object.values(tools).map((t) => t.definition),
             tool_choice: 'auto',
+            turn_detection: {
+              type: 'server_vad',
+              silence_duration_ms: 1000,
+            },
           },
         })
         .then((session) => {
@@ -264,23 +304,16 @@
       };
 
       dataChannel?.send(JSON.stringify(responseCreate));
-
-      // const sessionUpdate = {
-      //   type: 'session.update',
-      //   session: {
-      //     tools: Object.values(tools).map((t) => t.definition),
-      //     tool_choice: 'auto',
-      //   },
-      // };
-
-      // dataChannel?.send(JSON.stringify(sessionUpdate));
     }
 
-    // Speech parts of AI
+    // on model speech transcription
     else if (type === 'response.audio_transcript.delta') {
       const { delta, response_id } = eventData;
       // console.log(response_id, delta);
-    } else if (type == 'conversation.item.input_audio_transcription.completed') {
+    }
+
+    // on user speech transcription
+    else if (type == 'conversation.item.input_audio_transcription.completed') {
       const { item_id, transcript } = eventData;
       console.log(item_id, transcript);
     }
@@ -288,44 +321,10 @@
     // https://platform.openai.com/docs/guides/realtime-model-capabilities#detect-when-the-model-wants-to-call-a-function
     else if (type === 'response.done' && eventData.response.output) {
       const [output01] = eventData.response.output;
+
       if (!output01) return;
-      console.log('response.done', output01);
 
-      if (output01.type != undefined && output01.type == 'function_call') {
-        const functionName = output01.name as string;
-        const args = JSON.parse(output01.arguments);
-
-        const fn = tools[functionName];
-        let fnResponse = { success: false };
-
-        try {
-          fnResponse = fn.handler(args);
-        } catch (error) {
-          console.error('Error calling function', functionName, error);
-          fnResponse = { success: false };
-        }
-
-        const response = {
-          type: 'conversation.item.create',
-          item: {
-            type: 'function_call_output',
-            call_id: output01.call_id,
-            output: JSON.stringify(fnResponse),
-          },
-        };
-
-        dataChannel?.send(JSON.stringify(response));
-
-        const continueResponse = {
-          type: 'response.create',
-          // response: {
-          //   modalities: ['text', 'audio'],
-          //   instructions: "Reply based on the function's output.",
-          // },
-        };
-
-        dataChannel?.send(JSON.stringify(continueResponse));
-      }
+      if (output01.type != undefined && output01.type == 'function_call') onFunctionCall(eventData);
     }
 
     // Error handling
@@ -335,5 +334,41 @@
     // else {
     //   console.log('Unhandled event', eventData);
     // }
+  }
+
+  function onFunctionCall(eventData: any) {
+    const [output01] = eventData.response.output;
+
+    console.log('Function call', output01);
+
+    const functionName = output01.name as string;
+    const args = JSON.parse(output01.arguments);
+
+    const fn = tools[functionName];
+    let fnResponse = { success: false };
+
+    try {
+      fnResponse = fn.handler(args);
+    } catch (error) {
+      console.error('Error calling function', functionName, error);
+      fnResponse = { success: false };
+    }
+
+    const response = {
+      type: 'conversation.item.create',
+      item: {
+        type: 'function_call_output',
+        call_id: output01.call_id,
+        output: JSON.stringify(fnResponse),
+      },
+    };
+
+    dataChannel?.send(JSON.stringify(response));
+
+    const continueResponse = {
+      type: 'response.create',
+    };
+
+    dataChannel?.send(JSON.stringify(continueResponse));
   }
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen flex-col bg-gray-100">
+  <div class="flex h-screen flex-col">
     <Card rounded="none" class="flex w-full items-center justify-between px-3 py-3">
       <div></div>
 
