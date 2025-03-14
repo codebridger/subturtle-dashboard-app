@@ -8,16 +8,21 @@
   >
     <template v-if="bundle">
       <section class="py-10">
-        <div v-if="phraseIndex == -1" class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
+        <div class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
+          <!-- All phrases -->
           <Card
             v-for="phrase in bundle.phrases"
             :key="phrase._id"
             :class="[
+              'transition-all duration-300 ease-in-out',
               // size
               'min-w-9 rounded-lg !p-10 text-center',
               // '!border-4 border-dashed !border-primary',
 
-              '!dark:bg-transparent bg-transparent text-black-light dark:text-white-light',
+              '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
+              {
+                '!border-4 border-dashed !border-primary': activePhrase && activePhrase._id === phrase._id,
+              },
             ]"
           >
             <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
@@ -25,8 +30,8 @@
           </Card>
         </div>
 
-        <Card
-          v-else
+        <!-- Selected phrase -->
+        <!-- <Card
           :class="[
             // size
             'min-w-72 rounded-lg !p-10 text-center',
@@ -35,9 +40,9 @@
             '!dark:bg-transparent bg-transparent text-black-light dark:text-white-light',
           ]"
         >
-          <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
-          <p class="text-lg">{{ phrase.translation }}</p>
-        </Card>
+          <h1 class="text-2xl font-bold">{{ activePhrase.phrase }}</h1>
+          <p class="text-lg">{{ activePhrase.translation }}</p>
+        </Card> -->
       </section>
 
       <section class="flex-1">
@@ -67,7 +72,7 @@
 
   const bundle = ref<PopulatedPhraseBundleType | null>(null);
   const phraseIndex = ref(-1);
-  const phrase = computed(() => {
+  const activePhrase = computed(() => {
     if (!bundle.value) return null;
     return bundle.value.phrases[phraseIndex.value];
   });
@@ -140,11 +145,11 @@
     },
     get_next_word: {
       handler: (arg: { phrase: string }) => {
-        if (phraseIndex.value >= totalPhrases.value) return { activeWord: 'no more word' };
+        if (phraseIndex.value + 1 >= totalPhrases.value) return { activeWord: 'no more word' };
 
         phraseIndex.value += 1;
         // phraseIndex.value = bundle.value?.phrases.findIndex((p) => p.phrase === arg.phrase) || 0;
-        const response = { activeWord: phrase.value?.phrase };
+        const response = { activeWord: activePhrase.value?.phrase };
 
         // add `no more word` if there is no more word for next practice
         if (phraseIndex.value + 1 >= totalPhrases.value) {
