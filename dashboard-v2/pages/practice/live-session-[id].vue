@@ -144,7 +144,7 @@
       },
     },
     get_next_word: {
-      handler: (arg: { phrase: string }) => {
+      handler: () => {
         if (phraseIndex.value + 1 >= totalPhrases.value) return { activeWord: 'no more word' };
 
         phraseIndex.value += 1;
@@ -163,16 +163,16 @@
         type: 'function',
         name: 'get_next_word',
         description: 'Get the next word to practice.',
-        parameters: {
-          type: 'object',
-          required: ['number'],
-          properties: {
-            number: {
-              type: 'number',
-              description: 'The number of the word to get.',
-            },
-          },
-        },
+        // parameters: {
+        //   type: 'object',
+        //   required: ['number'],
+        //   properties: {
+        //     number: {
+        //       type: 'number',
+        //       description: 'The number of the word to get.',
+        //     },
+        //   },
+        // },
       },
     },
   };
@@ -299,16 +299,7 @@
 
     if (type === 'session.created') {
       console.log('Session created', event_id);
-
-      const responseCreate = {
-        type: 'response.create',
-        response: {
-          modalities: ['text', 'audio'],
-          instructions: 'The user is here, greeting to the user, and start the practice session.',
-        },
-      };
-
-      dataChannel?.send(JSON.stringify(responseCreate));
+      triggerTheConversation();
     }
 
     // on model speech transcription
@@ -375,5 +366,21 @@
     };
 
     dataChannel?.send(JSON.stringify(continueResponse));
+  }
+
+  function triggerTheConversation() {
+    const firstWord = tools['get_next_word'].handler();
+
+    const message = `The user is here, greeting to the user, and start the practice session with the first word: ${firstWord.activeWord}`;
+
+    const responseCreate = {
+      type: 'response.create',
+      response: {
+        modalities: ['text', 'audio'],
+        instructions: message,
+      },
+    };
+
+    dataChannel?.send(JSON.stringify(responseCreate));
   }
 </script>
