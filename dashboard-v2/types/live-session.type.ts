@@ -30,3 +30,9 @@ export interface ClientSecretType {
   value: string;
   expires_at: number;
 }
+
+export interface ConversationDialogType {
+  id: string;
+  content: string;
+  speaker: 'user' | 'ai';
+}
