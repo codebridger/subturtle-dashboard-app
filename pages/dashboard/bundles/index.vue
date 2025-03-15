@@ -29,6 +29,11 @@ const controller = dataProvider.list<PhraseBundleType>(
         $options: "i",
       },
     },
+    options: {
+      sort: {
+        _id: -1,
+      },
+    },
   },
   {
     limit: perPage.value,
@@ -56,35 +61,17 @@ onMounted(async () => {
         :classes="{
           wrapper: 'w-full sm:w-auto',
         }"
+        disabled
       />
     </template>
 
     <template #right>
-      <BaseButton color="primary" class="w-full" disabled>
-        <Icon name="lucide:plus" class="h-4 w-4" />
-        <span>Add New</span>
-      </BaseButton>
+      <BundleAddNew />
     </template>
 
-    <section class="ltablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-2">
+    <section class="tablet:grid-cols-2 grid w-full gap-4 lg:grid-cols-3">
       <template v-for="bundle of bundleList">
-        <NuxtLink :to="`/dashboard/bundles/${bundle._id}`">
-          <BaseCard rounded="none" class="p-6">
-            <BaseHeading
-              as="h4"
-              size="sm"
-              weight="semibold"
-              lead="tight"
-              class="text-muted-800 mb-2 dark:text-white"
-            >
-              {{ bundle.title }}
-            </BaseHeading>
-
-            <!-- <BaseParagraph size="sm" lead="tight" class="text-muted-400">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </BaseParagraph> -->
-          </BaseCard>
-        </NuxtLink>
+        <BundleGenerativeCard :bundle="bundle" />
       </template>
     </section>
 
