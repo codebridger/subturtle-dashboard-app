@@ -47,9 +47,12 @@
         "label": "Match",
         "tooltip": "Practice this bundle trough matching game"
     },
-    "learn-tool": {
-        "label": "Learn",
-        "tooltip": "Learn this bundle of phrases by Artificial Intelligence"
+    "live-practice": {
+        "label": "Live Session",
+        "tooltip": "Learn this bundle of phrases by live session with an AI teacher",
+        "start": "Start",
+        "cancel": "Cancel",
+        "going-live": "Strting a live session"
     },
     "membership-plans": {
         "title": "Membership Plans",
