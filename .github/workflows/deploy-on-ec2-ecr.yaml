@@ -13,7 +13,7 @@ env:
     AWS_CONTAINER_REGISTRY: subturtle
     IMAGE_TAG: dashboard-latest
     GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
-    NUXT_API_URL: ${{ vars.NUXT_API_URL }}
+    BASE_URL_API: ${{ vars.BASE_URL_API }}
     REGISTRY: ${{ vars.ECR_ADDRESS }}
 
 jobs:
