@@ -1,130 +1,130 @@
 <template>
-  <MaterialPracticeToolScaffold
-    :title="bundle?.title || 'Flashcards'"
-    :activePhrase="phraseIndex + 1"
-    :totalPhrases="totalPhrases"
-    :bundleId="id"
-    :body-class="'flex flex-col items-center justify-start'"
-  >
-    <template v-if="bundle">
-      <section class="flex-1 py-10">
-        <div class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
-          <!-- All phrases -->
-          <Card
-            v-for="phrase in bundle.phrases"
-            :key="phrase._id"
-            :class="[
-              'transition-all duration-300 ease-in-out',
-              // size
-              'min-w-9 rounded-lg !p-10 text-center',
-              // '!border-4 border-dashed !border-primary',
+    <MaterialPracticeToolScaffold
+        :title="bundle?.title || 'Flashcards'"
+        :activePhrase="phraseIndex + 1"
+        :totalPhrases="totalPhrases"
+        :bundleId="id.toString()"
+        :body-class="'flex flex-col items-center justify-start'"
+    >
+        <template v-if="bundle">
+            <section class="flex-1 py-10">
+                <div class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
+                    <!-- All phrases -->
+                    <Card
+                        v-for="phrase in bundle.phrases"
+                        :key="phrase._id"
+                        :class="[
+                            'transition-all duration-300 ease-in-out',
+                            // size
+                            'min-w-9 rounded-lg !p-10 text-center',
+                            // '!border-4 border-dashed !border-primary',
 
-              '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
-              {
-                '!border-4 border-dashed !border-primary': activePhrase && activePhrase._id === phrase._id,
-              },
-            ]"
-          >
-            <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
-            <p class="text-lg">{{ phrase.translation }}</p>
-          </Card>
-        </div>
-      </section>
+                            '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
+                            {
+                                '!border-4 border-dashed !border-primary': activePhrase && activePhrase._id === phrase._id,
+                            },
+                        ]"
+                    >
+                        <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
+                        <p class="text-lg">{{ phrase.translation }}</p>
+                    </Card>
+                </div>
+            </section>
 
-      <section class="pb-32">
-        <Button v-if="!liveSessionStore.sessionStarted" @click="createLiveSession">Start Live Session</Button>
-        <Button v-else @click="endLiveSession">End Live Session</Button>
-        <audio ref="ai-agent"></audio>
-      </section>
-    </template>
-  </MaterialPracticeToolScaffold>
+            <section class="pb-32">
+                <Button v-if="!liveSessionStore.sessionStarted" @click="createLiveSession">Start Live Session</Button>
+                <Button v-else @click="endLiveSession">End Live Session</Button>
+                <audio ref="ai-agent"></audio>
+            </section>
+        </template>
+    </MaterialPracticeToolScaffold>
 </template>
 
 <script setup lang="ts">
-  import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
-  import { dataProvider } from '@modular-rest/client';
-  import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
-  import { useLiveSessionStore } from '~/stores/liveSession';
+    import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
+    import { dataProvider } from '@modular-rest/client';
+    import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
+    import { useLiveSessionStore } from '~/stores/liveSession';
 
-  definePageMeta({
-    // @ts-ignore
-    layout: 'blank',
-    // @ts-ignore
-    middleware: ['auth'],
-  });
+    definePageMeta({
+        // @ts-ignore
+        layout: 'blank',
+        // @ts-ignore
+        middleware: ['auth'],
+    });
 
-  const { id } = useRoute().params;
-  const liveSessionStore = useLiveSessionStore();
+    const { id } = useRoute().params;
+    const liveSessionStore = useLiveSessionStore();
 
-  const bundle = ref<PopulatedPhraseBundleType | null>(null);
-  const phraseIndex = ref(-1);
-  const activePhrase = computed(() => {
-    if (!bundle.value) return null;
-    return bundle.value.phrases[phraseIndex.value];
-  });
-  const totalPhrases = computed<number>(() => {
-    return bundle.value?.phrases.length || 0;
-  });
+    const bundle = ref<PopulatedPhraseBundleType | null>(null);
+    const phraseIndex = ref(-1);
+    const activePhrase = computed(() => {
+        if (!bundle.value) return null;
+        return bundle.value.phrases[phraseIndex.value];
+    });
+    const totalPhrases = computed<number>(() => {
+        return bundle.value?.phrases.length || 0;
+    });
 
-  const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
+    const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
 
-  onMounted(() => {
-    fetchFlashcard();
-  });
+    onMounted(() => {
+        fetchFlashcard();
+    });
 
-  const tools = {
-    set_active_vocabulary: {
-      handler: (arg: { vocabulary: string }) => {
-        const wordIndex = bundle.value?.phrases.findIndex((p) => p.phrase.toLowerCase() === arg.vocabulary.toLowerCase());
-        if (wordIndex === -1 || wordIndex == undefined) return { success: false, error: 'the vocabulary ' + arg.vocabulary + ' is not found' };
+    const tools = {
+        set_active_vocabulary: {
+            handler: (arg: { vocabulary: string }) => {
+                const wordIndex = bundle.value?.phrases.findIndex((p) => p.phrase.toLowerCase() === arg.vocabulary.toLowerCase());
+                if (wordIndex === -1 || wordIndex == undefined) return { success: false, error: 'the vocabulary ' + arg.vocabulary + ' is not found' };
 
-        phraseIndex.value = wordIndex as number;
-        return { success: true, message: 'The vocabulary ' + arg.vocabulary + ' is set as active vocabulary' };
-      },
-      definition: {
-        type: 'function',
-        name: 'set_active_vocabulary',
-        description: 'Set the active vocabulary to practice.',
-        parameters: {
-          type: 'object',
-          required: ['vocabulary'],
-          properties: {
-            vocabulary: {
-              type: 'string',
-              description: 'The vocabulary to set as active vocabulary.',
+                phraseIndex.value = wordIndex as number;
+                return { success: true, message: 'The vocabulary ' + arg.vocabulary + ' is set as active vocabulary' };
             },
-          },
+            definition: {
+                type: 'function',
+                name: 'set_active_vocabulary',
+                description: 'Set the active vocabulary to practice.',
+                parameters: {
+                    type: 'object',
+                    required: ['vocabulary'],
+                    properties: {
+                        vocabulary: {
+                            type: 'string',
+                            description: 'The vocabulary to set as active vocabulary.',
+                        },
+                    },
+                },
+            },
         },
-      },
-    },
-  };
+    };
 
-  function fetchFlashcard() {
-    dataProvider
-      .findOne<PopulatedPhraseBundleType>({
-        database: DATABASE.USER_CONTENT,
-        collection: COLLECTIONS.PHRASE_BUNDLE,
-        query: {
-          _id: id,
-          refId: authUser.value?.id,
-        },
-        populates: ['phrases'],
-      })
-      .then((res) => {
-        if (!res) throw new Error('Bundle not found');
-        bundle.value = res;
-      })
-      .catch((err) => {
-        toastError({ title: 'Failed to fetch flashcard' });
-      })
-      .finally(() => {
-        console.log(bundle.value);
-      });
-  }
+    function fetchFlashcard() {
+        dataProvider
+            .findOne<PopulatedPhraseBundleType>({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE_BUNDLE,
+                query: {
+                    _id: id,
+                    refId: authUser.value?.id,
+                },
+                populates: ['phrases'],
+            })
+            .then((res) => {
+                if (!res) throw new Error('Bundle not found');
+                bundle.value = res;
+            })
+            .catch((err) => {
+                toastError({ title: 'Failed to fetch flashcard' });
+            })
+            .finally(() => {
+                console.log(bundle.value);
+            });
+    }
 
-  function createLiveSession() {
-    const phrases = (bundle.value?.phrases.map((p, i) => i + 1 + '. ' + p.phrase) || []).join('\n');
-    const instructions = `
+    function createLiveSession() {
+        const phrases = (bundle.value?.phrases.map((p, i) => i + 1 + '. ' + p.phrase) || []).join('\n');
+        const instructions = `
     You are a friendly and engaging AI language English tutor. 
     Your goal is to help the user practice and reinforce understanding the vocabularies listed below.
   
@@ -155,45 +155,45 @@
     ${phrases}
     `;
 
-    liveSessionStore
-      .createLiveSession({
-        sessionDetails: {
-          instructions: instructions,
-          voice: 'alloy',
-          turnDetectionSilenceDuration: 1000,
-        },
-        tools: tools,
-        audioRef: audioRef.value,
-        onUpdate: handleSessionEvent,
-      })
-      .then(() => {
-        // Trigger initial conversation
-      })
-      .catch((error) => {
-        console.error('Failed to start live session:', error);
-        toastError({ title: 'Failed to start live session' });
-      });
-  }
-
-  function endLiveSession() {
-    liveSessionStore.endLiveSession();
-  }
-
-  function handleSessionEvent(eventData: any) {
-    // Any additional event handling specific to this component
-    // For example, you might want to handle certain events that aren't
-    // already handled in the store
-    const { type, event_id } = eventData;
-    // console.log('Event:', eventData);
-
-    if (type === 'session.created') {
-      console.log('Session created', event_id);
-      triggerTheConversation();
+        liveSessionStore
+            .createLiveSession({
+                sessionDetails: {
+                    instructions: instructions,
+                    voice: 'alloy',
+                    turnDetectionSilenceDuration: 1000,
+                },
+                tools: tools,
+                audioRef: audioRef.value,
+                onUpdate: handleSessionEvent,
+            })
+            .then(() => {
+                // Trigger initial conversation
+            })
+            .catch((error) => {
+                console.error('Failed to start live session:', error);
+                toastError({ title: 'Failed to start live session' });
+            });
     }
-  }
 
-  function triggerTheConversation() {
-    const message = `The user is here, greeting to the user, and start the practice session with the first word`;
-    liveSessionStore.triggerConversation(message);
-  }
+    function endLiveSession() {
+        liveSessionStore.endLiveSession();
+    }
+
+    function handleSessionEvent(eventData: any) {
+        // Any additional event handling specific to this component
+        // For example, you might want to handle certain events that aren't
+        // already handled in the store
+        const { type, event_id } = eventData;
+        // console.log('Event:', eventData);
+
+        if (type === 'session.created') {
+            console.log('Session created', event_id);
+            triggerTheConversation();
+        }
+    }
+
+    function triggerTheConversation() {
+        const message = `The user is here, greeting to the user, and start the practice session with the first word`;
+        liveSessionStore.triggerConversation(message);
+    }
 </script>
