@@ -249,6 +249,12 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 			},
 		};
 
+		if (!dataChannel) {
+			// maybe the session is finished or not started yet
+			// dont throw error here, just return
+			return;
+		}
+
 		dataChannel.send(JSON.stringify(response));
 
 		// Continue the conversation

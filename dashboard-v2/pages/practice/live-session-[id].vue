@@ -92,7 +92,7 @@
     3. You have to lead the conversation and ask the user to use the vocabulary in the conversation.
     4. then pick the next vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
     5. repeat the practice until you get you finish the last vocabulary.
-    6. tell the user goodbye after the last vocabulary and ask him to finish the practice session.
+    6. tell the user goodbye after the last vocabulary and ask him to finish the practice session by calling "finish_practice" function from your tools.
 
     Considerations:
     - user might speak in other languages, but the main conversation should be Practicing English, you might need to switch between the user language and English, but should ask user to speak english.
@@ -105,6 +105,8 @@
     - don't ask user what he wants, you have to select the vocabulary and start the practice.
     - practice only the vocabularies listed below.
     - don't forget to call "set_active_vocabulary" function to set the active vocabulary to practice.
+    - don't forget to call "finish_practice" function to finish the practice session.
+    - make sure say goodbye to user when you want to finish the practice session.
 
     Practice Instructions:
     - Please create dynamic and engaging dialogues where you naturally incorporate these vocabularies. Ask me follow-up questions, encourage me to use the vocabularies in my own responses, and correct my mistakes when necessary. Keep the conversation lively and interactive, adjusting to my responses to make it feel like a real conversation!
@@ -150,6 +152,16 @@
                         },
                     },
                 },
+            },
+        },
+        finish_practice: {
+            handler: () => {
+                endLiveSession();
+            },
+            definition: {
+                type: 'function',
+                name: 'finish_practice',
+                description: 'Finish the practice session.',
             },
         },
     };
@@ -236,9 +248,18 @@
             }
         } else if (mode === 'selection') {
             const { fromPhrase = 1, toPhrase = 2 } = sessionDataParsed;
-            bundle.value?.phrases.slice(fromPhrase - 1, toPhrase - 1).forEach((p) => {
-                phrases.push(p);
-            });
+            for (let i = fromPhrase; i <= toPhrase; i++) {
+                if (i >= (bundle.value?.phrases.length || 0)) {
+                    break;
+                }
+
+                const tempPhrase = bundle.value?.phrases[i - 1] as PhraseType;
+                const exists = phrases.find((p) => p._id === tempPhrase._id);
+
+                if (!exists) {
+                    phrases.push(tempPhrase);
+                }
+            }
         }
 
         return phrases;
