@@ -1,297 +1,94 @@
-<script setup lang="ts">
-import { toTypedSchema } from "@vee-validate/zod";
-import { Field, useForm } from "vee-validate";
-import { z } from "zod";
-
-definePageMeta({
-  layout: "empty",
-  title: "Login",
-  preview: {
-    title: "Login",
-    description: "For authentication and sign in",
-    categories: ["layouts", "authentication"],
-    order: 96,
-  },
-});
-
-const runtimeConfig = useRuntimeConfig();
-
-function loginRegisterWithGoogle() {
-  window.location.href = `${runtimeConfig.public.API_URL}/auth/google`;
-}
-
-const VALIDATION_TEXT = {
-  EMAIL_REQUIRED: "A valid email is required",
-  PASSWORD_REQUIRED: "A password is required",
-};
-
-// This is the Zod schema for the form input
-// It's used to define the shape that the form data will have
-const zodSchema = z.object({
-  email: z.string().email(VALIDATION_TEXT.EMAIL_REQUIRED),
-  password: z.string().min(1, VALIDATION_TEXT.PASSWORD_REQUIRED),
-  trustDevice: z.boolean(),
-});
-
-// Zod has a great infer method that will
-// infer the shape of the schema into a TypeScript type
-type FormInput = z.infer<typeof zodSchema>;
-
-const validationSchema = toTypedSchema(zodSchema);
-const initialValues = computed<FormInput>(() => ({
-  email: "",
-  password: "",
-  trustDevice: false,
-}));
-
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
-  validationSchema,
-  initialValues,
-});
-
-const router = useRouter();
-
-// This is where you would send the form data to the server
-const onSubmit = handleSubmit(async (values) => {
-  // here you have access to the validated form values
-  console.log("auth-success", values);
-
-  try {
-    // fake delay, this will make isSubmitting value to be true
-    await new Promise((resolve, reject) => {
-      if (values.password !== "password") {
-        // simulate a backend error
-        setTimeout(
-          () => reject(new Error("Fake backend validation error")),
-          2000
-        );
-      }
-      setTimeout(resolve, 4000);
-    });
-  } catch (error: any) {
-    // this will set the error on the form
-    if (error.message === "Fake backend validation error") {
-      setFieldError("password", 'Invalid credentials (use "password")');
-    }
-    return;
-  }
-
-  router.push("/dashboards");
-});
-</script>
-
 <template>
-  <div class="dark:bg-muted-800 flex min-h-screen bg-white">
-    <div
-      class="relative flex flex-1 flex-col justify-center px-6 py-12 lg:w-2/5 lg:flex-none"
-    >
-      <div class="dark:bg-muted-800 relative mx-auto w-full max-w-sm bg-white">
-        <!--Nav-->
-        <div class="flex w-full items-center justify-between">
-          <!-- <NuxtLink
-            to="/dashboards"
-            class="text-muted-400 hover:text-primary-500 flex items-center gap-2 font-sans font-medium transition-colors duration-300"
-          >
-            <Icon name="gg:arrow-long-left" class="h-5 w-5" />
-            <span>Back to Home</span>
-          </NuxtLink> -->
-          <!--Theme button-->
-          <!-- <BaseThemeToggle /> -->
-        </div>
-        <div>
-          <div class="flex w-full items-center justify-between">
-            <BaseHeading
-              as="h2"
-              size="3xl"
-              lead="relaxed"
-              weight="medium"
-              class="mt-6"
-            >
-              Welcome back.
-            </BaseHeading>
-            <BaseThemeToggle />
-          </div>
-
-          <BaseParagraph size="sm" class="text-muted-400 mb-6">
-            Login with social media or your credentials
-          </BaseParagraph>
-          <!-- 	Social Sign Up Buttons	 -->
-          <div class="flex flex-wrap justify-between gap-4">
-            <!--Google button-->
-            <button
-              class="dark:bg-muted-700 text-muted-800 border-muted-300 dark:border-muted-600 nui-focus relative inline-flex grow items-center justify-center gap-2 rounded border bg-white px-6 py-4 dark:text-white"
-              @click="loginRegisterWithGoogle"
-            >
-              <Icon name="logos:google-icon" class="h-5 w-5" />
-              <div>Login / Register with Google</div>
-            </button>
-
-            <!--Twitter button-->
-            <!-- <button
-              class="bg-muted-200 dark:bg-muted-700 hover:bg-muted-100 dark:hover:bg-muted-600 text-muted-600 dark:text-muted-400 nui-focus w-[calc(50%_-_0.5rem)] cursor-pointer rounded px-5 py-4 text-center transition-colors duration-300 md:w-auto"
-            >
-              <Icon name="fa6-brands:twitter" class="mx-auto h-4 w-4" />
-            </button> -->
-
-            <!--Linkedin button-->
-            <!-- <button
-              class="bg-muted-200 dark:bg-muted-700 hover:bg-muted-100 dark:hover:bg-muted-600 text-muted-600 dark:text-muted-400 nui-focus w-[calc(50%_-_0.5rem)] cursor-pointer rounded px-5 py-4 text-center transition-colors duration-300 md:w-auto"
-            >
-              <Icon name="fa6-brands:linkedin-in" class="mx-auto h-4 w-4" />
-            </button> -->
-          </div>
-
-          <!-- 'or' divider		 -->
-          <div class="flex-100 mt-8 flex items-center">
-            <hr
-              class="border-muted-200 dark:border-muted-700 flex-auto border-t-2"
-            />
-            <span
-              class="text-muted-600 dark:text-muted-300 px-4 font-sans font-light"
-            >
-              OR
-            </span>
-            <hr
-              class="border-muted-200 dark:border-muted-700 flex-auto border-t-2"
-            />
-          </div>
-        </div>
-
-        <!--Form section-->
-        <section class="opacity-20">
-          <form
-            method="POST"
-            action=""
-            @submit.prevent="onSubmit"
-            class="mt-6"
-            novalidate
-          >
-            <div class="mt-5">
-              <div>
-                <div class="space-y-4">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="email"
-                  >
-                    <BaseInput
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="true || isSubmitting"
-                      type="email"
-                      label="Email address"
-                      placeholder="Email address"
-                      autocomplete="email"
-                      :classes="{
-                        input: 'h-12',
-                      }"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="password"
-                  >
-                    <BaseInput
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="true || isSubmitting"
-                      type="password"
-                      label="Password"
-                      placeholder="Password"
-                      autocomplete="current-password"
-                      :classes="{
-                        input: 'h-12',
-                      }"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-
-                <div class="mt-6 flex items-center justify-between">
-                  <Field
-                    v-slot="{ field, handleChange, handleBlur }"
-                    name="trustDevice"
-                  >
-                    <BaseCheckbox
-                      :model-value="field.value"
-                      :disabled="true || isSubmitting"
-                      shape="rounded"
-                      label="Trust for 60 days"
-                      color="primary"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-
-                  <div class="text-xs leading-5">
-                    <!-- <NuxtLink
-                      to="/auth/recover"
-                      class="text-primary-600 hover:text-primary-500 font-sans font-medium underline-offset-4 transition duration-150 ease-in-out hover:underline"
+  <div class="relative flex w-full flex-col items-center justify-center space-y-10 overflow-hidden bg-white/60 p-5 dark:bg-black/50 md:justify-start md:p-10">
+    <!-- <div class="dropdown ms-auto w-max">
+            <client-only>
+                <Popper :placement="store.rtlClass === 'rtl' ? 'bottom-start' : 'bottom-end'" offsetDistance="8">
+                    <Button
+                        type="button"
+                        rounded="lg"
+                        class="flex items-center gap-2.5 border border-white-dark/30 px-2 py-1.5 text-white-dark hover:border-primary hover:text-primary dark:bg-black"
                     >
-                      Forgot your password?
-                    </NuxtLink> -->
-                  </div>
-                </div>
+                        <div>
+                            <img :src="currentFlag" alt="image" class="h-5 w-5 rounded-full object-cover" />
+                        </div>
+                        <div class="text-base font-bold uppercase">{{ store.locale }}</div>
+                        <span class="shrink-0">
+                            <icon-caret-down />
+                        </span>
+                    </Button>
 
-                <!--Submit-->
-                <div class="mt-6">
-                  <div class="block w-full rounded-md shadow-sm">
-                    <BaseButton
-                      :disabled="true || isSubmitting"
-                      :loading="isSubmitting"
-                      type="submit"
-                      color="primary"
-                      class="!h-11 w-full"
-                    >
-                      Sign in
-                    </BaseButton>
-                  </div>
-                </div>
-              </div>
+                    <template #content="{ close }">
+                        <ul class="grid w-[280px] grid-cols-2 gap-2 !px-2 font-semibold text-dark dark:text-white-dark dark:text-white-light/90">
+                            <template v-for="item in store.languageList" :key="item.code">
+                                <li>
+                                    <a
+                                        type="button"
+                                        class="w-full hover:text-primary"
+                                        :class="{ 'bg-primary/10 text-primary': store.locale === item.code }"
+                                        @click="changeLanguage(item), close()"
+                                    >
+                                        <img class="h-5 w-5 rounded-full object-cover" :src="`/assets/images/flags/${item.code.toUpperCase()}.svg`" alt="" />
+                                        <span class="ltr:ml-3 rtl:mr-3">{{ item.name }}</span>
+                                    </a>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                </Popper>
+            </client-only>
+        </div> -->
 
-              <!--No account link-->
-              <p
-                class="text-muted-400 mt-4 flex justify-between font-sans text-xs leading-5"
-              >
-                <span>Don't have an account?</span>
-                <!-- <NuxtLink
-                to="/auth/signup-1"
-                class="text-primary-600 hover:text-primary-500 font-medium underline-offset-4 transition duration-150 ease-in-out hover:underline"
-              >
-                start your 14-day free trial
-              </NuxtLink> -->
-              </p>
-            </div>
-          </form>
-        </section>
+    <div class="mx-auto w-full max-w-[440px]">
+      <div class="mb-10 sm:mb-40">
+        <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
+        <p class="text-base font-bold leading-normal text-white-dark">Use one of your social accounts to sing-in / sign-up.</p>
       </div>
-    </div>
-    <div
-      class="bg-muted-100 dark:bg-muted-900 relative hidden w-0 flex-1 items-center justify-center lg:flex lg:w-3/5"
-    >
-      <div class="mx-auto w-full max-w-4xl">
-        <!--Media image-->
-        <img
-          class="max-w-md mx-auto"
-          src="/img/illustrations/magician.svg"
-          alt=""
-          width="500"
-          height="500"
-        />
+      <form class="space-y-5 dark:text-white" @submit.prevent="router.push('/')">
+        <Button disabled color="gradient" shadow uppercase block iconName="IconInstagram" :label="t('auth.signin_with_instagram')" />
+        <Button @click="triggerGoogleLoginProcess" color="gradient" shadow uppercase block iconName="IconGoogle" :label="t('auth.signin_with_google')" />
+      </form>
+      <div class="relative my-7 text-center md:mb-9">
+        <span class="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
+        <span class="relative bg-white px-2 font-bold uppercase text-white-dark dark:bg-dark dark:text-white-light">or</span>
+      </div>
+      <div class="text-center dark:text-white">
+        Don't have an account ?
+        <span class="text-primary"> Just sign-in you will get a new account. </span>
       </div>
     </div>
   </div>
 </template>
+
+<script lang="ts" setup>
+  import { useAppStore } from '@/stores/index';
+  import { useRouter } from 'vue-router';
+  import { Button } from '@codebridger/lib-vue-components/elements.ts';
+
+  const { t } = useI18n();
+
+  useHead({ title: t('auth.login_boxed') });
+
+  const router = useRouter();
+
+  definePageMeta({
+    layout: 'spotlight',
+  });
+
+  const store = useAppStore();
+  const { setLocale } = useI18n();
+
+  // multi language
+  //   const changeLanguage = (item: any) => {
+  //     appSetting.toggleLanguage(item, setLocale);
+  //   };
+
+  //   const currentFlag = computed(() => {
+  //     return `/assets/images/flags/${store.locale?.toUpperCase()}.svg`;
+  //   });
+
+  function triggerGoogleLoginProcess() {
+    const config = useRuntimeConfig();
+    const url = `${config.public.BASE_URL_API}/auth/google`;
+    window.open(url, '_self');
+  }
+</script>

@@ -1,23 +1,30 @@
-<template>
-  <NuxtWelcome />
-</template>
+<template></template>
 
-<script setup lang="ts">
-const route = useRoute();
-const router = useRouter();
+<script lang="ts" setup>
+  import { authentication } from '@modular-rest/client';
+  import { useRoute, useRouter } from 'vue-router';
+  import { useProfileStore } from '~/stores/profile';
 
-onMounted(() => {
-  const token = (route.query["token"] as string) || null;
-  handleToken(token);
-});
+  const route = useRoute();
+  const router = useRouter();
+  const profileStore = useProfileStore();
 
-async function handleToken(token: string | null) {
-  await loginWithLastSession(token!);
+  definePageMeta({
+    layout: 'blank',
+  });
 
-  if (isLogin.value) {
-    router.push("/dashboard");
-  } else {
-    router.push("/auth/login");
-  }
-}
+  onMounted(() => {
+    const token = route.query.token as string;
+    if (token) {
+      authentication
+        .loginWithLastSession(token)
+        .then(profileStore.getProfileInfo)
+        .then(() => {
+          router.push('/');
+        })
+        .catch(() => {
+          router.push('/auth/login');
+        });
+    }
+  });
 </script>

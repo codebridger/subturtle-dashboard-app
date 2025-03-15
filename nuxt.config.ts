@@ -1,84 +1,79 @@
-import fs from "fs";
-import path from "path";
-
-function getLocals(ext = ".js") {
-  const langDir = path.resolve(__dirname, "lang");
-  const files = fs.readdirSync(langDir);
-
-  return files
-    .filter((file: string) => file.endsWith(ext))
-    .map((file: string) => {
-      const iso = file.replace(ext, "");
-      const code = iso.split("-")[0];
-
-      return { code, iso: code, file };
-    });
-}
-
 export default defineNuxtConfig({
+  compatibilityDate: '2024-10-13',
+  devtools: { enabled: true },
   ssr: false,
-  devtools: { enabled: process.env.NODE_ENV === "development" },
+  sourcemap: {
+    server: true,
+    client: true,
+  },
+
+  runtimeConfig: {
+    public: {
+      BASE_URL_API: process.env.BASE_URL_API,
+    },
+  },
+
+  vite: {
+    ssr: {
+      noExternal: ['@codebridger/lib-vue-components'],
+    },
+  },
 
   app: {
     head: {
-      script: [
+      title: 'Subturtle Dashboard',
+      titleTemplate: '%s | Subturtle Dashboard',
+      htmlAttrs: {
+        lang: 'en',
+      },
+      meta: [
+        { charset: 'utf-8' },
         {
-          src: "https://raw.githubusercontent.com/timdream/wordcloud2.js/gh-pages/src/wordcloud2.js",
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no',
+        },
+        { hid: 'description', name: 'description', content: '' },
+        { name: 'format-detection', content: 'telephone=no' },
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
         },
       ],
     },
   },
 
-  runtimeConfig: {
-    public: {
-      API_URL: process.env.NUXT_API_URL,
+  css: ['~/assets/css/app.css', '@codebridger/lib-vue-components/style.css'],
+
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
     },
   },
 
-  modules: ["@pinia/nuxt", "@nuxtjs/i18n"],
+  modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
 
-  // @ts-ignore
   i18n: {
-    locales: getLocals(),
-    defaultLocale: "en",
-    langDir: "lang",
+    locales: [{ code: 'en', file: 'en.json' }],
+    lazy: true,
+    defaultLocale: 'en',
+    strategy: 'no_prefix',
+    langDir: 'locales/',
   },
 
-  extends: [
-    /**
-     * This extends the base Tairo layer.
-     *
-     * Alternatively you can use the following:
-     * 'github:cssninjaStudio/tairo/layers/xxx#v1.0.0'
-     *
-     * And set GIGET_AUTH=<github_token> in your .env file
-     *
-     * This would allows you to create an empty git repository
-     * with only your source code and no demo.
-     */
+  //   vite: {
+  //     optimizeDeps: { include: ['quill'] },
+  //   },
 
-    [
-      "gh:cssninjaStudio/tairo/layers/tairo-layout-collapse#v1.5.1",
-      {
-        install: true,
-        giget: { auth: process.env.GIGET_AUTH_TOKEN },
-      },
-    ],
-    [
-      "gh:cssninjaStudio/tairo/layers/tairo#v1.5.1",
-      {
-        install: true,
-        giget: { auth: process.env.GIGET_AUTH_TOKEN },
-      },
-    ],
-  ] as any[],
+  router: {
+    options: { linkExactActiveClass: 'active' },
+  },
 
-  /**
-   * Load local font with @fontsource packages
-   * @see https://fontsource.org/
-   */
-  css: [
-    "@fontsource-variable/inter/index.css",
-    "@fontsource-variable/karla/index.css",
-  ],
+  // Make sure your build options are properly set
+  build: {
+    transpile: ['@tiny-ideas-lr/lib-vue-components'],
+  },
 });

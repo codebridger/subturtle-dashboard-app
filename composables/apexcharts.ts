@@ -1,4 +1,4 @@
-const useApexChartLoaded = () => useState("apex-loaded", () => false);
+const useApexChartLoaded = () => useState('apex-loaded', () => false);
 
 /**
  * Use `defineAsyncComponent` to lazy load the component only when needed
@@ -8,22 +8,22 @@ const useApexChartLoaded = () => useState("apex-loaded", () => false);
  * a good practice to be able to show a loading state while the component is loading.
  */
 const LazyApexCharts = defineAsyncComponent({
-  suspensible: false,
-  loader: () =>
-    // @ts-ignore
-    import("vue3-apexcharts").then((module) => {
-      nextTick(() => {
-        useApexChartLoaded().value = true;
-      });
-      return module.default;
-    }),
+    suspensible: false,
+    loader: () =>
+        // @ts-ignore
+        import('vue3-apexcharts').then((module) => {
+            nextTick(() => {
+                useApexChartLoaded().value = true;
+            });
+            return module.default;
+        }),
 });
 
 export function useLazyApexCharts() {
-  const isLoaded = useApexChartLoaded();
+    const isLoaded = useApexChartLoaded();
 
-  return {
-    LazyApexCharts,
-    isLoaded,
-  };
+    return {
+        LazyApexCharts,
+        isLoaded,
+    };
 }

@@ -1,22 +1,39 @@
-<script setup lang="ts">
-onBeforeMount(() => {
-  /**
-   * Add translations to the navigation items
-   * of the TairoCollapseLayout
-   *
-   * This is a hack to add translations to the navigation items.
-   */
-  const appConfig = useAppConfig();
-  const { t } = useI18n();
-
-  appConfig.tairo.collapse?.navigation?.items?.forEach((item) => {
-    item.name = t(item.name);
-  });
-});
-</script>
-
 <template>
-  <TairoCollapseLayout>
-    <slot />
-  </TairoCollapseLayout>
+  <App>
+    <DashboardShell brand-title="Subturtle">
+      <template #header>
+        <div class="flex w-full justify-end">
+          <PartialProfileButton />
+        </div>
+      </template>
+
+      <template #horizontal-menu>
+        <HorizontalMenu :items="[]" />
+      </template>
+
+      <template #sidebar-menu>
+        <SidebarMenu title="Subturtle" :items="menuItems" @item-click="onMenuItemClicked" />
+      </template>
+
+      <template #content>
+        <NuxtPage />
+      </template>
+    </DashboardShell>
+
+    <ThemeCustomizer />
+  </App>
 </template>
+
+<script setup lang="ts">
+  import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from '@codebridger/lib-vue-components/shell.ts';
+  import type { SidebarItemType, HorizontalMenuItemType } from '@codebridger/lib-vue-components/types.ts';
+
+  const menuItems = useDashboardNavigatorItems();
+  const router = useRouter();
+
+  function onMenuItemClicked(item: SidebarItemType | HorizontalMenuItemType) {
+    if (item?.to) {
+      router.push(item.to);
+    }
+  }
+</script>

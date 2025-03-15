@@ -1,9 +1,10 @@
 node_modules
-*.log
-*.zip
+*.log*
 .nuxt
-nuxt.d.ts
+.nitro
+.cache
 .output
-dist
 .env
-*Zone.Identifier
+dist
+.DS_Store
+.npmrc

@@ -1,141 +1,150 @@
 <template>
-  <VeeForm
-    :validation-schema="schema"
-    @submit="onSubmit"
-    v-slot="{ handleSubmit }"
-  >
-    <BaseCard class="p-5 flex justify-between items-start">
-      <div class="flex-1">
-        <Field
-          v-if="isEditMode"
-          name="title"
-          :model-value="props.bundleDetail.title"
-          v-slot="{ field, errors }"
-        >
-          <BaseInput
-            label="Title"
-            placeholder="Avengers - Season 1"
-            :model-value="field.value"
-            :error="errors[0]"
-            :disabled="isSubmitting"
-            type="text"
-            v-bind="field"
-          />
-        </Field>
-        <BaseHeading v-else>{{ bundleDetail.title }}</BaseHeading>
-        <BaseParagraph>{{ bundleDetail.desc }}</BaseParagraph>
-      </div>
+    <VeeForm :validation-schema="schema" @submit="onSubmit" v-slot="{ handleSubmit }">
+        <Card class="flex items-start justify-between p-5 shadow-none">
+            <div class="flex-1">
+                <Field v-if="isEditMode" name="title" :model-value="props.bundleDetail.title" v-slot="{ field, errors }">
+                    <Input
+                        :label="t('title')"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="!!error"
+                        :error-message="error || ''"
+                        :disabled="isSubmitting"
+                        type="text"
+                        v-bind="field"
+                    />
+                </Field>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white" v-else>{{ bundleDetail.title }}</h2>
+                <p class="mt-2 text-gray-600 dark:text-gray-300">{{ bundleDetail.desc }}</p>
+            </div>
 
-      <div class="flex-1 flex justify-end">
-        <BaseButton
-          v-if="isSubmitting || isEditMode"
-          color="primary"
-          :loading="isSubmitting"
-          @click="handleSubmit(onSubmit)"
-        >
-          {{ $t("comp.bundle.detail.card.submit") }}
-        </BaseButton>
+            <div class="flex flex-1 justify-end">
+                <Button
+                    v-if="isSubmitting || isEditMode"
+                    type="primary"
+                    :loading="isSubmitting"
+                    @click="handleSubmit(onSubmit)"
+                    :label="t('bundle.detail_card.submit')"
+                />
 
-        <BaseDropdown
-          :loading="true"
-          v-else
-          variant="context"
-          label="Options"
-          placement="bottom-start"
-        >
-          <BaseDropdownItem
-            title="Edit"
-            text="The title and description"
-            rounded="sm"
-            @click="isEditMode = true"
-          />
+                <Dropdown v-else>
+                    <template #trigger>
+                        <IconButton size="sm" rounded="full" icon="IconHorizontalDots" />
+                    </template>
 
-          <BaseDropdownItem
-            title="Remove"
-            text="The Bundle and phrases"
-            rounded="sm"
-            @click="onRemove"
-          />
-        </BaseDropdown>
-      </div>
-    </BaseCard>
-  </VeeForm>
+                    <template #body="{ close }">
+                        <ul class="w-[200px] !py-0 font-semibold text-dark dark:text-white-dark">
+                            <li class="cursor-pointer">
+                                <a
+                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="
+                                        isEditMode = true;
+                                        close();
+                                    "
+                                >
+                                    <div>
+                                        <div class="font-semibold">{{ t('edit') }}</div>
+                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
+                                    </div>
+                                </a>
+                            </li>
+
+                            <li class="cursor-pointer">
+                                <a
+                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="
+                                        onRemove;
+                                        close();
+                                    "
+                                >
+                                    <div>
+                                        <div class="font-semibold">{{ t('remove') }}</div>
+                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </template>
+                </Dropdown>
+            </div>
+        </Card>
+    </VeeForm>
 </template>
 
 <script setup lang="ts">
-import { functionProvider, dataProvider } from "@modular-rest/client";
-import { Field, Form as VeeForm } from "vee-validate";
-import * as yup from "yup";
-import {
-  COLLECTIONS,
-  DATABASE,
-  type PhraseBundleType,
-} from "~/types/database.type";
+    import { IconButton, Card, Input, Dropdown, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { functionProvider, dataProvider } from '@modular-rest/client';
+    import { Field, Form as VeeForm } from 'vee-validate';
+    import * as yup from 'yup';
+    import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
 
-const router = useRouter();
+    const { t } = useI18n();
 
-const props = defineProps({
-  bundleDetail: {
-    type: Object as PropType<PhraseBundleType>,
-    required: true,
-  },
-});
+    const router = useRouter();
 
-const emit = defineEmits<{
-  changed: [values: { [key: string]: any }];
-  removed: [];
-}>();
+    const error = ref<string | null>(null);
 
-const isSubmitting = ref(false);
-const isEditMode = ref(false);
-const schema = yup.object({
-  title: yup.string().required($t("comp.bundle.detail.card.title_required")),
-});
-
-function onSubmit(values: any) {
-  isSubmitting.value = true;
-  isEditMode.value = false;
-
-  dataProvider
-    .updateOne({
-      database: DATABASE.USER_CONTENT,
-      collection: COLLECTIONS.PHRASE_BUNDLE,
-      query: {
-        _id: props.bundleDetail._id,
-        refId: authUser.value?.id,
-      },
-      update: {
-        $set: {
-          title: values.title,
+    const props = defineProps({
+        bundleDetail: {
+            type: Object as PropType<PhraseBundleType>,
+            required: true,
         },
-      },
-    })
-    .then(() => {
-      emit("changed", values);
-    })
-    .finally(() => {
-      isSubmitting.value = false;
     });
-}
 
-function onRemove() {
-  functionProvider
-    .run({
-      name: "removeBundle",
-      args: {
-        _id: props.bundleDetail._id,
-        refId: authUser.value?.id,
-      },
-    })
-    .then(() => {
-      router.push("/dashboard/bundles");
-    })
-    .catch((error) => {
-      debugger;
-      toastError({
-        title: "Error",
-        message: error.error,
-      });
+    const emit = defineEmits<{
+        changed: [values: { [key: string]: any }];
+        removed: [];
+    }>();
+
+    const isSubmitting = ref(false);
+    const isEditMode = ref(false);
+    const schema = yup.object({
+        title: yup.string().required(t('bundle.detail_card.title_required')),
     });
-}
+
+    function onSubmit(values: any) {
+        isSubmitting.value = true;
+        isEditMode.value = false;
+
+        dataProvider
+            .updateOne({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE_BUNDLE,
+                query: {
+                    _id: props.bundleDetail._id,
+                    refId: authUser.value?.id,
+                },
+                update: {
+                    $set: {
+                        title: values.title,
+                    },
+                },
+            })
+            .then(() => {
+                emit('changed', values);
+            })
+            .finally(() => {
+                isSubmitting.value = false;
+            });
+    }
+
+    function onRemove() {
+        functionProvider
+            .run({
+                name: 'removeBundle',
+                args: {
+                    _id: props.bundleDetail._id,
+                    refId: authUser.value?.id,
+                },
+            })
+            .then(() => {
+                router.push('/bundles');
+            })
+            .catch((error) => {
+                toastError({
+                    title: 'Error',
+                    message: error.error,
+                });
+            });
+    }
 </script>
