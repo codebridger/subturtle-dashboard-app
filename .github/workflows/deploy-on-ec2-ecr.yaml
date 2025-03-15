@@ -40,7 +40,7 @@ jobs:
               run: |
                   # Create .env file
                   echo "NODE_ENV=production" > .env
-                  echo "NUXT_API_URL=${NUXT_API_URL}" >> .env
+                  echo "BASE_URL_API=${BASE_URL_API}" >> .env
                   echo "GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN}" >> .env
 
                   # Create .npmrc file
