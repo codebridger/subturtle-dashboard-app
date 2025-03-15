@@ -14,7 +14,7 @@
                 <div class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
                     <!-- All phrases -->
                     <Card
-                        v-for="phrase in bundle.phrases"
+                        v-for="phrase in selectedPhrases"
                         :key="phrase._id"
                         :class="[
                             'transition-all duration-300 ease-in-out',
@@ -48,7 +48,7 @@
 <script setup lang="ts">
     import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
     import { dataProvider } from '@modular-rest/client';
-    import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
+    import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
@@ -70,13 +70,14 @@
     const errorMessage = ref('');
 
     const bundle = ref<PopulatedPhraseBundleType | null>(null);
+    const selectedPhrases = ref<PhraseType[]>([]);
     const phraseIndex = ref(-1);
     const activePhrase = computed(() => {
         if (!bundle.value) return null;
         return bundle.value.phrases[phraseIndex.value];
     });
     const totalPhrases = computed<number>(() => {
-        return bundle.value?.phrases.length || 0;
+        return selectedPhrases.value.length || 0;
     });
 
     const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
@@ -119,7 +120,10 @@
             return;
         }
 
-        await fetchFlashcard();
+        await fetchFlashcard().then((res) => {
+            selectedPhrases.value = getPhraseIndex();
+        });
+
         await createLiveSession();
     });
 
@@ -174,7 +178,7 @@
     }
 
     function createLiveSession() {
-        const phrases = (bundle.value?.phrases.map((p, i) => i + 1 + '. ' + p.phrase) || []).join('\n');
+        const phrases = (selectedPhrases.value.map((p, i) => i + 1 + '. ' + p.phrase) || []).join('\n');
 
         liveSessionStore
             .createLiveSession({
@@ -213,5 +217,30 @@
     function triggerTheConversation() {
         const message = `The user is here, greeting to the user, and start the practice session with the first word from the given list`;
         liveSessionStore.triggerConversation(message);
+    }
+
+    function getPhraseIndex() {
+        const mode = sessionDataParsed.selectionMode;
+        const phrases: PhraseType[] = [];
+
+        if (mode === 'random') {
+            const { totalPhrases = 1 } = sessionDataParsed;
+            while (phrases.length < totalPhrases) {
+                const randomIndex = Math.floor(Math.random() * totalPhrases);
+                const tempPhrase = bundle.value?.phrases[randomIndex] as PhraseType;
+                const exists = phrases.find((p) => p._id === tempPhrase._id);
+
+                if (!exists) {
+                    phrases.push(tempPhrase);
+                }
+            }
+        } else if (mode === 'selection') {
+            const { fromPhrase = 1, toPhrase = 2 } = sessionDataParsed;
+            bundle.value?.phrases.slice(fromPhrase - 1, toPhrase - 1).forEach((p) => {
+                phrases.push(p);
+            });
+        }
+
+        return phrases;
     }
 </script>
