@@ -1,5 +1,11 @@
 <template>
-    <MaterialPracticeToolScaffold :title="bundle?.title || 'Flashcards'" :activePhrase="phraseIndex + 1" :totalPhrases="totalPhrases" :bundleId="id as string">
+    <MaterialPracticeToolScaffold
+        :title="bundle?.title || 'Flashcards'"
+        :activePhrase="phraseIndex + 1"
+        :totalPhrases="totalPhrases"
+        :bundleId="id.toString()"
+        @end-session="endFlashcardSession"
+    >
         <div :class="['flex h-full w-full flex-col items-center p-5', 'md:px-16 md:py-14']">
             <div :class="['w-full flex-1 ', 'md:max-h-[80%] md:max-w-[80%]', 'lg:max-h-[65%] lg:max-w-[65%]']">
                 <WidgetFlashCard v-if="phrase" :key="phraseIndex" :front="phrase.phrase" :back="phrase.translation" />
@@ -57,6 +63,11 @@
     onMounted(() => {
         fetchFlashcard();
     });
+
+    function endFlashcardSession() {
+        const router = useRouter();
+        router.push(`/bundles/${id}`);
+    }
 
     function fetchFlashcard() {
         dataProvider

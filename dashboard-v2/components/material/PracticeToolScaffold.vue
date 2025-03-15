@@ -20,7 +20,7 @@
                 </div>
 
                 <div>
-                    <Button rounded="md" size="md" iconName="IconX" :to="`/bundles/${bundleId}`" />
+                    <Button rounded="md" size="md" iconName="IconX" @click="endSession" />
                 </div>
             </Card>
 
@@ -33,7 +33,7 @@
 <script setup lang="ts">
     import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
 
-    defineProps<{
+    const props = defineProps<{
         title: string;
         activePhrase: number;
         totalPhrases: number;
@@ -42,4 +42,12 @@
         isLoading?: boolean;
         errorMode?: boolean;
     }>();
+
+    const emit = defineEmits<{
+        'end-session': [];
+    }>();
+
+    function endSession() {
+        emit('end-session');
+    }
 </script>

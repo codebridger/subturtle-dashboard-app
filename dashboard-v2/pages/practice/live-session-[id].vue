@@ -7,6 +7,7 @@
         :body-class="'flex flex-col items-center justify-start'"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive"
         :error-mode="errorMode"
+        @end-session="endLiveSession"
     >
         <template v-if="bundle">
             <section class="flex-1 py-10">
@@ -63,7 +64,6 @@
     const { id } = route.params;
     const { sessionData } = route.query;
     const sessionDataParsed = JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType;
-    const bundleLink = `/bundles/${id}`;
 
     const liveSessionStore = useLiveSessionStore();
     const errorMode = ref(false);
@@ -194,7 +194,7 @@
 
     function endLiveSession() {
         liveSessionStore.endLiveSession();
-        router.push(bundleLink);
+        router.push(`/bundles/${id}`);
     }
 
     function handleSessionEvent(eventData: any) {
