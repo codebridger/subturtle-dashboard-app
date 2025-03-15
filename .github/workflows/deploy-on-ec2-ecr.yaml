@@ -36,11 +36,16 @@ jobs:
 
             # Create env file
             # This file goes to docker and used in building the image
-            - name: Create .env file
+            - name: Create .env and .npmrc files
               run: |
+                  # Create .env file
                   echo "NODE_ENV=production" > .env
                   echo "NUXT_API_URL=${NUXT_API_URL}" >> .env
                   echo "GIGET_AUTH_TOKEN=${GIGET_AUTH_TOKEN}" >> .env
+
+                  # Create .npmrc file
+                  echo "@codebridger:registry=https://npm.pkg.github.com" > .npmrc
+                  echo "//npm.pkg.github.com/:_authToken=${GIGET_AUTH_TOKEN}" >> .npmrc
 
             # Prepare environment for arm build
             # Set up QEMU and Docker Buildx
