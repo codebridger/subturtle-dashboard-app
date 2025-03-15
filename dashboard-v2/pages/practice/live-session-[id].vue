@@ -5,6 +5,8 @@
         :totalPhrases="totalPhrases"
         :bundleId="id.toString()"
         :body-class="'flex flex-col items-center justify-start'"
+        :isLoading="!errorMode && !liveSessionStore.isSessionActive"
+        :error-mode="errorMode"
     >
         <template v-if="bundle">
             <section class="flex-1 py-10">
@@ -30,14 +32,16 @@
                     </Card>
                 </div>
             </section>
+        </template>
 
-            <section class="pb-32">
-                <Button v-if="!liveSessionStore.sessionStarted" @click="createLiveSession">Start Live Session</Button>
-                <Button v-else @click="endLiveSession">End Live Session</Button>
-                <audio ref="ai-agent"></audio>
-            </section>
+        <template #error-mode>
+            <div class="flex flex-col items-center justify-center">
+                <h1 class="text-2xl font-bold">Oops, something went wrong</h1>
+                <p class="text-lg">{{ errorMessage }}</p>
+            </div>
         </template>
     </MaterialPracticeToolScaffold>
+    <audio ref="ai-agent"></audio>
 </template>
 
 <script setup lang="ts">
@@ -45,6 +49,7 @@
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
+    import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     definePageMeta({
         // @ts-ignore
@@ -53,8 +58,16 @@
         middleware: ['auth'],
     });
 
-    const { id } = useRoute().params;
+    const route = useRoute();
+    const router = useRouter();
+    const { id } = route.params;
+    const { sessionData } = route.query;
+    const sessionDataParsed = JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType;
+    const bundleLink = `/bundles/${id}`;
+
     const liveSessionStore = useLiveSessionStore();
+    const errorMode = ref(false);
+    const errorMessage = ref('');
 
     const bundle = ref<PopulatedPhraseBundleType | null>(null);
     const phraseIndex = ref(-1);
@@ -68,8 +81,46 @@
 
     const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
 
-    onMounted(() => {
-        fetchFlashcard();
+    const instructions = `
+    You are a friendly and engaging AI language English tutor.
+    Your goal is to help the user practice and reinforce understanding the vocabularies listed below.
+
+    Instructions:
+    1. Start with first vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
+    2. When you get the activation confirmation, start the vocabulary practice with the user.
+    3. You have to lead the conversation and ask the user to use the vocabulary in the conversation.
+    4. then pick the next vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
+    5. repeat the practice until you get you finish the last vocabulary.
+    6. tell the user goodbye after the last vocabulary and ask him to finish the practice session.
+
+    Considerations:
+    - user might speak in other languages, but the main conversation should be Practicing English, you might need to switch between the user language and English, but should ask user to speak english.
+    - if user don't suggest a specific way of practice, you have to start from first vocabulary and try to practice with user, the user is your student you need to lead the conversation.
+    - it's better to explain things in the user language not english and then ask the user t speak english and perform your practice.
+    - it's not necessary to re tell what users says in practice time.
+    - don't sensor anything from the user list, remember it's a english practice and a language has bad and good phrases, but all should be given a lecture.
+    - Finish the practice session with a good bye message after the last vocabulary, consider the vocabulary numbers.
+    - you get 'no more vocabulary' if there is no more vocabulary to practice.
+    - don't ask user what he wants, you have to select the vocabulary and start the practice.
+    - practice only the vocabularies listed below.
+    - don't forget to call "set_active_vocabulary" function to set the active vocabulary to practice.
+
+    Practice Instructions:
+    - Please create dynamic and engaging dialogues where you naturally incorporate these vocabularies. Ask me follow-up questions, encourage me to use the vocabularies in my own responses, and correct my mistakes when necessary. Keep the conversation lively and interactive, adjusting to my responses to make it feel like a real conversation!
+
+    Vocabulary List:
+    [phrases]
+    `;
+
+    onMounted(async () => {
+        if (!sessionDataParsed) {
+            errorMode.value = true;
+            errorMessage.value = 'No session data found';
+            return;
+        }
+
+        await fetchFlashcard();
+        await createLiveSession();
     });
 
     const tools = {
@@ -100,7 +151,7 @@
     };
 
     function fetchFlashcard() {
-        dataProvider
+        return dataProvider
             .findOne<PopulatedPhraseBundleType>({
                 database: DATABASE.USER_CONTENT,
                 collection: COLLECTIONS.PHRASE_BUNDLE,
@@ -124,59 +175,26 @@
 
     function createLiveSession() {
         const phrases = (bundle.value?.phrases.map((p, i) => i + 1 + '. ' + p.phrase) || []).join('\n');
-        const instructions = `
-    You are a friendly and engaging AI language English tutor. 
-    Your goal is to help the user practice and reinforce understanding the vocabularies listed below.
-  
-    Instructions:
-    1. Start with first vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
-    2. When you get the activation confirmation, start the vocabulary practice with the user.
-    3. You have to lead the conversation and ask the user to use the vocabulary in the conversation.
-    4. then pick the next vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
-    5. repeat the practice until you get you finish the last vocabulary.
-    6. tell the user goodbye after the last vocabulary and ask him to finish the practice session.
-    
-    Considerations:
-    - user might speak in other languages, but the main conversation should be Practicing English, you might need to switch between the user language and English, but should ask user to speak english.
-    - if user don't suggest a specific way of practice, you have to start from first vocabulary and try to practice with user, the user is your student you need to lead the conversation.
-    - it's better to explain things in the user language not english and then ask the user t speak english and perform your practice.
-    - it's not necessary to re tell what users says in practice time.
-    - don't sensor anything from the user list, remember it's a english practice and a language has bad and good phrases, but all should be given a lecture.
-    - Finish the practice session with a good bye message after the last vocabulary, consider the vocabulary numbers.
-    - you get 'no more vocabulary' if there is no more vocabulary to practice.
-    - don't ask user what he wants, you have to select the vocabulary and start the practice.
-    - practice only the vocabularies listed below.
-    - don't forget to call "set_active_vocabulary" function to set the active vocabulary to practice.
-  
-    Practice Instructions:
-    - Please create dynamic and engaging dialogues where you naturally incorporate these vocabularies. Ask me follow-up questions, encourage me to use the vocabularies in my own responses, and correct my mistakes when necessary. Keep the conversation lively and interactive, adjusting to my responses to make it feel like a real conversation!
-  
-    Vocabulary List:
-    ${phrases}
-    `;
 
         liveSessionStore
             .createLiveSession({
                 sessionDetails: {
-                    instructions: instructions,
-                    voice: 'alloy',
-                    turnDetectionSilenceDuration: 1000,
+                    instructions: instructions.replace('[phrases]', phrases),
+                    voice: sessionDataParsed.aiCharacter || 'alloy',
                 },
                 tools: tools,
                 audioRef: audioRef.value,
                 onUpdate: handleSessionEvent,
             })
-            .then(() => {
-                // Trigger initial conversation
-            })
             .catch((error) => {
-                console.error('Failed to start live session:', error);
-                toastError({ title: 'Failed to start live session' });
+                errorMode.value = true;
+                errorMessage.value = error?.message || 'Failed to start live session';
             });
     }
 
     function endLiveSession() {
         liveSessionStore.endLiveSession();
+        router.push(bundleLink);
     }
 
     function handleSessionEvent(eventData: any) {
@@ -187,13 +205,13 @@
         // console.log('Event:', eventData);
 
         if (type === 'session.created') {
-            console.log('Session created', event_id);
+            console.log('Session created', eventData);
             triggerTheConversation();
         }
     }
 
     function triggerTheConversation() {
-        const message = `The user is here, greeting to the user, and start the practice session with the first word`;
+        const message = `The user is here, greeting to the user, and start the practice session with the first word from the given list`;
         liveSessionStore.triggerConversation(message);
     }
 </script>

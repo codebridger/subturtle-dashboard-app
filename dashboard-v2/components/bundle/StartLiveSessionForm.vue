@@ -91,6 +91,7 @@
 <script setup lang="ts">
     import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { Button, Input } from '@codebridger/lib-vue-components/elements.ts';
+    import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     const { t } = useI18n();
 
@@ -100,15 +101,7 @@
 
     const emit = defineEmits<{
         'update:modelValue': [value: boolean];
-        start: [
-            data: {
-                aiCharacter: string;
-                selectionMode: 'selection' | 'random';
-                fromPhrase?: number;
-                toPhrase?: number;
-                totalPhrases?: number;
-            }
-        ];
+        start: [data: LivePracticeSessionSetupType];
     }>();
 
     const aiCharacters = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];

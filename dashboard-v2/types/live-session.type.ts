@@ -36,3 +36,12 @@ export interface ConversationDialogType {
   content: string;
   speaker: 'user' | 'ai';
 }
+
+export interface LivePracticeSessionSetupType {
+  aiCharacter: string;
+  selectionMode: 'selection' | 'random';
+  fromPhrase?: number;
+  toPhrase?: number;
+  totalPhrases?: number;
+
+}

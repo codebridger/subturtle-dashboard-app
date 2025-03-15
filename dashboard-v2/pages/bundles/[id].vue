@@ -77,6 +77,7 @@
     import { Modal, Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { useBundleStore } from '@/stores/bundle';
     import StartLiveSessionForm from '@/components/bundle/StartLiveSessionForm.vue';
+    import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     const { t } = useI18n();
     const router = useRouter();
@@ -122,14 +123,10 @@
         });
     }
 
-    function handleStartLiveSession(sessionData: {
-        aiCharacter: string;
-        selectionMode: 'selection' | 'random';
-        fromPhrase?: number;
-        toPhrase?: number;
-        totalPhrases?: number;
-    }) {
+    function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
+        // convert sessionData to base64
+        const sessionDataBase64 = btoa(JSON.stringify(sessionData));
         console.log('Live session data:', sessionData);
-        router.push(`/practice/live-session-${id.value}`);
+        router.push(`/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`);
     }
 </script>

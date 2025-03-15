@@ -31,7 +31,6 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		sessionDetails: {
 			instructions: string;
 			voice?: string;
-			model?: string;
 			turnDetectionSilenceDuration?: number;
 		};
 		tools: { [key: string]: any };
@@ -70,7 +69,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 			return { success: true, session };
 		} catch (error) {
 			console.error('Failed to create live session:', error);
-			return { success: false, error: String(error) };
+			throw error;
 		}
 	}
 
@@ -79,8 +78,8 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	 */
 	async function setupRTP() {
 		if (!audioElement) {
-			console.error('Audio element not provided');
-			return;
+			// console.error('Audio element not provided');
+			throw new Error('Audio element not provided');
 		}
 
 		// Create a peer connection
@@ -105,13 +104,11 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	 */
 	async function startLiveSession() {
 		if (liveSession.value === null) {
-			console.error('No active session to start');
-			return;
+			throw new Error('No active session to start');
 		}
 
 		if (peerConnection === null) {
-			console.error('Peer connection not set up');
-			return;
+			throw new Error('Peer connection not set up');
 		}
 
 		// Set up data channel for sending and receiving events
@@ -267,8 +264,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	 */
 	function triggerConversation(message: string) {
 		if (!dataChannel) {
-			console.error('No data channel available to send message');
-			return;
+			throw new Error('No data channel available to send message');
 		}
 
 		const responseCreate = {
