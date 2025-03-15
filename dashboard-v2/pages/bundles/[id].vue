@@ -9,7 +9,7 @@
 
                 <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" />
 
-                <Button disabled iconName="IconNotesEdit" :label="t('learn-tool.label')" />
+                <Button @click="isLiveSessionModalOpen = true" iconName="IconNotesEdit" :label="t('live-practice.label')" />
             </section>
 
             <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
@@ -67,14 +67,20 @@
                 </div>
             </div>
         </section>
+
+        <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
     </div>
 </template>
 
 <script setup lang="ts">
     import { Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal, Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { useBundleStore } from '@/stores/bundle';
+    import StartLiveSessionForm from '@/components/bundle/StartLiveSessionForm.vue';
+    import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     const { t } = useI18n();
+    const router = useRouter();
 
     definePageMeta({
         layout: 'default',
@@ -88,6 +94,7 @@
     const id = ref(route.params.id?.toString() || '');
     const isBundleDetailLoading = ref(false);
     const isPhraseListLoading = ref(false);
+    const isLiveSessionModalOpen = ref(false);
 
     onMounted(() => {
         if (id.value) {
@@ -114,5 +121,12 @@
         bundleStore.fetchPhrases(page).finally(() => {
             isPhraseListLoading.value = false;
         });
+    }
+
+    function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
+        // convert sessionData to base64
+        const sessionDataBase64 = btoa(JSON.stringify(sessionData));
+        console.log('Live session data:', sessionData);
+        router.push(`/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`);
     }
 </script>

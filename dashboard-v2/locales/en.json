@@ -47,9 +47,22 @@
         "label": "Match",
         "tooltip": "Practice this bundle trough matching game"
     },
-    "learn-tool": {
-        "label": "Learn",
-        "tooltip": "Learn this bundle of phrases by Artificial Intelligence"
+    "live-practice": {
+        "label": "Live Session",
+        "tooltip": "Learn this bundle of phrases by live session with an AI teacher",
+        "start": "Start",
+        "cancel": "Cancel",
+        "going-live": "Starting a live session",
+        "ai-character": "AI Character",
+        "selection": "Selection",
+        "random": "Random",
+        "from-phrase": "From Phrase",
+        "to-phrase": "To Phrase",
+        "total-phrases": "Total Phrases",
+        "max-30-phrases-error": "Maximum 30 phrases are allowed",
+        "positive-numbers-required": "Only positive numbers are allowed",
+        "from-less-than-to-error": "From phrase must be less than or equal to To phrase",
+        "total-phrases-required": "Total phrases is required"
     },
     "membership-plans": {
         "title": "Membership Plans",
