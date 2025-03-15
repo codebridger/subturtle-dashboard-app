@@ -17,7 +17,7 @@
         const token = route.query.token as string;
         if (token) {
             authentication
-                .loginWithToken(token)
+                .loginWithToken(token, true)
                 .then(profileStore.getProfileInfo)
                 .then(() => {
                     router.push('/');
