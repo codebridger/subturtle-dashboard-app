@@ -132,7 +132,7 @@
     const tools = {
         set_active_vocabulary: {
             handler: (arg: { vocabulary: string }) => {
-                const wordIndex = bundle.value?.phrases.findIndex((p) => p.phrase.toLowerCase() === arg.vocabulary.toLowerCase());
+                const wordIndex = selectedPhrases.value.findIndex((p) => p.phrase.toLowerCase() === arg.vocabulary.toLowerCase());
                 if (wordIndex === -1 || wordIndex == undefined) return { success: false, error: 'the vocabulary ' + arg.vocabulary + ' is not found' };
 
                 phraseIndex.value = wordIndex as number;
