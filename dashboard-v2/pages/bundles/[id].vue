@@ -9,7 +9,7 @@
 
                 <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" />
 
-                <Button @click="isLiveSessionModalOpen = true" iconName="IconNotesEdit" :label="t('live-practice.label')" />
+                <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
             </section>
 
             <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
@@ -57,7 +57,7 @@
                 </TransitionGroup>
 
                 <!-- Pagination -->
-                <div v-if="(bundleStore.phrasePagination?.pages || 0) > 1" class="mt-6">
+                <div class="mt-6">
                     <Pagination
                         v-if="bundleStore.phrasePagination"
                         v-model="bundleStore.phrasePagination.page"
@@ -67,8 +67,6 @@
                 </div>
             </div>
         </section>
-
-        <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
     </div>
 </template>
 

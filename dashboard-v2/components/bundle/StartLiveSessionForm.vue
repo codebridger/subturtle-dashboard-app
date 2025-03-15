@@ -1,5 +1,9 @@
 <template>
     <Modal :modelValue="modelValue" :title="t('live-practice.going-live')" @update:modelValue="$emit('update:modelValue', $event)">
+        <template #trigger>
+            <Button iconName="IconNotesEdit" :label="t('live-practice.label')" @click="$emit('update:modelValue', true)" />
+        </template>
+
         <div class="space-y-6">
             <!-- AI Character Selection -->
             <div>
