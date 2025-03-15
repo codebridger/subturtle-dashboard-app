@@ -2,7 +2,8 @@ FROM node:20.9.0-alpine as build-stage
 
 WORKDIR /app
 
-COPY package*.json .env ./
+COPY package.json .env ./
+COPY yarn.lock ./
 COPY .npmrc ./
 RUN yarn install
 
