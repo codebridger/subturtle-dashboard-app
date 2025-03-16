@@ -79,6 +79,9 @@
         "signin_with_google": "SIGN IN WITH GOOGLE",
         "login_boxed": "Login Boxed"
     },
+    "practice": {
+        "nav": "Practice"
+    },
     "statistic": "Statistic",
     "starter-page": "Starter Page",
     "or": "or",

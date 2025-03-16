@@ -3,7 +3,7 @@
         <h1 class="mb-6 text-lg font-bold">{{ t('dashboard.nav') }}</h1>
         <section class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
             <Card class="col-span-1 rounded-md shadow-none lg:col-span-3">
-                <WidgetActivityChartOverview class="flex-1" title="Your last 7 days" />
+                <WidgetActivityChartOverview title="Your last 7 days" />
             </Card>
             <Card class="max-h-min rounded-md shadow-none">
                 <h1 class="text-lg font-bold">{{ t('dashboard.quick-states.label') }}</h1>

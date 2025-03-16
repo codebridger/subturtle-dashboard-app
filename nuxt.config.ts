@@ -72,6 +72,12 @@ export default defineNuxtConfig({
     options: { linkExactActiveClass: 'active' },
   },
 
+  routeRules: {
+    '/': {
+      redirect: '/statistic',
+    },
+  },
+
   // Make sure your build options are properly set
   build: {
     transpile: ['@tiny-ideas-lr/lib-vue-components'],
