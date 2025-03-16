@@ -4,39 +4,43 @@
         :activePhrase="phraseIndex + 1"
         :totalPhrases="totalPhrases"
         :bundleId="id.toString()"
-        :body-class="'flex flex-col items-center justify-start'"
+        :body-class="'flex flex-col items-center justify-start h-full '"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive"
         :error-mode="errorMode"
         @end-session="endLiveSession"
     >
         <template v-if="bundle">
-            <section class="w-full flex-1 py-10">
-                <div
-                    :class="[
-                        'flex flex-wrap items-center justify-center space-x-2 space-y-2',
-                        // size
-                        // 'w-full md:!w-[800px]',
-                        'sm:px-5 md:px-32 lg:px-52',
-                    ]"
-                >
+            <section :class="['flex h-full w-full flex-col items-start justify-between', 'sm:px-5 md:px-32 lg:px-52']">
+                <div :class="['overflow-y-auto', 'flex flex-wrap items-start justify-center gap-2', 'py-4']">
                     <!-- All phrases -->
                     <Card
-                        v-for="phrase in selectedPhrases"
+                        v-for="(phrase, index) in selectedPhrases"
                         :key="phrase._id"
                         :class="[
+                            // base
+                            'relative rounded-lg text-center opacity-40',
+                            // transition
                             'transition-all duration-300 ease-in-out',
                             // size
-                            'min-w-9 rounded-lg !p-10 text-center',
-                            // '!border-4 border-dashed !border-primary',
+                            'p-2 px-3 text-xs',
+                            'lg:!p-5 lg:!px-10',
+                            'md:!p-3 md:!px-5 md:text-xs',
 
+                            // colors
                             '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
                             {
-                                '!border-4 border-dashed !border-primary': activePhrase && activePhrase._id === phrase._id,
+                                '!opacity-100': !activePhrase,
+                            },
+                            {
+                                '!border-4 border-dashed !border-primary !opacity-100': activePhrase && activePhrase._id === phrase._id,
                             },
                         ]"
                     >
-                        <h1 class="text-2xl font-bold">{{ phrase.phrase }}</h1>
-                        <p class="text-lg">{{ phrase.translation }}</p>
+                        <h1 :class="['text-base font-bold', 'md:!text-lg', 'lg:!text-2xl']">{{ phrase.phrase }}</h1>
+                        <p :class="['text-sm', 'md:!text-base', 'lg:!text-lg', 'text-gray-500 dark:text-white-light']">
+                            {{ phrase.translation }}
+                        </p>
+                        <span class="absolute bottom-0 right-0 scale-75 rounded-xl bg-gray-100 px-2 text-xs text-gray-500"> {{ index + 1 }} </span>
                     </Card>
                 </div>
             </section>
@@ -142,11 +146,13 @@
                 const wordIndex = arg.wordNumber - 1;
 
                 if (wordIndex === -1 || wordIndex == undefined || wordIndex >= selectedPhrases.value.length) {
+                    phraseIndex.value = -1;
                     return { success: false, error: 'the vocabulary number' + arg.wordNumber + ' is not found' };
                 }
 
                 phraseIndex.value = wordIndex as number;
-                return { success: true, message: 'The vocabulary number ' + arg.wordNumber + ' is set as active vocabulary' };
+                const phrase = selectedPhrases.value[wordIndex].phrase;
+                return { success: true, message: `The vocabulary number ${arg.wordNumber}.${phrase} is set as active vocabulary` };
             },
             definition: {
                 type: 'function',
