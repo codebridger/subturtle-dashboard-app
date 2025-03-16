@@ -10,8 +10,8 @@
         @end-session="endLiveSession"
     >
         <template v-if="bundle">
-            <section :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-start justify-between', 'sm:px-5 md:px-32 lg:px-52']">
-                <div :class="['flex flex-wrap items-start justify-center gap-2', 'py-4']">
+            <section :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-center md:justify-center', 'sm:px-5 md:px-32 lg:px-52']">
+                <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'py-4']">
                     <!-- All phrases -->
                     <Card
                         v-for="(phrase, index) in selectedPhrases"

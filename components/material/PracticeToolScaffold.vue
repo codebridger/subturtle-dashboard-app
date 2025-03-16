@@ -14,9 +14,9 @@
             <Card rounded="none" :class="['flex w-full items-center justify-between px-3 py-0 md:!py-3']">
                 <div></div>
 
-                <div :class="['text-center', 'flex flex-row-reverse gap-2 md:!block']">
-                    <p class="font-bold text-gray-600">{{ activePhrase }} / {{ totalPhrases }}</p>
-                    <h1 class="text-sm text-gray-500">{{ title }}</h1>
+                <div :class="['text-center font-bold', 'flex flex-row-reverse gap-2 md:!block']">
+                    <p class="text-gray-500">{{ activePhrase }} / {{ totalPhrases }}</p>
+                    <h1 class="text-sm text-gray-800">{{ title }}</h1>
                 </div>
 
                 <div>
