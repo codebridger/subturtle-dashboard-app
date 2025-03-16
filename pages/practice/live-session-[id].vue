@@ -248,7 +248,8 @@
 
     function triggerTheConversation() {
         const message = `The user is here, greeting to the user, and start the practice session with the first word from the given list`;
-        liveSessionStore.triggerConversation(message);
+        const microphoneNotice = `Then Encurage the user to unmute the microphone, microphone is ${liveSessionStore.getMicrophoneMuted ? 'muted' : 'unmuted'}`;
+        liveSessionStore.triggerConversation(message + '\n' + microphoneNotice);
     }
 
     function getPhraseIndex() {
