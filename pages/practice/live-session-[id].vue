@@ -10,8 +10,15 @@
         @end-session="endLiveSession"
     >
         <template v-if="bundle">
-            <section class="flex-1 py-10">
-                <div class="flex w-[600px] flex-wrap items-center justify-center space-x-2 space-y-2">
+            <section class="w-full flex-1 py-10">
+                <div
+                    :class="[
+                        'flex flex-wrap items-center justify-center space-x-2 space-y-2',
+                        // size
+                        // 'w-full md:!w-[800px]',
+                        'sm:px-5 md:px-32 lg:px-52',
+                    ]"
+                >
                     <!-- All phrases -->
                     <Card
                         v-for="phrase in selectedPhrases"
@@ -46,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card } from '@codebridger/lib-vue-components/elements.ts';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
@@ -131,12 +138,15 @@
 
     const tools = {
         set_active_vocabulary: {
-            handler: (arg: { vocabulary: string }) => {
-                const wordIndex = selectedPhrases.value.findIndex((p) => p.phrase.toLowerCase() === arg.vocabulary.toLowerCase());
-                if (wordIndex === -1 || wordIndex == undefined) return { success: false, error: 'the vocabulary ' + arg.vocabulary + ' is not found' };
+            handler: (arg: { wordNumber: number }) => {
+                const wordIndex = arg.wordNumber - 1;
+
+                if (wordIndex === -1 || wordIndex == undefined || wordIndex >= selectedPhrases.value.length) {
+                    return { success: false, error: 'the vocabulary number' + arg.wordNumber + ' is not found' };
+                }
 
                 phraseIndex.value = wordIndex as number;
-                return { success: true, message: 'The vocabulary ' + arg.vocabulary + ' is set as active vocabulary' };
+                return { success: true, message: 'The vocabulary number ' + arg.wordNumber + ' is set as active vocabulary' };
             },
             definition: {
                 type: 'function',
@@ -144,11 +154,11 @@
                 description: 'Set the active vocabulary to practice.',
                 parameters: {
                     type: 'object',
-                    required: ['vocabulary'],
+                    required: ['wordNumber'],
                     properties: {
-                        vocabulary: {
-                            type: 'string',
-                            description: 'The vocabulary to set as active vocabulary.',
+                        wordNumber: {
+                            type: 'number',
+                            description: 'The vocabulary number to set as active vocabulary.',
                         },
                     },
                 },
@@ -248,12 +258,12 @@
             }
         } else if (mode === 'selection') {
             const { fromPhrase = 1, toPhrase = 2 } = sessionDataParsed;
-            for (let i = fromPhrase; i <= toPhrase; i++) {
+            for (let i = fromPhrase - 1; i <= toPhrase - 1; i++) {
                 if (i >= (bundle.value?.phrases.length || 0)) {
                     break;
                 }
 
-                const tempPhrase = bundle.value?.phrases[i - 1] as PhraseType;
+                const tempPhrase = bundle.value?.phrases[i] as PhraseType;
                 const exists = phrases.find((p) => p._id === tempPhrase._id);
 
                 if (!exists) {
