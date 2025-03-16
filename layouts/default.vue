@@ -15,7 +15,7 @@
             </template>
 
             <template #sidebar-menu>
-                <SidebarMenu title="Subturtle" :items="menuItems" @item-click="onMenuItemClicked" />
+                <SidebarMenu title="Subturtle" brand-logo="/assets/images/logo.svg" :items="menuItems" @item-click="onMenuItemClicked" />
             </template>
 
             <template #content>

@@ -5,7 +5,7 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
 
   return [
     {
-      title: t('dashboard.nav'),
+      title: '',
       children: [
         {
           title: t('statistic'),
@@ -17,19 +17,25 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
           //   // { title: t('settings'), to: '' },
           // ],
         },
-
-      ],
-    },
-    {
-      title: t('practice.nav'),
-      children: [
         {
           title: t('bundle.nav'),
           icon: 'IconMenuDatatables',
           to: '/bundles',
           // child: [{ title: t('bundle.list'), to: '/bundles' }],
         },
-      ]
-    }
+
+      ],
+    },
+    // {
+    //   title: t('practice.nav'),
+    //   children: [
+    //     {
+    //       title: t('bundle.nav'),
+    //       icon: 'IconMenuDatatables',
+    //       to: '/bundles',
+    //       // child: [{ title: t('bundle.list'), to: '/bundles' }],
+    //     },
+    //   ]
+    // }
   ] as Array<SidebarGroupType>;
 };
