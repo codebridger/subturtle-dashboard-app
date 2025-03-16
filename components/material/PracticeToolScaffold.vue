@@ -11,16 +11,16 @@
         </div>
 
         <div class="flex h-screen flex-col" v-else-if="!errorMode && !isLoading">
-            <Card rounded="none" class="flex w-full items-center justify-between px-3 py-3">
+            <Card rounded="none" :class="['flex w-full items-center justify-between px-3 py-0 md:!py-3']">
                 <div></div>
 
-                <div class="text-center">
+                <div :class="['text-center', 'flex flex-row-reverse gap-2 md:!block']">
                     <p class="font-bold text-gray-600">{{ activePhrase }} / {{ totalPhrases }}</p>
                     <h1 class="text-sm text-gray-500">{{ title }}</h1>
                 </div>
 
                 <div>
-                    <Button rounded="md" size="md" iconName="IconX" @click="endSession" />
+                    <Button class="scale-50 md:scale-100" rounded="md" size="md" iconName="IconX" @click="endSession" />
                 </div>
             </Card>
 
@@ -30,6 +30,7 @@
         </div>
     </TransitionGroup>
 </template>
+
 <script setup lang="ts">
     import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
 

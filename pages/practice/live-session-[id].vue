@@ -4,14 +4,14 @@
         :activePhrase="phraseIndex + 1"
         :totalPhrases="totalPhrases"
         :bundleId="id.toString()"
-        :body-class="'flex flex-col items-center justify-start h-full '"
+        :body-class="'flex flex-col items-center justify-start'"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive"
         :error-mode="errorMode"
         @end-session="endLiveSession"
     >
         <template v-if="bundle">
-            <section :class="['flex h-full w-full flex-col items-start justify-between', 'sm:px-5 md:px-32 lg:px-52']">
-                <div :class="['overflow-y-auto', 'flex flex-wrap items-start justify-center gap-2', 'py-4']">
+            <section :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-start justify-between', 'sm:px-5 md:px-32 lg:px-52']">
+                <div :class="['flex flex-wrap items-start justify-center gap-2', 'py-4']">
                     <!-- All phrases -->
                     <Card
                         v-for="(phrase, index) in selectedPhrases"
@@ -36,8 +36,8 @@
                             },
                         ]"
                     >
-                        <h1 :class="['text-base font-bold', 'md:!text-lg', 'lg:!text-2xl']">{{ phrase.phrase }}</h1>
-                        <p :class="['text-sm', 'md:!text-base', 'lg:!text-lg', 'text-gray-500 dark:text-white-light']">
+                        <h1 :class="['text-xs font-bold', 'sm:!text-base md:!text-lg lg:!text-2xl']">{{ phrase.phrase }}</h1>
+                        <p :class="['text-xs', 'sm:!text-base md:!text-lg lg:!text-2xl', 'text-gray-500 dark:text-white-light']">
                             {{ phrase.translation }}
                         </p>
                         <span class="absolute bottom-0 right-0 scale-75 rounded-xl bg-gray-100 px-2 text-xs text-gray-500"> {{ index + 1 }} </span>
@@ -45,8 +45,8 @@
                 </div>
             </section>
 
-            <section :class="['h-[200px] lg:!h-[400px]', 'items-start', 'flex  w-full  justify-center']">
-                <BundleMicToggle class="mt-5" />
+            <section :class="['h-[100px] md:!h-[150px] lg:!h-[200px]', 'items-start', 'flex  w-full  justify-center']">
+                <BundleMicToggle class="scale-50 md:!scale-100" />
             </section>
         </template>
 
