@@ -46,7 +46,7 @@
             </section>
 
             <section :class="['h-[100px] md:!h-[150px] lg:!h-[200px]', 'items-start', 'flex  w-full  justify-center']">
-                <BundleMicToggle class="scale-50 md:!scale-100" />
+                <BundleMicToggle />
             </section>
         </template>
 

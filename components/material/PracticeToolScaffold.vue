@@ -10,7 +10,7 @@
             <slot name="error-mode" />
         </div>
 
-        <div class="flex h-screen flex-col" v-else-if="!errorMode && !isLoading">
+        <div class="flex flex-col" :style="{ height: windowHeight + 'px' }" v-else-if="!errorMode && !isLoading">
             <Card rounded="none" :class="['flex w-full items-center justify-between px-3 py-0 md:!py-3']">
                 <div></div>
 
@@ -33,6 +33,20 @@
 
 <script setup lang="ts">
     import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
+
+    const windowHeight = ref(window.innerHeight);
+
+    onMounted(() => {
+        window.addEventListener('resize', getWindowHeight);
+    });
+
+    onUnmounted(() => {
+        window.removeEventListener('resize', getWindowHeight);
+    });
+
+    function getWindowHeight() {
+        windowHeight.value = window.innerHeight;
+    }
 
     const props = defineProps<{
         title: string;
