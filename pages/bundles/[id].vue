@@ -3,8 +3,8 @@
         <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" @changed="bundleStore.updateBundleDetail(id, $event)" />
 
         <!-- Practice Features -->
-        <section class="flex items-center justify-between">
-            <section class="my-4 flex flex-1 space-x-4">
+        <section class="flex flex-wrap items-start justify-between">
+            <section class="my-4 flex flex-1 flex-wrap gap-2">
                 <Button :to="`/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
 
                 <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" />
@@ -12,7 +12,7 @@
                 <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
             </section>
 
-            <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
+            <Button class="mt-4" color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
         </section>
 
         <!-- Phrase List -->
@@ -39,14 +39,7 @@
 
             <!-- Phrases List -->
             <div v-else class="space-y-4">
-                <TransitionGroup
-                    enter-active-class="transform-gpu"
-                    enter-from-class="opacity-0 -translate-x-full"
-                    enter-to-class="opacity-100 translate-x-0"
-                    leave-active-class="absolute transform-gpu"
-                    leave-from-class="opacity-100 translate-x-0"
-                    leave-to-class="opacity-0 -translate-x-full"
-                >
+                <TransitionGroup name="list">
                     <template v-for="tempPhrase in bundleStore.tempPhrases" :key="tempPhrase.id">
                         <BundlePhraseCard :newPhrase="tempPhrase" />
                     </template>
