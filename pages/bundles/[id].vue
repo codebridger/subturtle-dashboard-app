@@ -5,11 +5,10 @@
         <!-- Practice Features -->
         <section class="flex flex-wrap items-start justify-between">
             <section class="my-4 flex flex-1 flex-wrap gap-2">
+                <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
                 <Button :to="`/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
 
-                <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" />
-
-                <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
+                <!-- <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" /> -->
             </section>
 
             <Button class="mt-4" color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
