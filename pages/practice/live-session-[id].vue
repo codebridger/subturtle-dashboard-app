@@ -44,6 +44,10 @@
                     </Card>
                 </div>
             </section>
+
+            <section :class="['h-[200px] lg:!h-[400px]', 'items-start', 'flex  w-full  justify-center']">
+                <BundleMicToggle class="mt-5" />
+            </section>
         </template>
 
         <template #error-mode>

@@ -7,11 +7,14 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	const liveSession = ref<LiveSessionType | null>(null);
 	const sessionStarted = ref(false);
 	const conversationDialogs = ref<ConversationDialogType[]>([]);
+	const isMicrophoneMuted = ref(false);
 
 	// RTCPeerConnection state
 	let peerConnection: RTCPeerConnection | null = null;
 	let dataChannel: RTCDataChannel | null = null;
 	let audioElement: HTMLAudioElement | null = null;
+	let microphoneStream: MediaStream | null = null;
+	let microphoneTrack: MediaStreamTrack | null = null;
 
 	// Custom callback function that will be called on session events
 	let onUpdateCallback: ((data: any) => void) | null = null;
@@ -20,6 +23,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	// Getters
 	const isSessionActive = computed(() => sessionStarted.value);
 	const getConversationDialogs = computed(() => conversationDialogs.value);
+	const getMicrophoneMuted = computed(() => isMicrophoneMuted.value);
 
 	// Actions
 	/**
@@ -45,6 +49,8 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		audioElement = audioRef;
 
 		try {
+
+
 			// Create the session
 			const session = await functionProvider.run<LiveSessionType>({
 				name: 'create-practice-live-session',
@@ -66,6 +72,9 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 			await setupRTP();
 			await startLiveSession();
 
+			// mute the microphone
+			toggleMicrophone(false);
+
 			return { success: true, session };
 		} catch (error) {
 			console.error('Failed to create live session:', error);
@@ -78,7 +87,6 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	 */
 	async function setupRTP() {
 		if (!audioElement) {
-			// console.error('Audio element not provided');
 			throw new Error('Audio element not provided');
 		}
 
@@ -92,11 +100,11 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		};
 
 		// Add local audio track for microphone input in the browser
-		const ms = await navigator.mediaDevices.getUserMedia({
+		microphoneStream = await navigator.mediaDevices.getUserMedia({
 			audio: true,
 		});
-
-		peerConnection.addTrack(ms.getTracks()[0]);
+		microphoneTrack = microphoneStream.getTracks()[0];
+		peerConnection.addTrack(microphoneTrack);
 	}
 
 	/**
@@ -204,11 +212,20 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		peerConnection.close();
 		peerConnection = null;
 		dataChannel = null;
+
+		// Clean up microphone resources
+		if (microphoneTrack) {
+			microphoneTrack.stop();
+			microphoneTrack = null;
+		}
+		if (microphoneStream) {
+			microphoneStream.getTracks().forEach(track => track.stop());
+			microphoneStream = null;
+		}
+
 		sessionStarted.value = false;
 		liveSession.value = null;
-
-		// Clear conversation dialogs?
-		// conversationDialogs.value = [];
+		isMicrophoneMuted.value = false;
 
 		return { success: true };
 	}
@@ -303,20 +320,43 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		conversationDialogs.value = [];
 	}
 
+	/**
+	 * Toggles the microphone mute state
+	 * @returns The new mute state
+	 */
+	function toggleMicrophone(active?: boolean) {
+		if (active !== undefined) {
+			if (microphoneTrack) {
+				isMicrophoneMuted.value = true;
+				microphoneTrack.enabled = false;
+			}
+
+		}
+		else if (microphoneTrack) {
+			isMicrophoneMuted.value = !isMicrophoneMuted.value;
+			microphoneTrack.enabled = !isMicrophoneMuted.value;
+		}
+
+		return isMicrophoneMuted.value;
+	}
+
 	return {
 		// State
 		liveSession,
 		sessionStarted,
 		conversationDialogs,
+		isMicrophoneMuted,
 
 		// Getters
 		isSessionActive,
 		getConversationDialogs,
+		getMicrophoneMuted,
 
 		// Actions
 		createLiveSession,
 		endLiveSession,
 		triggerConversation,
 		clearConversationDialogs,
+		toggleMicrophone,
 	};
 });

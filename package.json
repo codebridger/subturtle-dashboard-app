@@ -12,7 +12,6 @@
     },
     "devDependencies": {
         "@cssninja/nuxt-toaster": "^0.3.12",
-        "@iconify-json/solar": "^1.2.2",
         "@iconify/tailwind": "^1.2.0",
         "@nuxt/devtools": "^1.6.0",
         "@nuxtjs/i18n": "^8.0.0-beta.9",
@@ -27,7 +26,8 @@
         "sass-embedded": "^1.83.4",
         "tailwindcss": "^3.4.1",
         "typescript": "^4.6.4",
-        "vue-tsc": "^0.40.4"
+        "vue-tsc": "^0.40.4",
+        "@iconify/json": "2.2.317"
     },
     "dependencies": {
         "@codebridger/lib-vue-components": "^1.17.0-dev.15",

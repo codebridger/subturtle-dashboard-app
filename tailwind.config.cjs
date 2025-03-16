@@ -130,6 +130,6 @@ module.exports = {
             strategy: 'class',
         }),
         require('@tailwindcss/typography'),
-        addIconSelectors(['solar']),
+        addIconSelectors(['solar', 'clarity']),
     ],
 };
