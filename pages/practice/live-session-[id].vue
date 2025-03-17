@@ -89,7 +89,7 @@
     const phraseIndex = ref(-1);
     const activePhrase = computed(() => {
         if (!bundle.value) return null;
-        return bundle.value.phrases[phraseIndex.value];
+        return selectedPhrases.value[phraseIndex.value];
     });
     const totalPhrases = computed<number>(() => {
         return selectedPhrases.value.length || 0;
