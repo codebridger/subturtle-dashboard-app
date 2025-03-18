@@ -28,8 +28,8 @@ function getKeys() {
 // The createRest function returns a promise
 const app = createRest({
   port: 8080,
-  modulesPath: path.join(__dirname, "modules"),
-  uploadDirectory: path.join(__dirname, "uploads"),
+  modulesPath: path.join(__dirname, '../dist', "modules"),
+  uploadDirectory: path.join(__dirname, '../dist', "uploads"),
   keypair: process.env.KEYPAIR ? getKeys() : undefined,
   // staticPath: {
   //   rootDir: path.join(__dirname, "assets"),
