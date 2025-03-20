@@ -31,13 +31,14 @@ const app = createRest({
   modulesPath: path.join(__dirname, '../dist', "modules"),
   uploadDirectory: path.join(__dirname, '../dist', "uploads"),
   keypair: process.env.KEYPAIR ? getKeys() : undefined,
-  // staticPath: {
-  //   rootDir: path.join(__dirname, "assets"),
-  // },
   mongo: {
     mongoBaseAddress:
       process.env.MONGO_BASE_ADDRESS || "mongodb://localhost:27017",
     dbPrefix: "subturtle_",
+  },
+  staticPath: {
+    rootDir: path.join(__dirname, "public"),
+    rootPath: "/",
   },
   adminUser: {
     email: process.env.ADMIN_EMAIL || "",
