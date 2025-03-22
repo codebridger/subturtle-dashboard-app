@@ -27,7 +27,7 @@ function getKeys() {
 // Create the rest server
 // The createRest function returns a promise
 const app = createRest({
-  port: 8080,
+  port: parseInt(process.env.PORT || "8080"),
   modulesPath: path.join(__dirname, '../dist', "modules"),
   uploadDirectory: path.join(__dirname, '../dist', "uploads"),
   keypair: process.env.KEYPAIR ? getKeys() : undefined,

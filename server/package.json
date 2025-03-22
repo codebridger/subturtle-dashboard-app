@@ -11,7 +11,7 @@
   "author": "Navid Shad <navidshad72@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@modular-rest/server": "^1.11.11",
+    "@modular-rest/server": "^1.11.12",
     "@types/koa-router": "^7.4.8",
     "date-and-time": "^3.6.0",
     "dotenv": "^16.4.5",

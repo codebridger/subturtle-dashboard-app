@@ -17,15 +17,15 @@ WORKDIR /app
 
 COPY /server/package.json ./
 COPY /server/yarn.lock ./
+COPY /server/.env ./
 
 RUN yarn install
 
 COPY /server/ .
-RUN rm -f *.env
 RUN yarn build
 
 COPY --from=build-stage /app/.output/public ./dist/public
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["yarn", "start"]
