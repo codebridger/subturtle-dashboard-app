@@ -34,10 +34,26 @@
   dependencies:
     vary "^1.1.2"
 
-"@modular-rest/server@^1.11.11":
-  version "1.11.11"
-  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-1.11.11.tgz#cef9c262826266f6ae21f40a377dbe8d4bdbaf56"
-  integrity sha512-sphWs1+8Q6S8gjSVtriFpU1blEFMNjyk/sYnp9GC/W6DJFZ4i8rpwU5lKS6V4FdAmWcGE/hAufjvRG6deVmW6w==
+"@modular-rest/server@/Users/navid-shad/Projects/CodeBridger/modular-rest/packages/server":
+  version "1.11.12"
+  dependencies:
+    "@koa/cors" "^3.1.0"
+    colog "^1.0.4"
+    file-system "^2.2.2"
+    jsonwebtoken "^8.5.1"
+    keypair "^1.0.4"
+    koa "^2.5.3"
+    koa-body "^4.2.0"
+    koa-mount "^4.0.0"
+    koa-router "^7.4.0"
+    koa-static "^5.0.0"
+    mongoose "^5.10.9"
+    nested-property "^4.0.0"
+
+"@modular-rest/server@^1.11.12":
+  version "1.11.12"
+  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-1.11.12.tgz#738ee115ea868f6ccae2a9eb3f0358f6223c02f5"
+  integrity sha512-FX8piAXyECHW+LYIHNZCYpNdJohKQkQX6cO4l+luY/E39eWZcShH02IWbyYkDirMM1b94bntN41fr4s77kuQeg==
   dependencies:
     "@koa/cors" "^3.1.0"
     colog "^1.0.4"
