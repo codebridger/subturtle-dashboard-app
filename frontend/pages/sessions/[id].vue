@@ -1,5 +1,5 @@
 <template>
-    <div class="p-4">
+    <div class="max-w-3xl p-4">
         <!-- Header -->
         <div class="mb-6">
             <div class="flex items-center gap-1">

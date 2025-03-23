@@ -1,4 +1,5 @@
 export type SessionType = "bundle-practice";
+export type LiveSessionMetadataType = LivePracticeSessionSetupType | Record<string, any>;
 
 export interface LiveSessionRecordType {
 	_id: string;
@@ -9,6 +10,7 @@ export interface LiveSessionRecordType {
 	updatedAt: Date;
 	usage: TokenUsageType;
 	dialogs: ConversationDialogType[];
+	metadata: LiveSessionMetadataType;
 }
 
 export interface LiveSessionType {
@@ -67,4 +69,12 @@ export interface TokenUsageType {
 		text_tokens: number;
 		audio_tokens: number;
 	};
+}
+
+export interface LivePracticeSessionSetupType {
+	aiCharacter: string;
+	selectionMode: 'selection' | 'random';
+	fromPhrase?: number;
+	toPhrase?: number;
+	totalPhrases?: number;
 }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
-import type { ConversationDialogType, LiveSessionRecordType, LiveSessionType, TokenUsageType } from '~/types/live-session.type';
+import type { ConversationDialogType, LiveSessionMetadataType, LiveSessionRecordType, LiveSessionType, TokenUsageType } from '~/types/live-session.type';
 
 export const useLiveSessionStore = defineStore('liveSession', () => {
 	// State
@@ -10,6 +10,8 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	const conversationDialogs = ref<ConversationDialogType[]>([]);
 	const isMicrophoneMuted = ref(false);
 	const tokenUsage = ref<TokenUsageType | null>(null);
+	const metadata = ref<LiveSessionMetadataType | null>(null);
+
 	// RTCPeerConnection state
 	let peerConnection: RTCPeerConnection | null = null;
 	let dataChannel: RTCDataChannel | null = null;
@@ -38,6 +40,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 			voice?: string;
 			turnDetectionSilenceDuration?: number;
 		};
+		metadata?: LiveSessionMetadataType;
 		tools: { [key: string]: any };
 		onUpdate?: (data: any) => void;
 		audioRef: HTMLAudioElement | null;
@@ -48,6 +51,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		sessionTools = tools;
 		onUpdateCallback = onUpdate || null;
 		audioElement = audioRef;
+		metadata.value = options.metadata || null;
 
 		try {
 
@@ -399,6 +403,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 				type: 'bundle-practice',
 				userId: authUser.value?.id,
 				session: liveSession.value,
+				metadata: metadata.value,
 			},
 		}).then((res) => {
 			id.value = res._id;

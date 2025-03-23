@@ -81,7 +81,13 @@
     },
     "live-session": {
         "session-history": "Session History",
-        "session-details": "Session Details"
+        "session-details": "Session Details",
+        "dialogs": "dialogs",
+        "your-sessions": "Your Sessions",
+        "phrase-range": "Phrase Range",
+        "total-phrases": "Total Phrases",
+        "selection-mode": "Selection Mode",
+        "ai-character": "AI Character"
     },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",

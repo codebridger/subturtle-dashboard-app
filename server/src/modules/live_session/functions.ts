@@ -1,5 +1,5 @@
 import { defineFunction, getCollection } from "@modular-rest/server";
-import { ConversationDialogType, LiveSessionType, SessionType, TokenUsageType } from "./types";
+import { ConversationDialogType, LivePracticeSessionSetupType, LiveSessionMetadataType, LiveSessionType, SessionType, TokenUsageType } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 const fetch = require("node-fetch");
 
@@ -73,8 +73,8 @@ const requestEphemeralToken = defineFunction({
 const createLiveSession = defineFunction({
 	name: "create-live-session-record",
 	permissionTypes: ["user_access"],
-	callback: async function (context: { userId: String, session: LiveSessionType, type: SessionType }) {
-		const { userId, session, type } = context;
+	callback: async function (context: { userId: String, session: LiveSessionType, type: SessionType, metadata?: LiveSessionMetadataType }) {
+		const { userId, session, type, metadata } = context;
 		const collection = getCollection(DATABASE, LIVE_SESSION_COLLECTION);
 
 		try {
@@ -83,6 +83,7 @@ const createLiveSession = defineFunction({
 				refId: userId,
 				type,
 				session,
+				metadata
 			})
 
 			return recordedSession.toJSON();

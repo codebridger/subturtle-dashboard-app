@@ -12,6 +12,7 @@ const liveSessionCollection = new CollectionDefinition({
 			session: { type: Object, required: true },
 			usage: { type: Object },
 			dialogs: { type: Array<Object>, default: [] },
+			metadata: { type: Object, default: {} },
 		},
 		{ timestamps: true }
 	),

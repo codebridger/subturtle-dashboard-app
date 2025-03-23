@@ -224,6 +224,7 @@
                     instructions: instructions.replace('[phrases]', phrases),
                     voice: sessionDataParsed.aiCharacter || 'alloy',
                 },
+                metadata: sessionDataParsed,
                 tools: tools,
                 audioRef: audioRef.value,
                 onUpdate: handleSessionEvent,
