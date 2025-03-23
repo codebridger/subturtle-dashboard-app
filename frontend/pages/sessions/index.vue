@@ -2,9 +2,12 @@
     <div class="max-w-2xl p-4">
         <!-- Left section -->
         <div class="mb-4 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-1">
-                <Icon name="IconMultipleForwardRight" class="h-6 w-6" />
-                <h1 class="text-2xl font-bold">{{ t('live-session.your-sessions') }}</h1>
+            <div>
+                <div class="flex items-center gap-1">
+                    <Icon name="IconMultipleForwardRight" class="h-6 w-6" />
+                    <h1 class="text-2xl font-bold">{{ t('live-session.your-sessions') }}</h1>
+                </div>
+                <p>{{ t('live-session.6-months-expiry') }}</p>
             </div>
         </div>
 
