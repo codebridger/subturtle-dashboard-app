@@ -1,0 +1,48 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "nuxt build",
+        "dev": "nuxt dev --inspect",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "devDependencies": {
+        "@cssninja/nuxt-toaster": "^0.3.12",
+        "@iconify/tailwind": "^1.2.0",
+        "@nuxt/devtools": "^1.6.0",
+        "@nuxtjs/i18n": "^8.0.0-beta.9",
+        "@rollup/plugin-alias": "^3.1.9",
+        "@tailwindcss/forms": "^0.5.3",
+        "@tailwindcss/typography": "^0.5.7",
+        "autoprefixer": "^10.4.17",
+        "nuxt": "3.13.2",
+        "postcss": "^8.4.35",
+        "prettier": "^2.8.0",
+        "prettier-plugin-tailwindcss": "^0.2.0",
+        "sass-embedded": "^1.83.4",
+        "tailwindcss": "^3.4.1",
+        "typescript": "^4.6.4",
+        "vue-tsc": "^0.40.4",
+        "@iconify/json": "2.2.317"
+    },
+    "dependencies": {
+        "@codebridger/lib-vue-components": "^1.17.0-dev.15",
+        "@modular-rest/client": "^1.6.2",
+        "@pinia/nuxt": "^0.4.6",
+        "apexcharts": "^4.4.0",
+        "pinia": "^2.0.22",
+        "vee-validate": "^4.15.0",
+        "vue": "^3.5.12",
+        "vue-height-collapsible": "^0.1.1",
+        "vue-i18n": "^9.2.2",
+        "vue-router": "latest",
+        "vue3-apexcharts": "^1.8.0",
+        "vue3-perfect-scrollbar": "^1.6.0",
+        "vue3-popper": "^1.5.0",
+        "yup": "^1.6.1"
+    }
+}
