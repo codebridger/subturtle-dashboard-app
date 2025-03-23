@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
-import type { ConversationDialogType, LiveSessionType, TokenUsageType } from '~/types/live-session.type';
+import type { ConversationDialogType, LiveSessionRecordType, LiveSessionType, TokenUsageType } from '~/types/live-session.type';
 
 export const useLiveSessionStore = defineStore('liveSession', () => {
 	// State
+	const id = ref<string | null>(null);
 	const liveSession = ref<LiveSessionType | null>(null);
 	const sessionStarted = ref(false);
 	const conversationDialogs = ref<ConversationDialogType[]>([]);
@@ -53,7 +54,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 
 			// Create the session
 			const session = await functionProvider.run<LiveSessionType>({
-				name: 'create-practice-live-session',
+				name: 'request-live-session-ephemeral-token',
 				args: {
 					voice: sessionDetails.voice || 'alloy',
 					instructions: sessionDetails.instructions,
@@ -67,6 +68,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 			});
 
 			liveSession.value = session;
+			await createLiveSessionRecordOnServer();
 
 			// Set up RTP and start the session
 			await setupRTP();
@@ -181,6 +183,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		else if (type == 'conversation.item.input_audio_transcription.completed') {
 			const { item_id, transcript } = eventData;
 			updateConversationDialogs(transcript, item_id, 'user');
+			updateLiveSessionRecordOnServer();
 		}
 
 		// Handle function calls
@@ -195,6 +198,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 
 			if (eventData.response.usage) {
 				updateTokenUsage(eventData.response.usage);
+				updateLiveSessionRecordOnServer();
 			}
 		}
 
@@ -383,6 +387,37 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		// Accumulate output token details
 		tokenUsage.value.output_token_details.text_tokens += usage.output_token_details.text_tokens;
 		tokenUsage.value.output_token_details.audio_tokens += usage.output_token_details.audio_tokens;
+	}
+
+	function createLiveSessionRecordOnServer() {
+		return functionProvider.run<LiveSessionRecordType>({
+			name: 'create-live-session-record',
+			args: {
+				type: 'bundle-practice',
+				userId: authUser.value?.id,
+				session: liveSession.value,
+			},
+		}).then((res) => {
+			id.value = res._id;
+		});
+	}
+
+	function updateLiveSessionRecordOnServer() {
+		if (!id.value) {
+			throw new Error('No live session record id found');
+		}
+
+		const totalDialogs = conversationDialogs.value.length;
+		const lastDialog = totalDialogs > 0 ? conversationDialogs.value[totalDialogs - 1] : null;
+
+		return functionProvider.run({
+			name: 'update-live-session-record',
+			args: {
+				sessionId: id.value,
+				userId: authUser.value?.id,
+				update: { usage: tokenUsage.value, dialogs: [lastDialog] },
+			},
+		});
 	}
 
 	return {
