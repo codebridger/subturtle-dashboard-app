@@ -224,6 +224,7 @@
                     instructions: instructions.replace('[phrases]', phrases),
                     voice: sessionDataParsed.aiCharacter || 'alloy',
                 },
+                metadata: sessionDataParsed,
                 tools: tools,
                 audioRef: audioRef.value,
                 onUpdate: handleSessionEvent,
@@ -257,6 +258,11 @@
 
         if (eventData.item !== undefined && eventData.item.usage) {
             console.log('event - Item with usage', eventData.item);
+        }
+
+        // Ai Transcript Delta
+        if (type == 'response.audio_transcript.delta') {
+            // console.log('event - audio delta', eventData.delta);
         }
     }
 

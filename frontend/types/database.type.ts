@@ -8,6 +8,7 @@ export const COLLECTIONS = {
     PHRASE: 'phrase',
     PHRASE_BUNDLE: 'phrase_bundle',
     PROFILE: 'profile',
+    LIVE_SESSION: 'live_session',
 };
 
 export interface ProfileType {

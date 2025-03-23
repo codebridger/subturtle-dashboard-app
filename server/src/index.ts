@@ -34,7 +34,7 @@ const app = createRest({
   mongo: {
     mongoBaseAddress:
       process.env.MONGO_BASE_ADDRESS || "mongodb://localhost:27017",
-    dbPrefix: "subturtle_",
+    dbPrefix: process.env.MONGO_DB_PREFIX || "subturtle_",
   },
   staticPath: {
     rootDir: path.join(__dirname, "public"),

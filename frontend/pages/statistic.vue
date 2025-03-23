@@ -1,12 +1,12 @@
 <template>
     <div class="p-6">
-        <h1 class="mb-6 text-lg font-bold">{{ t('dashboard.nav') }}</h1>
+        <h1 class="mb-6 text-lg font-bold">{{ t('statistic.your-statistic') }}</h1>
         <section class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
             <Card class="col-span-1 rounded-md shadow-none lg:col-span-3">
                 <WidgetActivityChartOverview title="Your last 7 days" />
             </Card>
             <Card class="max-h-min rounded-md shadow-none">
-                <h1 class="text-lg font-bold">{{ t('dashboard.quick-states.label') }}</h1>
+                <h1 class="text-lg font-bold">{{ t('statistic.quick-states.label') }}</h1>
                 <div class="flex items-center space-x-4 rounded-md bg-gray-100 p-2 dark:bg-gray-900">
                     <IconButton icon="IconNotes" rounded="full" size="lg" class="text-secondary" />
                     <div class="flex flex-col items-start space-y-2">
@@ -14,7 +14,7 @@
                             {{ statistics.totalBundles }}
                         </h1>
                         <span class="text-gray-500">
-                            {{ t('dashboard.quick-states.total-bundles') }}
+                            {{ t('statistic.quick-states.total-bundles') }}
                         </span>
                     </div>
                 </div>
@@ -25,14 +25,14 @@
                             {{ statistics.totalPhrases }}
                         </h1>
                         <span class="text-gray-500">
-                            {{ t('dashboard.quick-states.total-phrases') }}
+                            {{ t('statistic.quick-states.total-phrases') }}
                         </span>
                     </div>
                 </div>
             </Card>
         </section>
         <section>
-            <h1 class="text-lg font-bold">{{ t('dashboard.recent') }}</h1>
+            <h1 class="text-lg font-bold">{{ t('statistic.recent') }}</h1>
             <div class="grid w-full grid-cols-2 gap-4 lg:grid-cols-3">
                 <BundleGenerativeCard v-for="bundle in recentBundles" :key="bundle._id" :bundle="bundle" />
             </div>
@@ -49,14 +49,9 @@
 
     definePageMeta({
         layout: 'default',
-        title: () => t('statistics'),
+        title: () => t('statistic.your-statistic'),
         // @ts-ignore
         middleware: ['auth'],
-    });
-
-    // meta information can also be added to the head
-    useHead({
-        meta: [{ name: 'description', content: 'Subturtle popup app' }],
     });
 
     const recentBundles = ref<PhraseBundleType[]>([]);

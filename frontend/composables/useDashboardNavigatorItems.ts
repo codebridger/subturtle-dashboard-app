@@ -5,37 +5,30 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
 
   return [
     {
-      title: '',
+      title: t('dashboard'),
       children: [
         {
-          title: t('statistic'),
+          title: t('statistic.your-statistic'),
           icon: 'IconMenuDashboard',
           to: '/statistic',
-          // child: [
-          //   { title: t('statistic'), to: '/statistic' },
-          //   // { title: t('membership-plans.title'), to: '/membership-plans' },
-          //   // { title: t('settings'), to: '' },
-          // ],
         },
         {
           title: t('bundle.nav'),
           icon: 'IconMenuDatatables',
           to: '/bundles',
-          // child: [{ title: t('bundle.list'), to: '/bundles' }],
         },
 
       ],
     },
-    // {
-    //   title: t('practice.nav'),
-    //   children: [
-    //     {
-    //       title: t('bundle.nav'),
-    //       icon: 'IconMenuDatatables',
-    //       to: '/bundles',
-    //       // child: [{ title: t('bundle.list'), to: '/bundles' }],
-    //     },
-    //   ]
-    // }
+    {
+      title: t('ai-coaching'),
+      children: [
+        {
+          title: t('live-session.session-history'),
+          icon: 'iconify solar--history-2-bold',
+          to: '/sessions',
+        },
+      ]
+    }
   ] as Array<SidebarGroupType>;
 };
