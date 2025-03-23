@@ -2,20 +2,30 @@ FROM node:20.9.0-alpine as build-stage
 
 WORKDIR /app
 
-COPY package.json .env ./
-COPY yarn.lock ./
-COPY .npmrc ./
+COPY /frontend/package.json ./
+COPY /frontend/yarn.lock ./
+COPY /frontend/.npmrc ./
 RUN yarn install
 
-COPY . .
+COPY /frontend/ .
 
-RUN yarn build
+RUN yarn generate
 
-FROM node:18-alpine
+FROM node:20.9.0-alpine
 
 WORKDIR /app
-COPY --from=build-stage /app/.output /app/
 
-EXPOSE 3000
+COPY /server/package.json ./
+COPY /server/yarn.lock ./
+COPY /server/.env ./
 
-CMD ["node", "server/index.mjs"]
+RUN yarn install
+
+COPY /server/ .
+RUN yarn build
+
+COPY --from=build-stage /app/.output/public ./dist/public
+
+EXPOSE 80
+
+CMD ["yarn", "start"]

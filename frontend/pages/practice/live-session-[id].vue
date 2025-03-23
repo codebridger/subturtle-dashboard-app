@@ -45,8 +45,14 @@
                 </div>
             </section>
 
-            <section :class="['h-[100px] md:!h-[150px] lg:!h-[200px]', 'items-start', 'flex  w-full  justify-center']">
+            <section :class="['h-[100px] md:!h-[150px] lg:!h-[200px]', 'items-start', 'flex w-full  flex-col items-center  justify-center gap-4']">
                 <BundleMicToggle />
+
+                <div class="flex items-center justify-center gap-2 text-[8px] opacity-50">
+                    <span>IN {{ liveSessionStore.tokenUsage?.input_tokens }}</span>
+                    <span>CACHED {{ liveSessionStore.tokenUsage?.input_token_details.cached_tokens }}</span>
+                    <span>OUT {{ liveSessionStore.tokenUsage?.output_tokens }}</span>
+                </div>
             </section>
         </template>
 
@@ -138,7 +144,7 @@
         }
 
         await fetchFlashcard().then((res) => {
-            selectedPhrases.value = getPhraseIndex();
+            selectedPhrases.value = getPhraseSelection();
         });
 
         await createLiveSession();
@@ -244,6 +250,14 @@
             console.log('Session created', eventData);
             triggerTheConversation();
         }
+
+        if (eventData.response !== undefined && eventData.response.usage) {
+            console.log('event - Response with usage', eventData.response);
+        }
+
+        if (eventData.item !== undefined && eventData.item.usage) {
+            console.log('event - Item with usage', eventData.item);
+        }
     }
 
     function triggerTheConversation() {
@@ -252,7 +266,7 @@
         liveSessionStore.triggerConversation(message + '\n' + microphoneNotice);
     }
 
-    function getPhraseIndex() {
+    function getPhraseSelection() {
         const mode = sessionDataParsed.selectionMode;
         const phrases: PhraseType[] = [];
 

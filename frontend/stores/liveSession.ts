@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
-import type { ConversationDialogType, LiveSessionType } from '~/types/live-session.type';
+import type { ConversationDialogType, LiveSessionType, TokenUsageType } from '~/types/live-session.type';
 
 export const useLiveSessionStore = defineStore('liveSession', () => {
 	// State
@@ -8,7 +8,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 	const sessionStarted = ref(false);
 	const conversationDialogs = ref<ConversationDialogType[]>([]);
 	const isMicrophoneMuted = ref(false);
-
+	const tokenUsage = ref<TokenUsageType | null>(null);
 	// RTCPeerConnection state
 	let peerConnection: RTCPeerConnection | null = null;
 	let dataChannel: RTCDataChannel | null = null;
@@ -192,6 +192,10 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 			if (output01.type != undefined && output01.type == 'function_call') {
 				onFunctionCall(eventData);
 			}
+
+			if (eventData.response.usage) {
+				updateTokenUsage(eventData.response.usage);
+			}
 		}
 
 		// Error handling
@@ -340,12 +344,54 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		return isMicrophoneMuted.value;
 	}
 
+	function updateTokenUsage(usage: TokenUsageType) {
+		if (!tokenUsage.value) {
+			tokenUsage.value = {
+				total_tokens: 0,
+				input_tokens: 0,
+				output_tokens: 0,
+				input_token_details: {
+					cached_tokens: 0,
+					text_tokens: 0,
+					audio_tokens: 0,
+					cached_tokens_details: {
+						text_tokens: 0,
+						audio_tokens: 0,
+					},
+				},
+				output_token_details: {
+					text_tokens: 0,
+					audio_tokens: 0,
+				},
+			};
+		}
+
+		// Accumulate top-level token counts
+		tokenUsage.value.total_tokens += usage.total_tokens;
+		tokenUsage.value.input_tokens += usage.input_tokens;
+		tokenUsage.value.output_tokens += usage.output_tokens;
+
+		// Accumulate input token details
+		tokenUsage.value.input_token_details.cached_tokens += usage.input_token_details.cached_tokens;
+		tokenUsage.value.input_token_details.text_tokens += usage.input_token_details.text_tokens;
+		tokenUsage.value.input_token_details.audio_tokens += usage.input_token_details.audio_tokens;
+		tokenUsage.value.input_token_details.cached_tokens_details.text_tokens +=
+			usage.input_token_details.cached_tokens_details.text_tokens;
+		tokenUsage.value.input_token_details.cached_tokens_details.audio_tokens +=
+			usage.input_token_details.cached_tokens_details.audio_tokens;
+
+		// Accumulate output token details
+		tokenUsage.value.output_token_details.text_tokens += usage.output_token_details.text_tokens;
+		tokenUsage.value.output_token_details.audio_tokens += usage.output_token_details.audio_tokens;
+	}
+
 	return {
 		// State
 		liveSession,
 		sessionStarted,
 		conversationDialogs,
 		isMicrophoneMuted,
+		tokenUsage,
 
 		// Getters
 		isSessionActive,
