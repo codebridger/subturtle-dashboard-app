@@ -182,8 +182,11 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
 		// on user speech transcription
 		else if (type == 'conversation.item.input_audio_transcription.completed') {
 			const { item_id, transcript } = eventData;
-			updateConversationDialogs(transcript, item_id, 'user');
-			updateLiveSessionRecordOnServer();
+
+			if (transcript) {
+				updateConversationDialogs(transcript, item_id, 'user');
+				updateLiveSessionRecordOnServer();
+			}
 		}
 
 		// Handle function calls
