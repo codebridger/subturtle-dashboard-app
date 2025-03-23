@@ -27,17 +27,14 @@
         },
         "filter_bundles": "Filter bundles..."
     },
-    "dashboard": {
-        "nav": "Dashboard",
+    "statistic": {
+        "your-statistic": "Your Statistic",
         "recent": "Recent",
         "quick-states": {
             "label": "Your quick stats",
             "total-phrases": "Phrases",
             "total-bundles": "Bundles"
         }
-    },
-    "dashboard-bundle": {
-        "nav": "Phrase Bundles"
     },
     "flashcard-tool": {
         "label": "Flashcards",
@@ -82,8 +79,18 @@
     "practice": {
         "nav": "Practice"
     },
-    "statistic": "Statistic",
-    "starter-page": "Starter Page",
+    "live-session": {
+        "session-history": "Session History",
+        "session-details": "Session Details",
+        "dialogs": "dialogs",
+        "your-sessions": "Your Sessions",
+        "phrase-range": "Phrase Range",
+        "total-phrases": "Total Phrases",
+        "selection-mode": "Selection Mode",
+        "ai-character": "AI Character"
+    },
+    "dashboard": "Dashboard",
+    "ai-coaching": "AI Coaching",
     "or": "or",
     "cancel": "Cancel",
     "save": "Save",
