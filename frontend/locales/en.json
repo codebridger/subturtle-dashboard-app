@@ -80,6 +80,7 @@
         "nav": "Practice"
     },
     "live-session": {
+        "6-months-expiry": "Each session will expire in 6 months",
         "session-history": "Session History",
         "session-details": "Session Details",
         "dialogs": "dialogs",
