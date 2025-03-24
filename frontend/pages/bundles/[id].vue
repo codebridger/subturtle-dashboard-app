@@ -6,7 +6,7 @@
         <section class="flex flex-wrap items-start justify-between">
             <section class="my-4 flex flex-1 flex-wrap gap-2">
                 <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
-                <Button :to="`/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
+                <Button :to="`/#/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
 
                 <!-- <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" /> -->
             </section>
@@ -117,6 +117,6 @@
         // convert sessionData to base64
         const sessionDataBase64 = btoa(JSON.stringify(sessionData));
         console.log('Live session data:', sessionData);
-        router.push(`/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`);
+        router.push(`/#/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`);
     }
 </script>
