@@ -1,26 +1,33 @@
 import { useProfileStore } from '~/stores/profile';
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
-    //Redirects
-    if (to.fullPath == "/" || to.fullPath == "/#") {
-        return navigateTo("/statistic");
-    }
-
     const profileStore = useProfileStore();
-    const loginRoute = '#/auth/login';
+    const loginRoute = '/auth/login';
 
-    if (to.path === loginRoute) {
-        profileStore.logout();
+    // If already on login route, allow access
+    if (to.fullPath.includes(loginRoute)) {
         return true;
     }
 
+    // If not logged in, try to login with last session
     if (!profileStore.isLogin) {
-        await profileStore.loginWithLastSession();
+        try {
+            await profileStore.loginWithLastSession();
+        } catch (error) {
+            // If login fails, redirect to login page
+            return navigateTo(loginRoute);
+        }
     }
 
+    // If logged in, handle redirects
     if (profileStore.isLogin) {
+        //Redirects
+        if (to.fullPath === "/" || to.fullPath === "/#") {
+            return navigateTo("/statistic");
+        }
         return true;
     }
 
+    // If still not logged in after all attempts, redirect to login
     return navigateTo(loginRoute);
 });
