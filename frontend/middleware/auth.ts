@@ -2,12 +2,12 @@ import { useProfileStore } from '~/stores/profile';
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
     //Redirects
-    if (to.path == "/") {
+    if (to.fullPath == "/" || to.fullPath == "/#") {
         return navigateTo("/statistic");
     }
 
     const profileStore = useProfileStore();
-    const loginRoute = '/auth/login';
+    const loginRoute = '#/auth/login';
 
     if (to.path === loginRoute) {
         profileStore.logout();
