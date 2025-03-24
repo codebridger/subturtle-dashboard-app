@@ -13,7 +13,7 @@ const CLIENT_ID_EXTENSION = process.env.GOOGLE_OAUTH_CLIENT_ID_EXTENSION;
 // Note: The redirect uri is the callback route for the web app
 // This route will be called after the user has logged in to google
 // This route will then exchange the code for a token
-const REDIRECT_URI = process.env.API_BASE_URL + "/#/auth/google/code-login";
+const REDIRECT_URI = process.env.API_BASE_URL + "/auth/google/code-login";
 
 const REDIRECT_URI_DASHBOARD =
 	process.env.DASHBOARD_BASE_URL + "/#/auth/login_with_token";
