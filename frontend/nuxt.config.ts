@@ -69,12 +69,9 @@ export default defineNuxtConfig({
   //   },
 
   router: {
-    options: { linkExactActiveClass: 'active' },
-  },
-
-  routeRules: {
-    '/': {
-      redirect: '/statistic',
+    options: {
+      linkExactActiveClass: 'active',
+      hashMode: true
     },
   },
 

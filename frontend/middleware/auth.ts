@@ -1,10 +1,10 @@
 import { useProfileStore } from '~/stores/profile';
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
-    // Redirects
-    // if (to.path == "/") {
-    //   return navigateTo("/dashboard");
-    // }
+    //Redirects
+    if (to.path == "/") {
+        return navigateTo("/statistic");
+    }
 
     const profileStore = useProfileStore();
     const loginRoute = '/auth/login';
