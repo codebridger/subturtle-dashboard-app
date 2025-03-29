@@ -56,7 +56,7 @@ const requestEphemeralToken = defineFunction({
           model: "gpt-4o-mini-realtime-preview",
           temperature: 0.6,
           input_audio_transcription: {
-            model: "whisper-1",
+            model: "gpt-4o-mini-transcribe",
           },
           ...additionalSetup,
         }),
