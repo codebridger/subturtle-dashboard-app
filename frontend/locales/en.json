@@ -80,6 +80,10 @@
         "nav": "Practice"
     },
     "live-session": {
+        "no-sessions": "No Sessions Yet",
+        "no-sessions-description": "You haven't started any practice sessions yet. Start a live session from a phrase bundle to practice your language skills and come back here to see your session history.",
+        "start-session": "Start Session",
+        "start-first-session": "Start Your First Session",
         "6-months-expiry": "Each session will expire in 6 months",
         "session-history": "Session History",
         "session-details": "Session Details",
