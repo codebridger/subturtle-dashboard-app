@@ -92,6 +92,8 @@
             collection: COLLECTIONS.LIVE_SESSION,
             query: {
                 refId: authUser.value?.id,
+                // where dialogs atleast contains one object with speaker:"user"
+                dialogs: { $elemMatch: { speaker: 'user' } },
             },
             options: {
                 sort: {
