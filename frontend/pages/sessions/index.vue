@@ -139,14 +139,15 @@
 
     onMounted(async () => {
         isLoading.value = true;
-        await Promise.all([
+
+        try {
             // update pagination
-            controller.updatePagination(),
+            await controller.updatePagination();
             // fetch first page
-            controller.fetchPage(1),
-        ]).finally(() => {
+            await controller.fetchPage(1);
+        } catch (error) {
             isLoading.value = false;
-        });
+        }
     });
 
     function goToBundles() {

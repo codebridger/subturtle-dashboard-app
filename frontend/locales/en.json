@@ -4,6 +4,8 @@
         "list": "Bundle List",
         "detail": "Bundle Detail",
         "add_phrase": "Add Phrase",
+        "no-bundles": "No Phrase Bundles Yet",
+        "no-bundles-description": "You don't have any phrase bundles yet. Create your first bundle to start adding phrases and practice with live sessions.",
         "add_new": {
             "title_placeholder": "My new Tiny set",
             "title_required": "Title is required",
