@@ -1,7 +1,7 @@
 <template>
-    <div class="max-w-2xl p-4">
+    <div class="p-4">
         <!-- Left section -->
-        <div class="mb-4 flex items-center justify-between gap-4">
+        <div v-if="!isEmptyState" class="mb-4 flex items-center justify-between gap-4">
             <div>
                 <div class="flex items-center gap-1">
                     <Icon name="IconMultipleForwardRight" class="h-6 w-6" />
@@ -11,8 +11,31 @@
             </div>
         </div>
 
+        <!-- Empty State -->
+        <div v-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center">
+            <div class="flex max-w-xl flex-col items-center justify-center py-12 text-center">
+                <img
+                    class="mx-auto h-48 w-auto dark:hidden"
+                    src="/assets/images/illustrations/placeholders/flat/placeholder-search-3.svg"
+                    alt="No sessions available"
+                />
+                <img
+                    class="mx-auto hidden h-48 w-auto dark:block"
+                    src="/assets/images/illustrations/placeholders/flat/placeholder-search-3-dark.svg"
+                    alt="No sessions available"
+                />
+                <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('live-session.no-sessions') }}</h3>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('live-session.no-sessions-description') }}
+                </p>
+                <div class="mt-6">
+                    <Button color="primary" iconName="IconPlay" :label="t('live-session.start-first-session')" @click="goToBundles" />
+                </div>
+            </div>
+        </div>
+
         <!-- Sessions List -->
-        <div class="space-y-4">
+        <div v-else class="max-w-2xl space-y-4">
             <div v-for="session in sessionList" :key="session._id" class="rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md dark:bg-gray-800">
                 <NuxtLink :to="`/sessions/${session._id}`" class="block">
                     <!-- Header with Type and Date -->
@@ -55,14 +78,14 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination" class="mt-6">
+        <div v-if="pagination && !isEmptyState" class="mt-6 max-w-2xl">
             <Pagination v-model="controller.pagination.page" :totalPages="controller.pagination.pages" @change-page="controller.fetchPage($event)" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Icon, Button } from '@codebridger/lib-vue-components/elements.ts';
     import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { dataProvider } from '@modular-rest/client';
     import type { PaginationType } from '@modular-rest/client/dist/types/types';
@@ -70,6 +93,7 @@
     import type { LiveSessionRecordType, LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     const { t } = useI18n();
+    const router = useRouter();
 
     definePageMeta({
         layout: 'default',
@@ -80,6 +104,8 @@
     const perPage = ref(20);
     const sessionList = ref<LiveSessionRecordType[]>([]);
     const pagination = ref<PaginationType | null>(null);
+    const isLoading = ref(false);
+    const isEmptyState = computed(() => !sessionList.value.length && !isLoading.value);
 
     // Type guard for practice sessions
     const isPracticeSession = (session: LiveSessionRecordType): session is LiveSessionRecordType & { session: LivePracticeSessionSetupType } => {
@@ -92,6 +118,8 @@
             collection: COLLECTIONS.LIVE_SESSION,
             query: {
                 refId: authUser.value?.id,
+                // where dialogs atleast contains one object with speaker:"user"
+                dialogs: { $elemMatch: { speaker: 'user' } },
             },
             options: {
                 sort: {
@@ -110,7 +138,19 @@
     );
 
     onMounted(async () => {
-        await controller.updatePagination();
-        controller.fetchPage(1);
+        isLoading.value = true;
+
+        try {
+            // update pagination
+            await controller.updatePagination();
+            // fetch first page
+            await controller.fetchPage(1);
+        } catch (error) {
+            isLoading.value = false;
+        }
     });
+
+    function goToBundles() {
+        router.push('/bundles');
+    }
 </script>
