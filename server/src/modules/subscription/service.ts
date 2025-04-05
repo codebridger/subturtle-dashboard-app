@@ -247,82 +247,6 @@ export async function addCredit(
 }
 
 /**
- * Record usage of conversation service
- */
-export async function recordConversationUsage(
-  userId: string,
-  durationSeconds: number,
-  modelType: string,
-  complexity: string
-) {
-  // Calculate credit cost based on parameters
-  const baseCost = 1; // Base cost per minute
-  const modelMultiplier = getModelMultiplier(modelType);
-  const complexityMultiplier = getComplexityMultiplier(complexity);
-
-  // Convert seconds to minutes and calculate credit cost
-  const durationMinutes = durationSeconds / 60;
-  const creditCost =
-    baseCost * durationMinutes * modelMultiplier * complexityMultiplier;
-  const tokenCount = Math.floor(durationSeconds * 2.5); // Simplified token calculation
-
-  // Check for usage spike
-  if (durationMinutes > 10) {
-    emitUsageSpikeEvent(userId, "conversation", durationMinutes, 10);
-  }
-
-  return await recordUsage(
-    userId,
-    "conversation",
-    creditCost,
-    tokenCount,
-    modelType,
-    {
-      durationSeconds,
-      complexity,
-    }
-  );
-}
-
-/**
- * Record usage of translation service
- */
-export async function recordTranslationUsage(
-  userId: string,
-  characterCount: number,
-  languagePair: string,
-  contextType: string
-) {
-  // Calculate credit cost based on parameters
-  const baseCost = 0.1; // Base cost per 1000 characters
-  const languageMultiplier = getLanguageMultiplier(languagePair);
-  const contextMultiplier = getContextMultiplier(contextType);
-
-  // Calculate credit cost
-  const creditCost =
-    baseCost * (characterCount / 1000) * languageMultiplier * contextMultiplier;
-  const tokenCount = Math.floor(characterCount / 4); // Simplified token calculation
-
-  // Check for usage spike
-  if (characterCount > 10000) {
-    emitUsageSpikeEvent(userId, "translation", characterCount, 10000);
-  }
-
-  return await recordUsage(
-    userId,
-    "translation",
-    creditCost,
-    tokenCount,
-    "translation_model",
-    {
-      characterCount,
-      languagePair,
-      contextType,
-    }
-  );
-}
-
-/**
  * Check for expired subscriptions and update their status
  */
 export async function checkAndUpdateExpiredSubscriptions() {
@@ -360,7 +284,7 @@ export async function checkAndUpdateExpiredSubscriptions() {
 /**
  * Record generic usage
  */
-async function recordUsage(
+export async function recordUsage(
   userId: string,
   serviceType: string,
   creditAmount: number,
@@ -464,65 +388,6 @@ async function recordUsage(
   };
 }
 
-// Helper functions
-function getModelMultiplier(modelType: string): number {
-  // Cost multiplier based on model complexity
-  switch (modelType) {
-    case "basic":
-      return 1;
-    case "standard":
-      return 1.5;
-    case "premium":
-      return 2.5;
-    default:
-      return 1;
-  }
-}
-
-function getComplexityMultiplier(complexity: string): number {
-  // Cost multiplier based on conversation complexity
-  switch (complexity) {
-    case "low":
-      return 0.8;
-    case "medium":
-      return 1;
-    case "high":
-      return 1.5;
-    default:
-      return 1;
-  }
-}
-
-function getLanguageMultiplier(languagePair: string): number {
-  // Cost multiplier based on language pair complexity
-  // Common languages are cheaper, rare languages are more expensive
-  if (languagePair.includes("en")) {
-    return 1;
-  } else if (
-    languagePair.includes("zh") ||
-    languagePair.includes("ja") ||
-    languagePair.includes("ar")
-  ) {
-    return 1.5;
-  } else {
-    return 1.2;
-  }
-}
-
-function getContextMultiplier(contextType: string): number {
-  // Cost multiplier based on context type
-  switch (contextType) {
-    case "chat":
-      return 0.8;
-    case "document":
-      return 1;
-    case "technical":
-      return 1.3;
-    default:
-      return 1;
-  }
-}
-
 async function getMonthlyUsage(userId: string): Promise<number> {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -544,4 +409,133 @@ async function getMonthlyUsage(userId: string): Promise<number> {
   ]);
 
   return monthlyUsageResult.length > 0 ? monthlyUsageResult[0].totalCredits : 0;
+}
+
+/**
+ * Record usage of conversation service
+ */
+export async function recordConversationUsage(
+  userId: string,
+  durationSeconds: number,
+  modelType: string,
+  complexity: string
+) {
+  // Calculate credit cost based on parameters
+  const baseCost = 1; // Base cost per minute
+  let modelMultiplier = 1;
+
+  // Simple model multiplier calculation
+  switch (modelType) {
+    case "basic":
+      modelMultiplier = 1;
+      break;
+    case "standard":
+      modelMultiplier = 1.5;
+      break;
+    case "premium":
+      modelMultiplier = 2.5;
+      break;
+  }
+
+  let complexityMultiplier = 1;
+
+  // Simple complexity multiplier calculation
+  switch (complexity) {
+    case "low":
+      complexityMultiplier = 0.8;
+      break;
+    case "medium":
+      complexityMultiplier = 1;
+      break;
+    case "high":
+      complexityMultiplier = 1.5;
+      break;
+  }
+
+  // Convert seconds to minutes and calculate credit cost
+  const durationMinutes = durationSeconds / 60;
+  const creditCost =
+    baseCost * durationMinutes * modelMultiplier * complexityMultiplier;
+  const tokenCount = Math.floor(durationSeconds * 2.5); // Simplified token calculation
+
+  // Check for usage spike
+  if (durationMinutes > 10) {
+    emitUsageSpikeEvent(userId, "conversation", durationMinutes, 10);
+  }
+
+  return await recordUsage(
+    userId,
+    "conversation",
+    creditCost,
+    tokenCount,
+    modelType,
+    {
+      durationSeconds,
+      complexity,
+    }
+  );
+}
+
+/**
+ * Record usage of translation service
+ */
+export async function recordTranslationUsage(
+  userId: string,
+  characterCount: number,
+  languagePair: string,
+  contextType: string
+) {
+  // Calculate credit cost based on parameters
+  const baseCost = 0.1; // Base cost per 1000 characters
+
+  // Simple language multiplier calculation
+  let languageMultiplier = 1;
+  if (languagePair.includes("en")) {
+    languageMultiplier = 1;
+  } else if (
+    languagePair.includes("zh") ||
+    languagePair.includes("ja") ||
+    languagePair.includes("ar")
+  ) {
+    languageMultiplier = 1.5;
+  } else {
+    languageMultiplier = 1.2;
+  }
+
+  // Simple context multiplier calculation
+  let contextMultiplier = 1;
+  switch (contextType) {
+    case "chat":
+      contextMultiplier = 0.8;
+      break;
+    case "document":
+      contextMultiplier = 1;
+      break;
+    case "technical":
+      contextMultiplier = 1.3;
+      break;
+  }
+
+  // Calculate credit cost
+  const creditCost =
+    baseCost * (characterCount / 1000) * languageMultiplier * contextMultiplier;
+  const tokenCount = Math.floor(characterCount / 4); // Simplified token calculation
+
+  // Check for usage spike
+  if (characterCount > 10000) {
+    emitUsageSpikeEvent(userId, "translation", characterCount, 10000);
+  }
+
+  return await recordUsage(
+    userId,
+    "translation",
+    creditCost,
+    tokenCount,
+    "translation_model",
+    {
+      characterCount,
+      languagePair,
+      contextType,
+    }
+  );
 }
