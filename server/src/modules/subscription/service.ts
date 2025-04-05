@@ -121,7 +121,6 @@ export async function checkDailyAllocation(userId: string) {
     availableCredits,
     allowedServices,
     hasActiveSubscription: true,
-    subscriptionType: activeSubscription.subscription_type,
     subscriptionEndsAt: activeSubscription.end_date,
   };
 }
@@ -132,6 +131,7 @@ export async function checkDailyAllocation(userId: string) {
 export async function addCredit(
   userId: string,
   creditAmount: number,
+  totalDays: number,
   paymentDetails: any
 ) {
   const subscriptionsCollection = getCollection(
@@ -160,13 +160,9 @@ export async function addCredit(
     const serviceCost = creditAmount * serviceCostPortion;
     const spendableCredits = creditAmount * spendablePortion;
 
-    // Calculate new end date based on subscription type and amount
-    const daysToAdd = calculateDaysToAdd(
-      creditAmount,
-      paymentDetails.subscriptionType
-    );
+    // Extend existing subscription by totalDays
     const newEndDate = new Date(activeSubscription.end_date);
-    newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+    newEndDate.setDate(newEndDate.getDate() + totalDays);
 
     updatedSubscription = await subscriptionsCollection.findOneAndUpdate(
       { _id: activeSubscription._id },
@@ -192,26 +188,13 @@ export async function addCredit(
     const serviceCost = creditAmount * serviceCostPortion;
     const spendableCredits = creditAmount * spendablePortion;
 
-    // Calculate end date based on subscription type
+    // Set end date based on totalDays parameter
     const startDate = new Date();
     const endDate = new Date(startDate);
-    const subscriptionType = paymentDetails.subscriptionType || "monthly";
-
-    switch (subscriptionType) {
-      case "monthly":
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-      case "quarterly":
-        endDate.setMonth(endDate.getMonth() + 3);
-        break;
-      case "annual":
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        break;
-    }
+    endDate.setDate(endDate.getDate() + totalDays);
 
     const newSubscription = {
       user_id: new Types.ObjectId(userId),
-      subscription_type: subscriptionType,
       start_date: startDate,
       end_date: endDate,
       total_credits: creditAmount,
@@ -250,7 +233,6 @@ export async function addCredit(
 
     // Emit subscription change event for new subscription
     emitSubscriptionChangeEvent(userId, updatedSubscription._id, "new", {
-      subscriptionType,
       creditAmount,
       endDate,
     });
@@ -258,7 +240,6 @@ export async function addCredit(
 
   return {
     subscriptionId: updatedSubscription._id,
-    subscriptionType: updatedSubscription.subscription_type,
     expirationDate: updatedSubscription.end_date,
     creditBalance: updatedSubscription.spendable_credits,
     isNewSubscription: isNew,
@@ -484,24 +465,6 @@ async function recordUsage(
 }
 
 // Helper functions
-function calculateDaysToAdd(
-  creditAmount: number,
-  subscriptionType: string
-): number {
-  // Simple calculation based on credit amount and subscription type
-  // In a real implementation, this would be more sophisticated
-  switch (subscriptionType) {
-    case "monthly":
-      return Math.floor(creditAmount / 100) * 30;
-    case "quarterly":
-      return Math.floor(creditAmount / 250) * 90;
-    case "annual":
-      return Math.floor(creditAmount / 1000) * 365;
-    default:
-      return 0;
-  }
-}
-
 function getModelMultiplier(modelType: string): number {
   // Cost multiplier based on model complexity
   switch (modelType) {
