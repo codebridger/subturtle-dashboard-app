@@ -1,4 +1,4 @@
-import { CollectionDefinition, Schema, Permission } from "@modular-rest/server";
+import { Schema, Permission, defineCollection } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
@@ -7,7 +7,7 @@ import {
 } from "../../config";
 
 // Define payment collection to store payment records
-const paymentCollection = new CollectionDefinition({
+const paymentCollection = defineCollection({
   database: DATABASE,
   collection: PAYMENT_COLLECTION,
   schema: new Schema(
@@ -80,7 +80,7 @@ const paymentCollection = new CollectionDefinition({
 });
 
 // Define payment session collection to track Stripe checkout sessions
-const paymentSessionCollection = new CollectionDefinition({
+const paymentSessionCollection = defineCollection({
   database: DATABASE,
   collection: PAYMENT_SESSION_COLLECTION,
   schema: new Schema(
