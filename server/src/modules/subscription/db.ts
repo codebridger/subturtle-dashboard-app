@@ -5,11 +5,12 @@ import {
   Schemas,
 } from "@modular-rest/server";
 import { Types } from "mongoose";
-import { DATABASE } from "../../config";
-
-export const SUBSCRIPTION_COLLECTION = "subscription";
-export const DAILY_CREDITS_COLLECTION = "daily_credits";
-export const USAGE_COLLECTION = "usage";
+import {
+  DATABASE,
+  SUBSCRIPTION_COLLECTION,
+  DAILY_CREDITS_COLLECTION,
+  USAGE_COLLECTION,
+} from "../../config";
 
 // Define subscription collection
 const subscriptionCollection = new CollectionDefinition({
@@ -21,11 +22,6 @@ const subscriptionCollection = new CollectionDefinition({
         type: Types.ObjectId,
         required: true,
         ref: `${DATABASE}.users`,
-      },
-      subscription_type: {
-        type: String,
-        enum: ["monthly", "quarterly", "annual"],
-        required: true,
       },
       start_date: {
         type: Date,

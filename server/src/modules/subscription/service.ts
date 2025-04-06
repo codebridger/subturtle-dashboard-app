@@ -1,11 +1,12 @@
 import { getCollection } from "@modular-rest/server";
 import { Types } from "mongoose";
-import { DATABASE } from "../../config";
 import {
+  DATABASE,
   SUBSCRIPTION_COLLECTION,
   DAILY_CREDITS_COLLECTION,
   USAGE_COLLECTION,
-} from "./db";
+} from "../../config";
+
 import {
   emitLowCreditsEvent,
   emitSubscriptionChangeEvent,
@@ -13,6 +14,92 @@ import {
   emitSubscriptionExpiredEvent,
   emitSubscriptionRenewedEvent,
 } from "./events";
+
+/**
+ * Helper function to get or create daily credits record
+ */
+async function getOrCreateDailyCredits(
+  subscriptionId: any,
+  shouldCalculateRollover = true
+) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dailyCreditsCollection = getCollection(
+    DATABASE,
+    DAILY_CREDITS_COLLECTION
+  );
+
+  // Try to find existing daily credits record
+  const dailyCredits = await dailyCreditsCollection.findOne({
+    subscription_id: subscriptionId,
+    date: {
+      $gte: today,
+      $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+    },
+  });
+
+  // If found, return it
+  if (dailyCredits) {
+    return dailyCredits;
+  }
+
+  // Get the subscription to calculate daily allocation
+  const subscriptionsCollection = getCollection(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const subscription = await subscriptionsCollection.findOne({
+    _id: subscriptionId,
+  });
+
+  if (!subscription) {
+    throw new Error(`Subscription not found: ${subscriptionId}`);
+  }
+
+  // Calculate daily allocation
+  const subscriptionDays = Math.ceil(
+    (subscription.end_date.getTime() - subscription.start_date.getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+  const dailyAllocation = subscription.spendable_credits / subscriptionDays;
+
+  // Calculate rollover credits if needed
+  let rolledOverCredits = 0;
+
+  if (shouldCalculateRollover) {
+    // Find the most recent daily credits record to get rolled over credits
+    const previousCredits = await dailyCreditsCollection
+      .find({
+        subscription_id: subscriptionId,
+        date: { $lt: today },
+      })
+      .sort({ date: -1 })
+      .limit(1);
+
+    // Calculate rollover credits from previous day if exists
+    const previousCreditsArray = await previousCredits;
+    rolledOverCredits = previousCreditsArray.length
+      ? Math.max(
+          0,
+          previousCreditsArray[0].daily_credit_limit +
+            previousCreditsArray[0].credits_rolled_over -
+            previousCreditsArray[0].credits_used
+        )
+      : 0;
+  }
+
+  // Create new daily credits record
+  const newDailyCredits = {
+    subscription_id: subscriptionId,
+    date: today,
+    daily_credit_limit: dailyAllocation,
+    credits_used: 0,
+    credits_rolled_over: rolledOverCredits,
+  };
+
+  return await dailyCreditsCollection.create(newDailyCredits);
+}
 
 /**
  * Check the daily credit allocation for a user
@@ -41,61 +128,7 @@ export async function checkDailyAllocation(userId: string) {
   }
 
   // Get or create daily credits record
-  const dailyCreditsCollection = getCollection(
-    DATABASE,
-    DAILY_CREDITS_COLLECTION
-  );
-  let dailyCredits = await dailyCreditsCollection.findOne({
-    subscription_id: activeSubscription._id,
-    date: {
-      $gte: today,
-      $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
-    },
-  });
-
-  // Calculate daily allocation
-  const subscriptionDays = Math.ceil(
-    (activeSubscription.end_date.getTime() -
-      activeSubscription.start_date.getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
-  const dailyAllocation =
-    activeSubscription.spendable_credits / subscriptionDays;
-
-  if (!dailyCredits) {
-    // Find the most recent daily credits record to get rolled over credits
-    const previousCredits = await dailyCreditsCollection
-      .find({
-        subscription_id: activeSubscription._id,
-        date: { $lt: today },
-      })
-      .sort({ date: -1 })
-      .limit(1)
-      .toArray();
-
-    // Calculate rollover credits from previous day if exists
-    const rolledOverCredits = previousCredits.length
-      ? Math.max(
-          0,
-          previousCredits[0].daily_credit_limit +
-            previousCredits[0].credits_rolled_over -
-            previousCredits[0].credits_used
-        )
-      : 0;
-
-    // Create new daily credits record
-    const newDailyCredits = {
-      subscription_id: activeSubscription._id,
-      date: today,
-      daily_credit_limit: dailyAllocation,
-      credits_used: 0,
-      credits_rolled_over: rolledOverCredits,
-    };
-
-    const createdRecord = await dailyCreditsCollection.create(newDailyCredits);
-
-    dailyCredits = createdRecord;
-  }
+  const dailyCredits = await getOrCreateDailyCredits(activeSubscription._id);
 
   // Calculate available credits
   const availableCredits =
@@ -147,9 +180,9 @@ export async function addCredit(
   });
 
   // Define default allocation percentages
-  const systemBenefitPortion = 0.2; // 20% for platform costs
-  const serviceCostPortion = 0.3; // 30% for operational expenses
-  const spendablePortion = 0.5; // 50% available for service consumption
+  const systemBenefitPortion = 0.05; // 5% for platform costs
+  const serviceCostPortion = 0.2; // 20% for operational expenses
+  const spendablePortion = 0.75; // 75% available for service consumption
 
   let updatedSubscription;
   let isNew = false;
@@ -208,28 +241,7 @@ export async function addCredit(
     isNew = true;
 
     // Create initial daily credits record
-    const subscriptionDays = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const dailyAllocation = spendableCredits / subscriptionDays;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const dailyCreditsCollection = getCollection(
-      DATABASE,
-      DAILY_CREDITS_COLLECTION
-    );
-
-    const newDailyCredit = {
-      subscription_id: updatedSubscription._id,
-      date: today,
-      daily_credit_limit: dailyAllocation,
-      credits_used: 0,
-      credits_rolled_over: 0,
-    };
-
-    await dailyCreditsCollection.create(newDailyCredit);
+    const dailyCredits = await getOrCreateDailyCredits(updatedSubscription._id);
 
     // Emit subscription change event for new subscription
     emitSubscriptionChangeEvent(userId, updatedSubscription._id, "new", {
@@ -257,12 +269,12 @@ export async function checkAndUpdateExpiredSubscriptions() {
 
   // Find subscriptions that have expired but still have 'active' status
   const now = new Date();
-  const expiredSubscriptions = await subscriptionsCollection
-    .find({
-      status: "active",
-      end_date: { $lt: now },
-    })
-    .toArray();
+  const expiredSubscriptionsQuery = subscriptionsCollection.find({
+    status: "active",
+    end_date: { $lt: now },
+  });
+
+  const expiredSubscriptions = await expiredSubscriptionsQuery;
 
   // Update each expired subscription
   for (const subscription of expiredSubscriptions) {
@@ -307,40 +319,43 @@ export async function recordUsage(
   });
 
   if (!activeSubscription) {
-    throw new Error("No active subscription found");
+    // Even without active subscription, record the usage but flag as unpaid
+    const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
+    const newUsage = {
+      user_id: new Types.ObjectId(userId),
+      subscription_id: null,
+      service_type: serviceType,
+      credit_amount: creditAmount,
+      token_count: tokenCount,
+      model_used: modelUsed,
+      timestamp: new Date(),
+      session_id: new Types.ObjectId(),
+      status: "unpaid",
+      details,
+    };
+
+    const usageRecord = await usageCollection.create(newUsage);
+
+    // No credits available
+    return {
+      remainingCredits: 0,
+      usageId: usageRecord._id,
+      totalUsageToday: creditAmount,
+      totalUsageMonth: await getMonthlyUsage(userId),
+      status: "unpaid",
+    };
   }
 
-  // Get today's daily credits record
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Get or create daily credits record
+  const dailyCredits = await getOrCreateDailyCredits(activeSubscription._id);
 
-  const dailyCreditsCollection = getCollection(
-    DATABASE,
-    DAILY_CREDITS_COLLECTION
-  );
-  const dailyCredits = await dailyCreditsCollection.findOne({
-    subscription_id: activeSubscription._id,
-    date: {
-      $gte: today,
-      $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
-    },
-  });
-
-  if (!dailyCredits) {
-    throw new Error("No daily credits record found");
-  }
-
-  // Check if user has enough credits
+  // Calculate available credits
   const availableCredits =
     dailyCredits.daily_credit_limit +
     dailyCredits.credits_rolled_over -
     dailyCredits.credits_used;
 
-  if (availableCredits < creditAmount) {
-    throw new Error("Insufficient credits");
-  }
-
-  // Record usage in database
+  // Record usage in database regardless of available credits
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
   const newUsage = {
     user_id: new Types.ObjectId(userId),
@@ -351,12 +366,17 @@ export async function recordUsage(
     model_used: modelUsed,
     timestamp: new Date(),
     session_id: new Types.ObjectId(),
+    status: availableCredits < creditAmount ? "overdraft" : "paid",
     details,
   };
 
   const usageRecord = await usageCollection.create(newUsage);
 
   // Update daily credits usage
+  const dailyCreditsCollection = getCollection(
+    DATABASE,
+    DAILY_CREDITS_COLLECTION
+  );
   await dailyCreditsCollection.updateOne(
     { _id: dailyCredits._id },
     { $inc: { credits_used: creditAmount } }
@@ -380,11 +400,24 @@ export async function recordUsage(
     emitLowCreditsEvent(userId, remainingCredits);
   }
 
+  // Check for usage spike based on service type
+  if (serviceType === "conversation" && details.durationSeconds / 60 > 10) {
+    emitUsageSpikeEvent(
+      userId,
+      "conversation",
+      details.durationSeconds / 60,
+      10
+    );
+  } else if (serviceType === "translation" && details.characterCount > 10000) {
+    emitUsageSpikeEvent(userId, "translation", details.characterCount, 10000);
+  }
+
   return {
     remainingCredits,
     usageId: usageRecord._id,
     totalUsageToday,
     totalUsageMonth,
+    status: availableCredits < creditAmount ? "overdraft" : "paid",
   };
 }
 
@@ -408,134 +441,6 @@ async function getMonthlyUsage(userId: string): Promise<number> {
     },
   ]);
 
-  return monthlyUsageResult.length > 0 ? monthlyUsageResult[0].totalCredits : 0;
-}
-
-/**
- * Record usage of conversation service
- */
-export async function recordConversationUsage(
-  userId: string,
-  durationSeconds: number,
-  modelType: string,
-  complexity: string
-) {
-  // Calculate credit cost based on parameters
-  const baseCost = 1; // Base cost per minute
-  let modelMultiplier = 1;
-
-  // Simple model multiplier calculation
-  switch (modelType) {
-    case "basic":
-      modelMultiplier = 1;
-      break;
-    case "standard":
-      modelMultiplier = 1.5;
-      break;
-    case "premium":
-      modelMultiplier = 2.5;
-      break;
-  }
-
-  let complexityMultiplier = 1;
-
-  // Simple complexity multiplier calculation
-  switch (complexity) {
-    case "low":
-      complexityMultiplier = 0.8;
-      break;
-    case "medium":
-      complexityMultiplier = 1;
-      break;
-    case "high":
-      complexityMultiplier = 1.5;
-      break;
-  }
-
-  // Convert seconds to minutes and calculate credit cost
-  const durationMinutes = durationSeconds / 60;
-  const creditCost =
-    baseCost * durationMinutes * modelMultiplier * complexityMultiplier;
-  const tokenCount = Math.floor(durationSeconds * 2.5); // Simplified token calculation
-
-  // Check for usage spike
-  if (durationMinutes > 10) {
-    emitUsageSpikeEvent(userId, "conversation", durationMinutes, 10);
-  }
-
-  return await recordUsage(
-    userId,
-    "conversation",
-    creditCost,
-    tokenCount,
-    modelType,
-    {
-      durationSeconds,
-      complexity,
-    }
-  );
-}
-
-/**
- * Record usage of translation service
- */
-export async function recordTranslationUsage(
-  userId: string,
-  characterCount: number,
-  languagePair: string,
-  contextType: string
-) {
-  // Calculate credit cost based on parameters
-  const baseCost = 0.1; // Base cost per 1000 characters
-
-  // Simple language multiplier calculation
-  let languageMultiplier = 1;
-  if (languagePair.includes("en")) {
-    languageMultiplier = 1;
-  } else if (
-    languagePair.includes("zh") ||
-    languagePair.includes("ja") ||
-    languagePair.includes("ar")
-  ) {
-    languageMultiplier = 1.5;
-  } else {
-    languageMultiplier = 1.2;
-  }
-
-  // Simple context multiplier calculation
-  let contextMultiplier = 1;
-  switch (contextType) {
-    case "chat":
-      contextMultiplier = 0.8;
-      break;
-    case "document":
-      contextMultiplier = 1;
-      break;
-    case "technical":
-      contextMultiplier = 1.3;
-      break;
-  }
-
-  // Calculate credit cost
-  const creditCost =
-    baseCost * (characterCount / 1000) * languageMultiplier * contextMultiplier;
-  const tokenCount = Math.floor(characterCount / 4); // Simplified token calculation
-
-  // Check for usage spike
-  if (characterCount > 10000) {
-    emitUsageSpikeEvent(userId, "translation", characterCount, 10000);
-  }
-
-  return await recordUsage(
-    userId,
-    "translation",
-    creditCost,
-    tokenCount,
-    "translation_model",
-    {
-      characterCount,
-      languagePair,
-      contextType,
-    }
-  );
+  const results = await monthlyUsageResult;
+  return results.length > 0 ? results[0].totalCredits : 0;
 }

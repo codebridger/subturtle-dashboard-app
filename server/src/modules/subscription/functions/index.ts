@@ -1,8 +1,7 @@
 import {
   checkDailyAllocation,
   addCredit,
-  recordConversationUsage,
-  recordTranslationUsage,
+  recordUsage,
   checkAndUpdateExpiredSubscriptions,
 } from "../service";
 
@@ -10,7 +9,6 @@ import {
 export {
   checkDailyAllocation,
   addCredit,
-  recordConversationUsage,
-  recordTranslationUsage,
+  recordUsage,
   checkAndUpdateExpiredSubscriptions,
 };
