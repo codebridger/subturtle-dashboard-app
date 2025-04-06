@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { PaymentProvider } from "./adapters/types";
 
 export type PaymentStatus = "pending" | "succeeded" | "failed" | "canceled";
 export type SessionStatus = "created" | "completed" | "expired" | "failed";
@@ -6,15 +7,11 @@ export type SessionStatus = "created" | "completed" | "expired" | "failed";
 export interface Payment {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
-  stripe_customer_id?: string;
+  provider: PaymentProvider;
   amount: number;
   currency: string;
-  product_id: string;
   status: PaymentStatus;
-  stripe_payment_id?: string;
-  payment_method?: string;
-  credits_added?: number;
-  subscription_days: number;
+  provider_data: Record<string, any>; // All provider-specific data goes here
   metadata?: Record<string, any>;
   createdAt?: Date;
   updatedAt?: Date;
@@ -23,14 +20,11 @@ export interface Payment {
 export interface PaymentSession {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
-  stripe_session_id: string;
-  product_id: string;
+  provider: PaymentProvider;
   amount: number;
   currency: string;
   status: SessionStatus;
-  expires_at: Date;
-  success_url: string;
-  cancel_url: string;
+  provider_data: Record<string, any>; // All provider-specific data goes here
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -39,12 +33,14 @@ export interface CheckoutSessionRequest {
   productId: string;
   successUrl?: string;
   cancelUrl?: string;
+  provider?: PaymentProvider; // Optional - defaults to STRIPE if not specified
 }
 
 export interface CheckoutSessionResponse {
   sessionId: string;
   url: string;
   expiresAt: Date;
+  provider: PaymentProvider;
 }
 
 export interface PaymentVerificationResponse {
@@ -52,6 +48,7 @@ export interface PaymentVerificationResponse {
   paymentId?: string;
   status: PaymentStatus;
   error?: string;
+  provider?: PaymentProvider;
 }
 
 // Plan configuration
@@ -63,5 +60,4 @@ export interface PlanConfig {
   currency: string;
   creditsAmount: number;
   subscriptionDays: number;
-  stripePriceId?: string; // When using Stripe Products & Prices
 }

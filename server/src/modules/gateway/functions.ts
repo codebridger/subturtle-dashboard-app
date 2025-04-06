@@ -1,14 +1,20 @@
 import { defineFunction } from "@modular-rest/server";
-import { createCheckoutSession, verifyPaymentStatus } from "./service";
+import {
+  createCheckoutSession,
+  verifyPaymentStatus,
+  handleWebhookEvent,
+} from "./service";
 import { CheckoutSessionRequest } from "./types";
+import { PaymentProvider } from "./adapters";
 
 /**
  * Array of exported functions for the gateway module
- * These functions can be called from the client via $api.gateway.functionName
+ * These functions can be called from the client via functionProvider.run
  */
 
 interface CreatePaymentParams {
   productId: string;
+  provider?: PaymentProvider;
   successUrl?: string;
   cancelUrl?: string;
   userId?: string;
@@ -19,17 +25,21 @@ const createPaymentSession = defineFunction({
   name: "createPaymentSession",
   permissionTypes: ["user_access"],
   callback: async function (params: CreatePaymentParams) {
-    const { productId, successUrl, cancelUrl, userId } = params;
-
-    // With user_access permission, userId should be available in the context
-    // Request object is automatically passed by modular-rest
+    const {
+      productId,
+      provider = PaymentProvider.STRIPE,
+      successUrl,
+      cancelUrl,
+      userId,
+    } = params;
 
     if (!userId) {
-      throw new Error("User not authenticated");
+      throw new Error("User ID is required");
     }
 
     const request: CheckoutSessionRequest = {
       productId,
+      provider,
       successUrl,
       cancelUrl,
     };
@@ -42,9 +52,24 @@ const createPaymentSession = defineFunction({
 const verifyPayment = defineFunction({
   name: "verifyPayment",
   permissionTypes: ["user_access"],
-  callback: async function (sessionId: string) {
-    return await verifyPaymentStatus(sessionId);
+  callback: async function (
+    sessionId: string,
+    provider: PaymentProvider = PaymentProvider.STRIPE
+  ) {
+    return await verifyPaymentStatus(sessionId, provider);
   },
 });
 
-export const functions = [createPaymentSession, verifyPayment];
+// Handle webhook events
+const handleWebhook = defineFunction({
+  name: "handleWebhook",
+  permissionTypes: ["public"],
+  callback: async function (
+    eventData: any,
+    provider: PaymentProvider = PaymentProvider.STRIPE
+  ) {
+    return await handleWebhookEvent(eventData, provider);
+  },
+});
+
+export const functions = [createPaymentSession, verifyPayment, handleWebhook];

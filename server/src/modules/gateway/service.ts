@@ -12,260 +12,94 @@ import {
   PaymentVerificationResponse,
 } from "./types";
 import { addCredit } from "../subscription/service";
+import { PaymentProvider, paymentAdapterFactory } from "./adapters";
 
 // Initialize Stripe with a simpler approach
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
+// Initialize the payment adapters
+async function initializePaymentAdapters() {
+  await paymentAdapterFactory.initialize();
+}
+
+// Initialize on module load
+initializePaymentAdapters().catch((err) => {
+  console.error("Failed to initialize payment adapters:", err);
+});
+
 /**
- * Create a checkout session for the Stripe product
+ * Create a checkout session
  */
 export async function createCheckoutSession(
   userId: string,
   request: CheckoutSessionRequest
 ): Promise<CheckoutSessionResponse> {
-  const { productId, successUrl, cancelUrl } = request;
+  const { provider = PaymentProvider.STRIPE } = request;
+  const adapter = paymentAdapterFactory.getAdapter(provider);
 
-  // Fetch product details from Stripe
-  const product = await stripe.products.retrieve(productId);
-
-  if (!product) {
-    throw new Error(`Invalid product ID: ${productId}`);
-  }
-
-  // Get metadata from the product
-  const creditsAmount = parseInt(product.metadata.creditsAmount || "0", 10);
-  const subscriptionDays = parseInt(
-    product.metadata.subscriptionDays || "0",
-    10
-  );
-
-  if (!creditsAmount || !subscriptionDays) {
-    throw new Error(
-      "Product is missing required metadata: creditsAmount or subscriptionDays"
-    );
-  }
-
-  // Get price data for this product
-  const prices = await stripe.prices.list({
-    product: productId,
-    active: true,
-    limit: 1,
-  });
-
-  if (!prices.data.length) {
-    throw new Error("No active price found for this product");
-  }
-
-  const price = prices.data[0];
-
-  // Default URLs if not provided
-  const defaultSuccessUrl = `${
-    process.env.FRONTEND_URL || "http://localhost:3000"
-  }/payment-success`;
-  const defaultCancelUrl = `${
-    process.env.FRONTEND_URL || "http://localhost:3000"
-  }/payment-canceled`;
-
-  // Create a Stripe checkout session
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items: [
-      {
-        price: price.id,
-        quantity: 1,
-      },
-    ],
-    mode: "subscription",
-    success_url: `${
-      successUrl || defaultSuccessUrl
-    }?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: cancelUrl || defaultCancelUrl,
-    metadata: {
-      userId,
-      productId,
-      creditsAmount: creditsAmount.toString(),
-      subscriptionDays: subscriptionDays.toString(),
-    },
-  });
-
-  // Save session in database
-  const paymentSessionCollection = getCollection(
-    DATABASE,
-    PAYMENT_SESSION_COLLECTION
-  );
-
-  // Use direct update with the user ID as string
-  // The collection will handle the proper ObjectId conversion
-  await paymentSessionCollection.updateOne(
-    { stripe_session_id: session.id },
-    {
-      $set: {
-        user_id: userId, // MongoDB will convert string to ObjectId
-        stripe_session_id: session.id,
-        product_id: productId,
-        amount: price.unit_amount ? price.unit_amount / 100 : 0,
-        currency: price.currency,
-        status: "created",
-        expires_at: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes expiry
-        success_url: successUrl || defaultSuccessUrl,
-        cancel_url: cancelUrl || defaultCancelUrl,
-      },
-    },
-    { upsert: true }
-  );
-
-  return {
-    sessionId: session.id,
-    url: session.url || "",
-    expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-  };
-}
-
-/**
- * Verify payment status and update user's subscription
- */
-export async function verifyPaymentStatus(
-  sessionId: string
-): Promise<PaymentVerificationResponse> {
   try {
-    // Check if payment session exists in our database
-    const paymentSessionCollection = getCollection(
-      DATABASE,
-      PAYMENT_SESSION_COLLECTION
-    );
-    const sessionDoc = await paymentSessionCollection.findOne({
-      stripe_session_id: sessionId,
+    const result = await adapter.createCheckoutSession({
+      userId,
+      productId: request.productId,
+      successUrl: request.successUrl,
+      cancelUrl: request.cancelUrl,
     });
-
-    if (!sessionDoc) {
-      throw new Error("Payment session not found");
-    }
-
-    // Type assertion to handle MongoDB document typing
-    const session = sessionDoc as any;
-
-    // Check payment status with Stripe
-    const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
-
-    if (checkoutSession.payment_status !== "paid") {
-      throw new Error("Payment not completed");
-    }
-
-    // If already processed, return success
-    if (session.status === "completed") {
-      const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
-      // Type assertion for payment document
-      const payment = (await paymentCollection.findOne({
-        stripe_session_id: sessionId,
-      })) as any;
-
-      return {
-        success: true,
-        paymentId: payment?._id.toString(),
-        status: "succeeded",
-      };
-    }
-
-    // Update session status
-    await paymentSessionCollection.updateOne(
-      { _id: session._id },
-      { $set: { status: "completed" } }
-    );
-
-    // Get metadata from the checkout session
-    const creditsAmount = parseInt(
-      checkoutSession.metadata?.creditsAmount || "0",
-      10
-    );
-    const subscriptionDays = parseInt(
-      checkoutSession.metadata?.subscriptionDays || "0",
-      10
-    );
-
-    // Create payment record
-    const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
-
-    // Create a payment record
-    await paymentCollection.create({
-      user_id: session.user_id,
-      amount: session.amount,
-      currency: session.currency,
-      product_id: session.product_id,
-      status: "succeeded",
-      stripe_payment_id: checkoutSession.payment_intent as string,
-      payment_method: "card",
-      credits_added: creditsAmount,
-      subscription_days: subscriptionDays,
-      metadata: {
-        stripe_session_id: sessionId,
-        customer_email: checkoutSession.customer_details?.email,
-      },
-    });
-
-    // Get the payment document
-    const payment = (await paymentCollection.findOne({
-      metadata: { stripe_session_id: sessionId },
-    })) as any;
-
-    // Add credits to user's subscription
-    await addCredit(
-      session.user_id.toString(),
-      creditsAmount,
-      subscriptionDays,
-      {
-        paymentMethod: "stripe",
-        transactionId: checkoutSession.payment_intent,
-        amount: session.amount,
-        currency: session.currency,
-      }
-    );
 
     return {
-      success: true,
-      paymentId: payment?._id.toString(),
-      status: "succeeded",
+      sessionId: result.sessionId,
+      url: result.url,
+      expiresAt: result.expiresAt,
+      provider: result.provider,
     };
   } catch (error: any) {
-    console.error("Payment verification error:", error);
-    throw new Error(error.message || "Unknown error occurred");
+    console.error(`Payment creation error (${provider}):`, error);
+    throw new Error(
+      error.message || `Failed to create ${provider} checkout session`
+    );
   }
 }
 
 /**
- * Handle Stripe webhook events
+ * Verify payment status
  */
-export async function handleStripeWebhook(
-  event: Stripe.Event
-): Promise<{ success: boolean; message: string }> {
+export async function verifyPaymentStatus(
+  sessionId: string,
+  provider: PaymentProvider = PaymentProvider.STRIPE
+): Promise<PaymentVerificationResponse> {
+  const adapter = paymentAdapterFactory.getAdapter(provider);
+
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const metadata = session.metadata;
+    const result = await adapter.verifyPayment(sessionId);
 
-        // Skip if no metadata (shouldn't happen)
-        if (!metadata || !metadata.userId) {
-          return { success: false, message: "Missing metadata in session" };
-        }
-
-        // Verify payment and add credits
-        await verifyPaymentStatus(session.id);
-        return { success: true, message: "Payment processed successfully" };
-      }
-
-      // Handle other webhook events here
-
-      default:
-        return {
-          success: true,
-          message: `Unhandled event type: ${event.type}`,
-        };
-    }
+    return {
+      success: result.success,
+      paymentId: result.paymentId,
+      status: result.status,
+      error: result.error,
+      provider: result.metadata?.provider || provider,
+    };
   } catch (error: any) {
-    console.error("Webhook error:", error);
+    console.error(`Payment verification error (${provider}):`, error);
+    throw new Error(error.message || `Failed to verify ${provider} payment`);
+  }
+}
+
+/**
+ * Handle webhook events
+ */
+export async function handleWebhookEvent(
+  eventData: any,
+  provider: PaymentProvider = PaymentProvider.STRIPE
+): Promise<{ success: boolean; message: string }> {
+  const adapter = paymentAdapterFactory.getAdapter(provider);
+
+  try {
+    return await adapter.handleWebhook(eventData);
+  } catch (error: any) {
+    console.error(`Webhook handling error (${provider}):`, error);
     return {
       success: false,
-      message: error.message || "Unknown error occurred",
+      message: error.message || `Failed to handle ${provider} webhook`,
     };
   }
 }

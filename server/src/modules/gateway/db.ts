@@ -4,7 +4,8 @@ import {
   DATABASE,
   PAYMENT_COLLECTION,
   PAYMENT_SESSION_COLLECTION,
-} from "../../config";
+} from "./../../config";
+import { PaymentProvider } from "./adapters/types";
 
 // Define payment collection to store payment records
 const paymentCollection = defineCollection({
@@ -17,9 +18,11 @@ const paymentCollection = defineCollection({
         required: true,
         ref: `${DATABASE}.users`,
       },
-      stripe_customer_id: {
+      provider: {
         type: String,
-        required: false,
+        enum: Object.values(PaymentProvider),
+        required: true,
+        default: PaymentProvider.STRIPE,
       },
       amount: {
         type: Number,
@@ -30,30 +33,15 @@ const paymentCollection = defineCollection({
         required: true,
         default: "usd",
       },
-      product_id: {
-        type: String,
-        required: true,
-      },
       status: {
         type: String,
         enum: ["pending", "succeeded", "failed", "canceled"],
         required: true,
         default: "pending",
       },
-      stripe_payment_id: {
-        type: String,
-        required: false,
-      },
-      payment_method: {
-        type: String,
-        required: false,
-      },
-      credits_added: {
-        type: Number,
-        required: false,
-      },
-      subscription_days: {
-        type: Number,
+      // Provider-specific data goes here
+      provider_data: {
+        type: Object,
         required: true,
       },
       metadata: {
@@ -79,7 +67,7 @@ const paymentCollection = defineCollection({
   ],
 });
 
-// Define payment session collection to track Stripe checkout sessions
+// Define payment session collection to track checkout sessions
 const paymentSessionCollection = defineCollection({
   database: DATABASE,
   collection: PAYMENT_SESSION_COLLECTION,
@@ -90,13 +78,11 @@ const paymentSessionCollection = defineCollection({
         required: true,
         ref: `${DATABASE}.users`,
       },
-      stripe_session_id: {
+      provider: {
         type: String,
+        enum: Object.values(PaymentProvider),
         required: true,
-      },
-      product_id: {
-        type: String,
-        required: true,
+        default: PaymentProvider.STRIPE,
       },
       amount: {
         type: Number,
@@ -113,16 +99,9 @@ const paymentSessionCollection = defineCollection({
         required: true,
         default: "created",
       },
-      expires_at: {
-        type: Date,
-        required: true,
-      },
-      success_url: {
-        type: String,
-        required: true,
-      },
-      cancel_url: {
-        type: String,
+      // Provider-specific data goes here
+      provider_data: {
+        type: Object,
         required: true,
       },
     },

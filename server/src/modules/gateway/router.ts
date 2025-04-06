@@ -1,6 +1,7 @@
 import Router from "koa-router";
-import { handleStripeWebhook } from "./service";
+import { handleWebhookEvent } from "./service";
 import Stripe from "stripe";
+import { PaymentProvider } from "./adapters";
 
 const name = "gateway";
 const router = new Router();
@@ -10,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Handle Stripe webhook events
-router.post("/stripe", async (ctx: any) => {
+router.post("/webhook/stripe", async (ctx: any) => {
   let event: Stripe.Event;
 
   // Verify webhook signature
@@ -33,7 +34,7 @@ router.post("/stripe", async (ctx: any) => {
     }
 
     // Process the event
-    const result = await handleStripeWebhook(event);
+    const result = await handleWebhookEvent(event, PaymentProvider.STRIPE);
 
     if (result.success) {
       ctx.body = { received: true, message: result.message };
@@ -44,6 +45,43 @@ router.post("/stripe", async (ctx: any) => {
     }
   } catch (err: any) {
     console.error("Webhook error:", err.message);
+    ctx.status = 400;
+    ctx.body = { received: false, error: err.message };
+  }
+});
+
+// Generic webhook endpoint that can be extended for other providers
+router.post("/webhook/:provider", async (ctx: any) => {
+  const providerName = ctx.params.provider;
+
+  try {
+    // Map the provider name to PaymentProvider enum
+    let provider: PaymentProvider;
+
+    switch (providerName.toLowerCase()) {
+      case "stripe":
+        provider = PaymentProvider.STRIPE;
+        break;
+      // Add other providers here
+      default:
+        throw new Error(`Unsupported payment provider: ${providerName}`);
+    }
+
+    // Process the event with the appropriate provider
+    const result = await handleWebhookEvent(ctx.request.body, provider);
+
+    if (result.success) {
+      ctx.body = { received: true, message: result.message };
+    } else {
+      console.error(
+        `${providerName} webhook processing error:`,
+        result.message
+      );
+      ctx.status = 400;
+      ctx.body = { received: false, error: result.message };
+    }
+  } catch (err: any) {
+    console.error(`${providerName} webhook error:`, err.message);
     ctx.status = 400;
     ctx.body = { received: false, error: err.message };
   }
