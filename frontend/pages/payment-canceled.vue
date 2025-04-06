@@ -8,20 +8,20 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h2 class="mb-4 text-2xl font-semibold">{{ t('payment-canceled') }}</h2>
-                    <p class="mb-6 text-gray-600">{{ t('payment-canceled-message') }}</p>
+                    <h2 class="mb-4 text-2xl font-semibold">{{ t('subscription.payment-canceled') }}</h2>
+                    <p class="mb-6 text-gray-600">{{ t('subscription.payment-canceled-message') }}</p>
                     <div class="flex justify-center space-x-4">
                         <NuxtLink
                             to="/membership-plans"
                             class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-md transition duration-300 hover:bg-blue-700"
                         >
-                            {{ t('try-again') }}
+                            {{ t('subscription.try-again') }}
                         </NuxtLink>
                         <NuxtLink
                             to="/"
                             class="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-800 shadow-md transition duration-300 hover:bg-gray-300"
                         >
-                            {{ t('go-home') }}
+                            {{ t('subscription.go-home') }}
                         </NuxtLink>
                     </div>
                 </div>
@@ -35,7 +35,7 @@
 
     definePageMeta({
         layout: 'default',
-        title: () => t('payment-canceled'),
+        title: () => t('subscription.payment-canceled'),
         // @ts-ignore
         // middleware: ['auth'],
     });

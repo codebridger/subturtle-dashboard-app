@@ -3,8 +3,8 @@
         <div class="mx-auto max-w-lg overflow-hidden rounded-lg bg-white shadow-md">
             <div class="p-6" v-if="isLoading">
                 <div class="text-center">
-                    <h2 class="mb-4 text-2xl font-semibold">{{ t('verifying-payment') }}</h2>
-                    <p class="text-gray-600">{{ t('please-wait') }}</p>
+                    <h2 class="mb-4 text-2xl font-semibold">{{ t('subscription.verifying-payment') }}</h2>
+                    <p class="text-gray-600">{{ t('subscription.please-wait') }}</p>
                 </div>
             </div>
 
@@ -15,11 +15,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 class="mb-4 text-2xl font-semibold">{{ t('payment-successful') }}</h2>
-                    <p class="mb-6 text-gray-600">{{ t('subscription-activated') }}</p>
+                    <h2 class="mb-4 text-2xl font-semibold">{{ t('subscription.payment-successful') }}</h2>
+                    <p class="mb-6 text-gray-600">{{ t('subscription.subscription-activated') }}</p>
                     <div class="flex justify-center">
                         <NuxtLink to="/" class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-md transition duration-300 hover:bg-blue-700">
-                            {{ t('go-home') }}
+                            {{ t('subscription.go-home') }}
                         </NuxtLink>
                     </div>
                 </div>
@@ -37,21 +37,21 @@
                             />
                         </svg>
                     </div>
-                    <h2 class="mb-4 text-2xl font-semibold">{{ t('payment-verification-failed') }}</h2>
-                    <p class="mb-2 text-gray-600">{{ t('payment-verification-error') }}</p>
+                    <h2 class="mb-4 text-2xl font-semibold">{{ t('subscription.payment-verification-failed') }}</h2>
+                    <p class="mb-2 text-gray-600">{{ t('subscription.payment-verification-error') }}</p>
                     <p class="mb-6 text-gray-600" v-if="error">{{ error }}</p>
                     <div class="flex justify-center space-x-4">
                         <NuxtLink
                             to="/membership-plans"
                             class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-md transition duration-300 hover:bg-blue-700"
                         >
-                            {{ t('try-again') }}
+                            {{ t('subscription.try-again') }}
                         </NuxtLink>
                         <NuxtLink
                             to="/"
                             class="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-800 shadow-md transition duration-300 hover:bg-gray-300"
                         >
-                            {{ t('go-home') }}
+                            {{ t('subscription.go-home') }}
                         </NuxtLink>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
 
     definePageMeta({
         layout: 'default',
-        title: () => t('payment-result'),
+        title: () => t('subscription.payment-result'),
         // @ts-ignore
         middleware: ['auth'],
     });
@@ -91,7 +91,7 @@
 
         if (!sessionId) {
             isLoading.value = false;
-            error.value = t('missing-session-id');
+            error.value = t('subscription.missing-session-id');
             return;
         }
 
@@ -105,10 +105,10 @@
             if (result.success) {
                 paymentSuccess.value = true;
             } else {
-                error.value = result.error || t('verification-failed');
+                error.value = result.error || t('subscription.verification-failed');
             }
         } catch (err: any) {
-            error.value = err.message || t('unexpected-error');
+            error.value = err.message || t('subscription.unexpected-error');
             console.error('Payment verification error:', err);
         } finally {
             isLoading.value = false;
