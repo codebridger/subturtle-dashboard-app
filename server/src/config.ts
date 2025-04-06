@@ -10,3 +10,7 @@ export const LIVE_SESSION_COLLECTION = "live_session";
 export const SUBSCRIPTION_COLLECTION = "subscription";
 export const DAILY_CREDITS_COLLECTION = "daily_credits";
 export const USAGE_COLLECTION = "usage";
+
+// Payment gateway collections
+export const PAYMENT_COLLECTION = "payment";
+export const PAYMENT_SESSION_COLLECTION = "payment_session";

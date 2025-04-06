@@ -14,6 +14,7 @@ import {
   emitSubscriptionExpiredEvent,
   emitSubscriptionRenewedEvent,
 } from "./events";
+import { DailyCredits, Subscription } from "./types";
 
 /**
  * Helper function to get or create daily credits record
@@ -25,7 +26,7 @@ async function getOrCreateDailyCredits(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const dailyCreditsCollection = getCollection(
+  const dailyCreditsCollection = getCollection<DailyCredits>(
     DATABASE,
     DAILY_CREDITS_COLLECTION
   );
@@ -45,7 +46,7 @@ async function getOrCreateDailyCredits(
   }
 
   // Get the subscription to calculate daily allocation
-  const subscriptionsCollection = getCollection(
+  const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
@@ -109,12 +110,12 @@ export async function checkDailyAllocation(userId: string) {
   today.setHours(0, 0, 0, 0);
 
   // Get active subscription for user
-  const subscriptionsCollection = getCollection(
+  const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
   const activeSubscription = await subscriptionsCollection.findOne({
-    user_id: new Types.ObjectId(userId),
+    user_id: Types.ObjectId(userId),
     status: "active",
     end_date: { $gte: new Date() },
   });
@@ -167,14 +168,14 @@ export async function addCredit(
   totalDays: number,
   paymentDetails: any
 ) {
-  const subscriptionsCollection = getCollection(
+  const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
 
   // Get current active subscription if exists
   const activeSubscription = await subscriptionsCollection.findOne({
-    user_id: new Types.ObjectId(userId),
+    user_id: Types.ObjectId(userId),
     status: "active",
     end_date: { $gte: new Date() },
   });
@@ -214,7 +215,7 @@ export async function addCredit(
     );
 
     // Emit subscription renewed event
-    emitSubscriptionRenewedEvent(userId, updatedSubscription._id, newEndDate);
+    emitSubscriptionRenewedEvent(userId, updatedSubscription?._id, newEndDate);
   } else {
     // Create new subscription
     const systemBenefit = creditAmount * systemBenefitPortion;
@@ -227,7 +228,7 @@ export async function addCredit(
     endDate.setDate(endDate.getDate() + totalDays);
 
     const newSubscription = {
-      user_id: new Types.ObjectId(userId),
+      user_id: Types.ObjectId(userId),
       start_date: startDate,
       end_date: endDate,
       total_credits: creditAmount,
@@ -251,9 +252,9 @@ export async function addCredit(
   }
 
   return {
-    subscriptionId: updatedSubscription._id,
-    expirationDate: updatedSubscription.end_date,
-    creditBalance: updatedSubscription.spendable_credits,
+    subscriptionId: updatedSubscription?._id,
+    expirationDate: updatedSubscription?.end_date,
+    creditBalance: updatedSubscription?.spendable_credits,
     isNewSubscription: isNew,
   };
 }
@@ -262,7 +263,7 @@ export async function addCredit(
  * Check for expired subscriptions and update their status
  */
 export async function checkAndUpdateExpiredSubscriptions() {
-  const subscriptionsCollection = getCollection(
+  const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
@@ -313,7 +314,7 @@ export async function recordUsage(
     SUBSCRIPTION_COLLECTION
   );
   const activeSubscription = await subscriptionsCollection.findOne({
-    user_id: new Types.ObjectId(userId),
+    user_id: Types.ObjectId(userId),
     status: "active",
     end_date: { $gte: new Date() },
   });
@@ -322,7 +323,7 @@ export async function recordUsage(
     // Even without active subscription, record the usage but flag as unpaid
     const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
     const newUsage = {
-      user_id: new Types.ObjectId(userId),
+      user_id: Types.ObjectId(userId),
       subscription_id: null,
       service_type: serviceType,
       credit_amount: creditAmount,
@@ -358,7 +359,7 @@ export async function recordUsage(
   // Record usage in database regardless of available credits
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
   const newUsage = {
-    user_id: new Types.ObjectId(userId),
+    user_id: Types.ObjectId(userId),
     subscription_id: activeSubscription._id,
     service_type: serviceType,
     credit_amount: creditAmount,
@@ -373,7 +374,7 @@ export async function recordUsage(
   const usageRecord = await usageCollection.create(newUsage);
 
   // Update daily credits usage
-  const dailyCreditsCollection = getCollection(
+  const dailyCreditsCollection = getCollection<DailyCredits>(
     DATABASE,
     DAILY_CREDITS_COLLECTION
   );
@@ -386,13 +387,14 @@ export async function recordUsage(
   const updatedDailyCredits = await dailyCreditsCollection.findOne({
     _id: dailyCredits._id,
   });
+
   const remainingCredits =
-    updatedDailyCredits.daily_credit_limit +
-    updatedDailyCredits.credits_rolled_over -
-    updatedDailyCredits.credits_used;
+    updatedDailyCredits?.daily_credit_limit! +
+    updatedDailyCredits?.credits_rolled_over! -
+    updatedDailyCredits?.credits_used!;
 
   // Get usage statistics
-  const totalUsageToday = updatedDailyCredits.credits_used;
+  const totalUsageToday = updatedDailyCredits?.credits_used;
   const totalUsageMonth = await getMonthlyUsage(userId);
 
   // Check if credits are low and emit event if needed
@@ -429,7 +431,7 @@ async function getMonthlyUsage(userId: string): Promise<number> {
   const monthlyUsageResult = await usageCollection.aggregate([
     {
       $match: {
-        user_id: new Types.ObjectId(userId),
+        user_id: Types.ObjectId(userId),
         timestamp: { $gte: firstDayOfMonth },
       },
     },

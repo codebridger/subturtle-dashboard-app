@@ -2,7 +2,7 @@ import {
   CollectionDefinition,
   Schema,
   Permission,
-  Schemas,
+  schemas,
 } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
@@ -14,7 +14,7 @@ import {
 
 // Define subscription collection
 const subscriptionCollection = new CollectionDefinition({
-  db: DATABASE,
+  database: DATABASE,
   collection: SUBSCRIPTION_COLLECTION,
   schema: new Schema(
     {
@@ -59,14 +59,14 @@ const subscriptionCollection = new CollectionDefinition({
   ),
   permissions: [
     new Permission({
-      type: "user_access",
+      accessType: "user_access",
       read: true,
       write: true,
       onlyOwnData: true,
       ownerIdField: "user_id",
     }),
     new Permission({
-      type: "admin",
+      accessType: "admin",
       read: true,
       write: true,
     }),
@@ -75,7 +75,7 @@ const subscriptionCollection = new CollectionDefinition({
 
 // Define daily credits collection
 const dailyCreditsCollection = new CollectionDefinition({
-  db: DATABASE,
+  database: DATABASE,
   collection: DAILY_CREDITS_COLLECTION,
   schema: new Schema(
     {
@@ -108,12 +108,12 @@ const dailyCreditsCollection = new CollectionDefinition({
   ),
   permissions: [
     new Permission({
-      type: "user_access",
+      accessType: "user_access",
       read: true,
       write: false,
     }),
     new Permission({
-      type: "admin",
+      accessType: "admin",
       read: true,
       write: true,
     }),
@@ -122,7 +122,7 @@ const dailyCreditsCollection = new CollectionDefinition({
 
 // Define usage collection
 const usageCollection = new CollectionDefinition({
-  db: DATABASE,
+  database: DATABASE,
   collection: USAGE_COLLECTION,
   schema: new Schema(
     {
@@ -170,14 +170,14 @@ const usageCollection = new CollectionDefinition({
   ),
   permissions: [
     new Permission({
-      type: "user_access",
+      accessType: "user_access",
       read: true,
       write: false,
       onlyOwnData: true,
       ownerIdField: "user_id",
     }),
     new Permission({
-      type: "admin",
+      accessType: "admin",
       read: true,
       write: true,
     }),

@@ -3,6 +3,7 @@ import {
   ConversationDialogType,
   LivePracticeSessionSetupType,
   LiveSessionMetadataType,
+  LiveSessionRecordType,
   LiveSessionType,
   SessionType,
   TokenUsageType,
@@ -114,7 +115,10 @@ const updateLiveSession = defineFunction({
     update: { usage?: TokenUsageType; dialogs?: ConversationDialogType[] };
   }) {
     const { userId, sessionId, update } = context;
-    const collection = getCollection(DATABASE, LIVE_SESSION_COLLECTION);
+    const collection = getCollection<LiveSessionRecordType>(
+      DATABASE,
+      LIVE_SESSION_COLLECTION
+    );
 
     try {
       if (Object.keys(update).length === 0) {
@@ -124,7 +128,7 @@ const updateLiveSession = defineFunction({
       // Handle usage update
       if (update.usage) {
         await collection.updateOne(
-          { _id: sessionId, refId: userId },
+          { _id: sessionId as string, refId: userId as string },
           { $set: { usage: update.usage } }
         );
       }
@@ -133,8 +137,8 @@ const updateLiveSession = defineFunction({
       if (update.dialogs && update.dialogs.length > 0) {
         const session = await collection.findOne(
           {
-            _id: sessionId,
-            refId: userId,
+            _id: sessionId as string,
+            refId: userId as string,
           },
           { dialogs: 1 }
         );
@@ -161,7 +165,7 @@ const updateLiveSession = defineFunction({
         }
 
         await collection.updateOne(
-          { _id: sessionId, refId: userId },
+          { _id: sessionId as string, refId: userId as string },
           { $set: { dialogs: updatedDialogs } }
         );
       }
