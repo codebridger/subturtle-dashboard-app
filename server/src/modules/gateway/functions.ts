@@ -3,6 +3,7 @@ import {
   createCheckoutSession,
   verifyPaymentStatus,
   handleWebhookEvent,
+  getSubscriptionDetails,
 } from "./service";
 import { CheckoutSessionRequest } from "./types";
 import { PaymentProvider } from "./adapters";
@@ -60,6 +61,18 @@ const verifyPayment = defineFunction({
   },
 });
 
+// Get subscription details from a payment
+const getPaymentSubscriptionDetails = defineFunction({
+  name: "getPaymentSubscriptionDetails",
+  permissionTypes: ["user_access"],
+  callback: async function (
+    paymentId: string,
+    provider: PaymentProvider = PaymentProvider.STRIPE
+  ) {
+    return await getSubscriptionDetails(paymentId, provider);
+  },
+});
+
 // Handle webhook events
 const handleWebhook = defineFunction({
   name: "handleWebhook",
@@ -72,4 +85,9 @@ const handleWebhook = defineFunction({
   },
 });
 
-export const functions = [createPaymentSession, verifyPayment, handleWebhook];
+export const functions = [
+  createPaymentSession,
+  verifyPayment,
+  getPaymentSubscriptionDetails,
+  handleWebhook,
+];

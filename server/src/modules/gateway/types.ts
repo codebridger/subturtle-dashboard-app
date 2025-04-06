@@ -11,8 +11,7 @@ export interface Payment {
   amount: number;
   currency: string;
   status: PaymentStatus;
-  provider_data: Record<string, any>; // All provider-specific data goes here
-  metadata?: Record<string, any>;
+  provider_data: Record<string, any>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -24,7 +23,7 @@ export interface PaymentSession {
   amount: number;
   currency: string;
   status: SessionStatus;
-  provider_data: Record<string, any>; // All provider-specific data goes here
+  provider_data: Record<string, any>;
   createdAt?: Date;
   updatedAt?: Date;
 }

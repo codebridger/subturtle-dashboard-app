@@ -1,4 +1,9 @@
-import { Schema, Permission, defineCollection } from "@modular-rest/server";
+import {
+  Schema,
+  Permission,
+  defineCollection,
+  DatabaseTrigger,
+} from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
@@ -6,6 +11,7 @@ import {
   PAYMENT_SESSION_COLLECTION,
 } from "./../../config";
 import { PaymentProvider } from "./adapters/types";
+import { whenPaymentCreatedAddCreadit } from "./triggers";
 
 // Define payment collection to store payment records
 const paymentCollection = defineCollection({
@@ -65,6 +71,8 @@ const paymentCollection = defineCollection({
       write: true,
     }),
   ],
+
+  triggers: [whenPaymentCreatedAddCreadit],
 });
 
 // Define payment session collection to track checkout sessions
