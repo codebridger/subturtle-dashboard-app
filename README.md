@@ -1,84 +1,112 @@
 # SubTurtle Dashboard App
 
-A full-stack dashboard application for managing Subturtle users content [Bundles, Practice, etc]
+## Overview
+
+SubTurtle Dashboard App is a comprehensive full-stack application designed for managing SubTurtle user content, including Bundles, Practice sessions, and other related features. This dashboard provides an intuitive interface for content management and user interaction.
 
 ## 🌐 Environments
 
-- Production: [https://subturtle.app/](https://subturtle.app/)
-- Development: [https://subturtle-dashboard-app-dev-344321252651.europe-west4.run.app](https://subturtle-dashboard-app-dev-344321252651.europe-west4.run.app)
+| Environment | URL                                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production  | [https://subturtle.app/](https://subturtle.app/)                                                                                               |
+| Development | [https://subturtle-dashboard-app-dev-344321252651.europe-west4.run.app](https://subturtle-dashboard-app-dev-344321252651.europe-west4.run.app) |
 
 ## 🏗️ Project Structure
 
 ```
-dashboard-app/
+subturtle-dashboard-app/
 ├── frontend/          # Nuxt.js frontend application
-├── server/           # Node.js/TypeScript backend server
+├── server/            # Node.js/TypeScript backend server
 ├── docker-compose.yml # Docker compose configuration
-└── Dockerfile        # Docker configuration
+└── Dockerfile         # Docker configuration
 ```
 
-## 🚀 Technologies
+## 🚀 Technology Stack
 
 ### Frontend
-- **Framework**: Nuxt.js (Vue.js)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: Pinia (via stores directory)
-- **Internationalization**: i18n
-- **Development Tools**: ESLint, Prettier
+
+| Category             | Technology                   |
+| -------------------- | ---------------------------- |
+| Framework            | Nuxt.js (Vue.js)             |
+| Language             | TypeScript                   |
+| Styling              | Tailwind CSS                 |
+| State Management     | Pinia (via stores directory) |
+| Internationalization | i18n                         |
+| Development Tools    | ESLint, Prettier             |
 
 ### Backend
-- **Runtime**: Node.js
-- **Language**: TypeScript
-- **Environment**: Docker containerized
+
+| Category    | Technology           |
+| ----------- | -------------------- |
+| Runtime     | Node.js              |
+| Language    | TypeScript           |
+| Environment | Docker containerized |
 
 ## 🛠️ Setup & Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd dashboard-app
-```
+### Prerequisites
 
-2. Install dependencies:
-```bash
-# Frontend dependencies
-cd frontend
-yarn install
+- Git
+- Node.js and Yarn
+- Docker and Docker Compose (for containerized setup)
 
-# Backend dependencies
-cd ../server
-yarn install
-```
+### Installation Steps
 
-3. Set up environment variables:
-```bash
-# Frontend
-cp frontend/.npmrc.sample frontend/.npmrc
-cp frontend/.env.example frontend/.env
+1. **Clone the repository**
 
-# Backend
-cp server/sample.env server/.env
-```
+   ```bash
+   git clone <repository-url>
+   cd subturtle-dashboard-app
+   ```
 
-4. Run the development environment:
-```bash
-# Using Docker
-docker-compose up
+2. **Install dependencies**
 
-# Or run separately
-# Frontend
-cd frontend
-yarn dev
+   ```bash
+   # Frontend dependencies
+   cp frontend/.npmrc.sample frontend/.npmrc
+   cd frontend
+   yarn install
 
-# Backend
-cd server
-yarn dev
-```
+   # Backend dependencies
+   cd ../server
+   yarn install
+   ```
 
-## 🐳 Docker
+3. **Set up environment variables**
 
-The application is containerized using Docker. To build and run using Docker:
+   ```bash
+   # Frontend
+   cp frontend/.env.example frontend/.env
+
+   # Backend
+   cp server/sample.env server/.env
+   ```
+
+4. **Run the development environment**
+
+   Using Docker:
+
+   ```bash
+   docker-compose up
+   ```
+
+   Or run services separately:
+
+   ```bash
+   # Frontend
+   cd frontend
+   yarn dev
+
+   # Backend
+   cd server
+   yarn dev
+   ```
+
+## 🐳 Docker Configuration
+
+The application is containerized using Docker for consistent development and deployment environments.
+
+### Docker Commands
 
 ```bash
 # Build and run all services
@@ -86,23 +114,50 @@ docker-compose up --build
 
 # Run in detached mode
 docker-compose up -d
+
+# Stop all services
+docker-compose down
 ```
 
-## 🔧 Configuration
+## 🔧 Configuration Options
 
-- Frontend configuration can be found in `frontend/nuxt.config.ts`
-- Backend configuration is managed through environment variables (see `server/sample.env`)
-- Docker configuration is defined in `docker-compose.yml` and `Dockerfile`
+| Component | Configuration Location                          |
+| --------- | ----------------------------------------------- |
+| Frontend  | `frontend/nuxt.config.ts`                       |
+| Backend   | Environment variables (see `server/sample.env`) |
+| Docker    | `docker-compose.yml` and `Dockerfile`           |
 
 ## 📝 Development Guidelines
 
-1. Follow the established code style (ESLint & Prettier configurations)
-2. Write clean, maintainable, and documented code
-3. Use TypeScript types appropriately
-4. Follow the Git workflow and commit message conventions
+1. **Code Quality**
 
-## 🚀 Deployment
+   - Follow the established code style (ESLint & Prettier configurations)
+   - Write clean, maintainable, and documented code
 
-The application is deployed using Google Cloud Run:
-- Production deployments are automated through GitHub Actions
-- Development deployments are triggered on merges to the development branch
+2. **TypeScript Usage**
+
+   - Use TypeScript types appropriately
+   - Leverage type safety features
+
+3. **Version Control**
+
+   - Follow the Git workflow
+   - Adhere to commit message conventions
+
+4. **Testing**
+   - Write tests for new features
+   - Ensure existing tests pass before submitting changes
+
+## 🚀 Deployment Process
+
+The application is deployed using Google Cloud Run with the following workflow:
+
+- **Production**: Automated deployments through GitHub Actions
+- **Development**: Deployments triggered on merges to the development branch
+
+## 📚 Additional Resources
+
+- [Nuxt.js Documentation](https://nuxtjs.org/docs/get-started/installation)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Pinia Documentation](https://pinia.vuejs.org/)
+- [Docker Documentation](https://docs.docker.com/)

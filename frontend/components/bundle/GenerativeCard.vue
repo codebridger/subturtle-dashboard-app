@@ -2,10 +2,10 @@
     <NuxtLink :to="`/bundles/${props.bundle._id}`">
         <Card class="no-padding min-h-full rounded-md shadow-none hover:shadow-lg">
             <section class="relative">
-                <IconButton class="absolute right-2 top-2 min-w-10 justify-center p-2" rounded="md">
+                <IconButton class="absolute right-2 top-2 z-10 min-w-10 justify-center p-2" rounded="md">
                     {{ bundle.phrases.length }}
                 </IconButton>
-                <MaterialWordGenerativeCover :words="phraseList" :classes="['h-fit w-full']" />
+                <MaterialWordGenerativeCover :words="phraseList" :classes="['h-fit w-full']" @click="navigateToBundle" />
             </section>
             <section class="p-6">
                 <span class="mb-2 text-sm font-bold text-gray-800 dark:text-white">
@@ -56,6 +56,11 @@
     onMounted(async () => {
         getWords();
     });
+
+    function navigateToBundle() {
+        // navigate to the bundle page
+        navigateTo(`/bundles/${props.bundle._id}`);
+    }
 </script>
 
 <style lang="css" scoped>
