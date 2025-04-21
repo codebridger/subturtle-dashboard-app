@@ -28,8 +28,8 @@ function getKeys() {
 // The createRest function returns a promise
 const app = createRest({
   port: parseInt(process.env.PORT || "8080"),
-  modulesPath: path.join(__dirname, '../dist', "modules"),
-  uploadDirectory: path.join(__dirname, '../dist', "uploads"),
+  modulesPath: path.join(__dirname, "../dist", "modules"),
+  uploadDirectory: path.join(__dirname, "../dist", "uploads"),
   keypair: process.env.KEYPAIR ? getKeys() : undefined,
   mongo: {
     mongoBaseAddress:
@@ -37,8 +37,8 @@ const app = createRest({
     dbPrefix: process.env.MONGO_DB_PREFIX || "subturtle_",
   },
   staticPath: {
-    rootDir: path.join(__dirname, "public"),
-    rootPath: "/",
+    actualPath: path.join(__dirname, "public"),
+    path: "/",
   },
   adminUser: {
     email: process.env.ADMIN_EMAIL || "",
