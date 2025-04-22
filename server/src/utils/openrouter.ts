@@ -20,6 +20,7 @@ export interface OpenRouterRequestOptions {
   frequency_penalty?: number;
   presence_penalty?: number;
   response_format?: ResponseFormat;
+  provider?: { [key: string]: any };
 }
 
 /**
@@ -133,15 +134,13 @@ export class OpenRouterService {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("OpenRouter API error:", errorData);
-        throw new Error(
-          JSON.stringify(errorData.error.message || errorData.error)
-        );
+        throw new Error(JSON.stringify(errorData.error));
       }
 
       const data = await response.json();
 
       if (data.error) {
-        throw new Error(JSON.stringify(data.error.message || data.error));
+        throw new Error(JSON.stringify(data.error));
       }
 
       return data as OpenRouterResponse;
@@ -149,7 +148,7 @@ export class OpenRouterService {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       console.error("OpenRouter service error:", errorMessage);
-      throw new Error(`OpenRouter service error: ${errorMessage}`);
+      throw error;
     }
   }
 
@@ -197,8 +196,8 @@ export class OpenRouterService {
 
       return result;
     } catch (error) {
-      console.error("Failed to parse structured output:", error);
-      throw new Error("Failed to parse structured output from model response");
+      console.error("Failed to parse structured output");
+      throw error;
     }
   }
 
@@ -231,14 +230,6 @@ export class OpenRouterService {
     );
 
     return rawResult as T;
-
-    // Validate with Zod schema
-    try {
-      return zodSchema.parse(rawResult);
-    } catch (error) {
-      console.error("Zod validation error:", error);
-      throw new Error("Response failed Zod schema validation");
-    }
   }
 
   /**
@@ -296,15 +287,3 @@ export class OpenRouterService {
  * Create and export a default instance of the OpenRouter service
  */
 export const openRouter = new OpenRouterService();
-
-/**
- * Recommended models for different use cases
- */
-export const OPENROUTER_MODELS = {
-  // Good for translation tasks
-  TRANSLATION_MODELS: [
-    "mistralai/mistral-saba",
-    "google/gemini-2.5-pro-exp-03-25:free",
-    "openai/gpt-4o-mini",
-  ],
-};

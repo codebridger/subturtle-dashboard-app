@@ -1,4 +1,4 @@
-import { openRouter, OPENROUTER_MODELS } from "../../utils/openrouter";
+import { openRouter } from "../../utils/openrouter";
 import { LanguageLearningData, TranslateWithContextParams } from "./types";
 import {
   LanguageLearningDataSchema,
@@ -34,7 +34,11 @@ export async function getSimpleTranslation({
 
   try {
     const response = await openRouter.createChatCompletion({
-      models: OPENROUTER_MODELS.TRANSLATION_MODELS,
+      models: [
+        "mistralai/mistral-saba",
+        "google/gemini-2.5-pro-exp-03-25:free",
+        "openai/gpt-4o-mini",
+      ],
       messages: [
         {
           role: "system",
@@ -84,7 +88,12 @@ export async function getDetailedTranslation({
     const result =
       await openRouter.createStructuredOutputWithZod<LanguageLearningData>({
         options: {
-          models: OPENROUTER_MODELS.TRANSLATION_MODELS, // Use a model that supports structured outputs
+          models: [
+            // Accepted models
+            "google/gemini-2.0-flash-lite-001", // 1m context, $0.075/M input, $0.30/M output
+            "mistral/ministral-8b", // 131k context, $0.10/M input, $0.10/M output
+            "openai/gpt-4o-mini", // 128k context, $0.15/M input, $0.60/M output
+          ],
           messages: [
             {
               role: "system",
@@ -95,11 +104,14 @@ export async function getDetailedTranslation({
               content: userPrompt,
             },
           ],
-          temperature: 0.2, // Low temperature for more consistent outputs
+          temperature: 0.2,
+          provider: {
+            require_parameters: true,
+          },
         },
         zodSchema: LanguageLearningDataSchema, // Pass the Zod schema directly
         schemaName: "language_learning_data",
-        strict: true, // Strict mode enabled
+        strict: true,
       });
 
     // Result is already validated by Zod

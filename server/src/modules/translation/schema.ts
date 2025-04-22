@@ -20,6 +20,7 @@ const RelatedExpressionSchema = z.object({
 
 // Define the LinguisticData schema
 const LinguisticDataSchema = z.object({
+  isValid: z.boolean().describe("Whether the text is valid for translation"),
   type: z
     .string()
     .describe(
@@ -30,37 +31,29 @@ const LinguisticDataSchema = z.object({
     .describe("Clear explanation of meaning, contextualized to usage"),
   usage_notes: z
     .string()
-    .optional()
     .describe("Information about how and when to use this text"),
   pronunciation: z
     .string()
-    .optional()
     .describe("Phonetic guidance (especially for non-Latin script languages)"),
   formality_level: z
     .enum(["formal", "neutral", "informal"])
-    .optional()
     .describe("Indication of formality level"),
   literal_translation: z
     .string()
-    .optional()
     .describe(
       "When the literal meaning differs significantly from idiomatic usage"
     ),
   cultural_notes: z
     .string()
-    .optional()
     .describe("Cultural context important for proper understanding"),
   grammar_notes: z
     .string()
-    .optional()
     .describe("Additional grammatical information when relevant"),
   examples: z
     .array(ExampleSchema)
-    .min(1)
     .describe("Example sentences showing the text in use, with translations"),
   related_expressions: z
     .array(RelatedExpressionSchema)
-    .optional()
     .describe("Similar or connected expressions with translations"),
 });
 

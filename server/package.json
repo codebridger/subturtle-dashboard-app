@@ -11,7 +11,7 @@
   "author": "Navid Shad <navidshad72@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@modular-rest/server": "^1.13.3",
+    "@modular-rest/server": "^1.13.4",
     "date-and-time": "^3.6.0",
     "dotenv": "^16.4.5",
     "googleapis": "^129.0.0",
