@@ -78,7 +78,9 @@ export const LanguageLearningDataSchema = z.object({
       target: z.string().describe("Target language code"),
     })
     .describe("Language information"),
-  linguistic_data: LinguisticDataSchema.describe("Linguistic analysis data"),
+  linguistic_data: LinguisticDataSchema.describe(
+    "Linguistic analysis data in target language"
+  ),
 });
 
 export const SimpleTranslationSchema = z.object({
