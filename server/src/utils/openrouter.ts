@@ -221,12 +221,13 @@ export class OpenRouterService {
    * @param zodSchema Zod schema for the structured output
    * @returns Promise with the validated structured response of type T
    */
-  async createStructuredOutputWithZod<T>(
-    options: Omit<OpenRouterRequestOptions, "response_format">,
-    zodSchema: z.ZodType<T>,
-    schemaName = "structured_output",
-    strict = true
-  ): Promise<T> {
+  async createStructuredOutputWithZod<T>(context: {
+    options: Omit<OpenRouterRequestOptions, "response_format">;
+    zodSchema: z.ZodType<T>;
+    schemaName: string;
+    strict: boolean;
+  }): Promise<T> {
+    const { options, zodSchema, schemaName, strict } = context;
     // Convert Zod schema to JSON schema
     const jsonSchema = zodToJsonSchema(zodSchema, {
       target: "openApi3",

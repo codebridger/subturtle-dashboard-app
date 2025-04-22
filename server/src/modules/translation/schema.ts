@@ -7,19 +7,19 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Define the Example schema
-export const ExampleSchema = z.object({
+const ExampleSchema = z.object({
   example: z.string().describe("Example sentence showing the text in use"),
   translation: z.string().describe("Translation of the example sentence"),
 });
 
 // Define the RelatedExpression schema
-export const RelatedExpressionSchema = z.object({
+const RelatedExpressionSchema = z.object({
   text: z.string().describe("Related word or expression"),
   translation: z.string().describe("Translation of the related expression"),
 });
 
 // Define the LinguisticData schema
-export const LinguisticDataSchema = z.object({
+const LinguisticDataSchema = z.object({
   type: z
     .string()
     .describe(
@@ -66,14 +66,12 @@ export const LinguisticDataSchema = z.object({
 
 // Define the LanguageLearningData schema
 export const LanguageLearningDataSchema = z.object({
-  marked_text: z.string().describe("The specific text selected by the user"),
-  context: z.string().describe("Surrounding text with context"),
   translation: z
     .object({
-      marked_text: z.string().describe("Translation of the marked text"),
+      phrase: z.string().describe("Translation of the provided phrase"),
       context: z.string().describe("Translation of the context"),
     })
-    .describe("Translations of the marked text and context"),
+    .describe("Translations of the provided phrase and context"),
   language_info: z
     .object({
       source: z.string().describe("Source language code"),
@@ -83,11 +81,16 @@ export const LanguageLearningDataSchema = z.object({
   linguistic_data: LinguisticDataSchema.describe("Linguistic analysis data"),
 });
 
+export const SimpleTranslationSchema = z.object({
+  phrase: z.string().describe("Translation of the provided phrase"),
+});
+
 // Type inference from Zod schemas
 export type Example = z.infer<typeof ExampleSchema>;
 export type RelatedExpression = z.infer<typeof RelatedExpressionSchema>;
 export type LinguisticData = z.infer<typeof LinguisticDataSchema>;
 export type LanguageLearningData = z.infer<typeof LanguageLearningDataSchema>;
+export type SimpleTranslation = z.infer<typeof SimpleTranslationSchema>;
 
 /**
  * Get the JSON schema for language learning data
@@ -96,6 +99,18 @@ export type LanguageLearningData = z.infer<typeof LanguageLearningDataSchema>;
  */
 export function getLanguageLearningSchema() {
   return zodToJsonSchema(LanguageLearningDataSchema, {
+    target: "openApi3",
+    $refStrategy: "none",
+  });
+}
+
+/**
+ * Get the JSON schema for simple translation
+ * Converts the Zod schema to a JSON Schema for use with OpenRouter's structured output
+ * @returns The complete schema object for simple translation
+ */
+export function getSimpleTranslationSchema() {
+  return zodToJsonSchema(SimpleTranslationSchema, {
     target: "openApi3",
     $refStrategy: "none",
   });

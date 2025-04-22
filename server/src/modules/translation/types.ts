@@ -12,4 +12,5 @@ export interface TranslateWithContextParams {
   context: string;
   sourceLanguage?: string;
   targetLanguage?: string;
+  translationType?: "simple" | "detailed";
 }
