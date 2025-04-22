@@ -6,7 +6,8 @@ import { zodToJsonSchema } from "zod-to-json-schema";
  * Interface for OpenRouter chat completion request
  */
 export interface OpenRouterRequestOptions {
-  model: string;
+  model?: string;
+  models?: string[];
   messages: {
     role: "system" | "user" | "assistant";
     content: string;
@@ -132,10 +133,18 @@ export class OpenRouterService {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("OpenRouter API error:", errorData);
-        throw new Error(`OpenRouter API error: ${response.status}`);
+        throw new Error(
+          JSON.stringify(errorData.error.message || errorData.error)
+        );
       }
 
-      return (await response.json()) as OpenRouterResponse;
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(JSON.stringify(data.error.message || data.error));
+      }
+
+      return data as OpenRouterResponse;
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -156,27 +165,6 @@ export class OpenRouterService {
     schemaName = "structured_output",
     strict = true
   ): Promise<T> {
-    // Validate model compatibility - this is a simplified check
-    // In a production environment, you would check against a list of supported models
-    const supportedModels = [
-      "openai/gpt-4o",
-      "openai/gpt-4-turbo",
-      "fireworks",
-      "groq/llama-3",
-      "meta-llama/llama-4",
-    ];
-
-    const modelPrefix = options.model.split("/")[0].toLowerCase();
-    const isSupported = supportedModels.some((model) =>
-      options.model.toLowerCase().includes(model.toLowerCase())
-    );
-
-    if (!isSupported && !options.model.includes("fireworks")) {
-      console.warn(
-        `Model ${options.model} may not support structured outputs. Supported models include OpenAI models (GPT-4o and later) and Fireworks models.`
-      );
-    }
-
     // Add response_format with the JSON schema
     const completeOptions: OpenRouterRequestOptions = {
       ...options,
@@ -241,6 +229,8 @@ export class OpenRouterService {
       schemaName,
       strict
     );
+
+    return rawResult as T;
 
     // Validate with Zod schema
     try {
@@ -311,29 +301,10 @@ export const openRouter = new OpenRouterService();
  * Recommended models for different use cases
  */
 export const OPENROUTER_MODELS = {
-  // Anthropic models
-  CLAUDE_HAIKU: "anthropic/claude-3-haiku",
-  CLAUDE_SONNET: "anthropic/claude-3-sonnet",
-  CLAUDE_OPUS: "anthropic/claude-3-opus",
-
-  // OpenAI models
-  GPT_3_5_TURBO: "openai/gpt-3.5-turbo",
-  GPT_4: "openai/gpt-4",
-  GPT_4_TURBO: "openai/gpt-4-turbo",
-  GPT_4O: "openai/gpt-4o", // Supports structured outputs
-
-  // Meta models
-  LLAMA_4_MAV: "meta-llama/llama-4-maverick:free",
-
   // Good for translation tasks
-  TRANSLATION: "google/gemini-2.0-flash-lite-001",
-
-  // Models with structured output support
-  STRUCTURED_OUTPUT: "openai/gpt-4o",
-
-  // For large context tasks
-  LARGE_CONTEXT: "anthropic/claude-3-opus",
-
-  // For efficient processing
-  EFFICIENT: "openai/gpt-3.5-turbo",
+  TRANSLATION_MODELS: [
+    "mistralai/mistral-saba",
+    "google/gemini-2.5-pro-exp-03-25:free",
+    "openai/gpt-4o-mini",
+  ],
 };

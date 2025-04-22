@@ -33,28 +33,21 @@ export async function getSimpleTranslation({
   Context: "${context}"`;
 
   try {
-    const response =
-      await openRouter.createStructuredOutputWithZod<SimpleTranslation>({
-        options: {
-          model: OPENROUTER_MODELS.TRANSLATION,
-
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
-            {
-              role: "user",
-              content: userPrompt,
-            },
-          ],
+    const response = await openRouter.createChatCompletion({
+      models: OPENROUTER_MODELS.TRANSLATION_MODELS,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
         },
-        zodSchema: SimpleTranslationSchema,
-        schemaName: "simple_translation",
-        strict: true,
-      });
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ],
+    });
 
-    return response;
+    return response.choices[0].message.content;
   } catch (error: unknown) {
     console.error("Simple translation error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -76,8 +69,7 @@ export async function getDetailedTranslation({
 }: TranslateWithContextParams): Promise<LanguageLearningData> {
   // Create prompt for OpenRouter
   const systemPrompt = `You are a language learning AI that analyzes and translates text.
-  Take the marked phrase from the context and provide a detailed analysis following the provided JSON schema structure.
-  Ensure your response follows the schema exactly and contains all required fields.`;
+  take the "phrase" and "context", and provide all descriptive filds in the mentioned target language.`;
 
   const userPrompt = `
   Analyze and translate this marked phrase within its context:
@@ -92,7 +84,7 @@ export async function getDetailedTranslation({
     const result =
       await openRouter.createStructuredOutputWithZod<LanguageLearningData>({
         options: {
-          model: OPENROUTER_MODELS.TRANSLATION, // Use a model that supports structured outputs
+          models: OPENROUTER_MODELS.TRANSLATION_MODELS, // Use a model that supports structured outputs
           messages: [
             {
               role: "system",
