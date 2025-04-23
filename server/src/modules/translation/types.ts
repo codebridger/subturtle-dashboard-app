@@ -1,6 +1,6 @@
 // Re-export types from the schema file
 export type {
-  LanguageLearningData,
+  DetailedPhraseDataType,
   LinguisticData,
   Example,
   RelatedExpression,

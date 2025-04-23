@@ -1,5 +1,5 @@
 import { openRouter } from "../../utils/openrouter";
-import { LanguageLearningData, TranslateWithContextParams } from "./types";
+import { DetailedPhraseDataType, TranslateWithContextParams } from "./types";
 import { LanguageLearningDataSchema } from "./schema";
 
 /**
@@ -64,9 +64,9 @@ export async function getDetailedTranslation({
   context,
   sourceLanguage = "en",
   targetLanguage,
-}: TranslateWithContextParams): Promise<LanguageLearningData> {
+}: TranslateWithContextParams): Promise<DetailedPhraseDataType> {
   // Create prompt for OpenRouter
-  const systemPrompt = `As a language learning specialist, take the "phrase" and "context", and provide all descriptive filds in the mentioned target language.`;
+  const systemPrompt = `As a language learning specialist, take the "phrase" and "context", and provide all descriptive fields in the mentioned target language.`;
 
   const userPrompt = `
   Translate from ${sourceLanguage} to ${targetLanguage}:
@@ -76,7 +76,7 @@ export async function getDetailedTranslation({
   try {
     // Use the Zod schema directly with the OpenRouter service
     const result =
-      await openRouter.createStructuredOutputWithZod<LanguageLearningData>({
+      await openRouter.createStructuredOutputWithZod<DetailedPhraseDataType>({
         options: {
           models: [
             // Accepted models

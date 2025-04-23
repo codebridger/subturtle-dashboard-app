@@ -80,7 +80,7 @@ export const LanguageLearningDataSchema = z.object({
 export type Example = z.infer<typeof ExampleSchema>;
 export type RelatedExpression = z.infer<typeof RelatedExpressionSchema>;
 export type LinguisticData = z.infer<typeof LinguisticDataSchema>;
-export type LanguageLearningData = z.infer<typeof LanguageLearningDataSchema>;
+export type DetailedPhraseDataType = z.infer<typeof LanguageLearningDataSchema>;
 
 /**
  * Get the JSON schema for language learning data
@@ -99,6 +99,8 @@ export function getLanguageLearningSchema() {
  * @param data The data to validate
  * @returns Validated and parsed data, or throws an error if invalid
  */
-export function validateLanguageLearningData(data: any): LanguageLearningData {
+export function validateLanguageLearningData(
+  data: any
+): DetailedPhraseDataType {
   return LanguageLearningDataSchema.parse(data);
 }
