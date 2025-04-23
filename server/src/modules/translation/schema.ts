@@ -76,16 +76,11 @@ export const LanguageLearningDataSchema = z.object({
   ),
 });
 
-export const SimpleTranslationSchema = z.object({
-  phrase: z.string().describe("Translation of the provided phrase"),
-});
-
 // Type inference from Zod schemas
 export type Example = z.infer<typeof ExampleSchema>;
 export type RelatedExpression = z.infer<typeof RelatedExpressionSchema>;
 export type LinguisticData = z.infer<typeof LinguisticDataSchema>;
 export type LanguageLearningData = z.infer<typeof LanguageLearningDataSchema>;
-export type SimpleTranslation = z.infer<typeof SimpleTranslationSchema>;
 
 /**
  * Get the JSON schema for language learning data
@@ -94,18 +89,6 @@ export type SimpleTranslation = z.infer<typeof SimpleTranslationSchema>;
  */
 export function getLanguageLearningSchema() {
   return zodToJsonSchema(LanguageLearningDataSchema, {
-    target: "openApi3",
-    $refStrategy: "none",
-  });
-}
-
-/**
- * Get the JSON schema for simple translation
- * Converts the Zod schema to a JSON Schema for use with OpenRouter's structured output
- * @returns The complete schema object for simple translation
- */
-export function getSimpleTranslationSchema() {
-  return zodToJsonSchema(SimpleTranslationSchema, {
     target: "openApi3",
     $refStrategy: "none",
   });

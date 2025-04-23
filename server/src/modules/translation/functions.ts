@@ -15,8 +15,8 @@ const translateWithContext = defineFunction({
       phrase,
       context,
       translationType = "simple",
-      sourceLanguage = "en",
-      targetLanguage = "fa",
+      sourceLanguage = "",
+      targetLanguage = "",
     } = params;
 
     try {

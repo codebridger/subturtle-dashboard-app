@@ -1,10 +1,6 @@
 import { openRouter } from "../../utils/openrouter";
 import { LanguageLearningData, TranslateWithContextParams } from "./types";
-import {
-  LanguageLearningDataSchema,
-  SimpleTranslation,
-  SimpleTranslationSchema,
-} from "./schema";
+import { LanguageLearningDataSchema } from "./schema";
 
 /**
  * Get a simple translation of a phrase with context
@@ -23,14 +19,12 @@ export async function getSimpleTranslation({
   sourceLanguage?: string;
   targetLanguage: string;
 }) {
-  const systemPrompt = `You are a professional translator. return the translation only in the target language.`;
+  const systemPrompt = `As a traslator, return the translated phrase only.`;
 
   const userPrompt = `
-  Source language: ${sourceLanguage}
-  Target language: ${targetLanguage}:
-  
+  Translate from ${sourceLanguage} to ${targetLanguage}:
   Phrase: "${phrase}"
-  Context: "${context}"`;
+  Accuracy context: "${context}"`;
 
   try {
     const response = await openRouter.createChatCompletion({
@@ -72,16 +66,12 @@ export async function getDetailedTranslation({
   targetLanguage,
 }: TranslateWithContextParams): Promise<LanguageLearningData> {
   // Create prompt for OpenRouter
-  const systemPrompt = `You are a language learning AI that analyzes and translates text.
-  take the "phrase" and "context", and provide all descriptive filds in the mentioned target language.`;
+  const systemPrompt = `As a language learning specialist, take the "phrase" and "context", and provide all descriptive filds in the mentioned target language.`;
 
   const userPrompt = `
-  Analyze and translate this marked phrase within its context:
-  
-  Marked phrase: "${phrase}"
-  Context: "${context}"
-  Source language: ${sourceLanguage}
-  Target language: ${targetLanguage}`;
+  Translate from ${sourceLanguage} to ${targetLanguage}:
+  Phrase: "${phrase}"
+  Accuracy context: "${context}"`;
 
   try {
     // Use the Zod schema directly with the OpenRouter service
