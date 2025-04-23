@@ -8,14 +8,14 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Define the Example schema
 const ExampleSchema = z.object({
-  example: z.string().describe("Example sentence showing the text in use"),
-  translation: z.string().describe("Translation of the example sentence"),
+  source: z.string(),
+  target: z.string(),
 });
 
 // Define the RelatedExpression schema
 const RelatedExpressionSchema = z.object({
-  text: z.string().describe("Related word or expression"),
-  translation: z.string().describe("Translation of the related expression"),
+  source: z.string(),
+  target: z.string(),
 });
 
 // Define the LinguisticData schema
@@ -45,20 +45,33 @@ const LinguisticDataSchema = z.object({
     ),
   cultural_notes: z
     .string()
-    .describe("Cultural context important for proper understanding"),
+    .describe(
+      "cultural context explanation about the source language, written in target language but allowed to use source language terms"
+    ),
   grammar_notes: z
     .string()
-    .describe("Additional grammatical information when relevant"),
+    .describe(
+      "grammar rules and usage explanation about the source language, written in target language but allowed to use source language terms"
+    ),
   examples: z
     .array(ExampleSchema)
-    .describe("Example sentences showing the text in use, with translations"),
+    .describe("Example of phrase usage in source language, with translation"),
   related_expressions: z
     .array(RelatedExpressionSchema)
-    .describe("Similar or connected expressions with translations"),
+    .describe(
+      "Similar or connected expressions in source language, with translations"
+    ),
 });
 
 // Define the LanguageLearningData schema
 export const LanguageLearningDataSchema = z.object({
+  direction: z
+    .object({
+      source: z.enum(["ltr", "rtl"]),
+      target: z.enum(["ltr", "rtl"]),
+    })
+    .describe("Text direction information for source and target languages"),
+
   translation: z
     .object({
       phrase: z.string().describe("Translation of the provided phrase"),

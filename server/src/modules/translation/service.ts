@@ -43,6 +43,7 @@ export async function getSimpleTranslation({
           content: userPrompt,
         },
       ],
+      max_tokens: 200,
     });
 
     return response.choices[0].message.content;
@@ -66,7 +67,10 @@ export async function getDetailedTranslation({
   targetLanguage,
 }: TranslateWithContextParams): Promise<DetailedPhraseDataType> {
   // Create prompt for OpenRouter
-  const systemPrompt = `As a language learning specialist, take the "phrase" and "context", and provide all descriptive fields in the mentioned target language.`;
+  const systemPrompt = `
+  As a language learning specialist, take the "phrase" and "context", and provide all descriptive fields in the mentioned target language. 
+  all grammart, cultural, and usage notes must be about the source language.
+  dont forget to use original source language terms in the notes when needed.`;
 
   const userPrompt = `
   Translate from ${sourceLanguage} to ${targetLanguage}:
@@ -80,9 +84,11 @@ export async function getDetailedTranslation({
         options: {
           models: [
             // Accepted models
-            "google/gemini-2.0-flash-lite-001", // 1m context, $0.075/M input, $0.30/M output
-            "mistral/ministral-8b", // 131k context, $0.10/M input, $0.10/M output
-            "openai/gpt-4o-mini", // 128k context, $0.15/M input, $0.60/M output
+            "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
+            "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
+            // "mistral/ministral-8b", // 131k context, $0.10/M input, $0.10/M output
+            // "google/gemini-2.0-flash-lite-001", // 1m context, $0.075/M input, $0.30/M output
+            // "openai/gpt-4o-mini", // 128k context, $0.15/M input, $0.60/M output
           ],
           messages: [
             {
@@ -95,6 +101,7 @@ export async function getDetailedTranslation({
             },
           ],
           temperature: 0.2,
+          max_tokens: 700,
           provider: {
             require_parameters: true,
           },
