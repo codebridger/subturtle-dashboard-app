@@ -29,40 +29,28 @@ const LinguisticDataSchema = z.object({
   definition: z
     .string()
     .describe(
-      "Clear explanation of meaning, contextualized to usage based on provided context"
+      "Comprehensive explanation of meaning in the target language, including usage examples, cultural context, and nuances specific to the target language"
     ),
-  // usage_notes: z
-  //   .string()
-  //   .describe("Information about how and when to use this text"),
-  pronunciation: z
-    .string()
-    .describe("Phonetic guidance (especially for non-Latin script languages)"),
+
+  phonetic: z
+    .object({
+      ipa: z.string(),
+      transliteration: z
+        .string()
+        .describe(
+          "write the pronunciation of the word in target language alphabets, example: 'box' -> 'باکس', 'helō' -> 'هِلو'"
+        ),
+    })
+    .describe(
+      "pronunciation guidance in two versions, one in source language (IPA) and one in target language (transliteration)"
+    ),
   formality_level: z
     .enum(["formal", "neutral", "informal"])
     .describe("Indication of formality level"),
-  // literal_translation: z
-  //   .string()
-  //   .describe(
-  //     "When the literal meaning differs significantly from idiomatic usage"
-  //   ),
-  // cultural_notes: z
-  //   .string()
-  //   .describe(
-  //     "cultural context explanation about the source language, written in target language but allowed to use source language terms"
-  //   ),
-  // grammar_notes: z
-  //   .string()
-  //   .describe(
-  //     "grammar rules and usage explanation about the source language, written in target language but allowed to use source language terms"
-  //   ),
+
   examples: z
     .array(ExampleSchema)
     .describe("Example of phrase usage in source language, with translation"),
-  // related_expressions: z
-  //   .array(RelatedExpressionSchema)
-  //   .describe(
-  //     "Similar or connected expressions in source language, with translations"
-  //   ),
 });
 
 // Define the LanguageLearningData schema
@@ -81,8 +69,10 @@ export const LanguageLearningDataSchema = z.object({
 
   translation: z
     .object({
-      phrase: z.string().describe("Translation of the provided phrase"),
-      context: z.string().describe("Translation of the context"),
+      phrase: z
+        .string()
+        .describe("Translation of the provided phrase by context"),
+      // context: z.string().describe("Translation of the context"),
     })
     .describe("Translations of the provided phrase and context"),
   language_info: z

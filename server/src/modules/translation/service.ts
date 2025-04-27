@@ -84,11 +84,9 @@ export async function getDetailedTranslation({
         options: {
           models: [
             // Accepted models
+            "google/gemini-2.5-flash-preview", // 1m context, $0.15/M input, $0.60/M output
             "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
             "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
-            // "mistral/ministral-8b", // 131k context, $0.10/M input, $0.10/M output
-            // "google/gemini-2.0-flash-lite-001", // 1m context, $0.075/M input, $0.30/M output
-            // "openai/gpt-4o-mini", // 128k context, $0.15/M input, $0.60/M output
           ],
           messages: [
             {
