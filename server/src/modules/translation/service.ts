@@ -19,19 +19,21 @@ export async function getSimpleTranslation({
   sourceLanguage?: string;
   targetLanguage: string;
 }) {
-  const systemPrompt = `As a traslator, return the translated phrase only.`;
+  const systemPrompt = `As a language learning specialist, Translation of the provided phrase by context, return translation only`;
 
   const userPrompt = `
-  Translate from ${sourceLanguage} to ${targetLanguage}:
+  from ${sourceLanguage} to ${targetLanguage}:
+  context: "${context}"
   Phrase: "${phrase}"
-  Accuracy context: "${context}"`;
+  `;
 
   try {
     const response = await openRouter.createChatCompletion({
       models: [
-        "mistralai/mistral-saba",
-        "google/gemini-2.5-pro-exp-03-25:free",
-        "openai/gpt-4o-mini",
+        // Accepted models
+        "google/gemini-2.5-flash-preview", // 1m context, $0.15/M input, $0.60/M output
+        "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
+        "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
       ],
       messages: [
         {
@@ -43,6 +45,7 @@ export async function getSimpleTranslation({
           content: userPrompt,
         },
       ],
+      temperature: 0,
       max_tokens: 200,
     });
 
@@ -98,7 +101,7 @@ export async function getDetailedTranslation({
               content: userPrompt,
             },
           ],
-          temperature: 0.2,
+          temperature: 0,
           max_tokens: 700,
           provider: {
             require_parameters: true,
