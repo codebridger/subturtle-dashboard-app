@@ -28,43 +28,50 @@ const LinguisticDataSchema = z.object({
     ),
   definition: z
     .string()
-    .describe("Clear explanation of meaning, contextualized to usage"),
-  usage_notes: z
-    .string()
-    .describe("Information about how and when to use this text"),
+    .describe(
+      "Clear explanation of meaning, contextualized to usage based on provided context"
+    ),
+  // usage_notes: z
+  //   .string()
+  //   .describe("Information about how and when to use this text"),
   pronunciation: z
     .string()
     .describe("Phonetic guidance (especially for non-Latin script languages)"),
   formality_level: z
     .enum(["formal", "neutral", "informal"])
     .describe("Indication of formality level"),
-  literal_translation: z
-    .string()
-    .describe(
-      "When the literal meaning differs significantly from idiomatic usage"
-    ),
-  cultural_notes: z
-    .string()
-    .describe(
-      "cultural context explanation about the source language, written in target language but allowed to use source language terms"
-    ),
-  grammar_notes: z
-    .string()
-    .describe(
-      "grammar rules and usage explanation about the source language, written in target language but allowed to use source language terms"
-    ),
+  // literal_translation: z
+  //   .string()
+  //   .describe(
+  //     "When the literal meaning differs significantly from idiomatic usage"
+  //   ),
+  // cultural_notes: z
+  //   .string()
+  //   .describe(
+  //     "cultural context explanation about the source language, written in target language but allowed to use source language terms"
+  //   ),
+  // grammar_notes: z
+  //   .string()
+  //   .describe(
+  //     "grammar rules and usage explanation about the source language, written in target language but allowed to use source language terms"
+  //   ),
   examples: z
     .array(ExampleSchema)
     .describe("Example of phrase usage in source language, with translation"),
-  related_expressions: z
-    .array(RelatedExpressionSchema)
-    .describe(
-      "Similar or connected expressions in source language, with translations"
-    ),
+  // related_expressions: z
+  //   .array(RelatedExpressionSchema)
+  //   .describe(
+  //     "Similar or connected expressions in source language, with translations"
+  //   ),
 });
 
 // Define the LanguageLearningData schema
 export const LanguageLearningDataSchema = z.object({
+  actual_phrase: z
+    .string()
+    .describe(
+      "detected correct combination of words from the context which could have complete meaning."
+    ),
   direction: z
     .object({
       source: z.enum(["ltr", "rtl"]),
