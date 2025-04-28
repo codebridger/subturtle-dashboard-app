@@ -1,0 +1,17 @@
+---
+description: when ever you see ClickUp rules word in the prompt
+globs: 
+alwaysApply: false
+---
+# Clickup
+Here are our general rules for working on clickup MCP.
+
+## Brainstorm instructions
+user will give you a task ID you should fetch the task description and help the user brain store for creating detailed description. After brainstorming, you should update the task description by user permission. Don't update anything without permission.
+
+## Implement instructions
+When it comes to implementing a task:
+- you must fetch the task description and show it.
+- you must plan the implementation steps.
+- you must For any implementation create a new branch [type/#taskid_shortname]
+- Start working with user permission.
