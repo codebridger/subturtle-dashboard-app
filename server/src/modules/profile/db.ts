@@ -1,13 +1,13 @@
 import {
-  CollectionDefinition,
   Schema,
   Permission,
   schemas,
+  defineCollection,
 } from "@modular-rest/server";
 
 import { DATABASE, PROFILE_COLLECTION } from "../../config";
 
-const profileCollection = new CollectionDefinition({
+const profileCollection = defineCollection({
   database: DATABASE,
   collection: PROFILE_COLLECTION,
   schema: new Schema(

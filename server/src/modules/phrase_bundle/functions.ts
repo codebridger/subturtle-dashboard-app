@@ -42,4 +42,4 @@ const removeBundle = defineFunction({
   },
 });
 
-export const functions = [removeBundle];
+module.exports.functions = [removeBundle];

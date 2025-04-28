@@ -1,9 +1,8 @@
 import {
-  CollectionDefinition,
   Schema,
   Permission,
   schemas,
-  DatabaseTrigger,
+  defineCollection,
 } from "@modular-rest/server";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
@@ -24,7 +23,7 @@ interface PhraseBundleSchema {
   phrases: string[];
 }
 
-const phraseCollection = new CollectionDefinition({
+const phraseCollection = defineCollection({
   database: DATABASE,
   collection: PHRASE_COLLECTION,
   schema: new Schema<PhraseSchema>(
@@ -66,7 +65,7 @@ const phraseBundleSchema = new Schema<PhraseBundleSchema>(
 
 phraseBundleSchema.index({ refId: 1, title: 1 }, { unique: true });
 
-const phraseBundleCollection = new CollectionDefinition({
+const phraseBundleCollection = defineCollection({
   database: DATABASE,
   collection: BUNDLE_COLLECTION,
   schema: phraseBundleSchema,

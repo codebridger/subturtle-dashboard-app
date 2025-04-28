@@ -1,4 +1,4 @@
-import { CollectionDefinition, Permission, Schema } from "@modular-rest/server";
+import { defineCollection, Permission, Schema } from "@modular-rest/server";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import type { LiveSessionRecordType } from "./types";
 
@@ -17,7 +17,7 @@ const liveSessionSchema = new Schema<LiveSessionRecordType>(
 const sixMonths = 6 * 30 * 24 * 60 * 60;
 liveSessionSchema.index({ createdAt: 1 }, { expireAfterSeconds: sixMonths });
 
-const liveSessionCollection = new CollectionDefinition({
+const liveSessionCollection = defineCollection({
   database: DATABASE,
   collection: LIVE_SESSION_COLLECTION,
   schema: liveSessionSchema,

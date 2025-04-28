@@ -1,7 +1,6 @@
 import { defineFunction, getCollection } from "@modular-rest/server";
 import {
   ConversationDialogType,
-  LivePracticeSessionSetupType,
   LiveSessionMetadataType,
   LiveSessionRecordType,
   LiveSessionType,
@@ -9,9 +8,7 @@ import {
   TokenUsageType,
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
-import { language } from "googleapis/build/src/apis/language";
 const fetch = require("node-fetch");
-
 interface PracticeSetup {
   instructions?: string;
   voice?: string;
@@ -127,19 +124,18 @@ const updateLiveSession = defineFunction({
 
       // Handle usage update
       if (update.usage) {
-        await collection.updateOne(
-          { _id: sessionId as string, refId: userId as string },
-          { $set: { usage: update.usage } }
-        );
+        await collection.updateOne({ _id: sessionId, refId: userId } as any, {
+          $set: { usage: update.usage },
+        });
       }
 
       // Handle dialogs update
       if (update.dialogs && update.dialogs.length > 0) {
         const session = await collection.findOne(
           {
-            _id: sessionId as string,
-            refId: userId as string,
-          },
+            _id: sessionId,
+            refId: userId,
+          } as any,
           { dialogs: 1 }
         );
 
@@ -164,10 +160,9 @@ const updateLiveSession = defineFunction({
           }
         }
 
-        await collection.updateOne(
-          { _id: sessionId as string, refId: userId as string },
-          { $set: { dialogs: updatedDialogs } }
-        );
+        await collection.updateOne({ _id: sessionId, refId: userId } as any, {
+          $set: { dialogs: updatedDialogs },
+        });
       }
 
       return { success: true, sessionId };
@@ -177,7 +172,7 @@ const updateLiveSession = defineFunction({
   },
 });
 
-export const functions = [
+module.exports.functions = [
   requestEphemeralToken,
   createLiveSession,
   updateLiveSession,
