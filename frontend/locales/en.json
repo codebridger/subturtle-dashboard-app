@@ -63,8 +63,8 @@
         "from-less-than-to-error": "From phrase must be less than or equal to To phrase",
         "total-phrases-required": "Total phrases is required"
     },
-    "membership-plans": {
-        "title": "Membership Plans",
+    "subscription": {
+        "title": "Subscription",
         "plans-price-details": "Plans & Price Details",
         "invoice-date": "Invoice Date:",
         "due-date": "Due Date:",

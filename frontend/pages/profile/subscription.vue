@@ -1,7 +1,5 @@
 <template>
-    <div>
-        <h1>{{ t('membership-plans') }}</h1>
-    </div>
+    <div></div>
 </template>
 
 <script setup lang="ts">
@@ -9,7 +7,7 @@
 
     definePageMeta({
         layout: 'default',
-        title: () => t('membership-plans'),
+        title: () => t('subscription.title'),
         // @ts-ignore
         middleware: ['auth'],
     });
