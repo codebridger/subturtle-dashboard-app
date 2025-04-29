@@ -9,6 +9,13 @@ require("dotenv").config({
 });
 
 function getKeys() {
+  if (process.env.PRIVATE_KEY && process.env.PUBLIC_KEY) {
+    return {
+      private: process.env.PRIVATE_KEY,
+      public: process.env.PUBLIC_KEY,
+    };
+  }
+
   try {
     return {
       private: fs.readFileSync(
@@ -31,7 +38,7 @@ const app = createRest({
   port: parseInt(process.env.PORT || "8080"),
   modulesPath: path.join(__dirname, "../dist", "modules"),
   uploadDirectory: path.join(__dirname, "../dist", "uploads"),
-  keypair: process.env.KEYPAIR ? getKeys() : undefined,
+  keypair: getKeys(),
   mongo: {
     mongoBaseAddress:
       process.env.MONGO_BASE_ADDRESS || "mongodb://localhost:27017",
