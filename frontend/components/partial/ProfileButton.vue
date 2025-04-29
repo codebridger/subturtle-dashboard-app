@@ -1,7 +1,7 @@
 <template>
     <Dropdown :triggerText="''" :offsetDistance="7">
         <template #trigger>
-            <IconButton size="lg" :imgUrl="profileStore.profilePicture" />
+            <IconButton size="lg" :imgUrl="profilePicture" />
         </template>
 
         <template #body="{ close }">
@@ -9,16 +9,16 @@
                 <li>
                     <div class="flex items-center px-4 py-4">
                         <div class="flex-none">
-                            <img class="h-10 w-10 rounded-md object-cover" :src="profileStore.profilePicture" alt="" />
+                            <img class="h-10 w-10 rounded-md object-cover" :src="profilePicture" />
                         </div>
                         <div class="truncate ltr:pl-4 rtl:pr-4">
                             <h4 class="text-base">
                                 {{ profileStore.userDetail?.name }}
                                 <!-- <span class="rounded bg-success-light px-1 text-xs text-success ltr:ml-2 rtl:ml-2">Pro</span> -->
                             </h4>
-                            <a class="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white" href="javascript:;">
+                            <span class="text-black/60 dark:text-dark-light/60 dark:hover:text-white">
                                 {{ profileStore.email }}
-                            </a>
+                            </span>
                         </div>
                     </div>
                 </li>
@@ -53,6 +53,10 @@
     const { t } = useI18n();
 
     const profileStore = useProfileStore();
+
+    const profilePicture = computed(() => {
+        return profileStore.profilePicture || '/assets/images/user.png';
+    });
 
     function logout() {
         profileStore.logout();
