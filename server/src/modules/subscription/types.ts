@@ -7,8 +7,7 @@ export interface Subscription {
   start_date: Date;
   end_date: Date;
   total_credits: number;
-  system_benefit_portion: number;
-  service_cost_portion: number;
+  system_portion: number;
   spendable_credits: number;
   status: "active" | "expired" | "canceled";
 }

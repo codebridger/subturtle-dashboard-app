@@ -181,17 +181,15 @@ export async function addCredit(
   });
 
   // Define default allocation percentages
-  const systemBenefitPortion = 0.05; // 5% for platform costs
-  const serviceCostPortion = 0.2; // 20% for operational expenses
   const spendablePortion = 0.75; // 75% available for service consumption
+  const systemPortion = 1 - spendablePortion; // 25% for system costs
 
   let updatedSubscription;
   let isNew = false;
 
   if (activeSubscription) {
     // Update existing subscription
-    const systemBenefit = creditAmount * systemBenefitPortion;
-    const serviceCost = creditAmount * serviceCostPortion;
+    const systemAmount = creditAmount * systemPortion;
     const spendableCredits = creditAmount * spendablePortion;
 
     // Extend existing subscription by totalDays
@@ -206,8 +204,7 @@ export async function addCredit(
         },
         $inc: {
           total_credits: creditAmount,
-          system_benefit_portion: systemBenefit,
-          service_cost_portion: serviceCost,
+          system_portion: systemAmount,
           spendable_credits: spendableCredits,
         },
       },
@@ -218,8 +215,7 @@ export async function addCredit(
     emitSubscriptionRenewedEvent(userId, updatedSubscription?._id, newEndDate);
   } else {
     // Create new subscription
-    const systemBenefit = creditAmount * systemBenefitPortion;
-    const serviceCost = creditAmount * serviceCostPortion;
+    const systemAmount = creditAmount * systemPortion;
     const spendableCredits = creditAmount * spendablePortion;
 
     // Set end date based on totalDays parameter
@@ -232,8 +228,7 @@ export async function addCredit(
       start_date: startDate,
       end_date: endDate,
       total_credits: creditAmount,
-      system_benefit_portion: systemBenefit,
-      service_cost_portion: serviceCost,
+      system_portion: systemAmount,
       spendable_credits: spendableCredits,
       status: "active",
     };

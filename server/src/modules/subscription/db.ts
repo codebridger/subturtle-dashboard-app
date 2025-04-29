@@ -36,11 +36,7 @@ const subscriptionCollection = new CollectionDefinition({
         type: Number,
         required: true,
       },
-      system_benefit_portion: {
-        type: Number,
-        required: true,
-      },
-      service_cost_portion: {
+      system_portion: {
         type: Number,
         required: true,
       },

@@ -47,9 +47,8 @@ The subscription module will expose the following methods to other parts of the 
 
 1. **Subscription to Credit Conversion**
     *   When a user purchases a subscription, the total price is divided into:
-        *   System-benefit (platform costs)
-        *   Service-cost (operational expenses)
-        *   Spendable (available for AI service consumption)
+        *   System portion (25% for platform costs and operational expenses)
+        *   Spendable portion (75% available for AI service consumption)
     *   Only the Spendable portion is converted to Credits (currency-neutral units) and allocated to the user
 2. **Daily Credit Distribution**
     *   The total spendable Credits are divided by the subscription period (30/90/365 days)
@@ -78,8 +77,7 @@ subscription_type: ENUM (monthly, quarterly, annual)
 start_date: TIMESTAMP
 end_date: TIMESTAMP
 total_credits: DECIMAL
-system_benefit_portion: DECIMAL
-service_cost_portion: DECIMAL
+system_portion: DECIMAL
 spendable_credits: DECIMAL
 status: ENUM (active, expired, canceled)
 ```
