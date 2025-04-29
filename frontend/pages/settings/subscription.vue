@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, Icon, IconButton, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
 
     import { ref } from 'vue';
     import { functionProvider } from '@modular-rest/client';

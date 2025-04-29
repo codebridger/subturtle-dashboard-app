@@ -14,7 +14,7 @@
                             <button
                                 type="button"
                                 class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
-                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'settings' }"
+                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'profile' }"
                             >
                                 <div class="flex items-center">
                                     <Icon name="IconUser" class="shrink-0" />
