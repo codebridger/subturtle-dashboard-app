@@ -129,7 +129,14 @@
         "profile": "Profile"
     },
     "billing": {
-        "billing": "Billing"
+        "billing": "Billing",
+        "invoice": "Invoice",
+        "next-billing-date": "Next Billing Date",
+        "invoice-number": "Invoice Number",
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status",
+        "renew": "Renew"
     },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",
