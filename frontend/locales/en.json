@@ -120,6 +120,9 @@
         "selection-mode": "Selection Mode",
         "ai-character": "AI Character"
     },
+    "profile": {
+        "profile": "Profile"
+    },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",
     "or": "or",
@@ -135,5 +138,6 @@
     "title_description": "The title and description",
     "title": "Title",
     "phrase": "Phrase",
-    "translation": "Translation"
+    "translation": "Translation",
+    "settings": "Settings"
 }

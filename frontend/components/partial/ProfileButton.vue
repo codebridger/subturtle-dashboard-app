@@ -34,18 +34,6 @@
                         Membership
                     </a>
                 </li>
-                <!-- <li class="cursor-pointer">
-          <a class="dark:hover:text-white" @click="close()">
-            <Icon name="icon-mail" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-            Inbox
-          </a>
-        </li>
-        <li class="cursor-pointer">
-          <a class="dark:hover:text-white" @click="close()">
-            <Icon name="icon-lock-dots" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-            Lock Screen
-          </a>
-        </li> -->
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
                     <a to="/auth/boxed-signin" class="!py-3 text-danger" @click="logout">
                         <Icon name="icon-logout" class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
@@ -71,6 +59,6 @@
     }
 
     function goToMembership() {
-        router.push('/membership-plans');
+        router.push('/settings/subscription');
     }
 </script>
