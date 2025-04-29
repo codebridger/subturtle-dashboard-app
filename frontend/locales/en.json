@@ -64,6 +64,7 @@
         "total-phrases-required": "Total phrases is required"
     },
     "subscription": {
+        "title": "Subscription",
         "subscription-plans": "Subscription Plans",
         "plans-price-details": "Plans & Price Details",
         "invoice-date": "Invoice Date:",
@@ -95,7 +96,11 @@
         "payment-result": "Payment Result",
         "monthly-subscription": "Monthly Subscription",
         "monthly-description": "Access to all features for 30 days with 1000 credits",
-        "features": "What's Included"
+        "features": "What's Included",
+        "active-plan": "Active Plan",
+        "freemium": "Freemium",
+        "premium": "Premium",
+        "joined-at": "Joined at"
     },
     "auth": {
         "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
@@ -123,6 +128,9 @@
     "profile": {
         "profile": "Profile"
     },
+    "billing": {
+        "billing": "Billing"
+    },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",
     "or": "or",
@@ -139,5 +147,7 @@
     "title": "Title",
     "phrase": "Phrase",
     "translation": "Translation",
-    "settings": "Settings"
+    "settings": "Settings",
+    "logout": "Log out",
+    "sign-out": "Sign Out"
 }
