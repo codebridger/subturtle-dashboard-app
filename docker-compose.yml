@@ -6,10 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${PORT:-8080}:8080"
+      - "${PORT:-8080}:80"
     environment:
       - NODE_ENV=development
       - MONGO_BASE_ADDRESS=mongodb://mongodb:27017
+      - PORT=80
     env_file:
       - ./server/container.env
     depends_on:
