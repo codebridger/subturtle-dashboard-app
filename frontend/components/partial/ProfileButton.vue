@@ -59,6 +59,6 @@
     }
 
     function goToMembership() {
-        router.push('/profile/subscription');
+        router.push('/settings/subscription');
     }
 </script>
