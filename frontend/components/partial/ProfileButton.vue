@@ -31,13 +31,13 @@
                         "
                     >
                         <Icon name="icon-user" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                        Membership
+                        {{ t('subscription.title') }}
                     </a>
                 </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
                     <a to="/auth/boxed-signin" class="!py-3 text-danger" @click="logout">
                         <Icon name="icon-logout" class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
-                        Sign Out
+                        {{ t('sign-out') }}
                     </a>
                 </li>
             </ul>
@@ -50,6 +50,7 @@
     import { Dropdown, IconButton, Icon } from '@codebridger/lib-vue-components/elements.ts';
 
     const router = useRouter();
+    const { t } = useI18n();
 
     const profileStore = useProfileStore();
 
