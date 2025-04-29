@@ -2,6 +2,7 @@ import * as path from "path";
 import { createRest, CmsTrigger, getCollection } from "@modular-rest/server";
 import { permissionGroups } from "./permissions";
 import fs from "fs";
+import { authTriggers } from "./triggers";
 // Load .env file
 require("dotenv").config({
   path: path.resolve(__dirname, "../.env"),
@@ -48,19 +49,7 @@ const app = createRest({
     return "123456";
   },
   permissionGroups,
-  authTriggers: [
-    new CmsTrigger("insert-one", (context) => {
-      // console.log("User created", context);
-
-      getCollection("user_content", "phrase_bundle").insertMany([
-        {
-          refId: context.queryResult._id,
-          title: "Default Bundle",
-          phrases: [],
-        },
-      ]);
-    }),
-  ],
+  authTriggers: authTriggers,
 }).catch((err) => {
   console.error(err);
   process.exit(1);

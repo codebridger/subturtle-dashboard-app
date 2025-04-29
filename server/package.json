@@ -11,13 +11,14 @@
   "author": "Navid Shad <navidshad72@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@types/koa-router": "^7.4.8",
     "@modular-rest/server": "^1.13.4",
+    "@types/koa-router": "^7.4.8",
     "date-and-time": "^3.6.0",
     "dotenv": "^16.4.5",
     "googleapis": "^129.0.0",
     "koa-router": "^13.0.1",
     "node-fetch": "2",
+    "stripe": "^18.0.0",
     "zod": "^3.24.3",
     "zod-to-json-schema": "^3.24.5"
   },
