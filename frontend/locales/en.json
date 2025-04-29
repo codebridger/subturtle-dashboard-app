@@ -96,7 +96,11 @@
         "payment-result": "Payment Result",
         "monthly-subscription": "Monthly Subscription",
         "monthly-description": "Access to all features for 30 days with 1000 credits",
-        "features": "What's Included"
+        "features": "What's Included",
+        "active-plan": "Active Plan",
+        "freemium": "Freemium",
+        "premium": "Premium",
+        "joined-at": "Joined at"
     },
     "auth": {
         "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
