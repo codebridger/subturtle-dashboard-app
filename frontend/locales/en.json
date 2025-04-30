@@ -136,7 +136,9 @@
         "date": "Date",
         "amount": "Amount",
         "status": "Status",
-        "renew": "Renew"
+        "renew-now": "Renew Now",
+        "days-left": "Days Left",
+        "payment-history": "Payment History"
     },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",
