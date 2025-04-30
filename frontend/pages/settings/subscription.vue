@@ -6,22 +6,56 @@
             </div>
             <div class="flex w-4/5 flex-col gap-4">
                 <!-- Active Plan Card -->
-                <Card class="w-full rounded-lg shadow-none">
-                    <div class="flex flex-col items-start justify-start">
-                        <h2 class="text-xl font-bold text-gray-900">{{ t('subscription.active-plan') }}</h2>
-                        <span class="text-lg font-semibold text-gray-800">{{ t('subscription.freemium') }}</span>
-                        <p class="text-gray-600">{{ t('subscription.joined-at') }} {{ new Date().toLocaleDateString() }}</p>
+                <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
+                    <h2 class="text-xl font-bold text-gray-900">{{ t('subscription.active-plan') }}</h2>
+                    <div class="flex flex-col gap-4">
+                        <div class="mt-8 flex items-start justify-between gap-4">
+                            <div class="flex flex-col gap-2.5">
+                                <span class="text-lg text-gray-800">{{ t('subscription.freemium') }}</span>
+                                <div class="flex items-center">
+                                    <span class="text-lg text-gray-900">$0</span>
+                                    <span class="text-sm text-gray-500 ltr:ml-1 rtl:mr-1">/month</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2.5">
+                                <p class="text-gray-600">{{ t('subscription.joined-at') }} {{ new Date().toLocaleDateString() }}</p>
+                                <Button color="primary" size="md" @click="initiateCheckout" :label="t('subscription.cancel-subscription')" />
+                            </div>
+                        </div>
+
+                        <ul class="space-y-2.5">
+                            <li class="flex items-start">
+                                <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                <span class="text-sm text-gray-700">10,000 saved phrases</span>
+                            </li>
+                            <li class="flex items-start">
+                                <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                <span class="text-sm text-gray-700">Unlimited AI practice sessions</span>
+                            </li>
+                            <li class="flex items-start">
+                                <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                <span class="text-sm text-gray-700">2 Years Data Storage</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="mt-8 flex flex-col items-start justify-between gap-4">
+                        <div class="flex items-center gap-2 rounded-full bg-gray-600 px-3 py-1.5 text-sm font-medium text-white">
+                            <Icon name="IconClock" class="h-4 w-4" />
+                            <span>{{ t('billing.days-left') }}: 10</span>
+                        </div>
+                        <Progress :value="50" :max="100" size="md" color="primary" />
                     </div>
                 </Card>
 
                 <!-- Pricing Tables -->
                 <div class="mx-auto mt-8 max-w-full dark:text-white-dark">
-                    <div class="justify-between space-y-8 md:flex md:space-x-4 md:space-y-0 rtl:space-x-reverse">
+                    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
                         <!-- Plan Cards -->
                         <Card
                             v-for="(plan, index) in plans"
                             :key="index"
-                            class="group w-full rounded border border-[#e0e6ed] !p-0 shadow-none transition-all duration-300 dark:border-[#1b2e4b]"
+                            class="group flex h-full w-full flex-col rounded border border-[#e0e6ed] !p-0 shadow-none transition-all duration-300 dark:border-[#1b2e4b]"
+                            style="min-height: 440px"
                         >
                             <div class="border-b border-[#e0e6ed] p-5 pt-0 dark:border-[#1b2e4b]">
                                 <span
@@ -31,37 +65,40 @@
                                 <h3 class="mb-2.5 mt-4 text-xl lg:text-2xl">{{ t(`subscription.${plan.name}`) }}</h3>
                                 <p class="text-[15px]">{{ t('subscription.monthly-description') }}</p>
                             </div>
-                            <div class="p-5">
-                                <ul class="mb-5 space-y-2.5 font-semibold">
+                            <div class="flex flex-grow flex-col p-5">
+                                <p class="mb-4 text-[15px]">Access to all features for 30 days with 1000 credits</p>
+                                <ul class="mb-8 flex-grow space-y-4 font-semibold">
                                     <li v-for="(feature, featureIndex) in plan.features" :key="featureIndex" class="flex items-start">
                                         <span :class="`iconify mr-3 mt-1 text-xl text-blue-600 ${feature.icon}`"></span>
                                         <span>{{ feature.text }}</span>
                                     </li>
                                 </ul>
-                                <Button v-if="plan.name === 'freemium'" class="btn btn-primary hidden w-full" disabled>
-                                    {{ t('subscription.current-plan') }}
-                                </Button>
-                                <Button v-else @click="initiateCheckout" class="btn btn-primary block w-full" :disabled="isLoading">
-                                    <span v-if="isLoading" class="flex items-center justify-center">
-                                        <svg
-                                            class="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path
-                                                class="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                            ></path>
-                                        </svg>
-                                        {{ t('subscription.processing') }}
-                                    </span>
-                                    <span v-else>
-                                        {{ t('subscription.subscribe-now') }}
-                                    </span>
-                                </Button>
+                                <div class="mt-auto">
+                                    <Button v-if="plan.name === 'freemium'" class="btn btn-primary hidden w-full" disabled>
+                                        {{ t('subscription.current-plan') }}
+                                    </Button>
+                                    <Button v-else @click="initiateCheckout" class="btn btn-primary block w-full" :disabled="isLoading">
+                                        <span v-if="isLoading" class="flex items-center justify-center">
+                                            <svg
+                                                class="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path
+                                                    class="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                            {{ t('subscription.processing') }}
+                                        </span>
+                                        <span v-else>
+                                            {{ t('subscription.subscribe-now') }}
+                                        </span>
+                                    </Button>
+                                </div>
                             </div>
                         </Card>
                     </div>
@@ -77,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button, Progress, Icon } from '@codebridger/lib-vue-components/elements.ts';
 
     import { ref } from 'vue';
     import { functionProvider } from '@modular-rest/client';
