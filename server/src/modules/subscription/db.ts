@@ -1,9 +1,4 @@
-import {
-  CollectionDefinition,
-  Schema,
-  Permission,
-  schemas,
-} from "@modular-rest/server";
+import { defineCollection, Schema, Permission } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
@@ -13,7 +8,7 @@ import {
 } from "../../config";
 
 // Define subscription collection
-const subscriptionCollection = new CollectionDefinition({
+const subscriptionCollection = defineCollection({
   database: DATABASE,
   collection: SUBSCRIPTION_COLLECTION,
   schema: new Schema(
@@ -70,7 +65,7 @@ const subscriptionCollection = new CollectionDefinition({
 });
 
 // Define daily credits collection
-const dailyCreditsCollection = new CollectionDefinition({
+const dailyCreditsCollection = defineCollection({
   database: DATABASE,
   collection: DAILY_CREDITS_COLLECTION,
   schema: new Schema(
@@ -117,7 +112,7 @@ const dailyCreditsCollection = new CollectionDefinition({
 });
 
 // Define usage collection
-const usageCollection = new CollectionDefinition({
+const usageCollection = defineCollection({
   database: DATABASE,
   collection: USAGE_COLLECTION,
   schema: new Schema(
@@ -129,7 +124,6 @@ const usageCollection = new CollectionDefinition({
       },
       subscription_id: {
         type: Types.ObjectId,
-        required: true,
         ref: `${DATABASE}.${SUBSCRIPTION_COLLECTION}`,
       },
       service_type: {
@@ -147,15 +141,6 @@ const usageCollection = new CollectionDefinition({
       model_used: {
         type: String,
         required: true,
-      },
-      timestamp: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-      session_id: {
-        type: Types.ObjectId,
-        required: false,
       },
       details: {
         type: Object,

@@ -300,9 +300,6 @@ export async function recordUsage(
   modelUsed: string,
   details: any
 ) {
-  // Round to 2 decimal places to avoid floating point issues
-  creditAmount = Math.round(creditAmount * 100) / 100;
-
   // Get active subscription
   const subscriptionsCollection = getCollection(
     DATABASE,
@@ -324,8 +321,6 @@ export async function recordUsage(
       credit_amount: creditAmount,
       token_count: tokenCount,
       model_used: modelUsed,
-      timestamp: new Date(),
-      session_id: new Types.ObjectId(),
       status: "unpaid",
       details,
     };
@@ -360,8 +355,6 @@ export async function recordUsage(
     credit_amount: creditAmount,
     token_count: tokenCount,
     model_used: modelUsed,
-    timestamp: new Date(),
-    session_id: new Types.ObjectId(),
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     details,
   };
