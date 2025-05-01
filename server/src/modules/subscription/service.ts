@@ -107,6 +107,30 @@ async function getOrCreateDailyCredits(
   return await dailyCreditsCollection.create(newDailyCredits);
 }
 
+async function getMonthlyUsage(userId: string): Promise<number> {
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
+  const monthlyUsageResult = await usageCollection.aggregate([
+    {
+      $match: {
+        user_id: Types.ObjectId(userId),
+        timestamp: { $gte: firstDayOfMonth },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalCredits: { $sum: "$credit_amount" },
+      },
+    },
+  ]);
+
+  const results = await monthlyUsageResult;
+  return results.length > 0 ? results[0].totalCredits : 0;
+}
+
 /**
  * Check the daily credit allocation for a user
  */
@@ -147,18 +171,8 @@ export async function checkDailyAllocation(userId: string) {
     emitLowCreditsEvent(userId, availableCredits);
   }
 
-  // Determine allowed services based on available credits
-  // This is a simplified example - real implementation would have more sophisticated logic
-  const allowedServices = [];
-  if (availableCredits > 0) {
-    allowedServices.push("conversation");
-    if (availableCredits > 10) allowedServices.push("translation");
-    if (availableCredits > 50) allowedServices.push("premium_models");
-  }
-
   return {
     availableCredits,
-    allowedServices,
     hasActiveSubscription: true,
     subscriptionEndsAt: activeSubscription.end_date,
   };
@@ -209,7 +223,7 @@ export async function addCredit(
           spendable_credits: spendableCredits,
         },
       },
-      { returnDocument: "after" }
+      { new: true }
     );
 
     // Emit subscription renewed event
@@ -348,7 +362,6 @@ export async function recordUsage(props: {
       remainingCredits: 0,
       usageId: usageRecord._id,
       totalUsageToday: creditAmount,
-      totalUsageMonth: await getMonthlyUsage(userId),
       status: "unpaid",
       costResult,
     };
@@ -403,7 +416,6 @@ export async function recordUsage(props: {
 
   // Get usage statistics
   const totalUsageToday = updatedDailyCredits?.credits_used;
-  const totalUsageMonth = await getMonthlyUsage(userId);
 
   // Check if credits are low and emit event if needed
   if (remainingCredits < LOW_CREDITS_THRESHOLD) {
@@ -414,32 +426,7 @@ export async function recordUsage(props: {
     remainingCredits,
     usageId: usageRecord._id,
     totalUsageToday,
-    totalUsageMonth,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     costResult,
   };
-}
-
-async function getMonthlyUsage(userId: string): Promise<number> {
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
-  const monthlyUsageResult = await usageCollection.aggregate([
-    {
-      $match: {
-        user_id: Types.ObjectId(userId),
-        timestamp: { $gte: firstDayOfMonth },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalCredits: { $sum: "$credit_amount" },
-      },
-    },
-  ]);
-
-  const results = await monthlyUsageResult;
-  return results.length > 0 ? results[0].totalCredits : 0;
 }
