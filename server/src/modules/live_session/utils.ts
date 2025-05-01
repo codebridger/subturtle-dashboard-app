@@ -1,11 +1,33 @@
+import { CostCalculationInput } from "../subscription/calculator";
 import { TokenUsageType } from "./types";
 import Decimal from "decimal.js-light";
+import { calculatorService } from "../subscription/calculator";
 
 // Configure Decimal for higher precision
 Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
 
-export function calculateLiveSessionCost(usage: TokenUsageType) {
-  const prices_per_million_tokens = {
+/**
+ * Calculates the cost of a live session based on token usage
+ *
+ * This function performs precise calculations for the cost of live sessions by:
+ * 1. Computing individual costs for different token types (text, audio, cached)
+ * 2. Using high-precision decimal arithmetic to avoid floating-point errors
+ * 3. Providing a detailed breakdown of usage and costs
+ *
+ * The calculated costs follow this pricing model:
+ * - Input text tokens: $0.6 per million tokens
+ * - Input audio tokens: $10.0 per million tokens
+ * - Cached text tokens: $0.3 per million tokens
+ * - Cached audio tokens: $0.3 per million tokens
+ * - Output text tokens: $2.4 per million tokens
+ * - Output audio tokens: $20.0 per million tokens
+ *
+ * @param usage - Object containing token usage details across different categories
+ * @returns The total cost in USD with high precision (10 decimal places)
+ */
+export function extractCostCalculationInput(usage: TokenUsageType) {
+  // Price definitions per million tokens for each token type
+  const prices_per_m = {
     input_token_details: {
       text_tokens: 0.6,
       audio_tokens: 10.0,
@@ -20,112 +42,56 @@ export function calculateLiveSessionCost(usage: TokenUsageType) {
     },
   };
 
-  // Use string literals for precise decimal representation
-  const million = new Decimal("1000000");
+  const expenses: CostCalculationInput[] = [];
 
-  // Calculate input costs with Decimal for precision
-  const inputTextCost = new Decimal(usage.input_token_details.text_tokens)
-    .div(million)
-    .times(
-      new Decimal(
-        prices_per_million_tokens.input_token_details.text_tokens.toString()
-      )
-    );
+  // Add input tokens (always present)
+  expenses.push({
+    label: "Input Text Tokens",
+    totalTokens: usage.input_token_details.text_tokens,
+    usdCostPerMillion: prices_per_m.input_token_details.text_tokens,
+  });
 
-  const inputAudioCost = new Decimal(usage.input_token_details.audio_tokens)
-    .div(million)
-    .times(
-      new Decimal(
-        prices_per_million_tokens.input_token_details.audio_tokens.toString()
-      )
-    );
+  expenses.push({
+    label: "Input Audio Tokens",
+    totalTokens: usage.input_token_details.audio_tokens,
+    usdCostPerMillion: prices_per_m.input_token_details.audio_tokens,
+  });
 
-  const cachedTextCost = new Decimal(
-    usage.input_token_details.cached_tokens_details.text_tokens
-  )
-    .div(million)
-    .times(
-      new Decimal(
-        prices_per_million_tokens.input_token_details.cached_tokens_details.text_tokens.toString()
-      )
-    );
+  // Add cached tokens if present
+  if (usage.input_token_details.cached_tokens_details) {
+    if (usage.input_token_details.cached_tokens_details.text_tokens > 0) {
+      expenses.push({
+        label: "Cached Text Tokens",
+        totalTokens:
+          usage.input_token_details.cached_tokens_details.text_tokens,
+        usdCostPerMillion:
+          prices_per_m.input_token_details.cached_tokens_details.text_tokens,
+      });
+    }
 
-  const cachedAudioCost = new Decimal(
-    usage.input_token_details.cached_tokens_details.audio_tokens
-  )
-    .div(million)
-    .times(
-      new Decimal(
-        prices_per_million_tokens.input_token_details.cached_tokens_details.audio_tokens.toString()
-      )
-    );
+    if (usage.input_token_details.cached_tokens_details.audio_tokens > 0) {
+      expenses.push({
+        label: "Cached Audio Tokens",
+        totalTokens:
+          usage.input_token_details.cached_tokens_details.audio_tokens,
+        usdCostPerMillion:
+          prices_per_m.input_token_details.cached_tokens_details.audio_tokens,
+      });
+    }
+  }
 
-  // Calculate output costs
-  const outputTextCost = new Decimal(usage.output_token_details.text_tokens)
-    .div(million)
-    .times(
-      new Decimal(
-        prices_per_million_tokens.output_token_details.text_tokens.toString()
-      )
-    );
+  // Add output tokens (always present)
+  expenses.push({
+    label: "Output Text Tokens",
+    totalTokens: usage.output_token_details.text_tokens,
+    usdCostPerMillion: prices_per_m.output_token_details.text_tokens,
+  });
 
-  const outputAudioCost = new Decimal(usage.output_token_details.audio_tokens)
-    .div(million)
-    .times(
-      new Decimal(
-        prices_per_million_tokens.output_token_details.audio_tokens.toString()
-      )
-    );
+  expenses.push({
+    label: "Output Audio Tokens",
+    totalTokens: usage.output_token_details.audio_tokens,
+    usdCostPerMillion: prices_per_m.output_token_details.audio_tokens,
+  });
 
-  // Sum all costs
-  const totalCost = inputTextCost
-    .plus(inputAudioCost)
-    .plus(cachedTextCost)
-    .plus(cachedAudioCost)
-    .plus(outputTextCost)
-    .plus(outputAudioCost);
-
-  // Create usage cost table for logging
-  const costTable = [
-    ["Token Type", "Token Count", "Cost ($)"],
-    [
-      "Input Text",
-      usage.input_token_details.text_tokens,
-      Number(inputTextCost.toFixed(10)),
-    ],
-    [
-      "Input Audio",
-      usage.input_token_details.audio_tokens,
-      Number(inputAudioCost.toFixed(10)),
-    ],
-    [
-      "Cached Text",
-      usage.input_token_details.cached_tokens_details.text_tokens,
-      Number(cachedTextCost.toFixed(10)),
-    ],
-    [
-      "Cached Audio",
-      usage.input_token_details.cached_tokens_details.audio_tokens,
-      Number(cachedAudioCost.toFixed(10)),
-    ],
-    [
-      "Output Text",
-      usage.output_token_details.text_tokens,
-      Number(outputTextCost.toFixed(10)),
-    ],
-    [
-      "Output Audio",
-      usage.output_token_details.audio_tokens,
-      Number(outputAudioCost.toFixed(10)),
-    ],
-    ["TOTAL", usage.total_tokens, Number(totalCost.toFixed(10))],
-  ];
-
-  // Log the table
-  console.table(costTable);
-
-  // Return as a number with high precision
-  // For maximum accuracy when these values are persisted or displayed
-  const finalTotalCost = Number(totalCost.toFixed(10));
-  return finalTotalCost;
+  return expenses;
 }

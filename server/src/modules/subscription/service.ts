@@ -15,6 +15,7 @@ import {
   emitSubscriptionRenewedEvent,
 } from "./events";
 import { DailyCredits, Subscription } from "./types";
+import { CostCalculationInput, calculatorService } from "./calculator";
 
 /**
  * Helper function to get or create daily credits record
@@ -292,14 +293,26 @@ export async function checkAndUpdateExpiredSubscriptions() {
 /**
  * Record generic usage
  */
-export async function recordUsage(
-  userId: string,
-  serviceType: string,
-  creditAmount: number,
-  tokenCount: number,
-  modelUsed: string,
-  details: any
-) {
+export async function recordUsage(props: {
+  userId: string;
+  serviceType: string;
+  costInputs: CostCalculationInput[];
+  modelUsed?: string;
+  details?: any;
+}) {
+  const { userId, serviceType, costInputs, modelUsed, details } = props;
+
+  // Calculate credit amount using calculator service
+  const costResult = calculatorService.calculateCosts(costInputs);
+  const creditAmount = costResult.totalCostInCredits;
+  const tokenCount = costResult.totalTokens;
+
+  console.log(`=== RECORD USAGE ===`);
+  console.log(`Credit amount: ${creditAmount}`);
+  console.log(`USD amount: ${costResult.totalCostInUsd}`);
+  console.log(`Token count: ${tokenCount}`);
+  console.log(`Model used: ${modelUsed}`);
+
   // Get active subscription
   const subscriptionsCollection = getCollection(
     DATABASE,
@@ -322,7 +335,10 @@ export async function recordUsage(
       token_count: tokenCount,
       model_used: modelUsed,
       status: "unpaid",
-      details,
+      costBreakdown: {
+        ...details,
+        costBreakdown: costResult.items,
+      },
     };
 
     const usageRecord = await usageCollection.create(newUsage);
@@ -334,6 +350,7 @@ export async function recordUsage(
       totalUsageToday: creditAmount,
       totalUsageMonth: await getMonthlyUsage(userId),
       status: "unpaid",
+      costResult,
     };
   }
 
@@ -356,7 +373,10 @@ export async function recordUsage(
     token_count: tokenCount,
     model_used: modelUsed,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
-    details,
+    details: {
+      ...details,
+      costBreakdown: costResult.items,
+    },
   };
 
   const usageRecord = await usageCollection.create(newUsage);
@@ -408,6 +428,7 @@ export async function recordUsage(
     totalUsageToday,
     totalUsageMonth,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
+    costResult,
   };
 }
 

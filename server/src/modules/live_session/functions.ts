@@ -8,8 +8,9 @@ import {
   TokenUsageType,
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
-import { calculateLiveSessionCost } from "./utils";
+import { extractCostCalculationInput } from "./utils";
 import { recordUsage } from "../subscription/service";
+import { LIVE_SESSION_MODEL, LIVE_SESSION_TRANSCRIPTION_MODEL } from "./config";
 const fetch = require("node-fetch");
 interface PracticeSetup {
   instructions?: string;
@@ -53,10 +54,10 @@ const requestEphemeralToken = defineFunction({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini-realtime-preview",
+          model: LIVE_SESSION_MODEL,
           temperature: 0.6,
           input_audio_transcription: {
-            model: "gpt-4o-mini-transcribe",
+            model: LIVE_SESSION_TRANSCRIPTION_MODEL,
           },
           ...additionalSetup,
         }),
@@ -134,13 +135,12 @@ const updateLiveSession = defineFunction({
         );
 
         // Report usage to subscription service
-        const costs = calculateLiveSessionCost(update.usage);
+        const costs = extractCostCalculationInput(update.usage);
         await recordUsage({
           userId,
           serviceType: "live_session",
-          creditAmount: costs,
-          tokenCount: update.usage.total_tokens,
-          modelUsed: "gpt-4o-mini-realtime-preview",
+          costInputs: costs,
+          modelUsed: LIVE_SESSION_MODEL,
         });
       }
       // Handle dialogs update
