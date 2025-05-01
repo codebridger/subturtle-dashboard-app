@@ -6,11 +6,15 @@ import {
   DAILY_CREDITS_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
+import {
+  SPENDABLE_PORTION,
+  SYSTEM_PORTION,
+  LOW_CREDITS_THRESHOLD,
+} from "./config";
 
 import {
   emitLowCreditsEvent,
   emitSubscriptionChangeEvent,
-  emitUsageSpikeEvent,
   emitSubscriptionExpiredEvent,
   emitSubscriptionRenewedEvent,
 } from "./events";
@@ -139,7 +143,7 @@ export async function checkDailyAllocation(userId: string) {
     dailyCredits.credits_used;
 
   // Check if credits are low and emit event if needed
-  if (availableCredits < 10) {
+  if (availableCredits < LOW_CREDITS_THRESHOLD) {
     emitLowCreditsEvent(userId, availableCredits);
   }
 
@@ -181,17 +185,13 @@ export async function addCredit(
     end_date: { $gte: new Date() },
   });
 
-  // Define default allocation percentages
-  const spendablePortion = 0.75; // 75% available for service consumption
-  const systemPortion = 1 - spendablePortion; // 25% for system costs
-
   let updatedSubscription;
   let isNew = false;
 
   if (activeSubscription) {
     // Update existing subscription
-    const systemAmount = creditAmount * systemPortion;
-    const spendableCredits = creditAmount * spendablePortion;
+    const systemAmount = creditAmount * SYSTEM_PORTION;
+    const spendableCredits = creditAmount * SPENDABLE_PORTION;
 
     // Extend existing subscription by totalDays
     const newEndDate = new Date(activeSubscription.end_date);
@@ -216,8 +216,8 @@ export async function addCredit(
     emitSubscriptionRenewedEvent(userId, updatedSubscription?._id, newEndDate);
   } else {
     // Create new subscription
-    const systemAmount = creditAmount * systemPortion;
-    const spendableCredits = creditAmount * spendablePortion;
+    const systemAmount = creditAmount * SYSTEM_PORTION;
+    const spendableCredits = creditAmount * SPENDABLE_PORTION;
 
     // Set end date based on totalDays parameter
     const startDate = new Date();
@@ -406,20 +406,8 @@ export async function recordUsage(props: {
   const totalUsageMonth = await getMonthlyUsage(userId);
 
   // Check if credits are low and emit event if needed
-  if (remainingCredits < 10) {
+  if (remainingCredits < LOW_CREDITS_THRESHOLD) {
     emitLowCreditsEvent(userId, remainingCredits);
-  }
-
-  // Check for usage spike based on service type
-  if (serviceType === "conversation" && details.durationSeconds / 60 > 10) {
-    emitUsageSpikeEvent(
-      userId,
-      "conversation",
-      details.durationSeconds / 60,
-      10
-    );
-  } else if (serviceType === "translation" && details.characterCount > 10000) {
-    emitUsageSpikeEvent(userId, "translation", details.characterCount, 10000);
   }
 
   return {

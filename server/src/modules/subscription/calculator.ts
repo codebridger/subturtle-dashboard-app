@@ -1,10 +1,5 @@
 import Decimal from "decimal.js-light";
-
-/**
- * Token cost calculation configuration
- */
-export const COST_TRANSPOSE = 100_000_000; // 100 million for better precision
-export const TOKEN_UNIT = 1_000_000; // 1 million tokens
+import { COST_TRANSPOSE, TOKEN_M_UNIT } from "./config";
 
 /**
  * Cost calculation input structure
@@ -57,7 +52,7 @@ export class CalculatorService {
       const costPerMillionDecimal = new Decimal(item.usdCostPerMillion);
       const itemTokensDecimal = new Decimal(item.totalTokens);
       const transposeDecimal = new Decimal(COST_TRANSPOSE);
-      const tokenUnitDecimal = new Decimal(TOKEN_UNIT);
+      const tokenUnitDecimal = new Decimal(TOKEN_M_UNIT);
 
       // Calculate cost in USD
       const costInUsdDecimal = costPerMillionDecimal

@@ -1,4 +1,5 @@
 import { calculatorService, CostCalculationInput } from "./calculator";
+import { COST_TRANSPOSE, TOKEN_M_UNIT } from "./config";
 
 /**
  * Simple tests for the calculator service
@@ -17,7 +18,7 @@ const singleTest: CostCalculationInput[] = [
 const singleResult = calculatorService.calculateCosts(singleTest);
 console.log(JSON.stringify(singleResult, null, 2));
 // Expected: 2000 tokens should cost $0.04 (20 * 2000 / 1M)
-// And 4M credits (20 * 100M * 2000 / 1M)
+// And 4M credits (20 * COST_TRANSPOSE * 2000 / 1M)
 
 // Test 2: Calculate costs for multiple model usages
 console.log("\nTest 2: Multiple model usage");
@@ -49,9 +50,9 @@ console.log("\nTest 3: Conversion utilities");
 const credits = 50_000_000; // 50M credits
 const usd = calculatorService.creditsToUsd(credits);
 console.log(`${credits} credits = $${usd}`);
-// Expected: 50M credits = $0.5
+// Expected: 50M credits = $0.5 (50M / COST_TRANSPOSE)
 
 const dollars = 0.75; // $0.75
 const convertedCredits = calculatorService.usdToCredits(dollars);
 console.log(`$${dollars} = ${convertedCredits} credits`);
-// Expected: $0.75 = 75M credits
+// Expected: $0.75 = 75M credits (0.75 * COST_TRANSPOSE)
