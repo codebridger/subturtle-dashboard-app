@@ -8,6 +8,8 @@ import {
   TokenUsageType,
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
+import { calculateLiveSessionCost } from "./utils";
+import { recordUsage } from "../subscription/service";
 const fetch = require("node-fetch");
 interface PracticeSetup {
   instructions?: string;
@@ -107,8 +109,8 @@ const updateLiveSession = defineFunction({
   name: "update-live-session-record",
   permissionTypes: ["user_access"],
   callback: async function (context: {
-    userId: String;
-    sessionId: String;
+    userId: string;
+    sessionId: string;
     update: { usage?: TokenUsageType; dialogs?: ConversationDialogType[] };
   }) {
     const { userId, sessionId, update } = context;
@@ -124,11 +126,23 @@ const updateLiveSession = defineFunction({
 
       // Handle usage update
       if (update.usage) {
-        await collection.updateOne({ _id: sessionId, refId: userId } as any, {
-          $set: { usage: update.usage },
+        await collection.updateOne(
+          { _id: sessionId, refId: userId },
+          {
+            $set: { usage: update.usage },
+          }
+        );
+
+        // Report usage to subscription service
+        const costs = calculateLiveSessionCost(update.usage);
+        await recordUsage({
+          userId,
+          serviceType: "live_session",
+          creditAmount: costs,
+          tokenCount: update.usage.total_tokens,
+          modelUsed: "gpt-4o-mini-realtime-preview",
         });
       }
-
       // Handle dialogs update
       if (update.dialogs && update.dialogs.length > 0) {
         const session = await collection.findOne(
