@@ -12,15 +12,6 @@ export interface Subscription {
   status: "active" | "expired" | "canceled";
 }
 
-export interface DailyCredits {
-  _id?: Types.ObjectId;
-  subscription_id: Types.ObjectId;
-  date: Date;
-  daily_credit_limit: number;
-  credits_used: number;
-  credits_rolled_over: number;
-}
-
 export interface Usage {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
@@ -60,6 +51,5 @@ export interface CreditAdditionResponse {
 export interface UsageRecordResponse {
   remainingCredits: number;
   usageId: Types.ObjectId;
-  totalUsageToday: number;
-  totalUsageMonth: number;
+  totalUsage: number;
 }

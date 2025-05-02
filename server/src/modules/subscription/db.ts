@@ -3,7 +3,6 @@ import { Types } from "mongoose";
 import {
   DATABASE,
   SUBSCRIPTION_COLLECTION,
-  DAILY_CREDITS_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
 
@@ -64,53 +63,6 @@ const subscriptionCollection = defineCollection({
   ],
 });
 
-// Define daily credits collection
-const dailyCreditsCollection = defineCollection({
-  database: DATABASE,
-  collection: DAILY_CREDITS_COLLECTION,
-  schema: new Schema(
-    {
-      subscription_id: {
-        type: Types.ObjectId,
-        required: true,
-        ref: `${DATABASE}.${SUBSCRIPTION_COLLECTION}`,
-      },
-      date: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-      daily_credit_limit: {
-        type: Number,
-        required: true,
-      },
-      credits_used: {
-        type: Number,
-        required: true,
-        default: 0,
-      },
-      credits_rolled_over: {
-        type: Number,
-        required: true,
-        default: 0,
-      },
-    },
-    { timestamps: true }
-  ),
-  permissions: [
-    new Permission({
-      accessType: "user_access",
-      read: true,
-      write: false,
-    }),
-    new Permission({
-      accessType: "admin",
-      read: true,
-      write: true,
-    }),
-  ],
-});
-
 // Define usage collection
 const usageCollection = defineCollection({
   database: DATABASE,
@@ -146,6 +98,12 @@ const usageCollection = defineCollection({
         type: Object,
         required: false,
       },
+      status: {
+        type: String,
+        enum: ["paid", "unpaid", "overdraft"],
+        required: true,
+        default: "paid",
+      },
     },
     { timestamps: true }
   ),
@@ -165,8 +123,4 @@ const usageCollection = defineCollection({
   ],
 });
 
-module.exports = [
-  subscriptionCollection,
-  dailyCreditsCollection,
-  usageCollection,
-];
+module.exports = [subscriptionCollection, usageCollection];
