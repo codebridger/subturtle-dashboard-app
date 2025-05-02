@@ -7,43 +7,93 @@
             <div class="flex w-4/5 flex-col gap-4">
                 <!-- Active Plan Card -->
                 <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
-                    <h2 class="text-xl font-bold text-gray-900">{{ t('subscription.active-plan') }}</h2>
-                    <div class="flex flex-col gap-4">
-                        <div class="mt-8 flex items-start justify-between gap-4">
-                            <div class="flex flex-col gap-2.5">
-                                <span class="text-lg text-gray-800">{{ t('subscription.freemium') }}</span>
-                                <div class="flex items-center">
-                                    <span class="text-lg text-gray-900">$0</span>
-                                    <span class="text-sm text-gray-500 ltr:ml-1 rtl:mr-1">/month</span>
+                    <h2 class="text-xl font-bold text-gray-900">
+                        {{ subscriptionData ? subscriptionData.status.charAt(0).toUpperCase() + subscriptionData.status.slice(1) : '' }}
+                        {{ t('subscription.plan') }}
+                    </h2>
+                    <div v-if="subscriptionData">
+                        <div class="flex flex-col gap-4">
+                            <div class="mt-8 flex items-start justify-between gap-4">
+                                <div class="flex flex-col gap-2.5">
+                                    <span class="text-lg text-gray-800">{{ t('subscription.freemium') }}</span>
+                                    <div class="flex items-center">
+                                        <span class="text-lg text-gray-900">$0</span>
+                                        <span class="text-sm text-gray-500 ltr:ml-1 rtl:mr-1">/month</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2.5">
+                                    <p class="text-gray-600">
+                                        {{ t('subscription.started-at') }} {{ new Date(subscriptionData.start_date).toLocaleDateString() }}
+                                    </p>
+                                    <Button color="primary" size="md" @click="initiateCheckout" :label="t('subscription.cancel-subscription')" />
                                 </div>
                             </div>
-                            <div class="flex flex-col gap-2.5">
-                                <p class="text-gray-600">{{ t('subscription.joined-at') }} {{ new Date().toLocaleDateString() }}</p>
-                                <Button color="primary" size="md" @click="initiateCheckout" :label="t('subscription.cancel-subscription')" />
+                            <ul class="space-y-2.5">
+                                <li class="flex items-start">
+                                    <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                    <span class="text-sm text-gray-700">Usage percentage: {{ subscriptionData.usage_percentage + '%' }}</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                    <span class="text-sm text-gray-700"
+                                        >Created at: {{ subscriptionData.createdAt ? new Date(subscriptionData.createdAt).toLocaleDateString() : '' }}</span
+                                    >
+                                </li>
+                                <li class="flex items-start">
+                                    <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                    <span class="text-sm text-gray-700"
+                                        >Updated at: {{ subscriptionData.updatedAt ? new Date(subscriptionData.updatedAt).toLocaleDateString() : '' }}</span
+                                    >
+                                </li>
+                                <li class="flex items-start">
+                                    <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                    <span class="text-sm text-gray-700"
+                                        >End date: {{ subscriptionData.end_date ? new Date(subscriptionData.end_date).toLocaleDateString() : '' }}</span
+                                    >
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="mt-8 flex flex-col items-start justify-between gap-4">
+                            <div class="flex items-center gap-2 rounded-full bg-gray-600 px-3 py-1.5 text-sm font-medium text-white">
+                                <Icon name="IconClock" class="h-4 w-4" />
+                                <span>{{ t('billing.days-left') }}: {{ subscriptionData.remaining_days }}</span>
                             </div>
+                            <Progress :value="50" :max="100" size="md" color="primary" />
                         </div>
-
-                        <ul class="space-y-2.5">
-                            <li class="flex items-start">
-                                <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-                                <span class="text-sm text-gray-700">10,000 saved phrases</span>
-                            </li>
-                            <li class="flex items-start">
-                                <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-                                <span class="text-sm text-gray-700">Unlimited AI practice sessions</span>
-                            </li>
-                            <li class="flex items-start">
-                                <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-                                <span class="text-sm text-gray-700">2 Years Data Storage</span>
-                            </li>
-                        </ul>
                     </div>
-                    <div class="mt-8 flex flex-col items-start justify-between gap-4">
-                        <div class="flex items-center gap-2 rounded-full bg-gray-600 px-3 py-1.5 text-sm font-medium text-white">
-                            <Icon name="IconClock" class="h-4 w-4" />
-                            <span>{{ t('billing.days-left') }}: 10</span>
+                </Card>
+                <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
+                    <h2 class="text-xl font-bold text-gray-900">Credit Infomation(dev)</h2>
+                    <!-- Credits and USD Table -->
+                    <div class="mt-6" v-if="subscriptionData">
+                        <div class="overflow-x-auto">
+                            <table class="w-full table-auto border-collapse">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.metric') }}</th>
+                                        <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.credits') }}</th>
+                                        <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.credit-in-usd') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-gray-200">
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.total') }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.total_credits }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.total_credit_in_usd }}</td>
+                                    </tr>
+                                    <tr class="border-b border-gray-200">
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.available') }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.available_credit }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">${{ subscriptionData.available_credit_in_usd }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.used') }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.credits_used }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">${{ subscriptionData.used_credit_in_usd }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <Progress :value="50" :max="100" size="md" color="primary" />
                     </div>
                 </Card>
 
@@ -69,9 +119,9 @@
                             </div>
                             <div class="flex flex-grow flex-col p-2">
                                 <ul class="mb-8 flex-grow space-y-4 font-semibold">
-                                    <li v-for="(feature, featureIndex) in plan.features" :key="featureIndex" class="flex items-start">
-                                        <span :class="`iconify mr-3 mt-1 text-xl text-blue-600 ${feature.icon}`"></span>
-                                        <span>{{ feature.text }}</span>
+                                    <li v-for="feature in plan.features" :key="feature" class="flex items-start">
+                                        <Icon name="IconCheck" class="mr-3 mt-1 text-xl text-blue-600" />
+                                        <span>{{ feature }}</span>
                                     </li>
                                 </ul>
                                 <div class="mt-auto">
@@ -119,79 +169,10 @@
 
     import { ref } from 'vue';
     import { functionProvider } from '@modular-rest/client';
+    import type { SubscriptionType } from '~/types/database.type';
     const { t } = useI18n();
     const isLoading = ref(false);
     const error = ref('');
-
-    // Plan options defined as JSON
-    const plans = ref([
-        {
-            name: 'freemium',
-            price: '$0',
-            features: [
-                {
-                    icon: 'solar--check-circle-bold',
-                    text: `${t('subscription.credits')}: 500`,
-                },
-                {
-                    icon: 'solar--check-circle-bold',
-                    text: `${t('subscription.duration')}: 30 ${t('subscription.days')}`,
-                },
-                {
-                    icon: 'solar--check-circle-bold',
-                    text: 'Basic AI coaching',
-                },
-                {
-                    icon: 'solar--check-circle-bold',
-                    text: 'Limited practice sessions',
-                },
-            ],
-        },
-        {
-            name: 'premium',
-            price: '$9.90',
-            features: [
-                {
-                    icon: 'solar--check-circle-bold',
-                    text: `${t('subscription.credits')}: 1000`,
-                },
-                {
-                    icon: 'solar--chat-round-live-bold',
-                    text: 'Live session and practice with AI',
-                },
-                {
-                    icon: 'solar--document-add-bold',
-                    text: 'Auto Lecture Generator',
-                },
-                {
-                    icon: 'solar--phone-calling-rounded-bold',
-                    text: 'AI coach on Telegram with Call',
-                },
-            ],
-        },
-        {
-            name: 'pro',
-            price: '$14.90',
-            features: [
-                {
-                    icon: 'solar--check-circle-bold',
-                    text: `${t('subscription.credits')}: 1000`,
-                },
-                {
-                    icon: 'solar--chat-round-live-bold',
-                    text: 'Live session and practice with AI',
-                },
-                {
-                    icon: 'solar--document-add-bold',
-                    text: 'Auto Lecture Generator',
-                },
-                {
-                    icon: 'solar--phone-calling-rounded-bold',
-                    text: 'AI coach on Telegram with Call',
-                },
-            ],
-        },
-    ]);
 
     definePageMeta({
         layout: 'default',
@@ -200,12 +181,59 @@
         middleware: ['auth'],
     });
 
-    // Define response type interface
+    const plans = ref([
+        {
+            name: 'freemium',
+            price: 0,
+            features: ['10,000 saved phrases', 'Unlimited AI practice sessions', '2 Years Data Storage'],
+        },
+        {
+            name: 'premium',
+            price: 10,
+            features: ['10,000 saved phrases', 'Unlimited AI practice sessions', '2 Years Data Storage'],
+        },
+        {
+            name: 'pro',
+            price: 10,
+            features: ['10,000 saved phrases', 'Unlimited AI practice sessions', '2 Years Data Storage'],
+        },
+    ]);
+
+    // Define checkout response type
     interface CheckoutResponse {
         sessionId: string;
         url: string;
         expiresAt: string;
     }
+
+    const subscriptionData = ref<SubscriptionType | null>(null);
+    const isSubscriptionLoading = ref(true);
+
+    function fetchSubscription() {
+        isSubscriptionLoading.value = true;
+        functionProvider
+            .run<SubscriptionType | null>({
+                name: 'getSubscriptionDetails',
+                args: {
+                    userId: authUser.value?.id,
+                },
+            })
+            .then((res) => {
+                console.log(res);
+                subscriptionData.value = res;
+            })
+            .catch((err) => {
+                console.error('Error fetching subscription:', err);
+                error.value = t('subscription.fetch-error');
+            })
+            .finally(() => {
+                isSubscriptionLoading.value = false;
+            });
+    }
+
+    onMounted(() => {
+        fetchSubscription();
+    });
 
     // Function to initiate the checkout process
     async function initiateCheckout() {

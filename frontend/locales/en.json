@@ -105,7 +105,14 @@
         "month": "Month",
         "current-plan": "Current Plan",
         "downgrade-plan": "Downgrade Plan",
-        "upgrade-plan": "Upgrade Plan"
+        "upgrade-plan": "Upgrade Plan",
+        "started-at": "Started at",
+        "metric": "Metric",
+        "total": "Total",
+        "available": "Available",
+        "used": "Used",
+        "credit-in-usd": "Credit in USD",
+        "plan": "Plan"
     },
     "auth": {
         "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
