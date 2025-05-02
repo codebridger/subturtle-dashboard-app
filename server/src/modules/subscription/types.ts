@@ -7,8 +7,7 @@ export interface Subscription {
   start_date: Date;
   end_date: Date;
   total_credits: number;
-  system_portion: number;
-  spendable_credits: number;
+  credits_used: number;
   status: "active" | "expired" | "canceled";
 }
 
@@ -17,7 +16,7 @@ export interface Usage {
   user_id: Types.ObjectId;
   subscription_id: Types.ObjectId;
   service_type: string;
-  credit_amount: number;
+  credit_used: number;
   token_count: number;
   model_used: string;
   timestamp: Date;

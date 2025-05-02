@@ -30,13 +30,10 @@ const subscriptionCollection = defineCollection({
         type: Number,
         required: true,
       },
-      system_portion: {
+      credits_used: {
         type: Number,
         required: true,
-      },
-      spendable_credits: {
-        type: Number,
-        required: true,
+        default: 0,
       },
       status: {
         type: String,
@@ -82,7 +79,7 @@ const usageCollection = defineCollection({
         type: String,
         required: true,
       },
-      credit_amount: {
+      credit_used: {
         type: Number,
         required: true,
       },

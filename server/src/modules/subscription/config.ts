@@ -13,16 +13,6 @@ export const COST_TRANSPOSE = 100_000_000;
 export const TOKEN_M_UNIT = 1_000_000;
 
 /**
- * Credit allocation configuration
- */
-
-// Percentage of total subscription amount available for service consumption
-export const SPENDABLE_PORTION = 0.75;
-
-// Percentage of total subscription amount reserved for system costs
-export const SYSTEM_PORTION = 1 - SPENDABLE_PORTION;
-
-/**
  * Credit management thresholds
  */
 
