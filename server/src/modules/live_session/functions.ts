@@ -9,10 +9,11 @@ import {
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import { extractCostCalculationInput } from "./utils";
-import { recordUsage } from "../subscription/service";
+import { checkCreditAllocation, recordUsage } from "../subscription/service";
 import { LIVE_SESSION_MODEL, LIVE_SESSION_TRANSCRIPTION_MODEL } from "./config";
 const fetch = require("node-fetch");
 interface PracticeSetup {
+  userId: string;
   instructions?: string;
   voice?: string;
   turn_detection?: boolean;
@@ -42,6 +43,18 @@ const requestEphemeralToken = defineFunction({
       if (setup[key]) {
         (additionalSetup as any)[key] = setup[key];
       }
+    }
+
+    // Check if user has active subscription and has enough credits
+    const { allowedToProceed } = await checkCreditAllocation({
+      userId: setup.userId,
+      minCredits: 500000,
+    });
+
+    if (!allowedToProceed) {
+      throw new Error(
+        "User does not have enough credit or does not have an active subscription"
+      );
     }
 
     try {

@@ -58,6 +58,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
             const session = await functionProvider.run<LiveSessionType>({
                 name: 'request-live-session-ephemeral-token',
                 args: {
+                    userId: authUser.value?.id,
                     voice: sessionDetails.voice || 'alloy',
                     instructions: sessionDetails.instructions,
                     tools: Object.values(tools).map((t) => t.definition),

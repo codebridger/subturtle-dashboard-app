@@ -5,6 +5,7 @@ import {
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
+import { calculatorService } from "./calculator";
 
 // Define subscription collection
 const subscriptionCollection = defineCollection({
@@ -92,6 +93,27 @@ subscriptionCollection.schema
       (this.credits_used / this.total_credits) * 100
     );
     return Math.min(percentage, 100); // Cap at 100%
+  });
+
+// Add virtual property for total credits in USD
+subscriptionCollection.schema
+  .virtual("total_credit_in_usd")
+  .get(function (this: any) {
+    return calculatorService.creditsToUsd(this.total_credits);
+  });
+
+// Add virtual property for used credits in USD
+subscriptionCollection.schema
+  .virtual("used_credit_in_usd")
+  .get(function (this: any) {
+    return calculatorService.creditsToUsd(this.credits_used);
+  });
+
+// Add virtual property for available credits in USD
+subscriptionCollection.schema
+  .virtual("available_credit_in_usd")
+  .get(function (this: any) {
+    return calculatorService.creditsToUsd(this.available_credit || 0);
   });
 
 // Define usage collection

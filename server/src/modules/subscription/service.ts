@@ -19,7 +19,12 @@ import { CostCalculationInput, calculatorService } from "./calculator";
 /**
  * Check credit allocation for a user
  */
-export async function checkCreditAllocation(userId: string) {
+export async function checkCreditAllocation(props: {
+  userId: string;
+  minCredits?: number;
+}) {
+  const { userId, minCredits } = props;
+
   // Get active subscription for user
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
@@ -34,23 +39,25 @@ export async function checkCreditAllocation(userId: string) {
   if (!activeSubscription) {
     return {
       availableCredits: 0,
-      allowedServices: [],
-      hasActiveSubscription: false,
+      allowedToProceed: false,
     };
   }
 
   // Calculate available credits directly from the subscription
   const availableCredits = activeSubscription.available_credit || 0;
 
+  const allowedToProceed =
+    availableCredits >= (minCredits || LOW_CREDITS_THRESHOLD);
+
   // Check if credits are low and emit event if needed
-  if (availableCredits < LOW_CREDITS_THRESHOLD) {
+  if (!allowedToProceed) {
     emitLowCreditsEvent(userId, availableCredits);
   }
 
   return {
     availableCredits,
-    hasActiveSubscription: true,
     subscriptionEndsAt: activeSubscription.end_date,
+    allowedToProceed,
   };
 }
 

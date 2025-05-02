@@ -232,7 +232,7 @@
             })
             .catch((error) => {
                 errorMode.value = true;
-                errorMessage.value = error?.message || 'Failed to start live session';
+                errorMessage.value = error?.error || error?.message || 'Failed to start live session';
             });
     }
 

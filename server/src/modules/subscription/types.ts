@@ -12,6 +12,9 @@ export interface Subscription {
   available_credit?: number;
   remaining_days?: number;
   usage_percentage?: number;
+  total_credit_in_usd?: number;
+  used_credit_in_usd?: number;
+  available_credit_in_usd?: number;
 }
 
 export interface Usage {
