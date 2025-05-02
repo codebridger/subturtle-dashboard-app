@@ -16,30 +16,6 @@ import {
 import { Subscription } from "./types";
 import { CostCalculationInput, calculatorService } from "./calculator";
 
-async function getMonthlyUsage(userId: string): Promise<number> {
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
-  const monthlyUsageResult = await usageCollection.aggregate([
-    {
-      $match: {
-        user_id: Types.ObjectId(userId),
-        timestamp: { $gte: firstDayOfMonth },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalCredits: { $sum: "$credit_used" },
-      },
-    },
-  ]);
-
-  const results = await monthlyUsageResult;
-  return results.length > 0 ? results[0].totalCredits : 0;
-}
-
 /**
  * Check credit allocation for a user
  */
@@ -294,9 +270,6 @@ export async function recordUsage(props: {
     ? updatedSubscription.available_credit || 0
     : 0;
 
-  // Get total usage
-  const totalUsage = await getMonthlyUsage(userId);
-
   // Check if credits are low and emit event if needed
   if (remainingCredits < LOW_CREDITS_THRESHOLD) {
     emitLowCreditsEvent(userId, remainingCredits);
@@ -305,7 +278,6 @@ export async function recordUsage(props: {
   return {
     remainingCredits,
     usageId: usageRecord._id,
-    totalUsage,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     costResult,
   };
