@@ -2,123 +2,116 @@ This document outlines the design of Subturtle's internal credit-based subscript
 
 ## System Architecture Overview
 
-The subscription system will function as an internal module within the Subturtle backend application, silently managing credit allocations and usage tracking without exposing limitations to end users. The module provides a clean API for other system components to check balances, record usage, and manage credit allocation.
+The subscription system functions as an internal module within the Subturtle backend application, silently managing credit allocations and usage tracking without exposing limitations to end users. The module provides a clean API for other system components to check balances, record usage, and manage credit allocation.
 
 ## Core Mechanisms and Module Interface
 
 ### Module Methods
 
-The subscription module will expose the following methods to other parts of the system:
+The subscription module exposes the following methods to other parts of the system:
 
-1. **checkDailyAllocation(userId)**
+1. **checkCreditAllocation(userId, minCredits?)**
     *   Purpose: Determine if a user has sufficient balance for requested operations
-    *   Returns: Available balance in Credits (currency-neutral unit) and allowed service levels
+    *   Returns: Available credits, subscription end date, and allowed-to-proceed flag
     *   Usage: Called before initiating credit-consuming operations
-    *   Internal process: Calculates today's allocation based on subscription type, unused rollover balance, and consumption history
-    *   Note: This method creates the Daily Credits record if none exists for the current day
-2. **addCredit(userId, creditAmount, paymentDetails)**
-    *   Purpose: Add Credits (currency-neutral units) to a user's account upon successful payment
+    *   Internal process: Checks the current active subscription for available credits
+    *   Triggers: Emits low-credits event if credits are below the threshold
+2. **addCredit(userId, creditAmount, totalDays, paymentDetails)**
+    *   Purpose: Add Credits to a user's account upon successful payment
     *   Called by: Payment gateway after successful transaction
-    *   Process: Adds the specified Credit amount, updates subscription status, and triggers welcome events
+    *   Process: Adds the specified Credit amount, extends/creates subscription, and triggers events
     *   Returns: Updated subscription details including expiration date and Credit balance
-3. **recordTransaction(type, details)**
-    *   Specialized transaction recording methods:
-        *   **recordConversationUsage(userId, durationSeconds, modelType, complexity)**
-        *   **recordTranslationUsage(userId, characterCount, languagePair, contextType)**
+3. **recordUsage(userId, serviceType, costInputs, modelUsed?, details?)**
     *   Purpose: Track service usage and deduct appropriate Credits
-    *   Process: Converts usage metrics to Credit costs, deducts from user's balance, stores token data for history only
-    *   Returns: Remaining Credit balance and updated usage statistics
+    *   Process: Uses calculator service to convert usage metrics to Credit costs
+    *   Input: Takes an array of CostCalculationInput objects for precise cost calculation
+    *   Returns: Remaining Credit balance, usage ID, status, and detailed cost breakdown
 4. **subscriptionEvents**
     *   Event emitters for other modules to subscribe to:
-        *   `onLowCredits`: Triggered when user falls below threshold (internal only)
-        *   `onSubscriptionChange`: Triggered when subscription status changes
-        *   `onUsageSpike`: Triggered when unusual consumption patterns detected
+        *   `low_credits`: Triggered when user falls below threshold (internal only)
+        *   `subscription_change`: Triggered when subscription status changes
+        *   `subscription_expired`: Triggered when subscription expires
+        *   `subscription_renewed`: Triggered when subscription is renewed
     *   Purpose: Allow other modules to react to subscription-related events without tight coupling
+
+### API Functions
+
+The module exposes these API functions for external access:
+
+1. **getSubscriptionDetails**
+    *   Purpose: Retrieve comprehensive information about a user's active subscription
+    *   Returns: Complete subscription object with credit information
+    *   Access: Requires user authentication
 
 ### Core Components
 
-1. **Credit Calculator**: Converts AI operations to credit costs
-2. **Daily Allocator**: Manages daily credit allowances
-3. **Usage Monitor**: Tracks credit consumption across services
+1. **Calculator Service**: Converts AI operations to credit costs with high precision
+    *   Uses decimal.js-light for accurate financial calculations
+    *   Provides utilities for USD <-> Credit conversions
+    *   Handles detailed cost breakdowns for multiple token types
+2. **Subscription Service**: Manages subscription lifecycle and credit allocations
+3. **Events System**: Provides event-driven communication for subscription state changes
 
 ## Core Mechanism Details
 
-### Credit Allocation and Tracking
+### Credit Allocation and Calculation
 
-1. **Subscription to Credit Conversion**
-    *   When a user purchases a subscription, the total price is divided into:
-        *   System portion (25% for platform costs and operational expenses)
-        *   Spendable portion (75% available for AI service consumption)
-    *   Only the Spendable portion is converted to Credits (currency-neutral units) and allocated to the user
-2. **Daily Credit Distribution**
-    *   The total spendable Credits are divided by the subscription period (30/90/365 days)
-    *   Daily allocations are calculated on-demand during checkDailyAllocation calls, not via scheduled tasks
-    *   If no Daily Credits record exists for the current day, it's created at check time
-    *   Unused Credits automatically roll over to subsequent days
-    *   The system maintains a running tally of accumulated Credits
-3. **Usage and Cost Tracking**
-    *   Each AI service operation consumes Credits based on predefined conversion rates
-    *   The system records token usage data only for historical and analytical purposes
-    *   Credit consumption is tracked in real-time but processed in small batches for efficiency
-    *   Credits serve as the primary balance unit that can be synchronized with any currency as needed
-4. **Balance Management**
-    *   The system maintains two key balances:
-        *   Total subscription Credits remaining
-        *   Today's available Credits (daily allocation + rollover)
+1. **High-Precision Calculation**
+    *   Uses `COST_TRANSPOSE` factor (100 million) for representing currency with integer precision
+    *   Implements formula: `(costPerMillion × transpose × totalTokens) ÷ tokenUnit`
+    *   Handles multiple expense items per operation with detailed breakdowns
+2. **Token Cost Tracking**
+    *   Each AI service operation is calculated based on token usage and pricing per million tokens
+    *   The system maintains independent cost tracking for different token types (e.g., input vs. output)
+    *   Costs are stored in both USD and transposed credit values for flexibility
+3. **Balance Management**
+    *   The system maintains total subscription credits and available credits
+    *   Credit thresholds trigger warnings when balances fall below configured levels
 
 ## Database Schema
 
 #### Subscriptions Table
 
 ```plain
-subscription_id: UUID (PK)
-user_id: UUID (FK)
+_id: ObjectId (PK)
+user_id: ObjectId (FK)
 subscription_type: ENUM (monthly, quarterly, annual)
-start_date: TIMESTAMP
-end_date: TIMESTAMP
-total_credits: DECIMAL
-system_portion: DECIMAL
-spendable_credits: DECIMAL
+start_date: Date
+end_date: Date
+total_credits: Number
+credits_used: Number
 status: ENUM (active, expired, canceled)
-```
-
-#### Daily Credits Table
-
-```plain
-allocation_id: UUID (PK)
-subscription_id: UUID (FK)
-date: DATE
-daily_credit_limit: DECIMAL
-credits_used: DECIMAL
-credits_rolled_over: DECIMAL
+available_credit: Number (virtual/calculated)
 ```
 
 #### Usage Table
 
 ```plain
-usage_id: UUID (PK)
-user_id: UUID (FK)
-subscription_id: UUID (FK)
-service_type: VARCHAR
-credit_amount: DECIMAL
-token_count: INTEGER  # For historical/analytics purposes only
-model_used: VARCHAR
-timestamp: TIMESTAMP
-session_id: UUID
-details: JSONB
+_id: ObjectId (PK)
+user_id: ObjectId (FK)
+subscription_id: ObjectId (FK)
+service_type: String
+credit_used: Number
+token_count: Number
+model_used: String
+timestamp: Date
+status: ENUM (paid, unpaid, overdraft)
+details: Object
+  - costBreakdown: Array (detailed cost breakdown per token type)
 ```
 
 ## Implementation Considerations
 
 ### Technical Aspects
 
-*   Use atomic transactions for credit deductions
-*   Implement caching for frequently accessed credit balances
-*   Consider batch processing for credit calculations
-*   Ensure proper error handling for interrupted AI services
+*   Uses decimal.js-light for high-precision financial calculations
+*   Centralized configuration in `config.ts` for easy maintenance
+*   Implements event-driven architecture for subscription state changes
+*   Provides detailed cost breakdowns for analytics and transparency
 
-### Architecture Notes
+### Architecture Highlights
 
-*   Keep credit system decoupled from other services for modularity
-*   Use event-driven architecture for usage reporting
-*   Implement retries with exponential backoff for failed credit calculations
+*   Calculator service acts as a standalone component for reuse across the system
+*   Modular design with clear separation of concerns
+*   Event system enables loose coupling between subscription management and consumers
+*   Configuration-driven thresholds and conversion factors

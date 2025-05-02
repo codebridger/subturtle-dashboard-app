@@ -5,17 +5,17 @@
 ```mermaid
 graph TD
     %% Main files
-    Router[router.ts]
     Service[service.ts]
     DB[db.ts]
     Events[events.ts]
     Types[types.ts]
-    Functions[functions/index.ts]
+    Functions[functions.ts]
+    Calculator[calculator.ts]
+    Config[config.ts]
     
     %% Interfaces and Types
     subgraph Types[types.ts]
         SubscriptionInterface[Subscription Interface]
-        DailyCreditsInterface[DailyCredits Interface]
         UsageInterface[Usage Interface]
         PaymentDetailsInterface[PaymentDetails Interface]
         CreditStatusResponse[CreditStatusResponse]
@@ -26,8 +26,8 @@ graph TD
     %% Database Collections
     subgraph DB[db.ts]
         SubscriptionCollection[Subscription Collection]
-        DailyCreditsCollection[DailyCredits Collection]
         UsageCollection[Usage Collection]
+        VirtualProperties[Subscription Virtual Properties]
     end
     
     %% Events
@@ -35,54 +35,62 @@ graph TD
         EventEmitter[subscriptionEvents]
         LowCreditsEvent[emitLowCreditsEvent]
         SubscriptionChangeEvent[emitSubscriptionChangeEvent]
-        UsageSpikeEvent[emitUsageSpikeEvent]
         SubscriptionExpiredEvent[emitSubscriptionExpiredEvent]
         SubscriptionRenewedEvent[emitSubscriptionRenewedEvent]
     end
     
+    %% Calculator
+    subgraph Calculator[calculator.ts]
+        CalculatorService[CalculatorService]
+        CalculateCosts[calculateCosts]
+        CreditsToUsd[creditsToUsd]
+        UsdToCredits[usdToCredits]
+        CostCalculationInput[CostCalculationInput Interface]
+        CostCalculationResult[CostCalculationResult Interface]
+    end
+    
+    %% Config
+    subgraph Config[config.ts]
+        CostTranspose[COST_TRANSPOSE]
+        TokenMUnit[TOKEN_M_UNIT]
+        LowCreditsThreshold[LOW_CREDITS_THRESHOLD]
+    end
+    
     %% Service functions
     subgraph Service[service.ts]
-        GetOrCreateDailyCredits[getOrCreateDailyCredits]
-        CheckDailyAllocation[checkDailyAllocation]
+        CheckCreditAllocation[checkCreditAllocation]
         AddCredit[addCredit]
         CheckAndUpdateExpiredSubscriptions[checkAndUpdateExpiredSubscriptions]
         RecordUsage[recordUsage]
-        GetMonthlyUsage[getMonthlyUsage]
-    end
-    
-    %% Router
-    subgraph Router[router.ts]
-        StatusEndpoint[GET /subscription/status]
     end
     
     %% Functions exporter
-    subgraph Functions[functions/index.ts]
-        ExportedFunctions[Exported Service Functions]
+    subgraph Functions[functions.ts]
+        GetSubscriptionDetails[getSubscriptionDetails]
     end
     
     %% Relationships
-    Router --> Service
     Service --> DB
     Service --> Events
     Service --> Types
-    Functions --> Service
+    Service --> Calculator
+    Service --> Config
+    Functions --> DB
+    Functions --> Types
+    Calculator --> Config
+    DB --> Calculator
     
     %% Specific relationships
-    StatusEndpoint --> CheckDailyAllocation
-    CheckDailyAllocation --> GetOrCreateDailyCredits
-    CheckDailyAllocation --> LowCreditsEvent
-    AddCredit --> GetOrCreateDailyCredits
+    CheckCreditAllocation --> LowCreditsEvent
     AddCredit --> SubscriptionChangeEvent
     AddCredit --> SubscriptionRenewedEvent
     CheckAndUpdateExpiredSubscriptions --> SubscriptionExpiredEvent
-    RecordUsage --> GetOrCreateDailyCredits
+    RecordUsage --> CalculateCosts
     RecordUsage --> LowCreditsEvent
-    RecordUsage --> UsageSpikeEvent
-    RecordUsage --> GetMonthlyUsage
+    VirtualProperties --> CreditsToUsd
     
     %% Database Relationships
     SubscriptionCollection -.-> SubscriptionInterface
-    DailyCreditsCollection -.-> DailyCreditsInterface
     UsageCollection -.-> UsageInterface
 ```
 
@@ -91,48 +99,60 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Router
     participant Service
+    participant Calculator
     participant DB
     participant Events
     
-    %% Status Check Flow
-    Client->>Router: GET /subscription/status
-    Router->>Service: checkDailyAllocation(userId)
-    Service->>DB: Query Subscription
+    %% Credit Allocation Check Flow
+    Client->>Service: checkCreditAllocation(userId, minCredits)
+    Service->>DB: Query Active Subscription
     DB-->>Service: Return Active Subscription
-    Service->>DB: Get/Create Daily Credits
-    DB-->>Service: Return Daily Credits
-    Service->>Events: Emit Low Credits (if needed)
-    Service-->>Router: Return Credit Status
-    Router-->>Client: Return Status Response
+    alt No Active Subscription
+        Service-->>Client: Return No Credits Available
+    else Has Active Subscription
+        Service->>Service: Calculate Available Credits
+        alt Credits Below Threshold
+            Service->>Events: Emit Low Credits Event
+        end
+        Service-->>Client: Return Credit Status
+    end
     
     %% Adding Credits Flow
-    Client->>Router: Add Credits (via API)
-    Router->>Service: addCredit(userId, amount, days, payment)
+    Client->>Service: addCredit(userId, amount, totalDays, payment)
     Service->>DB: Find Active Subscription
     DB-->>Service: Return Subscription (or null)
-    Service->>DB: Update or Create Subscription
-    DB-->>Service: Return Updated Subscription
-    Service->>Events: Emit Subscription Change
-    Service-->>Router: Return Credit Addition Response
-    Router-->>Client: Return Response
+    alt Has Active Subscription
+        Service->>DB: Update Subscription (extend + add credits)
+        DB-->>Service: Return Updated Subscription
+        Service->>Events: Emit Subscription Renewed Event
+    else No Active Subscription
+        Service->>DB: Create New Subscription
+        DB-->>Service: Return New Subscription
+        Service->>Events: Emit Subscription Change Event
+    end
+    Service-->>Client: Return Credit Addition Response
     
     %% Usage Recording Flow
-    Client->>Router: Record Usage (via API)
-    Router->>Service: recordUsage(userId, service, credits, tokens, model, details)
+    Client->>Service: recordUsage(userId, serviceType, costInputs, modelUsed, details)
+    Service->>Calculator: calculateCosts(costInputs)
+    Calculator-->>Service: Return Cost Calculation Result
     Service->>DB: Find Active Subscription
-    DB-->>Service: Return Subscription
-    Service->>DB: Get/Create Daily Credits
-    DB-->>Service: Return Daily Credits
-    Service->>DB: Create Usage Record
-    DB-->>Service: Return Usage Record
-    Service->>DB: Update Daily Credits
-    DB-->>Service: Return Updated Daily Credits
-    Service->>Service: Calculate Remaining Credits
-    Service->>Events: Emit Events (if needed)
-    Service-->>Router: Return Usage Record Response
-    Router-->>Client: Return Response
+    DB-->>Service: Return Subscription (or null)
+    alt No Active Subscription
+        Service->>DB: Create Usage Record (unpaid)
+        DB-->>Service: Return Usage Record
+        Service-->>Client: Return Usage Record Response (unpaid)
+    else Has Active Subscription
+        Service->>DB: Create Usage Record
+        DB-->>Service: Return Usage Record
+        Service->>DB: Update Subscription Credits Used
+        DB-->>Service: Return Updated Subscription
+        alt Credits Below Threshold
+            Service->>Events: Emit Low Credits Event
+        end
+        Service-->>Client: Return Usage Record Response
+    end
 ```
 
 ## Entity Relationship Diagram
@@ -140,7 +160,6 @@ sequenceDiagram
 ```mermaid
 erDiagram
     User ||--o{ Subscription : has
-    Subscription ||--o{ DailyCredits : allocates
     Subscription ||--o{ Usage : records
     
     User {
@@ -156,18 +175,14 @@ erDiagram
         Date start_date
         Date end_date
         Number total_credits
-        Number system_portion
-        Number spendable_credits
-        String status
-    }
-    
-    DailyCredits {
-        ObjectId _id
-        ObjectId subscription_id
-        Date date
-        Number daily_credit_limit
         Number credits_used
-        Number credits_rolled_over
+        String status
+        Number available_credit
+        Number remaining_days
+        Number usage_percentage
+        Number total_credit_in_usd
+        Number used_credit_in_usd
+        Number available_credit_in_usd
     }
     
     Usage {
@@ -175,11 +190,10 @@ erDiagram
         ObjectId user_id
         ObjectId subscription_id
         String service_type
-        Number credit_amount
+        Number credit_used
         Number token_count
         String model_used
-        Date timestamp
-        ObjectId session_id
+        String status
         Object details
     }
 ```
@@ -192,15 +206,13 @@ flowchart TD
     subgraph Events
         A[Low Credits Event]
         B[Subscription Change Event]
-        C[Usage Spike Event]
         D[Subscription Expired Event]
         E[Subscription Renewed Event]
     end
     
     %% Triggers
-    CheckDailyAllocation --> A
+    CheckCreditAllocation --> A
     RecordUsage --> A
-    RecordUsage --> C
     AddCredit --> B
     AddCredit --> E
     CheckAndUpdateExpiredSubscriptions --> D
@@ -209,10 +221,50 @@ flowchart TD
     A --> LogLowCredits[Log Low Credits]
     A --> SendNotification[Send Notification]
     B --> UpdateUserProfile[Update User Profile]
-    C --> LogUsageSpike[Log Usage Spike]
-    C --> AlertAdmin[Alert Admin]
     D --> LogExpired[Log Expired]
     D --> DeactivateFeatures[Deactivate Features]
     E --> LogRenewal[Log Renewal]
     E --> EnableFeatures[Enable Features]
+```
+
+## Calculator Service Flow
+
+```mermaid
+flowchart TD
+    %% Calculator Service
+    subgraph CalculatorService
+        CalculateCosts[calculateCosts]
+        CreditsToUsd[creditsToUsd]
+        UsdToCredits[usdToCredits]
+    end
+    
+    %% Input/Output
+    CostInputs[CostCalculationInput[]] --> CalculateCosts
+    CalculateCosts --> CostResult[CostCalculationResult]
+    
+    %% Calculation Steps
+    subgraph CostCalculation
+        ForEachItem[Process Each Input Item]
+        CalculateUsd[Calculate USD Cost]
+        CalculateCredits[Calculate Credit Cost]
+        AggregateTotals[Aggregate Totals]
+    end
+    
+    CalculateCosts --> ForEachItem
+    ForEachItem --> CalculateUsd
+    CalculateUsd --> CalculateCredits
+    CalculateCredits --> AggregateTotals
+    AggregateTotals --> CostResult
+    
+    %% Conversion Utilities
+    Credits[Credits Amount] --> CreditsToUsd
+    CreditsToUsd --> UsdAmount[USD Amount]
+    
+    UsdValue[USD Value] --> UsdToCredits
+    UsdToCredits --> CreditsValue[Credits Value]
+    
+    %% Config Dependencies
+    Config[Configuration Constants] -.-> CalculateCredits
+    Config -.-> CreditsToUsd
+    Config -.-> UsdToCredits
 ``` 
