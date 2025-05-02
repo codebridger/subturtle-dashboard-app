@@ -1,9 +1,4 @@
-import {
-  Schema,
-  Permission,
-  defineCollection,
-  DatabaseTrigger,
-} from "@modular-rest/server";
+import { Schema, Permission, defineCollection } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
