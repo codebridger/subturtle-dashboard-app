@@ -9,6 +9,9 @@ export interface Subscription {
   total_credits: number;
   credits_used: number;
   status: "active" | "expired" | "canceled";
+  available_credit?: number;
+  remaining_days?: number;
+  usage_percentage?: number;
 }
 
 export interface Usage {

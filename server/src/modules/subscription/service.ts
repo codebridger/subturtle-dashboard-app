@@ -5,11 +5,7 @@ import {
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
-import {
-  SPENDABLE_PORTION,
-  SYSTEM_PORTION,
-  LOW_CREDITS_THRESHOLD,
-} from "./config";
+import { LOW_CREDITS_THRESHOLD } from "./config";
 
 import {
   emitLowCreditsEvent,
@@ -35,7 +31,7 @@ async function getMonthlyUsage(userId: string): Promise<number> {
     {
       $group: {
         _id: null,
-        totalCredits: { $sum: "$credit_amount" },
+        totalCredits: { $sum: "$credit_used" },
       },
     },
   ]);
@@ -68,7 +64,7 @@ export async function checkCreditAllocation(userId: string) {
   }
 
   // Calculate available credits directly from the subscription
-  const availableCredits = activeSubscription.spendable_credits;
+  const availableCredits = activeSubscription.available_credit || 0;
 
   // Check if credits are low and emit event if needed
   if (availableCredits < LOW_CREDITS_THRESHOLD) {
@@ -108,9 +104,6 @@ export async function addCredit(
 
   if (activeSubscription) {
     // Update existing subscription
-    const systemAmount = creditAmount * SYSTEM_PORTION;
-    const spendableCredits = creditAmount * SPENDABLE_PORTION;
-
     // Extend existing subscription by totalDays
     const newEndDate = new Date(activeSubscription.end_date);
     newEndDate.setDate(newEndDate.getDate() + totalDays);
@@ -123,8 +116,6 @@ export async function addCredit(
         },
         $inc: {
           total_credits: creditAmount,
-          system_portion: systemAmount,
-          spendable_credits: spendableCredits,
         },
       },
       { new: true }
@@ -134,9 +125,6 @@ export async function addCredit(
     emitSubscriptionRenewedEvent(userId, updatedSubscription?._id, newEndDate);
   } else {
     // Create new subscription
-    const systemAmount = creditAmount * SYSTEM_PORTION;
-    const spendableCredits = creditAmount * SPENDABLE_PORTION;
-
     // Set end date based on totalDays parameter
     const startDate = new Date();
     const endDate = new Date(startDate);
@@ -147,8 +135,7 @@ export async function addCredit(
       start_date: startDate,
       end_date: endDate,
       total_credits: creditAmount,
-      system_portion: systemAmount,
-      spendable_credits: spendableCredits,
+      credits_used: 0,
       status: "active",
     };
 
@@ -162,10 +149,13 @@ export async function addCredit(
     });
   }
 
+  // Calculate remaining credits
+  const remainingCredits = updatedSubscription?.available_credit || 0;
+
   return {
     subscriptionId: updatedSubscription?._id,
     expirationDate: updatedSubscription?.end_date,
-    creditBalance: updatedSubscription?.spendable_credits,
+    creditBalance: remainingCredits,
     isNewSubscription: isNew,
   };
 }
@@ -246,7 +236,7 @@ export async function recordUsage(props: {
       user_id: Types.ObjectId(userId),
       subscription_id: null,
       service_type: serviceType,
-      credit_amount: creditAmount,
+      credit_used: creditAmount,
       token_count: tokenCount,
       model_used: modelUsed,
       status: "unpaid",
@@ -268,8 +258,8 @@ export async function recordUsage(props: {
     };
   }
 
-  // Calculate available credits directly from subscription
-  const availableCredits = activeSubscription.spendable_credits;
+  // Calculate available credits
+  const availableCredits = activeSubscription.available_credit || 0;
 
   // Record usage in database regardless of available credits
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
@@ -277,7 +267,7 @@ export async function recordUsage(props: {
     user_id: Types.ObjectId(userId),
     subscription_id: activeSubscription._id,
     service_type: serviceType,
-    credit_amount: creditAmount,
+    credit_used: creditAmount,
     token_count: tokenCount,
     model_used: modelUsed,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
@@ -289,10 +279,10 @@ export async function recordUsage(props: {
 
   const usageRecord = await usageCollection.create(newUsage);
 
-  // Update subscription's spendable credits
+  // Update subscription's credits_used
   await subscriptionsCollection.updateOne(
     { _id: activeSubscription._id },
-    { $inc: { spendable_credits: -creditAmount } }
+    { $inc: { credits_used: creditAmount } }
   );
 
   // Get updated subscription
@@ -301,7 +291,7 @@ export async function recordUsage(props: {
   })) as Subscription | null;
 
   const remainingCredits = updatedSubscription
-    ? updatedSubscription.spendable_credits
+    ? updatedSubscription.available_credit || 0
     : 0;
 
   // Get total usage

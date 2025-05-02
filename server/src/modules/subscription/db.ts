@@ -42,7 +42,11 @@ const subscriptionCollection = defineCollection({
         default: "active",
       },
     },
-    { timestamps: true }
+    {
+      timestamps: true,
+      toJSON: { virtuals: true },
+      toObject: { virtuals: true },
+    }
   ),
   permissions: [
     new Permission({
@@ -59,6 +63,36 @@ const subscriptionCollection = defineCollection({
     }),
   ],
 });
+
+// Add virtual property for available credits
+subscriptionCollection.schema
+  .virtual("available_credit")
+  .get(function (this: any) {
+    return this.total_credits - this.credits_used;
+  });
+
+// Add virtual property for remaining days
+subscriptionCollection.schema
+  .virtual("remaining_days")
+  .get(function (this: any) {
+    const now = new Date();
+    const endDate = this.end_date;
+    return Math.max(
+      0,
+      Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    );
+  });
+
+// Add virtual property for usage percentage
+subscriptionCollection.schema
+  .virtual("usage_percentage")
+  .get(function (this: any) {
+    if (this.total_credits <= 0) return 0;
+    const percentage = Math.round(
+      (this.credits_used / this.total_credits) * 100
+    );
+    return Math.min(percentage, 100); // Cap at 100%
+  });
 
 // Define usage collection
 const usageCollection = defineCollection({
