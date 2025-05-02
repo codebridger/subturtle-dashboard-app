@@ -39,10 +39,10 @@
   dependencies:
     vary "^1.1.2"
 
-"@modular-rest/server@^1.13.4":
-  version "1.13.4"
-  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-1.13.4.tgz#229c2842d1685ec2c642b1555b1c19651ab4ffee"
-  integrity sha512-ts0dh6y3fwCDEQbp64osNRDoQlN67HGjmfdt2J2lzfZrStaZ8VwpcZkONGq2TvwF2Br7S+HGOvkPJiPdwP+P8g==
+"@modular-rest/server@^1.14.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-1.14.0.tgz#37c7435e09c7c55b05c236635c319ef284979fda"
+  integrity sha512-YN1APXmBLctxLy11PAuhZYoiptEmVXR9VxUhahvJrGNZjc8xg09slQ4/ey+s8jEH+dokdCG9eWDIoNG+YqY8Sg==
   dependencies:
     "@koa/cors" "^3.1.0"
     colog "^1.0.4"
@@ -455,6 +455,11 @@ debug@^3.1.0:
   integrity sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==
   dependencies:
     ms "^2.1.1"
+
+decimal.js-light@^2.5.1:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/decimal.js-light/-/decimal.js-light-2.5.1.tgz#134fd32508f19e208f4fb2f8dac0d2626a867934"
+  integrity sha512-qIMFpTMZmny+MMIitAB6D7iVPEorVw6YQRWkvarTkT4tBeSLLiHzcwj6q0MmYSFCiVpiqPJTJEYIrpcPzVEIvg==
 
 deep-equal@~1.0.1:
   version "1.0.1"

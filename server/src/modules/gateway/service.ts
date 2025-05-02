@@ -12,7 +12,6 @@ import {
   PaymentVerificationResponse,
   Payment,
 } from "./types";
-import { addCredit } from "../subscription/service";
 import { PaymentProvider, paymentAdapterFactory } from "./adapters";
 import { SubscriptionDetails } from "./adapters/types";
 
