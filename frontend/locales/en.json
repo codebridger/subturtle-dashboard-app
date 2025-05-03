@@ -135,7 +135,10 @@
         "phrase-range": "Phrase Range",
         "total-phrases": "Total Phrases",
         "selection-mode": "Selection Mode",
-        "ai-character": "AI Character"
+        "ai-character": "AI Character",
+        "cost-info": "Cost Information",
+        "total-tokens": "Total Tokens",
+        "total-cost": "Total Cost (USD)"
     },
     "profile": {
         "profile": "Profile"
