@@ -15,9 +15,10 @@ export interface CostCalculationInput {
  */
 export interface CostCalculationResultItem {
   label: string; // Service or model label
-  totalTokens: number; // Total tokens used
-  costInUsd: number; // Cost in USD
-  costInCredits: number; // Cost in credits (transposed)
+  tokens: number; // Total tokens used
+  unitCost: number; // Cost per million tokens in USD
+  inUsd: number; // Cost in USD
+  inCredits: number; // Cost in credits (transposed)
 }
 
 /**
@@ -73,9 +74,10 @@ export class CalculatorService {
 
       return {
         label: item.label,
-        totalTokens: item.totalTokens,
-        costInUsd: costInUsdDecimal.toNumber(),
-        costInCredits: costInCreditsDecimal.toNumber(),
+        tokens: item.totalTokens,
+        unitCost: costPerMillionDecimal.toNumber(),
+        inUsd: costInUsdDecimal.toNumber(),
+        inCredits: costInCreditsDecimal.toNumber(),
       };
     });
 
