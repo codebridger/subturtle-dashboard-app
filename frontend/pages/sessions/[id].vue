@@ -12,7 +12,7 @@
         </div>
 
         <!-- Cost Information -->
-        <div v-if="session?.cost" class="mb-6 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+        <div v-if="session?.cost && config.public.isNotProduction" class="mb-6 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
             <h2 class="mb-2 text-lg font-semibold">{{ t('live-session.cost-info') }}</h2>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -66,6 +66,8 @@
     const loading = ref(true);
     const session = ref<LiveSessionRecordType | null>(null);
     const { t } = useI18n();
+
+    const config = useRuntimeConfig();
 
     definePageMeta({
         layout: 'default',

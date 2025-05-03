@@ -25,7 +25,7 @@
                                     <p class="text-gray-600">
                                         {{ t('subscription.started-at') }} {{ new Date(subscriptionData.start_date).toLocaleDateString() }}
                                     </p>
-                                    <Button color="primary" size="md" @click="initiateCheckout" :label="t('subscription.cancel-subscription')" />
+                                    <Button color="primary" size="md" :label="t('subscription.cancel-subscription')" :disabled="true" />
                                 </div>
                             </div>
                             <ul class="space-y-2.5">
@@ -53,17 +53,19 @@
                                 </li>
                             </ul>
                         </div>
-                        <div class="mt-8 flex flex-col items-start justify-between gap-4">
-                            <div class="flex items-center gap-2 rounded-full bg-gray-600 px-3 py-1.5 text-sm font-medium text-white">
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="flex h-8 w-[160px] items-center gap-2 rounded-full bg-gray-600 px-3 py-1.5 text-sm font-medium text-white">
                                 <Icon name="IconClock" class="h-4 w-4" />
                                 <span>{{ t('billing.days-left') }}: {{ subscriptionData.remaining_days }}</span>
                             </div>
-                            <Progress :value="50" :max="100" size="md" color="primary" />
+                            <Progress :value="subscriptionData.usage_percentage!" :max="100" size="md" color="primary" />
                         </div>
                     </div>
                 </Card>
-                <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
-                    <h2 class="text-xl font-bold text-gray-900">Credit Infomation(dev)</h2>
+
+                <!-- Credit Infomation (Dev Only) -->
+                <Card class="w-full rounded-lg border border-gray-100 shadow-sm" v-if="config.public.isNotProduction">
+                    <h2 class="text-xl font-bold text-gray-900">Credit Infomation (Dev Only)</h2>
                     <!-- Credits and USD Table -->
                     <div class="mt-6" v-if="subscriptionData">
                         <div class="overflow-x-auto">
@@ -173,6 +175,8 @@
     const { t } = useI18n();
     const isLoading = ref(false);
     const error = ref('');
+
+    const config = useRuntimeConfig();
 
     definePageMeta({
         layout: 'default',

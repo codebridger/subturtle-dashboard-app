@@ -1,82 +1,84 @@
 export default defineNuxtConfig({
-  compatibilityDate: '2024-10-13',
-  devtools: { enabled: true },
-  ssr: false,
-  sourcemap: {
-    server: true,
-    client: true,
-  },
-
-  runtimeConfig: {
-    public: {
-      BASE_URL_API: process.env.BASE_URL_API,
+    compatibilityDate: '2024-10-13',
+    devtools: { enabled: true },
+    ssr: false,
+    sourcemap: {
+        server: true,
+        client: true,
     },
-  },
 
-  vite: {
-    ssr: {
-      noExternal: ['@codebridger/lib-vue-components'],
-    },
-  },
-
-  app: {
-    head: {
-      title: 'Subturtle Dashboard',
-      titleTemplate: '%s | Subturtle Dashboard',
-      htmlAttrs: {
-        lang: 'en',
-      },
-      meta: [
-        { charset: 'utf-8' },
-        {
-          name: 'viewport',
-          content: 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no',
+    runtimeConfig: {
+        public: {
+            BASE_URL_API: process.env.BASE_URL_API,
+            isProduction: process.env.MODE?.toLowerCase() === 'production',
+            isNotProduction: process.env.MODE?.toLowerCase() !== 'production',
         },
-        { hid: 'description', name: 'description', content: '' },
-        { name: 'format-detection', content: 'telephone=no' },
-      ],
-      link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
+    },
+
+    vite: {
+        ssr: {
+            noExternal: ['@codebridger/lib-vue-components'],
         },
-      ],
     },
-  },
 
-  css: ['~/assets/css/app.css', '@codebridger/lib-vue-components/style.css'],
-
-  postcss: {
-    plugins: {
-      tailwindcss: {},
-      autoprefixer: {},
+    app: {
+        head: {
+            title: 'Subturtle Dashboard',
+            titleTemplate: '%s | Subturtle Dashboard',
+            htmlAttrs: {
+                lang: 'en',
+            },
+            meta: [
+                { charset: 'utf-8' },
+                {
+                    name: 'viewport',
+                    content: 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no',
+                },
+                { hid: 'description', name: 'description', content: '' },
+                { name: 'format-detection', content: 'telephone=no' },
+            ],
+            link: [
+                { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
+                {
+                    rel: 'stylesheet',
+                    href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
+                },
+            ],
+        },
     },
-  },
 
-  modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
+    css: ['~/assets/css/app.css', '@codebridger/lib-vue-components/style.css'],
 
-  i18n: {
-    locales: [{ code: 'en', file: 'en.json' }],
-    lazy: true,
-    defaultLocale: 'en',
-    strategy: 'no_prefix',
-    langDir: 'locales/',
-  },
-
-  //   vite: {
-  //     optimizeDeps: { include: ['quill'] },
-  //   },
-
-  router: {
-    options: {
-      linkExactActiveClass: 'active',
-      hashMode: true
+    postcss: {
+        plugins: {
+            tailwindcss: {},
+            autoprefixer: {},
+        },
     },
-  },
 
-  // Make sure your build options are properly set
-  build: {
-    transpile: ['@tiny-ideas-lr/lib-vue-components'],
-  },
+    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
+
+    i18n: {
+        locales: [{ code: 'en', file: 'en.json' }],
+        lazy: true,
+        defaultLocale: 'en',
+        strategy: 'no_prefix',
+        langDir: 'locales/',
+    },
+
+    //   vite: {
+    //     optimizeDeps: { include: ['quill'] },
+    //   },
+
+    router: {
+        options: {
+            linkExactActiveClass: 'active',
+            hashMode: true,
+        },
+    },
+
+    // Make sure your build options are properly set
+    build: {
+        transpile: ['@tiny-ideas-lr/lib-vue-components'],
+    },
 });
