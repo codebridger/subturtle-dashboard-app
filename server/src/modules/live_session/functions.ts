@@ -125,7 +125,11 @@ const updateLiveSession = defineFunction({
   callback: async function (context: {
     userId: string;
     sessionId: string;
-    update: { usage?: TokenUsageType; dialogs?: ConversationDialogType[] };
+    update: {
+      partialUsage: TokenUsageType;
+      totalUsage?: TokenUsageType;
+      dialogs?: ConversationDialogType[];
+    };
   }) {
     const { userId, sessionId, update } = context;
     const collection = getCollection<LiveSessionRecordType>(
@@ -138,17 +142,20 @@ const updateLiveSession = defineFunction({
         throw new Error("one of usage or dialogs must be provided");
       }
 
-      // Handle usage update
-      if (update.usage) {
+      // Handle total usage update
+      if (update.totalUsage) {
         await collection.updateOne(
           { _id: sessionId, refId: userId },
           {
-            $set: { usage: update.usage },
+            $set: { usage: update.totalUsage },
           }
         );
+      }
 
-        // Report usage to subscription service
-        const costs = extractCostCalculationInput(update.usage);
+      // Handle partial usage update
+      if (update.partialUsage) {
+        // Report total usage to subscription service
+        const costs = extractCostCalculationInput(update.partialUsage);
         await recordUsage({
           userId,
           serviceType: "live_session",
@@ -156,6 +163,7 @@ const updateLiveSession = defineFunction({
           modelUsed: LIVE_SESSION_MODEL,
         });
       }
+
       // Handle dialogs update
       if (update.dialogs && update.dialogs.length > 0) {
         const session = await collection.findOne(

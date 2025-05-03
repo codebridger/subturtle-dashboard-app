@@ -1,10 +1,38 @@
 import { CostCalculationInput } from "../subscription/calculator";
 import { TokenUsageType } from "./types";
 import Decimal from "decimal.js-light";
-import { calculatorService } from "../subscription/calculator";
 
 // Configure Decimal for higher precision
-Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
+Decimal.set({ precision: 100, rounding: Decimal.ROUND_HALF_UP });
+
+// This is the unknown cost percentage for the live session
+// Based on our calculation there is a 5.1305% unknown cost
+// for the live session
+const unknownCostPercentage = 5.5;
+
+function calculatePrice(cost: number) {
+  // use decimal to avoid floating point errors
+  const unknownCost = new Decimal(cost)
+    .dividedBy(100)
+    .mul(unknownCostPercentage);
+  return new Decimal(cost).add(unknownCost).toNumber();
+}
+
+// Price definitions per million tokens for each token type
+const prices_per_m = {
+  input_token_details: {
+    text_tokens: calculatePrice(0.6),
+    audio_tokens: calculatePrice(10.0),
+    cached_tokens_details: {
+      text_tokens: calculatePrice(0.3),
+      audio_tokens: calculatePrice(0.3),
+    },
+  },
+  output_token_details: {
+    text_tokens: calculatePrice(2.4),
+    audio_tokens: calculatePrice(20.0),
+  },
+};
 
 /**
  * Calculates the cost of a live session based on token usage
@@ -26,22 +54,6 @@ Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
  * @returns The total cost in USD with high precision (10 decimal places)
  */
 export function extractCostCalculationInput(usage: TokenUsageType) {
-  // Price definitions per million tokens for each token type
-  const prices_per_m = {
-    input_token_details: {
-      text_tokens: 0.6,
-      audio_tokens: 10.0,
-      cached_tokens_details: {
-        text_tokens: 0.3,
-        audio_tokens: 0.3,
-      },
-    },
-    output_token_details: {
-      text_tokens: 2.4,
-      audio_tokens: 20.0,
-    },
-  };
-
   const expenses: CostCalculationInput[] = [];
 
   // Add input tokens (always present)

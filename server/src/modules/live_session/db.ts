@@ -1,6 +1,11 @@
 import { defineCollection, Permission, Schema } from "@modular-rest/server";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import type { LiveSessionRecordType } from "./types";
+import { extractCostCalculationInput } from "./utils";
+import {
+  calculatorService,
+  CalculatorService,
+} from "../subscription/calculator";
 
 const liveSessionSchema = new Schema<LiveSessionRecordType>(
   {
@@ -11,8 +16,15 @@ const liveSessionSchema = new Schema<LiveSessionRecordType>(
     dialogs: { type: Array<Object>, default: [] },
     metadata: { type: Object, default: {} },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+liveSessionSchema.virtual("cost").get(function (this: any) {
+  if (!this.usage) return {};
+
+  const expenses = extractCostCalculationInput(this.usage);
+  return calculatorService.calculateCosts(expenses);
+});
 
 const sixMonths = 6 * 30 * 24 * 60 * 60;
 liveSessionSchema.index({ createdAt: 1 }, { expireAfterSeconds: sixMonths });

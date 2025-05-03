@@ -98,9 +98,21 @@
         "monthly-description": "Access to all features for 30 days with 1000 credits",
         "features": "What's Included",
         "active-plan": "Active Plan",
-        "freemium": "Freemium",
-        "premium": "Premium",
-        "joined-at": "Joined at"
+        "freemium": "Freemium Plan",
+        "premium": "Premium Plan",
+        "pro": "Pro Plan",
+        "joined-at": "Joined at",
+        "month": "Month",
+        "current-plan": "Current Plan",
+        "downgrade-plan": "Downgrade Plan",
+        "upgrade-plan": "Upgrade Plan",
+        "started-at": "Started at",
+        "metric": "Metric",
+        "total": "Total",
+        "available": "Available",
+        "used": "Used",
+        "credit-in-usd": "Credit in USD",
+        "plan": "Plan"
     },
     "auth": {
         "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
@@ -123,13 +135,25 @@
         "phrase-range": "Phrase Range",
         "total-phrases": "Total Phrases",
         "selection-mode": "Selection Mode",
-        "ai-character": "AI Character"
+        "ai-character": "AI Character",
+        "cost-info": "Cost Information",
+        "total-tokens": "Total Tokens",
+        "total-cost": "Total Cost (USD)"
     },
     "profile": {
         "profile": "Profile"
     },
     "billing": {
-        "billing": "Billing"
+        "billing": "Billing",
+        "invoice": "Invoice",
+        "next-billing-date": "Next Billing Date",
+        "invoice-number": "Invoice Number",
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status",
+        "renew-now": "Renew Now",
+        "days-left": "Days Left",
+        "payment-history": "Payment History"
     },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",

@@ -15,6 +15,8 @@ export interface Subscription {
   total_credit_in_usd?: number;
   used_credit_in_usd?: number;
   available_credit_in_usd?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Usage {

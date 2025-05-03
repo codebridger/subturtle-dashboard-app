@@ -30,7 +30,7 @@
                             goToMembership();
                         "
                     >
-                        <Icon name="icon-user" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
+                        <Icon name="IconDollarSignCircle" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                         {{ t('subscription.title') }}
                     </a>
                 </li>
