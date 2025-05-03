@@ -8,22 +8,23 @@
                 <!-- Active Plan Card -->
                 <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900">
-                        {{ subscriptionData ? subscriptionData.status.charAt(0).toUpperCase() + subscriptionData.status.slice(1) : '' }}
+                        {{ activeSubscriptionData ? activeSubscriptionData.status.charAt(0).toUpperCase() + activeSubscriptionData.status.slice(1) : '' }}
                         {{ t('subscription.plan') }}
                     </h2>
-                    <div v-if="subscriptionData">
+
+                    <div v-if="activeSubscriptionData">
                         <div class="flex flex-col gap-4">
                             <div class="mt-8 flex items-start justify-between gap-4">
-                                <div class="flex flex-col gap-2.5">
+                                <!-- <div class="flex flex-col gap-2.5">
                                     <span class="text-lg text-gray-800">{{ t('subscription.freemium') }}</span>
                                     <div class="flex items-center">
                                         <span class="text-lg text-gray-900">$0</span>
                                         <span class="text-sm text-gray-500 ltr:ml-1 rtl:mr-1">/month</span>
                                     </div>
-                                </div>
+                                </div> -->
                                 <div class="flex flex-col gap-2.5">
                                     <p class="text-gray-600">
-                                        {{ t('subscription.started-at') }} {{ new Date(subscriptionData.start_date).toLocaleDateString() }}
+                                        {{ t('subscription.started-at') }} {{ new Date(activeSubscriptionData.start_date).toLocaleDateString() }}
                                     </p>
                                     <Button color="primary" size="md" :label="t('subscription.cancel-subscription')" :disabled="true" />
                                 </div>
@@ -31,24 +32,27 @@
                             <ul class="space-y-2.5">
                                 <li class="flex items-start">
                                     <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-                                    <span class="text-sm text-gray-700">Usage percentage: {{ subscriptionData.usage_percentage + '%' }}</span>
+                                    <span class="text-sm text-gray-700">Usage percentage: {{ activeSubscriptionData.usage_percentage + '%' }}</span>
                                 </li>
                                 <li class="flex items-start">
                                     <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                                     <span class="text-sm text-gray-700"
-                                        >Created at: {{ subscriptionData.createdAt ? new Date(subscriptionData.createdAt).toLocaleDateString() : '' }}</span
+                                        >Created at:
+                                        {{ activeSubscriptionData.createdAt ? new Date(activeSubscriptionData.createdAt).toLocaleDateString() : '' }}</span
                                     >
                                 </li>
                                 <li class="flex items-start">
                                     <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                                     <span class="text-sm text-gray-700"
-                                        >Updated at: {{ subscriptionData.updatedAt ? new Date(subscriptionData.updatedAt).toLocaleDateString() : '' }}</span
+                                        >Updated at:
+                                        {{ activeSubscriptionData.updatedAt ? new Date(activeSubscriptionData.updatedAt).toLocaleDateString() : '' }}</span
                                     >
                                 </li>
                                 <li class="flex items-start">
                                     <Icon name="IconCheck" class="mr-2 mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                                     <span class="text-sm text-gray-700"
-                                        >End date: {{ subscriptionData.end_date ? new Date(subscriptionData.end_date).toLocaleDateString() : '' }}</span
+                                        >End date:
+                                        {{ activeSubscriptionData.end_date ? new Date(activeSubscriptionData.end_date).toLocaleDateString() : '' }}</span
                                     >
                                 </li>
                             </ul>
@@ -56,9 +60,9 @@
                         <div class="mt-8 flex items-center gap-4">
                             <div class="flex h-8 w-[160px] items-center gap-2 rounded-full bg-gray-600 px-3 py-1.5 text-sm font-medium text-white">
                                 <Icon name="IconClock" class="h-4 w-4" />
-                                <span>{{ t('billing.days-left') }}: {{ subscriptionData.remaining_days }}</span>
+                                <span>{{ t('billing.days-left') }}: {{ activeSubscriptionData.remaining_days }}</span>
                             </div>
-                            <Progress :value="subscriptionData.usage_percentage!" :max="100" size="md" color="primary" />
+                            <Progress :value="activeSubscriptionData.usage_percentage!" :max="100" size="md" color="primary" />
                         </div>
                     </div>
                 </Card>
@@ -67,7 +71,7 @@
                 <Card class="w-full rounded-lg border border-gray-100 shadow-sm" v-if="config.public.isNotProduction">
                     <h2 class="text-xl font-bold text-gray-900">Credit Infomation (Dev Only)</h2>
                     <!-- Credits and USD Table -->
-                    <div class="mt-6" v-if="subscriptionData">
+                    <div class="mt-6" v-if="activeSubscriptionData">
                         <div class="overflow-x-auto">
                             <table class="w-full table-auto border-collapse">
                                 <thead>
@@ -80,18 +84,18 @@
                                 <tbody>
                                     <tr class="border-b border-gray-200">
                                         <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.total') }}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.total_credits }}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.total_credit_in_usd }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.total_credits }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.total_credit_in_usd }}</td>
                                     </tr>
                                     <tr class="border-b border-gray-200">
                                         <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.available') }}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.available_credit }}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-700">${{ subscriptionData.available_credit_in_usd }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.available_credit }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">${{ activeSubscriptionData.available_credit_in_usd }}</td>
                                     </tr>
                                     <tr>
                                         <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.used') }}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-700">{{ subscriptionData.credits_used }}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-700">${{ subscriptionData.used_credit_in_usd }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.credits_used }}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-700">${{ activeSubscriptionData.used_credit_in_usd }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -100,7 +104,7 @@
                 </Card>
 
                 <!-- Pricing Tables -->
-                <div class="mx-auto mt-8 max-w-full dark:text-white-dark">
+                <div class="mt-8 max-w-full dark:text-white-dark">
                     <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
                         <!-- Plan Cards -->
                         <Card
@@ -113,11 +117,13 @@
                                 <div
                                     class="-mt-[30px] flex h-[70px] w-[150px] items-center justify-center rounded border-2 border-blue-600 bg-white text-sm text-[#3b3f5c] shadow-[0_0_15px_1px_rgba(37,99,235,0.20)] transition-all duration-300 group-hover:-translate-y-[10px] dark:bg-[#0e1726] dark:text-white-light"
                                 >
-                                    <span class="-mt-1 text-lg font-semibold"> {{ plan.price }} </span>/
-                                    <span class="-mb-1 text-sm"> {{ t('subscription.month') }} </span>
+                                    <div>
+                                        <span class="-mt-1 text-lg font-semibold"> {{ plan.currency }}{{ plan.price }} </span>/
+                                        <span class="-mb-1 text-sm"> {{ t('subscription.month') }} </span>
+                                    </div>
                                 </div>
                                 <h3 class="mb-2.5 mt-4 text-xl lg:text-xl">{{ t(`subscription.${plan.name}`) }}</h3>
-                                <p class="text-sm">{{ t('subscription.monthly-description') }}</p>
+                                <p class="text-sm">{{ plan.description }}</p>
                             </div>
                             <div class="flex flex-grow flex-col p-2">
                                 <ul class="mb-8 flex-grow space-y-4 font-semibold">
@@ -127,10 +133,16 @@
                                     </li>
                                 </ul>
                                 <div class="mt-auto">
-                                    <Button v-if="plan.name === 'freemium'" block disabled>
+                                    <!-- <Button v-if="plan.is_freemium" block disabled>
                                         {{ t('subscription.current-plan') }}
-                                    </Button>
-                                    <Button v-else @click="initiateCheckout" color="primary" block :disabled="isLoading">
+                                    </Button> -->
+
+                                    <Button
+                                        :disabled="activeSubscriptionData?.status == 'active'"
+                                        @click="initiateCheckout(plan.product_id)"
+                                        color="primary"
+                                        block
+                                    >
                                         <span v-if="isLoading" class="flex items-center justify-center">
                                             <svg
                                                 class="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
@@ -172,6 +184,7 @@
     import { ref } from 'vue';
     import { functionProvider } from '@modular-rest/client';
     import type { SubscriptionType } from '~/types/database.type';
+    import type { SubscriptionPlan } from '../../../server/src/modules/subscription/types';
     const { t } = useI18n();
     const isLoading = ref(false);
     const error = ref('');
@@ -185,23 +198,7 @@
         middleware: ['auth'],
     });
 
-    const plans = ref([
-        {
-            name: 'freemium',
-            price: 0,
-            features: ['10,000 saved phrases', 'Unlimited AI practice sessions', '2 Years Data Storage'],
-        },
-        {
-            name: 'premium',
-            price: 10,
-            features: ['10,000 saved phrases', 'Unlimited AI practice sessions', '2 Years Data Storage'],
-        },
-        {
-            name: 'pro',
-            price: 10,
-            features: ['10,000 saved phrases', 'Unlimited AI practice sessions', '2 Years Data Storage'],
-        },
-    ]);
+    const plans = ref<SubscriptionPlan[]>([]);
 
     // Define checkout response type
     interface CheckoutResponse {
@@ -210,7 +207,7 @@
         expiresAt: string;
     }
 
-    const subscriptionData = ref<SubscriptionType | null>(null);
+    const activeSubscriptionData = ref<SubscriptionType | null>(null);
     const isSubscriptionLoading = ref(true);
 
     function fetchSubscription() {
@@ -224,7 +221,7 @@
             })
             .then((res) => {
                 console.log(res);
-                subscriptionData.value = res;
+                activeSubscriptionData.value = res;
             })
             .catch((err) => {
                 console.error('Error fetching subscription:', err);
@@ -235,12 +232,24 @@
             });
     }
 
+    function fetchPlans() {
+        return functionProvider
+            .run<SubscriptionPlan[]>({
+                name: 'getSubscriptionPlans',
+                args: {},
+            })
+            .then((res) => {
+                plans.value = res;
+            });
+    }
+
     onMounted(() => {
         fetchSubscription();
+        fetchPlans();
     });
 
     // Function to initiate the checkout process
-    async function initiateCheckout() {
+    async function initiateCheckout(productId: string) {
         isLoading.value = true;
         error.value = '';
 
@@ -254,7 +263,7 @@
             const response = await functionProvider.run<CheckoutResponse>({
                 name: 'createPaymentSession',
                 args: {
-                    productId: 'prod_S4nM68SkuYEHxm', // Use the Stripe product ID
+                    productId,
                     successUrl,
                     cancelUrl,
                     userId: authUser.value?.id,

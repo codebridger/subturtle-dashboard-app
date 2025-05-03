@@ -1,5 +1,15 @@
 import { Types } from "mongoose";
 
+export interface SubscriptionPlan {
+  name: string;
+  product_id: string;
+  price: string;
+  currency: string;
+  description?: string;
+  features: string[];
+  is_freemium: boolean;
+}
+
 export interface Subscription {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
