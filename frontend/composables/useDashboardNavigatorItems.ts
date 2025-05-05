@@ -27,6 +27,11 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
                     icon: 'iconify solar--history-2-bold',
                     to: '/sessions',
                 },
+                {
+                    title: t('live-session.start-new-session'),
+                    icon: 'IconMenuDatatables',
+                    to: '/sessions/new',
+                },
             ],
         },
     ] as Array<SidebarGroupType>;

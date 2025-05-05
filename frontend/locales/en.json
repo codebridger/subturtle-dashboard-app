@@ -27,7 +27,8 @@
             "phrase_placeholder": "Type your phrase here",
             "translation_placeholder": "Type your translation here"
         },
-        "filter_bundles": "Filter bundles..."
+        "filter_bundles": "Filter bundles...",
+        "select_bundle": "Select Bundle"
     },
     "statistic": {
         "your-statistic": "Your Statistic",
@@ -138,7 +139,8 @@
         "ai-character": "AI Character",
         "cost-info": "Cost Information",
         "total-tokens": "Total Tokens",
-        "total-cost": "Total Cost (USD)"
+        "total-cost": "Total Cost (USD)",
+        "start-new-session": "Start New Session"
     },
     "profile": {
         "profile": "Profile"
