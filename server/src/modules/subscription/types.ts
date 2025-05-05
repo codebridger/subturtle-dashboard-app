@@ -1,5 +1,15 @@
 import { Types } from "mongoose";
 
+export interface SubscriptionPlan {
+  name: string;
+  product_id: string;
+  price: string;
+  currency: string;
+  description?: string;
+  features: string[];
+  is_freemium: boolean;
+}
+
 export interface Subscription {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
@@ -7,19 +17,16 @@ export interface Subscription {
   start_date: Date;
   end_date: Date;
   total_credits: number;
-  system_benefit_portion: number;
-  service_cost_portion: number;
-  spendable_credits: number;
-  status: "active" | "expired" | "canceled";
-}
-
-export interface DailyCredits {
-  _id?: Types.ObjectId;
-  subscription_id: Types.ObjectId;
-  date: Date;
-  daily_credit_limit: number;
   credits_used: number;
-  credits_rolled_over: number;
+  status: "active" | "expired" | "canceled";
+  available_credit?: number;
+  remaining_days?: number;
+  usage_percentage?: number;
+  total_credit_in_usd?: number;
+  used_credit_in_usd?: number;
+  available_credit_in_usd?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Usage {
@@ -27,7 +34,7 @@ export interface Usage {
   user_id: Types.ObjectId;
   subscription_id: Types.ObjectId;
   service_type: string;
-  credit_amount: number;
+  credit_used: number;
   token_count: number;
   model_used: string;
   timestamp: Date;
@@ -61,6 +68,5 @@ export interface CreditAdditionResponse {
 export interface UsageRecordResponse {
   remainingCredits: number;
   usageId: Types.ObjectId;
-  totalUsageToday: number;
-  totalUsageMonth: number;
+  totalUsage: number;
 }

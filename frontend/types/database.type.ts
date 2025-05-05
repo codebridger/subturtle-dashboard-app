@@ -50,3 +50,5 @@ export interface PopulatedPhraseBundleType {
     image: FileDocument[];
     phrases: PhraseType[];
 }
+
+export type { Subscription as SubscriptionType } from '../../server/src/modules/subscription/types';

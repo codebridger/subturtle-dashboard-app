@@ -8,7 +8,6 @@ export const LIVE_SESSION_COLLECTION = "live_session";
 
 // Subscription collections
 export const SUBSCRIPTION_COLLECTION = "subscription";
-export const DAILY_CREDITS_COLLECTION = "daily_credits";
 export const USAGE_COLLECTION = "usage";
 
 // Payment gateway collections

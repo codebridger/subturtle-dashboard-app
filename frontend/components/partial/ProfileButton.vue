@@ -1,7 +1,7 @@
 <template>
     <Dropdown :triggerText="''" :offsetDistance="7">
         <template #trigger>
-            <IconButton size="lg" :imgUrl="profileStore.profilePicture" />
+            <IconButton size="lg" :imgUrl="profilePicture" />
         </template>
 
         <template #body="{ close }">
@@ -9,16 +9,16 @@
                 <li>
                     <div class="flex items-center px-4 py-4">
                         <div class="flex-none">
-                            <img class="h-10 w-10 rounded-md object-cover" :src="profileStore.profilePicture" alt="" />
+                            <img class="h-10 w-10 rounded-md object-cover" :src="profilePicture" />
                         </div>
                         <div class="truncate ltr:pl-4 rtl:pr-4">
                             <h4 class="text-base">
                                 {{ profileStore.userDetail?.name }}
                                 <!-- <span class="rounded bg-success-light px-1 text-xs text-success ltr:ml-2 rtl:ml-2">Pro</span> -->
                             </h4>
-                            <a class="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white" href="javascript:;">
+                            <span class="text-black/60 dark:text-dark-light/60 dark:hover:text-white">
                                 {{ profileStore.email }}
-                            </a>
+                            </span>
                         </div>
                     </div>
                 </li>
@@ -30,26 +30,14 @@
                             goToMembership();
                         "
                     >
-                        <Icon name="icon-user" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                        Membership
+                        <Icon name="IconDollarSignCircle" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
+                        {{ t('subscription.title') }}
                     </a>
                 </li>
-                <!-- <li class="cursor-pointer">
-          <a class="dark:hover:text-white" @click="close()">
-            <Icon name="icon-mail" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-            Inbox
-          </a>
-        </li>
-        <li class="cursor-pointer">
-          <a class="dark:hover:text-white" @click="close()">
-            <Icon name="icon-lock-dots" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-            Lock Screen
-          </a>
-        </li> -->
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
                     <a to="/auth/boxed-signin" class="!py-3 text-danger" @click="logout">
                         <Icon name="icon-logout" class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
-                        Sign Out
+                        {{ t('sign-out') }}
                     </a>
                 </li>
             </ul>
@@ -62,8 +50,13 @@
     import { Dropdown, IconButton, Icon } from '@codebridger/lib-vue-components/elements.ts';
 
     const router = useRouter();
+    const { t } = useI18n();
 
     const profileStore = useProfileStore();
+
+    const profilePicture = computed(() => {
+        return profileStore.profilePicture || '/assets/images/user.png';
+    });
 
     function logout() {
         profileStore.logout();
@@ -71,6 +64,6 @@
     }
 
     function goToMembership() {
-        router.push('/membership-plans');
+        router.push('/settings/subscription');
     }
 </script>

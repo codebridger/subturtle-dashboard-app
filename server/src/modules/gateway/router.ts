@@ -50,42 +50,42 @@ router.post("/webhook/stripe", async (ctx: any) => {
   }
 });
 
-// Generic webhook endpoint that can be extended for other providers
-router.post("/webhook/:provider", async (ctx: any) => {
-  const providerName = ctx.params.provider;
+// // Generic webhook endpoint that can be extended for other providers
+// router.post("/webhook/:provider", async (ctx: any) => {
+//   const providerName = ctx.params.provider;
 
-  try {
-    // Map the provider name to PaymentProvider enum
-    let provider: PaymentProvider;
+//   try {
+//     // Map the provider name to PaymentProvider enum
+//     let provider: PaymentProvider;
 
-    switch (providerName.toLowerCase()) {
-      case "stripe":
-        provider = PaymentProvider.STRIPE;
-        break;
-      // Add other providers here
-      default:
-        throw new Error(`Unsupported payment provider: ${providerName}`);
-    }
+//     switch (providerName.toLowerCase()) {
+//       case "stripe":
+//         provider = PaymentProvider.STRIPE;
+//         break;
+//       // Add other providers here
+//       default:
+//         throw new Error(`Unsupported payment provider: ${providerName}`);
+//     }
 
-    // Process the event with the appropriate provider
-    const result = await handleWebhookEvent(ctx.request.body, provider);
+//     // Process the event with the appropriate provider
+//     const result = await handleWebhookEvent(ctx.request.body, provider);
 
-    if (result.success) {
-      ctx.body = { received: true, message: result.message };
-    } else {
-      console.error(
-        `${providerName} webhook processing error:`,
-        result.message
-      );
-      ctx.status = 400;
-      ctx.body = { received: false, error: result.message };
-    }
-  } catch (err: any) {
-    console.error(`${providerName} webhook error:`, err.message);
-    ctx.status = 400;
-    ctx.body = { received: false, error: err.message };
-  }
-});
+//     if (result.success) {
+//       ctx.body = { received: true, message: result.message };
+//     } else {
+//       console.error(
+//         `${providerName} webhook processing error:`,
+//         result.message
+//       );
+//       ctx.status = 400;
+//       ctx.body = { received: false, error: result.message };
+//     }
+//   } catch (err: any) {
+//     console.error(`${providerName} webhook error:`, err.message);
+//     ctx.status = 400;
+//     ctx.body = { received: false, error: err.message };
+//   }
+// });
 
 export const main = router;
 export { name };

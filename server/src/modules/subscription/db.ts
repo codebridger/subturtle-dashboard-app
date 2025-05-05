@@ -1,19 +1,14 @@
-import {
-  CollectionDefinition,
-  Schema,
-  Permission,
-  schemas,
-} from "@modular-rest/server";
+import { defineCollection, Schema, Permission } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
   SUBSCRIPTION_COLLECTION,
-  DAILY_CREDITS_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
+import { calculatorService } from "./calculator";
 
 // Define subscription collection
-const subscriptionCollection = new CollectionDefinition({
+const subscriptionCollection = defineCollection({
   database: DATABASE,
   collection: SUBSCRIPTION_COLLECTION,
   schema: new Schema(
@@ -36,17 +31,10 @@ const subscriptionCollection = new CollectionDefinition({
         type: Number,
         required: true,
       },
-      system_benefit_portion: {
+      credits_used: {
         type: Number,
         required: true,
-      },
-      service_cost_portion: {
-        type: Number,
-        required: true,
-      },
-      spendable_credits: {
-        type: Number,
-        required: true,
+        default: 0,
       },
       status: {
         type: String,
@@ -55,7 +43,11 @@ const subscriptionCollection = new CollectionDefinition({
         default: "active",
       },
     },
-    { timestamps: true }
+    {
+      timestamps: true,
+      toJSON: { virtuals: true },
+      toObject: { virtuals: true },
+    }
   ),
   permissions: [
     new Permission({
@@ -73,55 +65,59 @@ const subscriptionCollection = new CollectionDefinition({
   ],
 });
 
-// Define daily credits collection
-const dailyCreditsCollection = new CollectionDefinition({
-  database: DATABASE,
-  collection: DAILY_CREDITS_COLLECTION,
-  schema: new Schema(
-    {
-      subscription_id: {
-        type: Types.ObjectId,
-        required: true,
-        ref: `${DATABASE}.${SUBSCRIPTION_COLLECTION}`,
-      },
-      date: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-      daily_credit_limit: {
-        type: Number,
-        required: true,
-      },
-      credits_used: {
-        type: Number,
-        required: true,
-        default: 0,
-      },
-      credits_rolled_over: {
-        type: Number,
-        required: true,
-        default: 0,
-      },
-    },
-    { timestamps: true }
-  ),
-  permissions: [
-    new Permission({
-      accessType: "user_access",
-      read: true,
-      write: false,
-    }),
-    new Permission({
-      accessType: "admin",
-      read: true,
-      write: true,
-    }),
-  ],
-});
+// Add virtual property for available credits
+subscriptionCollection.schema
+  .virtual("available_credit")
+  .get(function (this: any) {
+    return this.total_credits - this.credits_used;
+  });
+
+// Add virtual property for remaining days
+subscriptionCollection.schema
+  .virtual("remaining_days")
+  .get(function (this: any) {
+    const now = new Date();
+    const endDate = this.end_date;
+    return Math.max(
+      0,
+      Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    );
+  });
+
+// Add virtual property for usage percentage
+subscriptionCollection.schema
+  .virtual("usage_percentage")
+  .get(function (this: any) {
+    if (this.total_credits <= 0) return 0;
+    const percentage = Math.round(
+      (this.credits_used / this.total_credits) * 100
+    );
+    return Math.min(percentage, 100); // Cap at 100%
+  });
+
+// Add virtual property for total credits in USD
+subscriptionCollection.schema
+  .virtual("total_credit_in_usd")
+  .get(function (this: any) {
+    return calculatorService.creditsToUsd(this.total_credits);
+  });
+
+// Add virtual property for used credits in USD
+subscriptionCollection.schema
+  .virtual("used_credit_in_usd")
+  .get(function (this: any) {
+    return calculatorService.creditsToUsd(this.credits_used);
+  });
+
+// Add virtual property for available credits in USD
+subscriptionCollection.schema
+  .virtual("available_credit_in_usd")
+  .get(function (this: any) {
+    return calculatorService.creditsToUsd(this.available_credit || 0);
+  });
 
 // Define usage collection
-const usageCollection = new CollectionDefinition({
+const usageCollection = defineCollection({
   database: DATABASE,
   collection: USAGE_COLLECTION,
   schema: new Schema(
@@ -133,14 +129,13 @@ const usageCollection = new CollectionDefinition({
       },
       subscription_id: {
         type: Types.ObjectId,
-        required: true,
         ref: `${DATABASE}.${SUBSCRIPTION_COLLECTION}`,
       },
       service_type: {
         type: String,
         required: true,
       },
-      credit_amount: {
+      credit_used: {
         type: Number,
         required: true,
       },
@@ -152,18 +147,15 @@ const usageCollection = new CollectionDefinition({
         type: String,
         required: true,
       },
-      timestamp: {
-        type: Date,
-        required: true,
-        default: Date.now,
-      },
-      session_id: {
-        type: Types.ObjectId,
-        required: false,
-      },
       details: {
         type: Object,
         required: false,
+      },
+      status: {
+        type: String,
+        enum: ["paid", "unpaid", "overdraft"],
+        required: true,
+        default: "paid",
       },
     },
     { timestamps: true }
@@ -184,8 +176,4 @@ const usageCollection = new CollectionDefinition({
   ],
 });
 
-module.exports = [
-  subscriptionCollection,
-  dailyCreditsCollection,
-  usageCollection,
-];
+module.exports = [subscriptionCollection, usageCollection];
