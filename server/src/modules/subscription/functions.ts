@@ -3,6 +3,8 @@ import { Types } from "mongoose";
 import { DATABASE, SUBSCRIPTION_COLLECTION } from "../../config";
 import { Subscription, SubscriptionPlan } from "./types";
 import { Payment } from "../gateway/types";
+import { PaymentProvider } from "../gateway/adapters/types";
+import { PaymentAdapterFactory } from "../gateway/adapters";
 
 /**
  * Get subscription details for a user
@@ -36,13 +38,28 @@ const getSubscriptionDetails = defineFunction({
         return null;
       }
 
-      // Normalize Subscription Details
-      const label = (activeSubscription.payments?.[0] as Payment).provider_data
-        ?.metadata.label as string;
-
+      const payment = (activeSubscription.payments?.[0] as Payment) || null;
       const response = activeSubscription.toObject() as any;
-      delete response.payments;
-      response["label"] = label;
+
+      // Normalize Subscription Details
+      //
+      // Stripe
+      //
+      if (payment?.provider == PaymentProvider.STRIPE) {
+        const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
+
+        const label = payment.provider_data?.metadata.label as string;
+        response["label"] = label;
+
+        const subscription_id = payment.provider_data?.subscription_id;
+        const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
+          subscription_id
+        );
+
+        response["status"] = subscriptionDetails.status;
+
+        delete response.payments;
+      }
 
       return response;
     } catch (error: any) {

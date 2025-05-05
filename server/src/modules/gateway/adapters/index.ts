@@ -71,6 +71,12 @@ export class PaymentAdapterFactory {
     await stripeAdapter.initialize();
     this.registerAdapter(stripeAdapter);
   }
+
+  public static getStripeAdapter(): StripeAdapter {
+    return this.getInstance().getAdapter(
+      PaymentProvider.STRIPE
+    ) as StripeAdapter;
+  }
 }
 
 // Export factory instance and types

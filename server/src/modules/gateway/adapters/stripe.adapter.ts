@@ -223,6 +223,7 @@ export class StripeAdapter implements PaymentAdapter {
               payment_id: checkoutSession.payment_intent as string,
               customer_id: checkoutSession.customer,
               product_id: session.provider_data.product_id,
+              subscription_id: checkoutSession.subscription as string,
               metadata: checkoutSession.metadata || {},
             },
           },
@@ -297,5 +298,9 @@ export class StripeAdapter implements PaymentAdapter {
         message: error.message || "Unknown error occurred",
       };
     }
+  }
+
+  public async getSubscriptionDetails(paymentId: string) {
+    return this.stripe.subscriptions.retrieve(paymentId);
   }
 }
