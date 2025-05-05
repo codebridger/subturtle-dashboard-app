@@ -6,10 +6,9 @@
             </div>
             <div class="flex w-4/5 flex-col gap-4">
                 <!-- Active Plan Card -->
-                <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
+                <Card v-if="activeSubscriptionData !== null" class="w-full rounded-lg border border-gray-100 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900">
-                        {{ activeSubscriptionData ? activeSubscriptionData.status.charAt(0).toUpperCase() + activeSubscriptionData.status.slice(1) : '' }}
-                        {{ t('subscription.plan') }}
+                        {{ activeSubscriptionData.label }}
                     </h2>
 
                     <div v-if="activeSubscriptionData">
@@ -68,7 +67,7 @@
                 </Card>
 
                 <!-- Credit Infomation (Dev Only) -->
-                <Card class="w-full rounded-lg border border-gray-100 shadow-sm" v-if="config.public.isNotProduction">
+                <Card v-if="activeSubscriptionData !== null && config.public.isNotProduction" class="w-full rounded-lg border border-gray-100 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900">Credit Infomation (Dev Only)</h2>
                     <!-- Credits and USD Table -->
                     <div class="mt-6" v-if="activeSubscriptionData">

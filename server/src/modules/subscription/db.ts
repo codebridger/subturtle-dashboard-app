@@ -45,7 +45,7 @@ const subscriptionCollection = defineCollection({
       },
       payments: {
         type: [Types.ObjectId],
-        ref: `${DATABASE}.${PAYMENT_COLLECTION}`,
+        ref: PAYMENT_COLLECTION,
         required: false,
       },
     },

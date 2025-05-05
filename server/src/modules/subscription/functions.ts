@@ -2,6 +2,7 @@ import { defineFunction, getCollection } from "@modular-rest/server";
 import { Types } from "mongoose";
 import { DATABASE, SUBSCRIPTION_COLLECTION } from "../../config";
 import { Subscription, SubscriptionPlan } from "./types";
+import { Payment } from "../gateway/types";
 
 /**
  * Get subscription details for a user
@@ -23,17 +24,26 @@ const getSubscriptionDetails = defineFunction({
         SUBSCRIPTION_COLLECTION
       );
 
-      const activeSubscription = await subscriptionsCollection.findOne({
-        user_id: Types.ObjectId(userId),
-        status: "active",
-        end_date: { $gte: new Date() },
-      });
+      const activeSubscription = await subscriptionsCollection
+        .findOne({
+          user_id: Types.ObjectId(userId),
+          status: "active",
+          end_date: { $gte: new Date() },
+        })
+        .populate({ path: "payments" });
 
       if (!activeSubscription) {
         return null;
       }
 
-      const response = activeSubscription.toObject();
+      // Normalize Subscription Details
+      const label = (activeSubscription.payments?.[0] as Payment).provider_data
+        ?.metadata.label as string;
+
+      const response = activeSubscription.toObject() as any;
+      delete response.payments;
+      response["label"] = label;
+
       return response;
     } catch (error: any) {
       throw new Error(

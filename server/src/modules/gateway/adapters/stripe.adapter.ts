@@ -125,6 +125,7 @@ export class StripeAdapter implements PaymentAdapter {
       }?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || defaultCancelUrl,
       metadata: {
+        ...product.metadata,
         userId,
         productId,
         creditsAmount: creditsAmount.toString(),
