@@ -5,7 +5,7 @@ import {
   PAYMENT_COLLECTION,
   PAYMENT_SESSION_COLLECTION,
 } from "../../../config";
-import { addCredit } from "../../subscription/service";
+import { addNewSubscriptionWithCredit } from "../../subscription/service";
 import {
   CreateCheckoutRequest,
   CheckoutSessionResult,
@@ -260,7 +260,7 @@ export class StripeAdapter implements PaymentAdapter {
       });
 
       // Add credits to user's subscription
-      await addCredit({
+      await addNewSubscriptionWithCredit({
         userId: session.user_id,
         creditAmount: creditsAmount,
         totalDays: subscriptionDays,

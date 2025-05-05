@@ -64,7 +64,7 @@ export async function checkCreditAllocation(props: {
 /**
  * Add credits to a user's account
  */
-export async function addCredit(props: {
+export async function addNewSubscriptionWithCredit(props: {
   userId: string;
   creditAmount: number;
   totalDays: number;
@@ -76,75 +76,45 @@ export async function addCredit(props: {
     SUBSCRIPTION_COLLECTION
   );
 
-  // Get current active subscription if exists
-  const activeSubscription = await subscriptionsCollection.findOne({
+  // Deactivate all previous subscriptions for the user
+  await subscriptionsCollection.updateMany(
+    { user_id: Types.ObjectId(userId), status: "active" },
+    { $set: { status: "expired" } }
+  );
+
+  // Always create a new subscription
+  const startDate = new Date();
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + totalDays);
+
+  const newSubscription = {
     user_id: Types.ObjectId(userId),
+    start_date: startDate,
+    end_date: endDate,
+    total_credits: creditAmount,
+    credits_used: 0,
     status: "active",
-    end_date: { $gte: new Date() },
+    payments: [payment_id],
+  };
+
+  const createdSubscription = await subscriptionsCollection.create(
+    newSubscription
+  );
+
+  // Emit subscription change event for new subscription
+  emitSubscriptionChangeEvent(userId, createdSubscription._id, "new", {
+    creditAmount,
+    endDate,
   });
 
-  let updatedSubscription;
-  let isNew = false;
-
-  if (activeSubscription) {
-    // Update existing subscription
-    // Extend existing subscription by totalDays
-    const newEndDate = new Date(activeSubscription.end_date);
-    newEndDate.setDate(newEndDate.getDate() + totalDays);
-
-    updatedSubscription = await subscriptionsCollection.findOneAndUpdate(
-      { _id: activeSubscription._id },
-      {
-        $set: {
-          end_date: newEndDate,
-        },
-        $push: {
-          payments: payment_id,
-        },
-        $inc: {
-          total_credits: creditAmount,
-        },
-      },
-      { new: true }
-    );
-
-    // Emit subscription renewed event
-    emitSubscriptionRenewedEvent(userId, updatedSubscription?._id, newEndDate);
-  } else {
-    // Create new subscription
-    // Set end date based on totalDays parameter
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + totalDays);
-
-    const newSubscription = {
-      user_id: Types.ObjectId(userId),
-      start_date: startDate,
-      end_date: endDate,
-      total_credits: creditAmount,
-      credits_used: 0,
-      status: "active",
-      payments: [payment_id],
-    };
-
-    updatedSubscription = await subscriptionsCollection.create(newSubscription);
-    isNew = true;
-
-    // Emit subscription change event for new subscription
-    emitSubscriptionChangeEvent(userId, updatedSubscription._id, "new", {
-      creditAmount,
-      endDate,
-    });
-  }
-
   // Calculate remaining credits
-  const remainingCredits = updatedSubscription?.available_credit || 0;
+  const remainingCredits = createdSubscription?.available_credit || 0;
 
   return {
-    subscriptionId: updatedSubscription?._id,
-    expirationDate: updatedSubscription?.end_date,
+    subscriptionId: createdSubscription?._id,
+    expirationDate: createdSubscription?.end_date,
     creditBalance: remainingCredits,
-    isNewSubscription: isNew,
+    isNewSubscription: true,
   };
 }
 

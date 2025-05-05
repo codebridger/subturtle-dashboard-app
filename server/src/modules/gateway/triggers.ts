@@ -1,7 +1,7 @@
 import { DatabaseTrigger } from "@modular-rest/server";
 import { Payment } from "./types";
 import { paymentAdapterFactory } from "./adapters";
-import { addCredit } from "../subscription/service";
+import { addNewSubscriptionWithCredit } from "../subscription/service";
 
 export const whenPaymentCreatedAddCreadit = new DatabaseTrigger(
   "insert-one",
@@ -25,7 +25,7 @@ export const whenPaymentCreatedAddCreadit = new DatabaseTrigger(
           subscriptionDetails.subscriptionDays
         ) {
           // Add credits to the user's account
-          await addCredit({
+          await addNewSubscriptionWithCredit({
             userId: payment.user_id,
             creditAmount: subscriptionDetails.creditsAmount,
             totalDays: subscriptionDetails.subscriptionDays,
