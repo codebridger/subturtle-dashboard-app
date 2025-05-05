@@ -6,7 +6,6 @@ import {
   PAYMENT_SESSION_COLLECTION,
 } from "./../../config";
 import { PaymentProvider } from "./adapters/types";
-import { whenPaymentCreatedAddCreadit } from "./triggers";
 
 // Define payment collection to store payment records
 const paymentCollection = defineCollection({
@@ -64,8 +63,6 @@ const paymentCollection = defineCollection({
       write: true,
     }),
   ],
-
-  triggers: [whenPaymentCreatedAddCreadit],
 });
 
 // Define payment session collection to track checkout sessions

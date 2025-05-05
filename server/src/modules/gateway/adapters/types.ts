@@ -41,15 +41,6 @@ export interface PaymentVerificationResult {
 }
 
 /**
- * Subscription details extracted from a payment
- */
-export interface SubscriptionDetails {
-  creditsAmount: number;
-  subscriptionDays: number;
-  [key: string]: any; // Allow additional provider-specific data
-}
-
-/**
  * Interface for payment provider adapters
  */
 export interface PaymentAdapter {
@@ -79,13 +70,6 @@ export interface PaymentAdapter {
    * Handle webhook events from the provider
    */
   handleWebhook(eventData: any): Promise<{ success: boolean; message: string }>;
-
-  /**
-   * Extract subscription details from a payment
-   * @param payment The payment object from the database
-   * @returns Parsed subscription details
-   */
-  getSubscriptionDetails(payment: any): SubscriptionDetails;
 }
 
 /**

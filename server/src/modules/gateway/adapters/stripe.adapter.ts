@@ -12,7 +12,6 @@ import {
   PaymentAdapter,
   PaymentProvider,
   PaymentVerificationResult,
-  SubscriptionDetails,
 } from "./types";
 import { Payment, PaymentSession } from "../types";
 
@@ -35,30 +34,6 @@ export class StripeAdapter implements PaymentAdapter {
     if (!this.apiKey) {
       throw new Error("Stripe API key is required");
     }
-  }
-
-  /**
-   * Extract subscription details from a payment
-   * @param payment The payment object from the database
-   * @returns Parsed subscription details
-   */
-  getSubscriptionDetails(payment: Payment): SubscriptionDetails {
-    // Get metadata from either the payment metadata or provider_data.metadata
-    // Since the metadata could be in different places depending on how it was saved
-    const metadata = payment.provider_data?.metadata;
-
-    // Parse the subscription details with defaults
-    const creditsAmount = parseInt(metadata.creditsAmount || "0", 10);
-    const subscriptionDays = parseInt(metadata.subscriptionDays || "0", 10);
-
-    // Return structured subscription details
-    return {
-      creditsAmount,
-      subscriptionDays,
-      rawMetadata: metadata, // Include the raw metadata for reference
-      productId: metadata.productId || payment.provider_data?.product_id,
-      userId: payment.user_id,
-    };
   }
 
   /**
@@ -233,7 +208,7 @@ export class StripeAdapter implements PaymentAdapter {
       // Create payment record
       const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
 
-      // Create a payment record
+      // Update a payment record
       await paymentCollection.updateOne(
         { "provider_data.session_id": sessionId },
         {
@@ -252,7 +227,10 @@ export class StripeAdapter implements PaymentAdapter {
             },
           },
         },
-        { upsert: true }
+        // Upsert the payment record
+        {
+          upsert: true,
+        }
       );
 
       // Get the payment document
