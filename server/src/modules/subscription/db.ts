@@ -2,6 +2,7 @@ import { defineCollection, Schema, Permission } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
+  PAYMENT_COLLECTION,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
@@ -41,6 +42,11 @@ const subscriptionCollection = defineCollection({
         enum: ["active", "expired", "canceled"],
         required: true,
         default: "active",
+      },
+      payments: {
+        type: [Types.ObjectId],
+        ref: `${DATABASE}.${PAYMENT_COLLECTION}`,
+        required: false,
       },
     },
     {

@@ -25,17 +25,12 @@ export const whenPaymentCreatedAddCreadit = new DatabaseTrigger(
           subscriptionDetails.subscriptionDays
         ) {
           // Add credits to the user's account
-          await addCredit(
-            payment.user_id.toString(),
-            subscriptionDetails.creditsAmount,
-            subscriptionDetails.subscriptionDays,
-            {
-              paymentMethod: payment.provider,
-              transactionId: payment.provider_data?.payment_id,
-              amount: payment.amount,
-              currency: payment.currency,
-            }
-          );
+          await addCredit({
+            userId: payment.user_id,
+            creditAmount: subscriptionDetails.creditsAmount,
+            totalDays: subscriptionDetails.subscriptionDays,
+            payment_id: payment._id,
+          });
 
           console.log(
             `Added ${subscriptionDetails.creditsAmount} credits for ${subscriptionDetails.subscriptionDays} days to user ${payment.user_id}`

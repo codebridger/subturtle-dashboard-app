@@ -64,12 +64,13 @@ export async function checkCreditAllocation(props: {
 /**
  * Add credits to a user's account
  */
-export async function addCredit(
-  userId: string,
-  creditAmount: number,
-  totalDays: number,
-  paymentDetails: any
-) {
+export async function addCredit(props: {
+  userId: string;
+  creditAmount: number;
+  totalDays: number;
+  payment_id: any;
+}) {
+  const { userId, creditAmount, totalDays, payment_id } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
@@ -97,6 +98,9 @@ export async function addCredit(
         $set: {
           end_date: newEndDate,
         },
+        $push: {
+          payments: payment_id,
+        },
         $inc: {
           total_credits: creditAmount,
         },
@@ -120,6 +124,7 @@ export async function addCredit(
       total_credits: creditAmount,
       credits_used: 0,
       status: "active",
+      payments: [payment_id],
     };
 
     updatedSubscription = await subscriptionsCollection.create(newSubscription);

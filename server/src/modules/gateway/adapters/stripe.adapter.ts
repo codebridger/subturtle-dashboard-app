@@ -14,7 +14,7 @@ import {
   PaymentVerificationResult,
   SubscriptionDetails,
 } from "./types";
-import { Payment } from "../types";
+import { Payment, PaymentSession } from "../types";
 
 /**
  * Stripe payment adapter implementation
@@ -176,20 +176,17 @@ export class StripeAdapter implements PaymentAdapter {
   async verifyPayment(sessionId: string): Promise<PaymentVerificationResult> {
     try {
       // Check if payment session exists in our database
-      const paymentSessionCollection = getCollection(
+      const paymentSessionCollection = getCollection<PaymentSession>(
         DATABASE,
         PAYMENT_SESSION_COLLECTION
       );
-      const sessionDoc = await paymentSessionCollection.findOne({
+      const session = await paymentSessionCollection.findOne({
         "provider_data.session_id": sessionId,
       });
 
-      if (!sessionDoc) {
+      if (!session) {
         throw new Error("Payment session not found");
       }
-
-      // Type assertion to handle MongoDB document typing
-      const session = sessionDoc as any;
 
       // Check payment status with Stripe
       const checkoutSession = await this.stripe.checkout.sessions.retrieve(
@@ -258,22 +255,17 @@ export class StripeAdapter implements PaymentAdapter {
       );
 
       // Get the payment document
-      const payment = (await paymentCollection.findOne({
+      const payment = await paymentCollection.findOne({
         "provider_data.session_id": sessionId,
-      })) as any;
+      });
 
       // Add credits to user's subscription
-      await addCredit(
-        session.user_id.toString(),
-        creditsAmount,
-        subscriptionDays,
-        {
-          paymentMethod: "stripe",
-          transactionId: checkoutSession.payment_intent,
-          amount: session.amount,
-          currency: session.currency,
-        }
-      );
+      await addCredit({
+        userId: session.user_id,
+        creditAmount: creditsAmount,
+        totalDays: subscriptionDays,
+        payment_id: payment?._id,
+      });
 
       return {
         success: true,

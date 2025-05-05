@@ -15,15 +15,13 @@ const paymentCollection = defineCollection({
   schema: new Schema(
     {
       user_id: {
-        type: Types.ObjectId,
+        type: String,
         required: true,
-        ref: `${DATABASE}.users`,
       },
       provider: {
         type: String,
         enum: Object.values(PaymentProvider),
         required: true,
-        default: PaymentProvider.STRIPE,
       },
       amount: {
         type: Number,
@@ -79,13 +77,11 @@ const paymentSessionCollection = defineCollection({
       user_id: {
         type: Types.ObjectId,
         required: true,
-        ref: `${DATABASE}.users`,
       },
       provider: {
         type: String,
         enum: Object.values(PaymentProvider),
         required: true,
-        default: PaymentProvider.STRIPE,
       },
       amount: {
         type: Number,
