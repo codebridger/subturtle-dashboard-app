@@ -8,7 +8,7 @@ Decimal.set({ precision: 100, rounding: Decimal.ROUND_HALF_UP });
 // This is the unknown cost percentage for the live session
 // Based on our calculation there is a 5.1305% unknown cost
 // for the live session
-const unknownCostPercentage = 5.5;
+const unknownCostPercentage = 0;
 
 function calculatePrice(cost: number) {
   // use decimal to avoid floating point errors
@@ -59,13 +59,17 @@ export function extractCostCalculationInput(usage: TokenUsageType) {
   // Add input tokens (always present)
   expenses.push({
     label: "Input Text Tokens",
-    totalTokens: usage.input_token_details.text_tokens,
+    totalTokens:
+      usage.input_token_details.text_tokens -
+      usage.input_token_details.cached_tokens_details.text_tokens,
     usdCostPerMillion: prices_per_m.input_token_details.text_tokens,
   });
 
   expenses.push({
     label: "Input Audio Tokens",
-    totalTokens: usage.input_token_details.audio_tokens,
+    totalTokens:
+      usage.input_token_details.audio_tokens -
+      usage.input_token_details.cached_tokens_details.audio_tokens,
     usdCostPerMillion: prices_per_m.input_token_details.audio_tokens,
   });
 
