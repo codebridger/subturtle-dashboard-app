@@ -35,8 +35,8 @@
                             <Button color="primary" size="md" @click="renewPlan" :label="t('billing.renew-now')" class="w-full" />
                         </div>
                     </div>
-                    <div class="mt-8 flex items-start justify-between gap-4">
-                        <div class="flex items-center gap-2 rounded-full bg-gray-600 p-1.5 text-sm text-white">
+                    <div class="mt-8 flex items-center gap-2">
+                        <div class="flex w-[140px] items-center gap-2 rounded-full bg-gray-600 p-1.5 text-sm text-white">
                             <Icon name="IconClock" class="h-4 w-4" />
                             <span>{{ t('billing.days-left') }}: 10</span>
                         </div>
