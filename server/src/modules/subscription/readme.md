@@ -16,10 +16,10 @@ The subscription module exposes the following methods to other parts of the syst
     *   Usage: Called before initiating credit-consuming operations
     *   Internal process: Checks the current active subscription for available credits
     *   Triggers: Emits low-credits event if credits are below the threshold
-2. **addCredit(userId, creditAmount, totalDays, paymentDetails)**
+2. **addNewSubscriptionWithCredit(userId, creditAmount, totalDays, paymentDetails)**
     *   Purpose: Add Credits to a user's account upon successful payment
     *   Called by: Payment gateway after successful transaction
-    *   Process: Adds the specified Credit amount, extends/creates subscription, and triggers events
+    *   Process: Adds the specified Credit amount, creates subscription, and triggers events
     *   Returns: Updated subscription details including expiration date and Credit balance
 3. **recordUsage(userId, serviceType, costInputs, modelUsed?, details?)**
     *   Purpose: Track service usage and deduct appropriate Credits

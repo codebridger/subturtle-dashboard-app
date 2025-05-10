@@ -1,27 +1,27 @@
-import { getCollection } from "@modular-rest/server";
+import { getCollection, userManager } from "@modular-rest/server";
 import Stripe from "stripe";
 import {
   DATABASE,
   PAYMENT_COLLECTION,
   PAYMENT_SESSION_COLLECTION,
 } from "../../../config";
-import { addCredit } from "../../subscription/service";
+import { addNewSubscriptionWithCredit } from "../../subscription/service";
 import {
   CreateCheckoutRequest,
   CheckoutSessionResult,
   PaymentAdapter,
   PaymentProvider,
   PaymentVerificationResult,
-  SubscriptionDetails,
 } from "./types";
-import { Payment } from "../types";
+import { Payment, PaymentSession } from "../types";
+import { Types } from "mongoose";
 
 /**
  * Stripe payment adapter implementation
  */
 export class StripeAdapter implements PaymentAdapter {
   readonly provider = PaymentProvider.STRIPE;
-  private stripe: Stripe;
+  stripe: Stripe;
 
   constructor(private apiKey: string) {
     this.stripe = new Stripe(apiKey);
@@ -38,27 +38,37 @@ export class StripeAdapter implements PaymentAdapter {
   }
 
   /**
-   * Extract subscription details from a payment
-   * @param payment The payment object from the database
-   * @returns Parsed subscription details
+   * Helper to get or create a Stripe customer for a user
    */
-  getSubscriptionDetails(payment: Payment): SubscriptionDetails {
-    // Get metadata from either the payment metadata or provider_data.metadata
-    // Since the metadata could be in different places depending on how it was saved
-    const metadata = payment.provider_data?.metadata;
+  private async getOrCreateStripeCustomer(userId: string): Promise<string> {
+    // Get the stripe_customer collection
+    const stripeCustomerCollection = getCollection(DATABASE, "stripe_customer");
+    // Try to find existing mapping
+    let record = await stripeCustomerCollection.findOne({ user_id: userId });
+    if (record && record.get("customer_id")) {
+      return record.get("customer_id");
+    }
 
-    // Parse the subscription details with defaults
-    const creditsAmount = parseInt(metadata.creditsAmount || "0", 10);
-    const subscriptionDays = parseInt(metadata.subscriptionDays || "0", 10);
+    const user = await userManager.getUserById(userId);
 
-    // Return structured subscription details
-    return {
-      creditsAmount,
-      subscriptionDays,
-      rawMetadata: metadata, // Include the raw metadata for reference
-      productId: metadata.productId || payment.provider_data?.product_id,
-      userId: payment.user_id,
-    };
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Create a new Stripe customer
+    const customer = await this.stripe.customers.create({
+      description: `User ${userId}`,
+      email: user.email,
+      metadata: { userId },
+    });
+
+    // Store the mapping
+    await stripeCustomerCollection.updateOne(
+      { user_id: userId },
+      { $set: { user_id: userId, customer_id: customer.id } },
+      { upsert: true }
+    );
+    return customer.id;
   }
 
   /**
@@ -68,6 +78,9 @@ export class StripeAdapter implements PaymentAdapter {
     request: CreateCheckoutRequest
   ): Promise<CheckoutSessionResult> {
     const { userId, productId, successUrl, cancelUrl } = request;
+
+    // Ensure Stripe customer exists for this user
+    const customerId = await this.getOrCreateStripeCustomer(userId);
 
     // Fetch product details from Stripe
     const product = await this.stripe.products.retrieve(productId);
@@ -120,11 +133,13 @@ export class StripeAdapter implements PaymentAdapter {
         },
       ],
       mode: "subscription",
+      customer: customerId,
       success_url: `${
         successUrl || defaultSuccessUrl
       }?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || defaultCancelUrl,
       metadata: {
+        ...product.metadata,
         userId,
         productId,
         creditsAmount: creditsAmount.toString(),
@@ -176,20 +191,17 @@ export class StripeAdapter implements PaymentAdapter {
   async verifyPayment(sessionId: string): Promise<PaymentVerificationResult> {
     try {
       // Check if payment session exists in our database
-      const paymentSessionCollection = getCollection(
+      const paymentSessionCollection = getCollection<PaymentSession>(
         DATABASE,
         PAYMENT_SESSION_COLLECTION
       );
-      const sessionDoc = await paymentSessionCollection.findOne({
+      const session = await paymentSessionCollection.findOne({
         "provider_data.session_id": sessionId,
       });
 
-      if (!sessionDoc) {
+      if (!session) {
         throw new Error("Payment session not found");
       }
-
-      // Type assertion to handle MongoDB document typing
-      const session = sessionDoc as any;
 
       // Check payment status with Stripe
       const checkoutSession = await this.stripe.checkout.sessions.retrieve(
@@ -235,7 +247,7 @@ export class StripeAdapter implements PaymentAdapter {
       // Create payment record
       const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
 
-      // Create a payment record
+      // Update a payment record
       await paymentCollection.updateOne(
         { "provider_data.session_id": sessionId },
         {
@@ -250,30 +262,29 @@ export class StripeAdapter implements PaymentAdapter {
               payment_id: checkoutSession.payment_intent as string,
               customer_id: checkoutSession.customer,
               product_id: session.provider_data.product_id,
+              subscription_id: checkoutSession.subscription as string,
               metadata: checkoutSession.metadata || {},
             },
           },
         },
-        { upsert: true }
+        // Upsert the payment record
+        {
+          upsert: true,
+        }
       );
 
       // Get the payment document
-      const payment = (await paymentCollection.findOne({
+      const payment = await paymentCollection.findOne({
         "provider_data.session_id": sessionId,
-      })) as any;
+      });
 
       // Add credits to user's subscription
-      await addCredit(
-        session.user_id.toString(),
-        creditsAmount,
-        subscriptionDays,
-        {
-          paymentMethod: "stripe",
-          transactionId: checkoutSession.payment_intent,
-          amount: session.amount,
-          currency: session.currency,
-        }
-      );
+      await addNewSubscriptionWithCredit({
+        userId: session.user_id,
+        creditAmount: creditsAmount,
+        totalDays: subscriptionDays,
+        payment_id: payment?._id,
+      });
 
       return {
         success: true,
@@ -326,5 +337,9 @@ export class StripeAdapter implements PaymentAdapter {
         message: error.message || "Unknown error occurred",
       };
     }
+  }
+
+  public async getSubscriptionDetails(paymentId: string) {
+    return this.stripe.subscriptions.retrieve(paymentId);
   }
 }

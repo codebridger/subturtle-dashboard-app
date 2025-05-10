@@ -6,7 +6,6 @@ import {
   PAYMENT_SESSION_COLLECTION,
 } from "./../../config";
 import { PaymentProvider } from "./adapters/types";
-import { whenPaymentCreatedAddCreadit } from "./triggers";
 
 // Define payment collection to store payment records
 const paymentCollection = defineCollection({
@@ -15,15 +14,13 @@ const paymentCollection = defineCollection({
   schema: new Schema(
     {
       user_id: {
-        type: Types.ObjectId,
+        type: String,
         required: true,
-        ref: `${DATABASE}.users`,
       },
       provider: {
         type: String,
         enum: Object.values(PaymentProvider),
         required: true,
-        default: PaymentProvider.STRIPE,
       },
       amount: {
         type: Number,
@@ -66,8 +63,6 @@ const paymentCollection = defineCollection({
       write: true,
     }),
   ],
-
-  triggers: [whenPaymentCreatedAddCreadit],
 });
 
 // Define payment session collection to track checkout sessions
@@ -79,13 +74,11 @@ const paymentSessionCollection = defineCollection({
       user_id: {
         type: Types.ObjectId,
         required: true,
-        ref: `${DATABASE}.users`,
       },
       provider: {
         type: String,
         enum: Object.values(PaymentProvider),
         required: true,
-        default: PaymentProvider.STRIPE,
       },
       amount: {
         type: Number,
@@ -126,4 +119,43 @@ const paymentSessionCollection = defineCollection({
   ],
 });
 
-module.exports = [paymentCollection, paymentSessionCollection];
+// Define stripe customer collection to store user_id <-> stripe customer_id mapping
+const stripeCustomerCollection = defineCollection({
+  database: DATABASE,
+  collection: "stripe_customer",
+  schema: new Schema(
+    {
+      user_id: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+      customer_id: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+    },
+    { timestamps: true }
+  ),
+  permissions: [
+    new Permission({
+      accessType: "user_access",
+      read: true,
+      write: false,
+      onlyOwnData: true,
+      ownerIdField: "user_id",
+    }),
+    new Permission({
+      accessType: "admin",
+      read: true,
+      write: true,
+    }),
+  ],
+});
+
+module.exports = [
+  paymentCollection,
+  paymentSessionCollection,
+  stripeCustomerCollection,
+];

@@ -2,6 +2,10 @@ import { defineFunction, getCollection } from "@modular-rest/server";
 import { Types } from "mongoose";
 import { DATABASE, SUBSCRIPTION_COLLECTION } from "../../config";
 import { Subscription, SubscriptionPlan } from "./types";
+import { Payment } from "../gateway/types";
+import { PaymentProvider } from "../gateway/adapters/types";
+import { PaymentAdapterFactory } from "../gateway/adapters";
+import { getSubscription } from "./service";
 
 /**
  * Get subscription details for a user
@@ -17,24 +21,7 @@ const getSubscriptionDetails = defineFunction({
         throw new Error("User ID is required");
       }
 
-      // Get active subscription for user
-      const subscriptionsCollection = getCollection<Subscription>(
-        DATABASE,
-        SUBSCRIPTION_COLLECTION
-      );
-
-      const activeSubscription = await subscriptionsCollection.findOne({
-        user_id: Types.ObjectId(userId),
-        status: "active",
-        end_date: { $gte: new Date() },
-      });
-
-      if (!activeSubscription) {
-        return null;
-      }
-
-      const response = activeSubscription.toObject();
-      return response;
+      return getSubscription(userId);
     } catch (error: any) {
       throw new Error(
         error.message || "Failed to retrieve subscription details"

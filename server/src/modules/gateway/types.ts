@@ -6,7 +6,7 @@ export type SessionStatus = "created" | "completed" | "expired" | "failed";
 
 export interface Payment {
   _id?: Types.ObjectId;
-  user_id: Types.ObjectId;
+  user_id: string;
   provider: PaymentProvider;
   amount: number;
   currency: string;
@@ -18,7 +18,7 @@ export interface Payment {
 
 export interface PaymentSession {
   _id?: Types.ObjectId;
-  user_id: Types.ObjectId;
+  user_id: string;
   provider: PaymentProvider;
   amount: number;
   currency: string;

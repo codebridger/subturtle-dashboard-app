@@ -51,4 +51,9 @@ export interface PopulatedPhraseBundleType {
     phrases: PhraseType[];
 }
 
-export type { Subscription as SubscriptionType } from '../../server/src/modules/subscription/types';
+import type { Subscription } from '../../server/src/modules/subscription/types';
+
+export interface SubscriptionType extends Subscription {
+    label: string;
+    portal_url: string;
+}
