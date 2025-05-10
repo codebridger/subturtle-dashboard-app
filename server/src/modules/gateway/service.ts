@@ -13,7 +13,6 @@ import {
   Payment,
 } from "./types";
 import { PaymentProvider, paymentAdapterFactory } from "./adapters";
-import { SubscriptionDetails } from "./adapters/types";
 
 // Initialize Stripe with a simpler approach
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
@@ -103,29 +102,4 @@ export async function handleWebhookEvent(
       message: error.message || `Failed to handle ${provider} webhook`,
     };
   }
-}
-
-/**
- * Get subscription details from a payment ID or payment object
- */
-export async function getSubscriptionDetails(
-  paymentIdOrObject: string | Payment,
-  provider: PaymentProvider = PaymentProvider.STRIPE
-): Promise<SubscriptionDetails> {
-  const adapter = paymentAdapterFactory.getAdapter(provider);
-
-  // If we received a payment ID, fetch the payment object
-  if (typeof paymentIdOrObject === "string") {
-    const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
-    const payment = await paymentCollection.findOne({ _id: paymentIdOrObject });
-
-    if (!payment) {
-      throw new Error(`Payment not found: ${paymentIdOrObject}`);
-    }
-
-    return adapter.getSubscriptionDetails(payment);
-  }
-
-  // Otherwise, use the provided payment object
-  return adapter.getSubscriptionDetails(paymentIdOrObject);
 }

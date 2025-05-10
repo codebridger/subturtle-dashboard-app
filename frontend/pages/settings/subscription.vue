@@ -6,28 +6,19 @@
             </div>
             <div class="flex w-4/5 flex-col gap-4">
                 <!-- Active Plan Card -->
-                <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
+                <Card v-if="activeSubscriptionData !== null" class="w-full rounded-lg border border-gray-100 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900">
-                        {{ activeSubscriptionData ? activeSubscriptionData.status.charAt(0).toUpperCase() + activeSubscriptionData.status.slice(1) : '' }}
-                        {{ t('subscription.plan') }}
+                        {{ activeSubscriptionData.label }}
                     </h2>
 
                     <div v-if="activeSubscriptionData">
                         <div class="flex flex-col gap-4">
-                            <div class="mt-8 flex items-start justify-between gap-4">
-                                <!-- <div class="flex flex-col gap-2.5">
-                                    <span class="text-lg text-gray-800">{{ t('subscription.freemium') }}</span>
-                                    <div class="flex items-center">
-                                        <span class="text-lg text-gray-900">$0</span>
-                                        <span class="text-sm text-gray-500 ltr:ml-1 rtl:mr-1">/month</span>
-                                    </div>
-                                </div> -->
-                                <div class="flex flex-col gap-2.5">
-                                    <p class="text-gray-600">
-                                        {{ t('subscription.started-at') }} {{ new Date(activeSubscriptionData.start_date).toLocaleDateString() }}
-                                    </p>
-                                    <Button color="primary" size="md" :label="t('subscription.cancel-subscription')" :disabled="true" />
-                                </div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-gray-600">
+                                    {{ t('subscription.started-at') }} {{ new Date(activeSubscriptionData.start_date).toLocaleDateString() }}
+                                </p>
+
+                                <Button color="primary" size="md" :label="t('subscription.manage-subscription')" :to="activeSubscriptionData.portal_url" />
                             </div>
                             <ul class="space-y-2.5">
                                 <li class="flex items-start">
@@ -68,7 +59,7 @@
                 </Card>
 
                 <!-- Credit Infomation (Dev Only) -->
-                <Card class="w-full rounded-lg border border-gray-100 shadow-sm" v-if="config.public.isNotProduction">
+                <Card v-if="activeSubscriptionData !== null && config.public.isNotProduction" class="w-full rounded-lg border border-gray-100 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900">Credit Infomation (Dev Only)</h2>
                     <!-- Credits and USD Table -->
                     <div class="mt-6" v-if="activeSubscriptionData">

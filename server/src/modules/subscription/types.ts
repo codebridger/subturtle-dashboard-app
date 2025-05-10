@@ -25,6 +25,7 @@ export interface Subscription {
   total_credit_in_usd?: number;
   used_credit_in_usd?: number;
   available_credit_in_usd?: number;
+  payments?: Types.ObjectId[];
   createdAt?: Date;
   updatedAt?: Date;
 }
