@@ -315,20 +315,22 @@ export async function getSubscription(userId: string) {
     return null;
   }
 
-  const payment = (activeSubscription.payments?.[0] as Payment) || null;
   const jsonSubscription = activeSubscription.toObject() as any;
+  const isPaidByStripe =
+    activeSubscription.payment_meta_data?.provider == PaymentProvider.STRIPE;
 
   // Normalize Subscription Details
   //
   // Stripe
   //
-  if (payment?.provider == PaymentProvider.STRIPE) {
+  if (isPaidByStripe) {
     const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
 
-    const label = payment.provider_data?.metadata.label as string;
+    const { label, subscription_id } =
+      activeSubscription.payment_meta_data?.stripe;
+
     jsonSubscription["label"] = label;
 
-    const subscription_id = payment.provider_data?.subscription_id;
     const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
       subscription_id
     );

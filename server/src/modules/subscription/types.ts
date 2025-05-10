@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { PaymentProvider } from "../gateway/adapters";
 
 export interface SubscriptionPlan {
   name: string;
@@ -28,6 +29,10 @@ export interface Subscription {
   payments?: Types.ObjectId[];
   createdAt?: Date;
   updatedAt?: Date;
+  payment_meta_data?: {
+    provider: PaymentProvider;
+    [key: string]: any;
+  };
 }
 
 export interface Usage {

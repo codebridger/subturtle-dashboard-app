@@ -336,8 +336,11 @@ export class StripeAdapter implements PaymentAdapter {
             creditAmount: parseInt(creditsAmount, 10),
             totalDays: parseInt(subscriptionDays, 10),
             paymentMetaData: {
+              provider: this.provider,
               stripe: {
+                label: product.name,
                 invoice_id,
+                subscription_id: subscription.id,
               },
             },
           });
