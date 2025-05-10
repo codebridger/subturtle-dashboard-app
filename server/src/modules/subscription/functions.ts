@@ -5,6 +5,7 @@ import { Subscription, SubscriptionPlan } from "./types";
 import { Payment } from "../gateway/types";
 import { PaymentProvider } from "../gateway/adapters/types";
 import { PaymentAdapterFactory } from "../gateway/adapters";
+import { getSubscription } from "./service";
 
 /**
  * Get subscription details for a user
@@ -20,48 +21,7 @@ const getSubscriptionDetails = defineFunction({
         throw new Error("User ID is required");
       }
 
-      // Get active subscription for user
-      const subscriptionsCollection = getCollection<Subscription>(
-        DATABASE,
-        SUBSCRIPTION_COLLECTION
-      );
-
-      const activeSubscription = await subscriptionsCollection
-        .findOne({
-          user_id: Types.ObjectId(userId),
-          status: "active",
-          end_date: { $gte: new Date() },
-        })
-        .populate({ path: "payments" });
-
-      if (!activeSubscription) {
-        return null;
-      }
-
-      const payment = (activeSubscription.payments?.[0] as Payment) || null;
-      const response = activeSubscription.toObject() as any;
-
-      // Normalize Subscription Details
-      //
-      // Stripe
-      //
-      if (payment?.provider == PaymentProvider.STRIPE) {
-        const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
-
-        const label = payment.provider_data?.metadata.label as string;
-        response["label"] = label;
-
-        const subscription_id = payment.provider_data?.subscription_id;
-        const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
-          subscription_id
-        );
-
-        response["status"] = subscriptionDetails.status;
-
-        delete response.payments;
-      }
-
-      return response;
+      return getSubscription(userId);
     } catch (error: any) {
       throw new Error(
         error.message || "Failed to retrieve subscription details"

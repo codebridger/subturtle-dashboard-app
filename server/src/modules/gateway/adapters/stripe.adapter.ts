@@ -20,7 +20,7 @@ import { Payment, PaymentSession } from "../types";
  */
 export class StripeAdapter implements PaymentAdapter {
   readonly provider = PaymentProvider.STRIPE;
-  private stripe: Stripe;
+  stripe: Stripe;
 
   constructor(private apiKey: string) {
     this.stripe = new Stripe(apiKey);

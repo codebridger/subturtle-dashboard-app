@@ -15,6 +15,8 @@ import {
 } from "./events";
 import { Subscription } from "./types";
 import { CostCalculationInput, calculatorService } from "./calculator";
+import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
+import { Payment } from "../gateway/types";
 
 /**
  * Check credit allocation for a user
@@ -263,4 +265,59 @@ export async function recordUsage(props: {
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     costResult,
   };
+}
+
+export async function getSubscription(userId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  // Get active subscription for user
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+
+  const activeSubscription = await subscriptionsCollection
+    .findOne({
+      user_id: Types.ObjectId(userId),
+      status: "active",
+      end_date: { $gte: new Date() },
+    })
+    .populate({ path: "payments" });
+
+  if (!activeSubscription) {
+    return null;
+  }
+
+  const payment = (activeSubscription.payments?.[0] as Payment) || null;
+  const jsonSubscription = activeSubscription.toObject() as any;
+
+  // Normalize Subscription Details
+  //
+  // Stripe
+  //
+  if (payment?.provider == PaymentProvider.STRIPE) {
+    const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
+
+    const label = payment.provider_data?.metadata.label as string;
+    jsonSubscription["label"] = label;
+
+    const subscription_id = payment.provider_data?.subscription_id;
+    const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
+      subscription_id
+    );
+
+    const portalSession =
+      await stripeAdapter.stripe.billingPortal.sessions.create({
+        customer: subscriptionDetails.customer.toString(),
+        return_url: `${process.env.FRONTEND_URL}/settings/billing`,
+      });
+
+    jsonSubscription["status"] = subscriptionDetails.status;
+    jsonSubscription["portal_url"] = portalSession.url;
+    delete jsonSubscription.payments;
+  }
+
+  return jsonSubscription;
 }
