@@ -338,7 +338,7 @@ export async function getSubscription(userId: string) {
     const portalSession =
       await stripeAdapter.stripe.billingPortal.sessions.create({
         customer: subscriptionDetails.customer.toString(),
-        return_url: `${process.env.FRONTEND_URL}/settings/billing`,
+        return_url: `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`,
       });
 
     jsonSubscription["status"] = subscriptionDetails.status;
