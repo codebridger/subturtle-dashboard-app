@@ -113,7 +113,7 @@
                                         <span class="-mb-1 text-sm"> {{ t('subscription.month') }} </span>
                                     </div>
                                 </div>
-                                <h3 class="mb-2.5 mt-4 text-xl lg:text-xl">{{ t(`subscription.${plan.name}`) }}</h3>
+                                <h3 class="mb-2.5 mt-4 text-xl lg:text-xl">{{ plan.name }}</h3>
                                 <p class="text-sm">{{ plan.description }}</p>
                             </div>
                             <div class="flex flex-grow flex-col p-2">

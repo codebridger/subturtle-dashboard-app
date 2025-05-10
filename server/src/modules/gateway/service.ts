@@ -1,21 +1,9 @@
-import { getCollection } from "@modular-rest/server";
-import { Types } from "mongoose";
-import Stripe from "stripe";
-import {
-  DATABASE,
-  PAYMENT_COLLECTION,
-  PAYMENT_SESSION_COLLECTION,
-} from "../../config";
 import {
   CheckoutSessionRequest,
   CheckoutSessionResponse,
   PaymentVerificationResponse,
-  Payment,
 } from "./types";
 import { PaymentProvider, paymentAdapterFactory } from "./adapters";
-
-// Initialize Stripe with a simpler approach
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 // Initialize the payment adapters
 async function initializePaymentAdapters() {
