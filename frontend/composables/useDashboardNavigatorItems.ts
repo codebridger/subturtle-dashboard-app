@@ -34,5 +34,25 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
                 },
             ],
         },
+        {
+            title: t('settings'),
+            children: [
+                {
+                    title: t('profile.profile'),
+                    icon: 'IconUser',
+                    to: '/settings/profile',
+                },
+                {
+                    title: t('subscription.title'),
+                    icon: 'IconCreditCard',
+                    to: '/settings/subscription',
+                },
+                {
+                    title: t('billing.billing'),
+                    icon: 'IconClipboardText',
+                    to: '/settings/billing',
+                },
+            ],
+        },
     ] as Array<SidebarGroupType>;
 };
