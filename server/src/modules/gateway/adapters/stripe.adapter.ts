@@ -115,14 +115,6 @@ export class StripeAdapter implements PaymentAdapter {
 
     const price = prices.data[0];
 
-    // Default URLs if not provided
-    const defaultSuccessUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    }/payment-success`;
-    const defaultCancelUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    }/payment-canceled`;
-
     // Create a Stripe checkout session
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -134,10 +126,8 @@ export class StripeAdapter implements PaymentAdapter {
       ],
       mode: "subscription",
       customer: customerId,
-      success_url: `${
-        successUrl || defaultSuccessUrl
-      }?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || defaultCancelUrl,
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl,
       metadata: {
         ...product.metadata,
         userId,
@@ -167,8 +157,8 @@ export class StripeAdapter implements PaymentAdapter {
             price_id: price.id,
             product_id: productId,
             expires_at: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes expiry
-            success_url: successUrl || defaultSuccessUrl,
-            cancel_url: cancelUrl || defaultCancelUrl,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: session.metadata || {},
           },
         },
@@ -234,16 +224,6 @@ export class StripeAdapter implements PaymentAdapter {
         { $set: { status: "completed" } }
       );
 
-      // Get metadata from the checkout session
-      const creditsAmount = parseInt(
-        checkoutSession.metadata?.creditsAmount || "0",
-        10
-      );
-      const subscriptionDays = parseInt(
-        checkoutSession.metadata?.subscriptionDays || "0",
-        10
-      );
-
       // Create payment record
       const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
 
@@ -274,23 +254,8 @@ export class StripeAdapter implements PaymentAdapter {
         }
       );
 
-      // Get the payment document
-      const payment = await paymentCollection.findOne({
-        "provider_data.session_id": sessionId,
-      });
-
-      // Add credits to user's subscription
-      // TODO: remove this ad use webhook event
-      // await addNewSubscriptionWithCredit({
-      //   userId: session.user_id,
-      //   creditAmount: creditsAmount,
-      //   totalDays: subscriptionDays,
-      //   payment_id: payment?._id,
-      // });
-
       return {
         success: true,
-        paymentId: payment?._id.toString(),
         status: "succeeded",
         metadata: checkoutSession.metadata || {},
       };

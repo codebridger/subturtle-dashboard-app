@@ -2,14 +2,9 @@ import Router from "koa-router";
 import { handleWebhookEvent } from "./service";
 import Stripe from "stripe";
 import { PaymentProvider } from "./adapters";
-import getRawBody from "raw-body";
 
 const name = "gateway";
 const router = new Router();
-
-// Initialize Stripe for webhook signature verification
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Handle Stripe webhook events
 router.post("/webhook/stripe", async (ctx: any) => {
