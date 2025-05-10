@@ -119,4 +119,43 @@ const paymentSessionCollection = defineCollection({
   ],
 });
 
-module.exports = [paymentCollection, paymentSessionCollection];
+// Define stripe customer collection to store user_id <-> stripe customer_id mapping
+const stripeCustomerCollection = defineCollection({
+  database: DATABASE,
+  collection: "stripe_customer",
+  schema: new Schema(
+    {
+      user_id: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+      customer_id: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+    },
+    { timestamps: true }
+  ),
+  permissions: [
+    new Permission({
+      accessType: "user_access",
+      read: true,
+      write: false,
+      onlyOwnData: true,
+      ownerIdField: "user_id",
+    }),
+    new Permission({
+      accessType: "admin",
+      read: true,
+      write: true,
+    }),
+  ],
+});
+
+module.exports = [
+  paymentCollection,
+  paymentSessionCollection,
+  stripeCustomerCollection,
+];

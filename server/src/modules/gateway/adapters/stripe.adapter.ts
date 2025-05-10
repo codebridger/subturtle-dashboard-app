@@ -1,4 +1,4 @@
-import { getCollection } from "@modular-rest/server";
+import { getCollection, userManager } from "@modular-rest/server";
 import Stripe from "stripe";
 import {
   DATABASE,
@@ -14,6 +14,7 @@ import {
   PaymentVerificationResult,
 } from "./types";
 import { Payment, PaymentSession } from "../types";
+import { Types } from "mongoose";
 
 /**
  * Stripe payment adapter implementation
@@ -37,12 +38,49 @@ export class StripeAdapter implements PaymentAdapter {
   }
 
   /**
+   * Helper to get or create a Stripe customer for a user
+   */
+  private async getOrCreateStripeCustomer(userId: string): Promise<string> {
+    // Get the stripe_customer collection
+    const stripeCustomerCollection = getCollection(DATABASE, "stripe_customer");
+    // Try to find existing mapping
+    let record = await stripeCustomerCollection.findOne({ user_id: userId });
+    if (record && record.get("customer_id")) {
+      return record.get("customer_id");
+    }
+
+    const user = await userManager.getUserById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Create a new Stripe customer
+    const customer = await this.stripe.customers.create({
+      description: `User ${userId}`,
+      email: user.email,
+      metadata: { userId },
+    });
+
+    // Store the mapping
+    await stripeCustomerCollection.updateOne(
+      { user_id: userId },
+      { $set: { user_id: userId, customer_id: customer.id } },
+      { upsert: true }
+    );
+    return customer.id;
+  }
+
+  /**
    * Create a checkout session for Stripe
    */
   async createCheckoutSession(
     request: CreateCheckoutRequest
   ): Promise<CheckoutSessionResult> {
     const { userId, productId, successUrl, cancelUrl } = request;
+
+    // Ensure Stripe customer exists for this user
+    const customerId = await this.getOrCreateStripeCustomer(userId);
 
     // Fetch product details from Stripe
     const product = await this.stripe.products.retrieve(productId);
@@ -95,6 +133,7 @@ export class StripeAdapter implements PaymentAdapter {
         },
       ],
       mode: "subscription",
+      customer: customerId,
       success_url: `${
         successUrl || defaultSuccessUrl
       }?session_id={CHECKOUT_SESSION_ID}`,
