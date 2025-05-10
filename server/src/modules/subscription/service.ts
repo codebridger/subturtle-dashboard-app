@@ -70,9 +70,9 @@ export async function addNewSubscriptionWithCredit(props: {
   userId: string;
   creditAmount: number;
   totalDays: number;
-  payment_id: any;
+  paymentMetaData: any;
 }) {
-  const { userId, creditAmount, totalDays, payment_id } = props;
+  const { userId, creditAmount, totalDays, paymentMetaData } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
@@ -96,7 +96,7 @@ export async function addNewSubscriptionWithCredit(props: {
     total_credits: creditAmount,
     credits_used: 0,
     status: "active",
-    payments: [payment_id],
+    payment_meta_data: paymentMetaData,
   };
 
   const createdSubscription = await subscriptionsCollection.create(
@@ -118,6 +118,31 @@ export async function addNewSubscriptionWithCredit(props: {
     creditBalance: remainingCredits,
     isNewSubscription: true,
   };
+}
+
+export async function cancelSubscriptionByUserId(props: { userId: string }) {
+  const { userId } = props;
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+
+  const subscription = await subscriptionsCollection.updateMany(
+    {
+      user_id: Types.ObjectId(userId),
+      status: "active",
+    },
+    {
+      $set: {
+        status: "canceled",
+      },
+    }
+  );
+
+  if (!subscription) {
+    throw new Error("Subscription not found");
+  }
 }
 
 /**

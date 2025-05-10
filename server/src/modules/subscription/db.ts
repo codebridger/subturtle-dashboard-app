@@ -43,9 +43,8 @@ const subscriptionCollection = defineCollection({
         required: true,
         default: "active",
       },
-      payments: {
-        type: [Types.ObjectId],
-        ref: PAYMENT_COLLECTION,
+      payment_meta_data: {
+        type: Object,
         required: false,
       },
     },

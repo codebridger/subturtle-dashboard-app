@@ -60,16 +60,4 @@ const verifyPayment = defineFunction({
   },
 });
 
-// Handle webhook events
-const handleWebhook = defineFunction({
-  name: "handleWebhook",
-  permissionTypes: ["public"],
-  callback: async function (
-    eventData: any,
-    provider: PaymentProvider = PaymentProvider.STRIPE
-  ) {
-    return await handleWebhookEvent(eventData, provider);
-  },
-});
-
-export const functions = [createPaymentSession, verifyPayment, handleWebhook];
+export const functions = [createPaymentSession, verifyPayment];

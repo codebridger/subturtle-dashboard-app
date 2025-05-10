@@ -259,6 +259,7 @@ export class StripeAdapter implements PaymentAdapter {
             status: "succeeded",
             provider_data: {
               session_id: sessionId,
+              invoice_id: checkoutSession.invoice as string,
               payment_id: checkoutSession.payment_intent as string,
               customer_id: checkoutSession.customer,
               product_id: session.provider_data.product_id,
@@ -279,12 +280,13 @@ export class StripeAdapter implements PaymentAdapter {
       });
 
       // Add credits to user's subscription
-      await addNewSubscriptionWithCredit({
-        userId: session.user_id,
-        creditAmount: creditsAmount,
-        totalDays: subscriptionDays,
-        payment_id: payment?._id,
-      });
+      // TODO: remove this ad use webhook event
+      // await addNewSubscriptionWithCredit({
+      //   userId: session.user_id,
+      //   creditAmount: creditsAmount,
+      //   totalDays: subscriptionDays,
+      //   payment_id: payment?._id,
+      // });
 
       return {
         success: true,
@@ -320,15 +322,87 @@ export class StripeAdapter implements PaymentAdapter {
           // Verify payment and add credits
           await this.verifyPayment(session.id);
           return { success: true, message: "Payment processed successfully" };
+          break;
+        }
+
+        case "customer.subscription.created": {
+          const subscription = event.data.object as Stripe.Subscription;
+
+          // 1. Get the Stripe Customer ID from the subscription
+          const stripeCustomerId = subscription.customer as string;
+
+          // 2. Look up your userId from your database
+          const stripeCustomerCollection = getCollection<any>(
+            DATABASE,
+            "stripe_customer"
+          );
+          const customerRecord = await stripeCustomerCollection.findOne({
+            customer_id: stripeCustomerId,
+          });
+          const userId = customerRecord?.user_id;
+          if (!userId) {
+            return {
+              success: false,
+              message: "User not found for this customer",
+            };
+          }
+
+          // 3. Get the invoice id from Stripe via the latest invoice
+          let invoice_id: string | undefined = undefined;
+          if (subscription.latest_invoice) {
+            const invoice = await this.stripe.invoices.retrieve(
+              subscription.latest_invoice as string
+            );
+            invoice_id = (invoice.id as string) || undefined;
+          }
+
+          // 4. Get product metadata
+          const subscriptionItem = subscription.items.data[0];
+          const priceId = subscriptionItem.price.id;
+          const price = await this.stripe.prices.retrieve(priceId);
+          const productId = price.product as string;
+          const product = await this.stripe.products.retrieve(productId);
+          const creditsAmount = product.metadata.creditsAmount;
+          const subscriptionDays = product.metadata.subscriptionDays;
+
+          // 5. Add credits to user's subscription
+          await addNewSubscriptionWithCredit({
+            userId,
+            creditAmount: parseInt(creditsAmount, 10),
+            totalDays: parseInt(subscriptionDays, 10),
+            paymentMetaData: {
+              stripe: {
+                invoice_id,
+              },
+            },
+          });
+
+          return {
+            success: true,
+            message: "Subscription created successfully",
+          };
+        }
+
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object as Stripe.Subscription;
+          console.log("customer.subscription.deleted", event);
+          // retrive customer id from event
+          // retrive user id from database
+          // cancel subscription
+          return {
+            success: true,
+            message: "Subscription deleted successfully",
+          };
         }
 
         // Handle other webhook events here
 
-        default:
+        default: {
           return {
             success: true,
             message: `Unhandled event type: ${event.type}`,
           };
+        }
       }
     } catch (error: any) {
       console.error("Webhook error:", error);
