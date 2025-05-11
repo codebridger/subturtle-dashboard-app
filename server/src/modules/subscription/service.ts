@@ -155,7 +155,6 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
 
   const filter: any = {
     "payment_meta_data.provider": provider,
-    status: "active",
   };
 
   if (provider == PaymentProvider.STRIPE) {
@@ -185,9 +184,79 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
   }
 }
 
-/**
- * Check for expired subscriptions and update their status
- */
+export async function updateSubscriptionStatusByProviderAndSubscriptionId(props: {
+  provider: PaymentProvider;
+  subscriptionId: string;
+  status: Stripe.Subscription.Status;
+  startDateUnixTimestamp: number;
+  endDateUnixTimestamp: number;
+}) {
+  const {
+    provider,
+    subscriptionId,
+    status,
+    startDateUnixTimestamp,
+    endDateUnixTimestamp,
+  } = props;
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+
+  const filter: any = {
+    "payment_meta_data.provider": provider,
+    status: "active",
+  };
+
+  if (provider == PaymentProvider.STRIPE) {
+    filter["payment_meta_data.stripe.subscription_id"] = subscriptionId;
+  }
+
+  const currentSubscription = await subscriptionsCollection.findOne(filter);
+
+  if (currentSubscription) {
+    const currentStartTimeUnixTimestamp =
+      currentSubscription.start_date.getTime() / 1000;
+    const currentEndTimeUnixTimestamp =
+      currentSubscription.end_date.getTime() / 1000;
+
+    let isSamePeriod = false;
+
+    if (startDateUnixTimestamp && endDateUnixTimestamp) {
+      isSamePeriod =
+        startDateUnixTimestamp === currentStartTimeUnixTimestamp &&
+        endDateUnixTimestamp === currentEndTimeUnixTimestamp;
+    }
+
+    if (isSamePeriod) {
+      await subscriptionsCollection.updateOne(filter, {
+        $set: {
+          status,
+        },
+      });
+    } else {
+      await subscriptionsCollection.updateOne(filter, {
+        $set: {
+          status,
+          start_date: new Date(startDateUnixTimestamp * 1000),
+          end_date: new Date(endDateUnixTimestamp * 1000),
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: "Subscription updated successfully",
+    };
+  } else {
+    return {
+      success: false,
+      message: "Subscription not found",
+    };
+  }
+}
+
 export async function checkAndUpdateExpiredSubscriptions() {
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,

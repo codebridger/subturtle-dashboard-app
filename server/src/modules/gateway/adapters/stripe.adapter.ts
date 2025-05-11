@@ -8,6 +8,7 @@ import {
 import {
   addNewSubscriptionWithCredit,
   cancelSubscriptionByProviderAndSubscriptionId,
+  updateSubscriptionStatusByProviderAndSubscriptionId,
 } from "../../subscription/service";
 import {
   CreateCheckoutRequest,
@@ -381,8 +382,30 @@ export class StripeAdapter implements PaymentAdapter {
           }
         }
 
-        // Handle other webhook events here
+        case "customer.subscription.updated": {
+          const subscription = event.data.object as Stripe.Subscription;
 
+          const currentPeriodStart =
+            subscription.items.data[0].current_period_start;
+          const currentPeriodEnd =
+            subscription.items.data[0].current_period_end;
+
+          const { success, message } =
+            await updateSubscriptionStatusByProviderAndSubscriptionId({
+              provider: this.provider,
+              subscriptionId: subscription.id,
+              status: subscription.status,
+              startDateUnixTimestamp: currentPeriodStart,
+              endDateUnixTimestamp: currentPeriodEnd,
+            });
+
+          return {
+            success,
+            message,
+          };
+        }
+
+        // Handle other webhook events here
         default: {
           return {
             success: true,
