@@ -328,13 +328,19 @@ export class StripeAdapter implements PaymentAdapter {
           const productId = price.product as string;
           const product = await this.stripe.products.retrieve(productId);
           const creditsAmount = product.metadata.creditsAmount;
-          const subscriptionDays = product.metadata.subscriptionDays;
 
-          // 5. Add credits to user's subscription
+          // 5. Get the current period start and end
+          const currentPeriodStart =
+            subscription.items.data[0].current_period_start;
+          const currentPeriodEnd =
+            subscription.items.data[0].current_period_end;
+
+          // 6. Add credits to user's subscription
           await addNewSubscriptionWithCredit({
             userId,
             creditAmount: parseInt(creditsAmount, 10),
-            totalDays: parseInt(subscriptionDays, 10),
+            startDateUnixTimestamp: currentPeriodStart,
+            endDateUnixTimestamp: currentPeriodEnd,
             paymentMetaData: {
               provider: this.provider,
               stripe: {

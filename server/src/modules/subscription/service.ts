@@ -69,14 +69,29 @@ export async function checkCreditAllocation(props: {
 export async function addNewSubscriptionWithCredit(props: {
   userId: string;
   creditAmount: number;
-  totalDays: number;
+  totalDays?: number;
+  startDateUnixTimestamp: number;
+  endDateUnixTimestamp: number;
   paymentMetaData: any;
 }) {
-  const { userId, creditAmount, totalDays, paymentMetaData } = props;
+  const {
+    userId,
+    creditAmount,
+    totalDays,
+    startDateUnixTimestamp,
+    endDateUnixTimestamp,
+    paymentMetaData,
+  } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
+
+  if ((startDateUnixTimestamp || endDateUnixTimestamp) && totalDays) {
+    throw new Error(
+      "Cannot provide both startDateUnixTimestamp and endDateUnix Timestamp and totalDays"
+    );
+  }
 
   // Deactivate all previous subscriptions for the user
   await subscriptionsCollection.updateMany(
@@ -85,9 +100,16 @@ export async function addNewSubscriptionWithCredit(props: {
   );
 
   // Always create a new subscription
-  const startDate = new Date();
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + totalDays);
+  let startDate, endDate;
+
+  if (totalDays) {
+    startDate = new Date();
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + totalDays);
+  } else {
+    startDate = new Date(startDateUnixTimestamp * 1000); // Convert Unix timestamp to Date
+    endDate = new Date(endDateUnixTimestamp * 1000); // Convert Unix timestamp to Date
+  }
 
   const newSubscription = {
     user_id: Types.ObjectId(userId),
