@@ -11,12 +11,11 @@ import {
   emitLowCreditsEvent,
   emitSubscriptionChangeEvent,
   emitSubscriptionExpiredEvent,
-  emitSubscriptionRenewedEvent,
 } from "./events";
 import { Subscription } from "./types";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
-import { Payment } from "../gateway/types";
+import Stripe from "stripe";
 
 /**
  * Check credit allocation for a user
@@ -142,28 +141,47 @@ export async function addNewSubscriptionWithCredit(props: {
   };
 }
 
-export async function cancelSubscriptionByUserId(props: { userId: string }) {
-  const { userId } = props;
+export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
+  provider: PaymentProvider;
+  subscriptionId: string;
+  status: Stripe.Subscription.Status;
+}) {
+  const { provider, subscriptionId, status = "expired" } = props;
 
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
 
-  const subscription = await subscriptionsCollection.updateMany(
-    {
-      user_id: Types.ObjectId(userId),
-      status: "active",
-    },
-    {
-      $set: {
-        status: "canceled",
-      },
-    }
-  );
+  const filter: any = {
+    "payment_meta_data.provider": provider,
+    status: "active",
+  };
 
-  if (!subscription) {
-    throw new Error("Subscription not found");
+  if (provider == PaymentProvider.STRIPE) {
+    filter["payment_meta_data.stripe.subscription_id"] = subscriptionId;
+  }
+
+  try {
+    const updateResult = await subscriptionsCollection.updateOne(filter, {
+      $set: {
+        status,
+      },
+    });
+
+    if (updateResult.nModified == 0) {
+      throw new Error("Subscription not found");
+    }
+
+    return {
+      success: true,
+      message: "Subscription canceled successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to cancel subscription",
+    };
   }
 }
 

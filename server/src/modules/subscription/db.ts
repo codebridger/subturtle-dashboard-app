@@ -39,7 +39,16 @@ const subscriptionCollection = defineCollection({
       },
       status: {
         type: String,
-        enum: ["active", "expired", "canceled"],
+        enum: [
+          "active",
+          "canceled",
+          "incomplete",
+          "incomplete_expired",
+          "past_due",
+          "paused",
+          "trialing",
+          "unpaid",
+        ],
         required: true,
         default: "active",
       },

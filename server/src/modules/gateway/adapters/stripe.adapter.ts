@@ -5,7 +5,10 @@ import {
   PAYMENT_COLLECTION,
   PAYMENT_SESSION_COLLECTION,
 } from "../../../config";
-import { addNewSubscriptionWithCredit } from "../../subscription/service";
+import {
+  addNewSubscriptionWithCredit,
+  cancelSubscriptionByProviderAndSubscriptionId,
+} from "../../subscription/service";
 import {
   CreateCheckoutRequest,
   CheckoutSessionResult,
@@ -13,8 +16,7 @@ import {
   PaymentProvider,
   PaymentVerificationResult,
 } from "./types";
-import { Payment, PaymentSession } from "../types";
-import { Types } from "mongoose";
+import { PaymentSession } from "../types";
 
 /**
  * Stripe payment adapter implementation
@@ -345,7 +347,6 @@ export class StripeAdapter implements PaymentAdapter {
               provider: this.provider,
               stripe: {
                 label: product.name,
-                invoice_id,
                 subscription_id: subscription.id,
               },
             },
@@ -359,14 +360,25 @@ export class StripeAdapter implements PaymentAdapter {
 
         case "customer.subscription.deleted": {
           const subscription = event.data.object as Stripe.Subscription;
-          console.log("customer.subscription.deleted", event);
-          // retrive customer id from event
-          // retrive user id from database
-          // cancel subscription
-          return {
-            success: true,
-            message: "Subscription deleted successfully",
-          };
+
+          try {
+            const { success, message } =
+              await cancelSubscriptionByProviderAndSubscriptionId({
+                provider: this.provider,
+                subscriptionId: subscription.id,
+                status: subscription.status,
+              });
+
+            return {
+              success,
+              message,
+            };
+          } catch (error: any) {
+            return {
+              success: false,
+              message: error.message || "Unknown error occurred",
+            };
+          }
         }
 
         // Handle other webhook events here
