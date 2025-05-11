@@ -32,6 +32,7 @@ The subscription module exposes the following methods to other parts of the syst
         *   `subscription_change`: Triggered when subscription status changes
         *   `subscription_expired`: Triggered when subscription expires
         *   `subscription_renewed`: Triggered when subscription is renewed
+        *   `usage_spike`: Triggered when a user's usage exceeds a defined threshold (internal only)
     *   Purpose: Allow other modules to react to subscription-related events without tight coupling
 
 ### API Functions
@@ -115,3 +116,13 @@ details: Object
 *   Modular design with clear separation of concerns
 *   Event system enables loose coupling between subscription management and consumers
 *   Configuration-driven thresholds and conversion factors
+
+#### Stripe/Payment Metadata
+- If the subscription is paid via Stripe, the `payment_meta_data` field contains Stripe-specific details (e.g., `subscription_id`, `label`).
+- The API normalizes and enriches subscription details with Stripe data when available.
+
+Several virtual/computed fields are available on the Subscription model for analytics and reporting:
+- `available_credit`: Calculated as `total_credits - credits_used`.
+- `remaining_days`: Days left until subscription expiration.
+- `usage_percentage`: Percentage of credits used.
+- `total_credit_in_usd`, `used_credit_in_usd`, `available_credit_in_usd`: Credit values converted to USD using the calculator service.
