@@ -183,6 +183,7 @@ erDiagram
     User ||--o{ PaymentSession : initiates
     User ||--o{ Payment : has
     PaymentSession ||--o| Payment : results_in
+    User ||--o| StripeCustomer : has
     
     User {
         ObjectId _id
@@ -215,6 +216,14 @@ erDiagram
         Date updatedAt
     }
     
+    StripeCustomer {
+        ObjectId _id
+        string user_id
+        string customer_id
+        Date createdAt
+        Date updatedAt
+    }
+    
     Subscription ||--o{ Payment : funded_by
     
     Subscription {
@@ -227,64 +236,3 @@ erDiagram
         string status
     }
 ```
-
-## Adapter Factory Pattern
-
-```mermaid
-classDiagram
-    class PaymentAdapterFactory {
-        -Map~PaymentProvider, PaymentAdapter~ adapters
-        -PaymentProvider defaultProvider
-        +getInstance() PaymentAdapterFactory
-        +registerAdapter(adapter) void
-        +getAdapter(provider) PaymentAdapter
-        +getDefaultAdapter() PaymentAdapter
-        +initialize() Promise~void~
-    }
-    
-    class PaymentAdapter {
-        <<interface>>
-        +provider PaymentProvider
-        +initialize() Promise~void~
-        +createCheckoutSession(request) Promise~CheckoutSessionResult~
-        +verifyPayment(sessionId) Promise~PaymentVerificationResult~
-        +handleWebhook(eventData) Promise~Object~
-        +getSubscriptionDetails(payment) SubscriptionDetails
-    }
-    
-    class StripeAdapter {
-        +provider PaymentProvider.STRIPE
-        -stripe Stripe
-        +constructor(apiKey)
-        +initialize() Promise~void~
-        +createCheckoutSession(request) Promise~CheckoutSessionResult~
-        +verifyPayment(sessionId) Promise~PaymentVerificationResult~
-        +handleWebhook(eventData) Promise~Object~
-        +getSubscriptionDetails(payment) SubscriptionDetails
-    }
-    
-    PaymentAdapterFactory ..> PaymentAdapter : creates/manages
-    StripeAdapter ..|> PaymentAdapter : implements
-    PaymentAdapterFactory --* StripeAdapter : contains
-```
-
-## Trigger Flow Diagram
-
-```mermaid
-flowchart TD
-    %% Triggers
-    subgraph Triggers[triggers.ts]
-        PaymentCreated[Payment Created]
-    end
-    
-    %% Flow
-    PaymentCreated --> CheckPaymentStatus[Check Payment Status]
-    CheckPaymentStatus -->|succeeded| GetAdapter[Get Appropriate Adapter]
-    GetAdapter --> ExtractSubscriptionDetails[Extract Subscription Details]
-    ExtractSubscriptionDetails --> ValidateDetails[Validate Details]
-    ValidateDetails -->|valid| AddCredits[Add Credits to User Account]
-    ValidateDetails -->|invalid| LogError[Log Error]
-    
-    %% External connections
-    AddCredits -.-> SubscriptionModule[Subscription Module]
-``` 
