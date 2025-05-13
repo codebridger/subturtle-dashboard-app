@@ -415,7 +415,7 @@ export async function getSubscription(userId: string) {
   const activeSubscription = await subscriptionsCollection
     .findOne({
       user_id: Types.ObjectId(userId),
-      status: "active",
+      status: { $nin: ["canceled", "incomplete_expired"] },
       end_date: { $gte: new Date() },
     })
     .populate({ path: "payments" });
