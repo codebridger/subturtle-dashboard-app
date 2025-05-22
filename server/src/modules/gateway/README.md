@@ -129,3 +129,8 @@ https://your-api-domain.com/gateway/webhook/stripe
 
 - **Subscription Module**: Triggers add credits to user subscriptions upon successful payments
 - **Auth Module**: User authentication for payment sessions 
+
+## Stripe CLI
+```bash
+stripe listen --forward-to localhost:8080/gateway/webhook/stripe
+```
