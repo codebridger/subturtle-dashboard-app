@@ -23,15 +23,16 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
             title: t('ai-coaching'),
             children: [
                 {
-                    title: t('live-session.session-history'),
-                    icon: 'iconify solar--history-2-bold',
-                    to: '/sessions',
-                },
-                {
                     title: t('live-session.start-new-session'),
                     icon: 'IconMenuDatatables',
                     to: '/sessions/new',
                 },
+                {
+                    title: t('live-session.session-history'),
+                    icon: 'iconify solar--history-2-bold',
+                    to: '/sessions',
+                }
+                
             ],
         },
         {
