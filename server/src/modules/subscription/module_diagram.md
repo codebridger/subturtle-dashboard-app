@@ -37,6 +37,7 @@ graph TD
         SubscriptionChangeEvent[emitSubscriptionChangeEvent]
         SubscriptionExpiredEvent[emitSubscriptionExpiredEvent]
         SubscriptionRenewedEvent[emitSubscriptionRenewedEvent]
+        UsageSpikeEvent[emitUsageSpikeEvent]
     end
     
     %% Calculator
@@ -87,6 +88,7 @@ graph TD
     CheckAndUpdateExpiredSubscriptions --> SubscriptionExpiredEvent
     RecordUsage --> CalculateCosts
     RecordUsage --> LowCreditsEvent
+    RecordUsage --> UsageSpikeEvent
     VirtualProperties --> CreditsToUsd
     
     %% Database Relationships
@@ -208,11 +210,13 @@ flowchart TD
         B[Subscription Change Event]
         D[Subscription Expired Event]
         E[Subscription Renewed Event]
+        F[Usage Spike Event]
     end
     
     %% Triggers
     CheckCreditAllocation --> A
     RecordUsage --> A
+    RecordUsage --> F
     AddCredit --> B
     AddCredit --> E
     CheckAndUpdateExpiredSubscriptions --> D
@@ -225,6 +229,8 @@ flowchart TD
     D --> DeactivateFeatures[Deactivate Features]
     E --> LogRenewal[Log Renewal]
     E --> EnableFeatures[Enable Features]
+    F --> LogUsageSpike[Log Usage Spike]
+    F --> NotifyAdmin[Notify Admin]
 ```
 
 ## Calculator Service Flow
@@ -267,4 +273,24 @@ flowchart TD
     Config[Configuration Constants] -.-> CalculateCredits
     Config -.-> CreditsToUsd
     Config -.-> UsdToCredits
+```
+
+## Notes
+
+```
+Usage {
+    ObjectId _id
+    ObjectId user_id
+    ObjectId subscription_id
+    String service_type
+    Number credit_used
+    Number token_count
+    String model_used
+    String status
+    Object details
+}
+
+%% Note: The Subscription entity includes several virtual/computed fields (available_credit, remaining_days, usage_percentage, total_credit_in_usd, used_credit_in_usd, available_credit_in_usd). These are not stored in the database but are computed dynamically.
+%% Note: The status field supports: active, canceled, incomplete, incomplete_expired, past_due, paused, trialing, unpaid, expired.
+%% Note: The payment_meta_data field stores payment provider info (e.g., Stripe details).
 ``` 

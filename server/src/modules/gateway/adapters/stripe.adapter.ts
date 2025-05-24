@@ -5,7 +5,11 @@ import {
   PAYMENT_COLLECTION,
   PAYMENT_SESSION_COLLECTION,
 } from "../../../config";
-import { addNewSubscriptionWithCredit } from "../../subscription/service";
+import {
+  addNewSubscriptionWithCredit,
+  cancelSubscriptionByProviderAndSubscriptionId,
+  updateSubscriptionStatusByProviderAndSubscriptionId,
+} from "../../subscription/service";
 import {
   CreateCheckoutRequest,
   CheckoutSessionResult,
@@ -13,8 +17,7 @@ import {
   PaymentProvider,
   PaymentVerificationResult,
 } from "./types";
-import { Payment, PaymentSession } from "../types";
-import { Types } from "mongoose";
+import { PaymentSession } from "../types";
 
 /**
  * Stripe payment adapter implementation
@@ -115,14 +118,6 @@ export class StripeAdapter implements PaymentAdapter {
 
     const price = prices.data[0];
 
-    // Default URLs if not provided
-    const defaultSuccessUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    }/payment-success`;
-    const defaultCancelUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    }/payment-canceled`;
-
     // Create a Stripe checkout session
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -134,10 +129,8 @@ export class StripeAdapter implements PaymentAdapter {
       ],
       mode: "subscription",
       customer: customerId,
-      success_url: `${
-        successUrl || defaultSuccessUrl
-      }?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || defaultCancelUrl,
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl,
       metadata: {
         ...product.metadata,
         userId,
@@ -167,8 +160,8 @@ export class StripeAdapter implements PaymentAdapter {
             price_id: price.id,
             product_id: productId,
             expires_at: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes expiry
-            success_url: successUrl || defaultSuccessUrl,
-            cancel_url: cancelUrl || defaultCancelUrl,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: session.metadata || {},
           },
         },
@@ -234,16 +227,6 @@ export class StripeAdapter implements PaymentAdapter {
         { $set: { status: "completed" } }
       );
 
-      // Get metadata from the checkout session
-      const creditsAmount = parseInt(
-        checkoutSession.metadata?.creditsAmount || "0",
-        10
-      );
-      const subscriptionDays = parseInt(
-        checkoutSession.metadata?.subscriptionDays || "0",
-        10
-      );
-
       // Create payment record
       const paymentCollection = getCollection(DATABASE, PAYMENT_COLLECTION);
 
@@ -259,6 +242,7 @@ export class StripeAdapter implements PaymentAdapter {
             status: "succeeded",
             provider_data: {
               session_id: sessionId,
+              invoice_id: checkoutSession.invoice as string,
               payment_id: checkoutSession.payment_intent as string,
               customer_id: checkoutSession.customer,
               product_id: session.provider_data.product_id,
@@ -273,22 +257,8 @@ export class StripeAdapter implements PaymentAdapter {
         }
       );
 
-      // Get the payment document
-      const payment = await paymentCollection.findOne({
-        "provider_data.session_id": sessionId,
-      });
-
-      // Add credits to user's subscription
-      await addNewSubscriptionWithCredit({
-        userId: session.user_id,
-        creditAmount: creditsAmount,
-        totalDays: subscriptionDays,
-        payment_id: payment?._id,
-      });
-
       return {
         success: true,
-        paymentId: payment?._id.toString(),
         status: "succeeded",
         metadata: checkoutSession.metadata || {},
       };
@@ -320,15 +290,128 @@ export class StripeAdapter implements PaymentAdapter {
           // Verify payment and add credits
           await this.verifyPayment(session.id);
           return { success: true, message: "Payment processed successfully" };
+          break;
+        }
+
+        case "customer.subscription.created": {
+          const subscription = event.data.object as Stripe.Subscription;
+
+          // 1. Get the Stripe Customer ID from the subscription
+          const stripeCustomerId = subscription.customer as string;
+
+          // 2. Look up your userId from your database
+          const stripeCustomerCollection = getCollection<any>(
+            DATABASE,
+            "stripe_customer"
+          );
+          const customerRecord = await stripeCustomerCollection.findOne({
+            customer_id: stripeCustomerId,
+          });
+          const userId = customerRecord?.user_id;
+          if (!userId) {
+            return {
+              success: false,
+              message: "User not found for this customer",
+            };
+          }
+
+          // 3. Get the invoice id from Stripe via the latest invoice
+          let invoice_id: string | undefined = undefined;
+          if (subscription.latest_invoice) {
+            const invoice = await this.stripe.invoices.retrieve(
+              subscription.latest_invoice as string
+            );
+            invoice_id = (invoice.id as string) || undefined;
+          }
+
+          // 4. Get product metadata
+          const subscriptionItem = subscription.items.data[0];
+          const priceId = subscriptionItem.price.id;
+          const price = await this.stripe.prices.retrieve(priceId);
+          const productId = price.product as string;
+          const product = await this.stripe.products.retrieve(productId);
+          const creditsAmount = product.metadata.creditsAmount;
+
+          // 5. Get the current period start and end
+          const currentPeriodStart =
+            subscription.items.data[0].current_period_start;
+          const currentPeriodEnd =
+            subscription.items.data[0].current_period_end;
+
+          // 6. Add credits to user's subscription
+          await addNewSubscriptionWithCredit({
+            userId,
+            creditAmount: parseInt(creditsAmount, 10),
+            startDateUnixTimestamp: currentPeriodStart,
+            endDateUnixTimestamp: currentPeriodEnd,
+            paymentMetaData: {
+              provider: this.provider,
+              stripe: {
+                label: product.name,
+                subscription_id: subscription.id,
+              },
+            },
+          });
+
+          return {
+            success: true,
+            message: "Subscription created successfully",
+          };
+        }
+
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object as Stripe.Subscription;
+
+          try {
+            const { success, message } =
+              await cancelSubscriptionByProviderAndSubscriptionId({
+                provider: this.provider,
+                subscriptionId: subscription.id,
+                status: subscription.status,
+              });
+
+            return {
+              success,
+              message,
+            };
+          } catch (error: any) {
+            return {
+              success: false,
+              message: error.message || "Unknown error occurred",
+            };
+          }
+        }
+
+        case "customer.subscription.updated": {
+          const subscription = event.data.object as Stripe.Subscription;
+
+          const currentPeriodStart =
+            subscription.items.data[0].current_period_start;
+          const currentPeriodEnd =
+            subscription.items.data[0].current_period_end;
+
+          const { success, message } =
+            await updateSubscriptionStatusByProviderAndSubscriptionId({
+              provider: this.provider,
+              subscriptionId: subscription.id,
+              status: subscription.status,
+              startDateUnixTimestamp: currentPeriodStart,
+              endDateUnixTimestamp: currentPeriodEnd,
+            });
+
+          return {
+            success,
+            message,
+          };
         }
 
         // Handle other webhook events here
-
-        default:
+        default: {
           return {
             success: true,
             message: `Unhandled event type: ${event.type}`,
           };
+        }
       }
     } catch (error: any) {
       console.error("Webhook error:", error);

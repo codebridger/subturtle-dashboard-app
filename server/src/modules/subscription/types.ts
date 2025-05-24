@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { PaymentProvider } from "../gateway/adapters";
 
 export interface SubscriptionPlan {
   name: string;
@@ -18,7 +19,15 @@ export interface Subscription {
   end_date: Date;
   total_credits: number;
   credits_used: number;
-  status: "active" | "expired" | "canceled";
+  status:
+    | "active"
+    | "canceled"
+    | "incomplete"
+    | "incomplete_expired"
+    | "past_due"
+    | "paused"
+    | "trialing"
+    | "unpaid";
   available_credit?: number;
   remaining_days?: number;
   usage_percentage?: number;
@@ -28,6 +37,10 @@ export interface Subscription {
   payments?: Types.ObjectId[];
   createdAt?: Date;
   updatedAt?: Date;
+  payment_meta_data?: {
+    provider: PaymentProvider;
+    [key: string]: any;
+  };
 }
 
 export interface Usage {

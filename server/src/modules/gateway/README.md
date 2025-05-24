@@ -54,14 +54,19 @@ The Gateway Module manages payment processing and integration with payment provi
    - Currency
    - Status
    - Provider-specific data
+   - Metadata (optional)
 
 2. **Payment Session Collection**: Tracks checkout sessions
-   - User ID
+   - User ID (ObjectId)
    - Provider
    - Amount
    - Currency
    - Status
    - Provider-specific data
+
+3. **Stripe Customer Collection**: Maps user IDs to Stripe customer IDs
+   - User ID
+   - Stripe Customer ID
 
 ## Adapter Pattern
 
@@ -70,6 +75,8 @@ The module implements an adapter pattern through:
 - `PaymentAdapter` interface: Defines consistent methods for payment providers
 - `PaymentAdapterFactory`: Factory class for creating and managing provider adapters
 - Provider-specific implementations (e.g., `StripeAdapter`)
+
+> **Note:** Currently, only the Stripe provider is implemented. The system is designed for easy extension to additional providers in the future.
 
 This pattern allows for:
 - Consistent interface across different payment providers
@@ -117,10 +124,13 @@ https://your-api-domain.com/gateway/webhook/stripe
 ## Environment Variables
 
 - `STRIPE_SECRET_KEY`: Stripe API secret key
-- `STRIPE_WEBHOOK_SECRET`: Secret for verifying Stripe webhook signatures
-- `FRONTEND_URL`: Base URL for the frontend application (used for success/cancel URLs)
 
 ## Integration with Other Modules
 
 - **Subscription Module**: Triggers add credits to user subscriptions upon successful payments
 - **Auth Module**: User authentication for payment sessions 
+
+## Stripe CLI
+```bash
+stripe listen --forward-to localhost:8080/gateway/webhook/stripe
+```

@@ -11,12 +11,11 @@ import {
   emitLowCreditsEvent,
   emitSubscriptionChangeEvent,
   emitSubscriptionExpiredEvent,
-  emitSubscriptionRenewedEvent,
 } from "./events";
 import { Subscription } from "./types";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
-import { Payment } from "../gateway/types";
+import Stripe from "stripe";
 
 /**
  * Check credit allocation for a user
@@ -69,14 +68,29 @@ export async function checkCreditAllocation(props: {
 export async function addNewSubscriptionWithCredit(props: {
   userId: string;
   creditAmount: number;
-  totalDays: number;
-  payment_id: any;
+  totalDays?: number;
+  startDateUnixTimestamp: number;
+  endDateUnixTimestamp: number;
+  paymentMetaData: any;
 }) {
-  const { userId, creditAmount, totalDays, payment_id } = props;
+  const {
+    userId,
+    creditAmount,
+    totalDays,
+    startDateUnixTimestamp,
+    endDateUnixTimestamp,
+    paymentMetaData,
+  } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
+
+  if ((startDateUnixTimestamp || endDateUnixTimestamp) && totalDays) {
+    throw new Error(
+      "Cannot provide both startDateUnixTimestamp and endDateUnix Timestamp and totalDays"
+    );
+  }
 
   // Deactivate all previous subscriptions for the user
   await subscriptionsCollection.updateMany(
@@ -85,9 +99,16 @@ export async function addNewSubscriptionWithCredit(props: {
   );
 
   // Always create a new subscription
-  const startDate = new Date();
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + totalDays);
+  let startDate, endDate;
+
+  if (totalDays) {
+    startDate = new Date();
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + totalDays);
+  } else {
+    startDate = new Date(startDateUnixTimestamp * 1000); // Convert Unix timestamp to Date
+    endDate = new Date(endDateUnixTimestamp * 1000); // Convert Unix timestamp to Date
+  }
 
   const newSubscription = {
     user_id: Types.ObjectId(userId),
@@ -96,7 +117,7 @@ export async function addNewSubscriptionWithCredit(props: {
     total_credits: creditAmount,
     credits_used: 0,
     status: "active",
-    payments: [payment_id],
+    payment_meta_data: paymentMetaData,
   };
 
   const createdSubscription = await subscriptionsCollection.create(
@@ -120,9 +141,122 @@ export async function addNewSubscriptionWithCredit(props: {
   };
 }
 
-/**
- * Check for expired subscriptions and update their status
- */
+export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
+  provider: PaymentProvider;
+  subscriptionId: string;
+  status: Stripe.Subscription.Status;
+}) {
+  const { provider, subscriptionId, status = "expired" } = props;
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+
+  const filter: any = {
+    "payment_meta_data.provider": provider,
+  };
+
+  if (provider == PaymentProvider.STRIPE) {
+    filter["payment_meta_data.stripe.subscription_id"] = subscriptionId;
+  }
+
+  try {
+    const updateResult = await subscriptionsCollection.updateOne(filter, {
+      $set: {
+        status,
+      },
+    });
+
+    if (updateResult.nModified == 0) {
+      throw new Error("Subscription not found");
+    }
+
+    return {
+      success: true,
+      message: "Subscription canceled successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to cancel subscription",
+    };
+  }
+}
+
+export async function updateSubscriptionStatusByProviderAndSubscriptionId(props: {
+  provider: PaymentProvider;
+  subscriptionId: string;
+  status: Stripe.Subscription.Status;
+  startDateUnixTimestamp: number;
+  endDateUnixTimestamp: number;
+}) {
+  const {
+    provider,
+    subscriptionId,
+    status,
+    startDateUnixTimestamp,
+    endDateUnixTimestamp,
+  } = props;
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+
+  const filter: any = {
+    "payment_meta_data.provider": provider,
+    status: "active",
+  };
+
+  if (provider == PaymentProvider.STRIPE) {
+    filter["payment_meta_data.stripe.subscription_id"] = subscriptionId;
+  }
+
+  const currentSubscription = await subscriptionsCollection.findOne(filter);
+
+  if (currentSubscription) {
+    const currentStartTimeUnixTimestamp =
+      currentSubscription.start_date.getTime() / 1000;
+    const currentEndTimeUnixTimestamp =
+      currentSubscription.end_date.getTime() / 1000;
+
+    let isSamePeriod = false;
+
+    if (startDateUnixTimestamp && endDateUnixTimestamp) {
+      isSamePeriod =
+        startDateUnixTimestamp === currentStartTimeUnixTimestamp &&
+        endDateUnixTimestamp === currentEndTimeUnixTimestamp;
+    }
+
+    if (isSamePeriod) {
+      await subscriptionsCollection.updateOne(filter, {
+        $set: {
+          status,
+        },
+      });
+    } else {
+      await subscriptionsCollection.updateOne(filter, {
+        $set: {
+          status,
+          start_date: new Date(startDateUnixTimestamp * 1000),
+          end_date: new Date(endDateUnixTimestamp * 1000),
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: "Subscription updated successfully",
+    };
+  } else {
+    return {
+      success: false,
+      message: "Subscription not found",
+    };
+  }
+}
+
 export async function checkAndUpdateExpiredSubscriptions() {
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
@@ -281,7 +415,7 @@ export async function getSubscription(userId: string) {
   const activeSubscription = await subscriptionsCollection
     .findOne({
       user_id: Types.ObjectId(userId),
-      status: "active",
+      status: { $nin: ["canceled", "incomplete_expired"] },
       end_date: { $gte: new Date() },
     })
     .populate({ path: "payments" });
@@ -290,20 +424,22 @@ export async function getSubscription(userId: string) {
     return null;
   }
 
-  const payment = (activeSubscription.payments?.[0] as Payment) || null;
   const jsonSubscription = activeSubscription.toObject() as any;
+  const isPaidByStripe =
+    activeSubscription.payment_meta_data?.provider == PaymentProvider.STRIPE;
 
   // Normalize Subscription Details
   //
   // Stripe
   //
-  if (payment?.provider == PaymentProvider.STRIPE) {
+  if (isPaidByStripe) {
     const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
 
-    const label = payment.provider_data?.metadata.label as string;
+    const { label, subscription_id } =
+      activeSubscription.payment_meta_data?.stripe;
+
     jsonSubscription["label"] = label;
 
-    const subscription_id = payment.provider_data?.subscription_id;
     const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
       subscription_id
     );
@@ -311,7 +447,7 @@ export async function getSubscription(userId: string) {
     const portalSession =
       await stripeAdapter.stripe.billingPortal.sessions.create({
         customer: subscriptionDetails.customer.toString(),
-        return_url: `${process.env.FRONTEND_URL}/settings/billing`,
+        return_url: `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`,
       });
 
     jsonSubscription["status"] = subscriptionDetails.status;
