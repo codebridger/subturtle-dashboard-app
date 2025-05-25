@@ -9,6 +9,7 @@
                     rounded="full"
                     size="sm"
                     v-if="getSubmitButtonStatus()"
+                    :disabled="phrase.length === 0 || translation.length === 0"
                     :color="props.newPhrase ? 'default' : 'warning'"
                     @click="onSubmit"
                 />
