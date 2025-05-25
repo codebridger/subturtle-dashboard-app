@@ -35,51 +35,51 @@
                     <template #body="{ close }">
                         <ul class="w-[200px] !py-0 font-semibold text-dark dark:text-white-dark">
                             <li class="cursor-pointer">
+                                <a
+                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="
+                                        isEditMode = true;
+                                        close();
+                                    "
+                                >
+                                    <div>
+                                        <div class="font-semibold">{{ t('edit') }}</div>
+                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
+                                    </div>
+                                </a>
+                            </li>
+
+                            <li class="cursor-pointer">
                                 <!-- Delete Confirmation Modal -->
-                                <Modal v-model="showDeleteConfirmation" :title="t('bundle.detail_card.confirm_deletion')">
-                                    <template #trigger>
+                                <Modal :title="t('bundle.detail_card.confirm_deletion')">
+                                    <template #trigger="{ toggleModal }">
                                         <a
                                             class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                                             @click="
-                                                isEditMode = true;
+                                                toggleModal(true);
                                                 close();
                                             "
                                         >
                                             <div>
-                                                <div class="font-semibold">{{ t('edit') }}</div>
-                                                <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
+                                                <div class="font-semibold">{{ t('remove') }}</div>
+                                                <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
                                             </div>
                                         </a>
                                     </template>
-                                    <template #default>
+                                    <template #default="{ toggleModal }">
                                         <div class="flex flex-col space-y-2 p-4">
                                             <p>{{ t('bundle.detail_card.confirm_deletion_message') }}</p>
                                         </div>
                                     </template>
 
-                                    <template #footer>
+                                    <template #footer="{ toggleModal }">
                                         <!-- Footer -->
                                         <div class="flex justify-end space-x-2">
-                                            <Button @click="showDeleteConfirmation = false" :label="t('cancel')" />
-                                            <Button color="danger" @click="confirmRemoveBundle" :label="t('remove')" />
+                                            <Button @click="toggleModal(false)" :label="t('cancel')" />
+                                            <Button color="danger" @click="confirmRemoveBundle(toggleModal)" :label="t('remove')" />
                                         </div>
                                     </template>
                                 </Modal>
-                            </li>
-
-                            <li class="cursor-pointer">
-                                <a
-                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    @click="
-                                        showDeleteConfirmation = true;
-                                        close();
-                                    "
-                                >
-                                    <div>
-                                        <div class="font-semibold">{{ t('remove') }}</div>
-                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
-                                    </div>
-                                </a>
                             </li>
                         </ul>
                     </template>
@@ -102,7 +102,6 @@
     const router = useRouter();
 
     const error = ref<string | null>(null);
-    const showDeleteConfirmation = ref(false);
 
     const props = defineProps({
         bundleDetail: {
@@ -148,8 +147,8 @@
             });
     }
 
-    function confirmRemoveBundle() {
-        showDeleteConfirmation.value = false;
+    function confirmRemoveBundle(toggleModal: (state: boolean) => void) {
+        toggleModal(false);
         onRemove();
     }
 

@@ -16,21 +16,21 @@
                 </transition>
 
                 <!-- Delete Confirmation Modal -->
-                <Modal v-model="showDeleteConfirmation" :title="t('bundle.phrase_card.confirm_deletion')">
-                    <template #trigger>
-                        <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="showDeleteConfirmation = true" />
+                <Modal :title="t('bundle.phrase_card.confirm_deletion')">
+                    <template #trigger="{ toggleModal }">
+                        <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="toggleModal(true)" />
                     </template>
-                    <template #default>
+                    <template #default="{ toggleModal }">
                         <div class="flex flex-col space-y-2 p-4">
                             <p>{{ t('bundle.phrase_card.confirm_deletion_message') }}</p>
                         </div>
                     </template>
 
-                    <template #footer>
+                    <template #footer="{ toggleModal }">
                         <!-- Footer -->
                         <div class="flex justify-end space-x-2">
-                            <Button @click="showDeleteConfirmation = false">Cancel</Button>
-                            <Button color="danger" @click="confirmRemovePhrase">Delete</Button>
+                            <Button @click="toggleModal(false)">Cancel</Button>
+                            <Button color="danger" @click="confirmRemovePhrase(toggleModal)">Delete</Button>
                         </div>
                     </template>
                 </Modal>
@@ -77,7 +77,6 @@
     const bundleStore = useBundleStore();
     const isSubmitting = ref(false);
     const error = ref<string | null>(null);
-    const showDeleteConfirmation = ref(false);
 
     const props = defineProps({
         newPhrase: {
@@ -155,8 +154,8 @@
         }
     });
 
-    function confirmRemovePhrase() {
-        showDeleteConfirmation.value = false;
+    function confirmRemovePhrase(toggleModal: (state: boolean) => void) {
+        toggleModal(false);
         removePhrase();
     }
 

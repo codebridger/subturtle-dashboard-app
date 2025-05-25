@@ -36,24 +36,24 @@
                 </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
                     <!-- Sign Out Confirmation Modal -->
-                    <Modal v-model="showSignOutConfirmation" :title="t('confirm-sign-out')">
-                        <template #trigger>
-                            <a class="flex items-center !py-3 text-danger ltr:pl-5 rtl:pr-5" @click="showSignOutConfirmation = true">
+                    <Modal :title="t('confirm-sign-out')">
+                        <template #trigger="{ toggleModal }">
+                            <a class="flex items-center !py-3 text-danger ltr:pl-5 rtl:pr-5" @click="toggleModal(true)">
                                 <Icon name="icon-logout" class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
                                 {{ t('sign-out') }}
                             </a>
                         </template>
-                        <template #default>
+                        <template #default="{ toggleModal }">
                             <div class="flex flex-col space-y-2 p-4">
                                 <p>{{ t('confirm-sign-out-message') }}</p>
                             </div>
                         </template>
 
-                        <template #footer>
+                        <template #footer="{ toggleModal }">
                             <!-- Footer -->
                             <div class="flex justify-end space-x-2">
-                                <Button @click="showSignOutConfirmation = false">{{ t('cancel') }}</Button>
-                                <Button color="danger" @click="confirmSignOut">{{ t('sign-out') }}</Button>
+                                <Button @click="toggleModal(false)">{{ t('cancel') }}</Button>
+                                <Button color="danger" @click="confirmSignOut(toggleModal)">{{ t('sign-out') }}</Button>
                             </div>
                         </template>
                     </Modal>
@@ -72,7 +72,6 @@
     const { t } = useI18n();
 
     const profileStore = useProfileStore();
-    const showSignOutConfirmation = ref(false);
 
     const profilePicture = computed(() => {
         return profileStore.profilePicture || '/assets/images/user.png';
@@ -83,8 +82,8 @@
         router.push('/auth/login');
     }
 
-    function confirmSignOut() {
-        showSignOutConfirmation.value = false;
+    function confirmSignOut(toggleModal: (state: boolean) => void) {
+        toggleModal(false);
         logout();
     }
 

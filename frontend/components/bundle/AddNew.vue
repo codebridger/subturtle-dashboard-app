@@ -1,20 +1,33 @@
 <template>
-    <Modal v-model="isFormOpen" :title="t('bundle.add_new.title')">
-        <template #trigger>
-            <Button color="primary" rounded="lg" class="w-full" @click="openForm" iconName="IconPlus" :label="t('bundle.add_new.action_add_new')" />
+    <Modal :title="t('bundle.add_new.title')">
+        <template #trigger="{ toggleModal }">
+            <Button
+                color="primary"
+                rounded="lg"
+                class="w-full"
+                @click="openForm(toggleModal)"
+                iconName="IconPlus"
+                :label="t('bundle.add_new.action_add_new')"
+            />
         </template>
-        <template #default>
+        <template #default="{ toggleModal }">
             <div class="flex flex-col space-y-2 p-4">
                 <Input :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="!!error" :error-message="error || ''" />
                 <TextArea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="!!error" :error-message="error || ''" />
             </div>
         </template>
 
-        <template #footer>
+        <template #footer="{ toggleModal }">
             <!-- Footer -->
             <div class="flex justify-end space-x-2">
-                <Button @click="closeForm" :label="t('bundle.add_new.action_cancel')" />
-                <Button color="primary" @click="createBundle" :loading="isPending" :disabled="!isValidForm" :label="t('bundle.add_new.action_create')" />
+                <Button @click="closeForm(toggleModal)" :label="t('bundle.add_new.action_cancel')" />
+                <Button
+                    color="primary"
+                    @click="createBundle(toggleModal)"
+                    :loading="isPending"
+                    :disabled="!isValidForm"
+                    :label="t('bundle.add_new.action_create')"
+                />
             </div>
         </template>
     </Modal>
@@ -32,7 +45,6 @@
     const router = useRouter();
 
     const error = ref<string | null>(null);
-    const isFormOpen = ref(false);
     const isPending = ref(false);
 
     const { errors, values, defineField, resetForm } = useForm({
@@ -49,16 +61,16 @@
         return title.value?.length && Object.keys(errors.value).length === 0;
     });
 
-    function closeForm() {
-        isFormOpen.value = false;
+    function closeForm(toggleModal: (state: boolean) => void) {
+        toggleModal(false);
     }
 
-    function openForm() {
+    function openForm(toggleModal: (state: boolean) => void) {
         resetForm();
-        isFormOpen.value = true;
+        toggleModal(true);
     }
 
-    function createBundle() {
+    function createBundle(toggleModal: (state: boolean) => void) {
         if (!isValidForm) return;
 
         isPending.value = true;
@@ -75,6 +87,7 @@
             })
             .then(({ _id }) => {
                 isPending.value = false;
+                toggleModal(false);
                 router.push({ path: '/bundles/' + _id });
             })
             .catch(({ error }) => {
