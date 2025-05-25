@@ -58,8 +58,9 @@
 
         <template #error-mode>
             <div class="flex flex-col items-center justify-center">
-                <h1 class="text-2xl font-bold">Oops, something went wrong</h1>
+                <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
+                <Button class="mt-8" to="/">{{ t('live-practice.back-to-dashboard') }}</Button>
             </div>
         </template>
     </MaterialPracticeToolScaffold>
@@ -67,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
@@ -82,6 +83,7 @@
 
     const route = useRoute();
     const router = useRouter();
+    const { t } = useI18n();
     const { id } = route.params;
     const { sessionData } = route.query;
     const sessionDataParsed = JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType;

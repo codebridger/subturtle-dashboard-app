@@ -62,7 +62,9 @@
         "max-30-phrases-error": "Maximum 30 phrases are allowed",
         "positive-numbers-required": "Only positive numbers are allowed",
         "from-less-than-to-error": "From phrase must be less than or equal to To phrase",
-        "total-phrases-required": "Total phrases is required"
+        "total-phrases-required": "Total phrases is required",
+        "back-to-dashboard": "Back to Dashboard",
+        "oops-something-went-wrong": "Oops, something went wrong"
     },
     "subscription": {
         "title": "Subscription",
