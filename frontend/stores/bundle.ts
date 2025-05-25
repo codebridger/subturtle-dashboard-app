@@ -108,8 +108,9 @@ export const useBundleStore = defineStore('bundle', () => {
     }
 
     function removePhrase(id: string) {
-        return dataProvider
-            .updateOne({
+        const operations = [
+            // Update phrase bundle
+            dataProvider.updateOne({
                 database: DATABASE.USER_CONTENT,
                 collection: COLLECTIONS.PHRASE_BUNDLE,
                 query: {
@@ -119,11 +120,22 @@ export const useBundleStore = defineStore('bundle', () => {
                 update: {
                     $pull: { phrases: id },
                 },
-            })
-            .then((_data) => {
-                const index = phrases.value.findIndex((p) => p._id === id);
-                phrases.value.splice(index, 1);
-            });
+            }),
+            // Remove phrase
+            dataProvider.removeOne({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE,
+                query: {
+                    _id: id,
+                    refId: authUser.value?.id,
+                },
+            }),
+        ];
+
+        return Promise.all(operations).then((_data) => {
+            const index = phrases.value.findIndex((p) => p._id === id);
+            phrases.value.splice(index, 1);
+        });
     }
 
     function addEmptyTemporarilyPhrase() {

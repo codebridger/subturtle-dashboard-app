@@ -60,6 +60,45 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
   return freemiumAllocation;
 }
 
+export async function isUserOnFreemium(userId: string) {
+  // check if user has active subscription
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeSubscription = await subscriptionsCollection.count({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  });
+
+  return activeSubscription === 0;
+}
+
+export async function updateFreemiumAllocation(options: {
+  userId: string;
+  increment: {
+    allowed_save_words_used?: number;
+    credits_used?: number;
+  };
+}) {
+  const { userId, increment } = options;
+
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+
+  const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+
+  const updatedFreemiumAllocation = await freeCreditCollection.updateOne(
+    { _id: freemiumAllocation._id },
+    { $inc: increment }
+  );
+
+  return updatedFreemiumAllocation;
+}
+
 /**
  * Check credit allocation for a user
  */

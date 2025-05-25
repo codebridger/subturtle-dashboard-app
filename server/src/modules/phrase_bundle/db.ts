@@ -5,6 +5,8 @@ import {
   defineCollection,
 } from "@modular-rest/server";
 
+import { phraseBundleTriggers } from "./triggers";
+
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
 
 interface PhraseSchema {
@@ -45,6 +47,7 @@ const phraseCollection = defineCollection({
       ownerIdField: "refId",
     }),
   ],
+  triggers: phraseBundleTriggers,
 });
 
 const phraseBundleSchema = new Schema<PhraseBundleSchema>(
