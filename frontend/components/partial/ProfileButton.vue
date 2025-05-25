@@ -35,10 +35,28 @@
                     </a>
                 </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
-                    <a to="/auth/boxed-signin" class="!py-3 text-danger" @click="logout">
-                        <Icon name="icon-logout" class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
-                        {{ t('sign-out') }}
-                    </a>
+                    <!-- Sign Out Confirmation Modal -->
+                    <Modal v-model="showSignOutConfirmation" :title="t('confirm-sign-out')">
+                        <template #trigger>
+                            <a class="flex items-center !py-3 text-danger ltr:pl-5 rtl:pr-5" @click="showSignOutConfirmation = true">
+                                <Icon name="icon-logout" class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
+                                {{ t('sign-out') }}
+                            </a>
+                        </template>
+                        <template #default>
+                            <div class="flex flex-col space-y-2 p-4">
+                                <p>{{ t('confirm-sign-out-message') }}</p>
+                            </div>
+                        </template>
+
+                        <template #footer>
+                            <!-- Footer -->
+                            <div class="flex justify-end space-x-2">
+                                <Button @click="showSignOutConfirmation = false">{{ t('cancel') }}</Button>
+                                <Button color="danger" @click="confirmSignOut">{{ t('sign-out') }}</Button>
+                            </div>
+                        </template>
+                    </Modal>
                 </li>
             </ul>
         </template>
@@ -47,12 +65,14 @@
 
 <script lang="ts" setup>
     import { useProfileStore } from '@/stores/profile';
-    import { Dropdown, IconButton, Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Dropdown, IconButton, Icon, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 
     const router = useRouter();
     const { t } = useI18n();
 
     const profileStore = useProfileStore();
+    const showSignOutConfirmation = ref(false);
 
     const profilePicture = computed(() => {
         return profileStore.profilePicture || '/assets/images/user.png';
@@ -61,6 +81,11 @@
     function logout() {
         profileStore.logout();
         router.push('/auth/login');
+    }
+
+    function confirmSignOut() {
+        showSignOutConfirmation.value = false;
+        logout();
     }
 
     function goToMembership() {
