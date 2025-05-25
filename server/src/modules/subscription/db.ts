@@ -7,6 +7,7 @@ import {
   USAGE_COLLECTION,
 } from "../../config";
 import { calculatorService } from "./calculator";
+import { string } from "zod";
 
 // Define subscription collection
 const subscriptionCollection = defineCollection({
@@ -142,8 +143,7 @@ const usageCollection = defineCollection({
         ref: `${DATABASE}.users`,
       },
       subscription_id: {
-        type: Types.ObjectId,
-        ref: `${DATABASE}.${SUBSCRIPTION_COLLECTION}`,
+        type: String,
       },
       service_type: {
         type: String,

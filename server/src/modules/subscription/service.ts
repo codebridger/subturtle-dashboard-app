@@ -343,43 +343,29 @@ export async function recordUsage(props: {
     end_date: { $gte: new Date() },
   })) as Subscription | null;
 
-  if (!activeSubscription) {
-    // Even without active subscription, record the usage but flag as unpaid
-    const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
-    const newUsage = {
-      user_id: Types.ObjectId(userId),
-      subscription_id: null,
-      service_type: serviceType,
-      credit_used: creditAmount,
-      token_count: tokenCount,
-      model_used: modelUsed,
-      status: "unpaid",
-      details: {
-        ...details,
-        costBreakdown: costResult.items,
-      },
-    };
+  let availableCredits = 0;
+  let subscriptionId: any = null;
+  let isFreemium = false;
 
-    const usageRecord = await usageCollection.create(newUsage);
-
-    // No credits available
-    return {
-      remainingCredits: 0,
-      usageId: usageRecord._id,
-      totalUsage: creditAmount,
-      status: "unpaid",
-      costResult,
-    };
+  if (activeSubscription) {
+    // User has active paid subscription
+    availableCredits = activeSubscription.available_credit || 0;
+    subscriptionId = activeSubscription._id;
+  } else {
+    // No active subscription, use freemium allocation
+    const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+    availableCredits =
+      (freemiumAllocation.total_credits || 0) -
+      (freemiumAllocation.credits_used || 0);
+    subscriptionId = "freemium";
+    isFreemium = true;
   }
-
-  // Calculate available credits
-  const availableCredits = activeSubscription.available_credit || 0;
 
   // Record usage in database regardless of available credits
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
   const newUsage = {
     user_id: Types.ObjectId(userId),
-    subscription_id: activeSubscription._id,
+    subscription_id: subscriptionId,
     service_type: serviceType,
     credit_used: creditAmount,
     token_count: tokenCount,
@@ -393,20 +379,49 @@ export async function recordUsage(props: {
 
   const usageRecord = await usageCollection.create(newUsage);
 
-  // Update subscription's credits_used
-  await subscriptionsCollection.updateOne(
-    { _id: activeSubscription._id },
-    { $inc: { credits_used: creditAmount } }
-  );
+  let remainingCredits = 0;
 
-  // Get updated subscription
-  const updatedSubscription = (await subscriptionsCollection.findOne({
-    _id: activeSubscription._id,
-  })) as Subscription | null;
+  if (isFreemium) {
+    // Update freemium allocation's credits_used
+    const freeCreditCollection = getCollection<FreeCredit>(
+      DATABASE,
+      FREE_CREDIT_COLLECTION
+    );
 
-  const remainingCredits = updatedSubscription
-    ? updatedSubscription.available_credit || 0
-    : 0;
+    await freeCreditCollection.updateOne(
+      {
+        user_id: Types.ObjectId(userId),
+        end_date: { $gte: new Date() },
+      },
+      { $inc: { credits_used: creditAmount } }
+    );
+
+    // Get updated freemium allocation
+    const updatedFreemiumAllocation = (await freeCreditCollection.findOne({
+      user_id: Types.ObjectId(userId),
+      end_date: { $gte: new Date() },
+    })) as FreeCredit | null;
+
+    remainingCredits = updatedFreemiumAllocation
+      ? (updatedFreemiumAllocation.total_credits || 0) -
+        (updatedFreemiumAllocation.credits_used || 0)
+      : 0;
+  } else {
+    // Update subscription's credits_used
+    await subscriptionsCollection.updateOne(
+      { _id: activeSubscription!._id },
+      { $inc: { credits_used: creditAmount } }
+    );
+
+    // Get updated subscription
+    const updatedSubscription = (await subscriptionsCollection.findOne({
+      _id: activeSubscription!._id,
+    })) as Subscription | null;
+
+    remainingCredits = updatedSubscription
+      ? updatedSubscription.available_credit || 0
+      : 0;
+  }
 
   // Check if credits are low and emit event if needed
   if (remainingCredits < LOW_CREDITS_THRESHOLD) {
@@ -418,6 +433,7 @@ export async function recordUsage(props: {
     usageId: usageRecord._id,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     costResult,
+    isFreemium,
   };
 }
 
