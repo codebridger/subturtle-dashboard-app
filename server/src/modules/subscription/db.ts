@@ -3,11 +3,11 @@ import { Types } from "mongoose";
 import {
   DATABASE,
   FREE_CREDIT_COLLECTION,
+  FREEMIUM_DURATION_DAYS,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
 import { calculatorService } from "./calculator";
-import { string } from "zod";
 
 // Define subscription collection
 const subscriptionCollection = defineCollection({
@@ -208,7 +208,6 @@ const freeCreaditCollection = defineCollection({
       end_date: {
         type: Date,
         required: true,
-        expires: 0, // TTL index - document will be auto-removed when end_date is reached
       },
       total_credits: {
         type: Number,
@@ -245,6 +244,12 @@ const freeCreaditCollection = defineCollection({
     }),
   ],
 });
+
+const expirationTime = FREEMIUM_DURATION_DAYS * 24 * 60 * 60;
+freeCreaditCollection.schema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: expirationTime }
+);
 
 // Add virtual property for available credits
 freeCreaditCollection.schema
