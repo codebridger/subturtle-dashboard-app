@@ -15,7 +15,25 @@
                     />
                 </transition>
 
-                <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="removePhrase" />
+                <!-- Delete Confirmation Modal -->
+                <Modal v-model="showDeleteConfirmation" title="Confirm Deletion">
+                    <template #trigger>
+                        <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="showDeleteConfirmation = true" />
+                    </template>
+                    <template #default>
+                        <div class="flex flex-col space-y-2 p-4">
+                            <p>Are you sure you want to remove this phrase?</p>
+                        </div>
+                    </template>
+
+                    <template #footer>
+                        <!-- Footer -->
+                        <div class="flex justify-end space-x-2">
+                            <Button @click="showDeleteConfirmation = false">Cancel</Button>
+                            <Button color="danger" @click="confirmRemovePhrase">Delete</Button>
+                        </div>
+                    </template>
+                </Modal>
             </div>
         </div>
         <div class="flex space-x-4 p-5">
@@ -47,7 +65,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, IconButton, TextArea } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, IconButton, TextArea, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { useForm } from 'vee-validate';
     import { useBundleStore } from '~/stores/bundle';
     import * as yup from 'yup';
@@ -58,6 +77,7 @@
     const bundleStore = useBundleStore();
     const isSubmitting = ref(false);
     const error = ref<string | null>(null);
+    const showDeleteConfirmation = ref(false);
 
     const props = defineProps({
         newPhrase: {
@@ -134,6 +154,11 @@
                 });
         }
     });
+
+    function confirmRemovePhrase() {
+        showDeleteConfirmation.value = false;
+        removePhrase();
+    }
 
     function removePhrase() {
         isSubmitting.value = true;
