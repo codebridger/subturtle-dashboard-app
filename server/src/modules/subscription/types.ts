@@ -43,6 +43,20 @@ export interface Subscription {
   };
 }
 
+export interface FreeCredit {
+  _id?: Types.ObjectId;
+  user_id: Types.ObjectId;
+  start_date: Date;
+  end_date: Date;
+  total_credits: number;
+  credits_used: number;
+  allowed_save_words: number;
+  allowed_save_words_used: number;
+  available_credit?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface Usage {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
