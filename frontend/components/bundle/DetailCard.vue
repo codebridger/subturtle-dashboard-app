@@ -35,25 +35,43 @@
                     <template #body="{ close }">
                         <ul class="w-[200px] !py-0 font-semibold text-dark dark:text-white-dark">
                             <li class="cursor-pointer">
-                                <a
-                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    @click="
-                                        isEditMode = true;
-                                        close();
-                                    "
-                                >
-                                    <div>
-                                        <div class="font-semibold">{{ t('edit') }}</div>
-                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
-                                    </div>
-                                </a>
+                                <!-- Delete Confirmation Modal -->
+                                <Modal v-model="showDeleteConfirmation" :title="t('bundle.detail_card.confirm_deletion')">
+                                    <template #trigger>
+                                        <a
+                                            class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            @click="
+                                                isEditMode = true;
+                                                close();
+                                            "
+                                        >
+                                            <div>
+                                                <div class="font-semibold">{{ t('edit') }}</div>
+                                                <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
+                                            </div>
+                                        </a>
+                                    </template>
+                                    <template #default>
+                                        <div class="flex flex-col space-y-2 p-4">
+                                            <p>{{ t('bundle.detail_card.confirm_deletion_message') }}</p>
+                                        </div>
+                                    </template>
+
+                                    <template #footer>
+                                        <!-- Footer -->
+                                        <div class="flex justify-end space-x-2">
+                                            <Button @click="showDeleteConfirmation = false" :label="t('cancel')" />
+                                            <Button color="danger" @click="confirmRemoveBundle" :label="t('remove')" />
+                                        </div>
+                                    </template>
+                                </Modal>
                             </li>
 
                             <li class="cursor-pointer">
                                 <a
                                     class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                                     @click="
-                                        onRemove();
+                                        showDeleteConfirmation = true;
                                         close();
                                     "
                                 >
@@ -73,6 +91,7 @@
 
 <script setup lang="ts">
     import { IconButton, Card, Input, Dropdown, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';
@@ -83,6 +102,7 @@
     const router = useRouter();
 
     const error = ref<string | null>(null);
+    const showDeleteConfirmation = ref(false);
 
     const props = defineProps({
         bundleDetail: {
@@ -126,6 +146,11 @@
             .finally(() => {
                 isSubmitting.value = false;
             });
+    }
+
+    function confirmRemoveBundle() {
+        showDeleteConfirmation.value = false;
+        onRemove();
     }
 
     function onRemove() {

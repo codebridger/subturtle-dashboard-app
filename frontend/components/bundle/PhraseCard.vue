@@ -16,13 +16,13 @@
                 </transition>
 
                 <!-- Delete Confirmation Modal -->
-                <Modal v-model="showDeleteConfirmation" title="Confirm Deletion">
+                <Modal v-model="showDeleteConfirmation" :title="t('bundle.phrase_card.confirm_deletion')">
                     <template #trigger>
                         <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="showDeleteConfirmation = true" />
                     </template>
                     <template #default>
                         <div class="flex flex-col space-y-2 p-4">
-                            <p>Are you sure you want to remove this phrase?</p>
+                            <p>{{ t('bundle.phrase_card.confirm_deletion_message') }}</p>
                         </div>
                     </template>
 
