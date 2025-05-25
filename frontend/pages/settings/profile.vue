@@ -1,10 +1,7 @@
 <template>
-    <div class="container mx-auto p-4">
+    <div class="p-4">
         <div class="flex gap-8">
-            <div class="w-1/5">
-                <ProfileSidebar activeTab="profile" />
-            </div>
-            <div class="flex w-4/5 flex-col gap-4"></div>
+            <h1 class="text-2xl font-bold">{{ t('profile.profile') }}</h1>
         </div>
     </div>
 </template>

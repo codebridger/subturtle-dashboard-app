@@ -5,7 +5,7 @@
         <!-- Practice Features -->
         <section class="flex flex-wrap items-start justify-between">
             <section class="my-4 flex flex-1 flex-wrap gap-2">
-                <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
+                <StartLiveSessionFormModal v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
                 <Button :to="`#/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
 
                 <!-- <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" /> -->
@@ -66,7 +66,7 @@
     import { Button } from '@codebridger/lib-vue-components/elements.ts';
     import { Modal, Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { useBundleStore } from '@/stores/bundle';
-    import StartLiveSessionForm from '@/components/bundle/StartLiveSessionForm.vue';
+    import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     const { t } = useI18n();
