@@ -10,7 +10,8 @@
                 :label="t('bundle.add_new.action_add_new')"
             />
         </template>
-        <template #default="{ toggleModal }">
+
+        <template #default>
             <div class="flex flex-col space-y-2 p-4">
                 <Input :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="!!error" :error-message="error || ''" />
                 <TextArea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="!!error" :error-message="error || ''" />

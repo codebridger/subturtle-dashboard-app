@@ -66,7 +66,8 @@
                                             </div>
                                         </a>
                                     </template>
-                                    <template #default="{ toggleModal }">
+
+                                    <template #default>
                                         <div class="flex flex-col space-y-2 p-4">
                                             <p>{{ t('bundle.detail_card.confirm_deletion_message') }}</p>
                                         </div>

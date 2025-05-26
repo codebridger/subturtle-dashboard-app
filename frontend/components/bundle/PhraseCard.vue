@@ -27,7 +27,8 @@
                     <template #trigger="{ toggleModal }">
                         <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="toggleModal(true)" />
                     </template>
-                    <template #default="{ toggleModal }">
+
+                    <template #default>
                         <div class="flex flex-col space-y-2 p-4">
                             <p>{{ t('bundle.phrase_card.confirm_deletion_message') }}</p>
                         </div>

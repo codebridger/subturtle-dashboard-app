@@ -43,7 +43,8 @@
                                 {{ t('sign-out') }}
                             </a>
                         </template>
-                        <template #default="{ toggleModal }">
+
+                        <template #default>
                             <div class="flex flex-col space-y-2 p-4">
                                 <p>{{ t('confirm-sign-out-message') }}</p>
                             </div>
