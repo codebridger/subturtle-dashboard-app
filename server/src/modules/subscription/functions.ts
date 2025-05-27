@@ -2,7 +2,7 @@ import { defineFunction } from "@modular-rest/server";
 
 import { SubscriptionPlan } from "./types";
 
-import { getSubscription } from "./service";
+import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
 import { paymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import { StripeAdapter } from "../gateway/adapters/stripe.adapter";
 
@@ -119,4 +119,30 @@ const getSubscriptionPlans = defineFunction({
   },
 });
 
-module.exports.functions = [getSubscriptionDetails, getSubscriptionPlans];
+/**
+ * Get freemium allowance details for a user
+ */
+const getFreemiumAllowance = defineFunction({
+  name: "getFreemiumAllowance",
+  permissionTypes: ["user_access"],
+  callback: async (params) => {
+    try {
+      const { userId } = params;
+
+      if (!userId) {
+        throw new Error("User ID is required");
+      }
+
+      const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+      return freemiumAllocation;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to retrieve freemium allowance");
+    }
+  },
+});
+
+module.exports.functions = [
+  getSubscriptionDetails,
+  getSubscriptionPlans,
+  getFreemiumAllowance,
+];

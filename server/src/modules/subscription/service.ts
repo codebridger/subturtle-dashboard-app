@@ -4,6 +4,10 @@ import {
   DATABASE,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
+  FREE_CREDIT_COLLECTION,
+  FREEMIUM_DEFAULT_CREDITS,
+  FREEMIUM_DEFAULT_SAVE_WORDS,
+  FREEMIUM_DURATION_DAYS,
 } from "../../config";
 import { LOW_CREDITS_THRESHOLD } from "./config";
 
@@ -12,10 +16,88 @@ import {
   emitSubscriptionChangeEvent,
   emitSubscriptionExpiredEvent,
 } from "./events";
-import { Subscription } from "./types";
+import { Subscription, FreeCredit } from "./types";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
+
+/**
+ * Get or create freemium allocation for a user
+ */
+export async function getOrCreateFreemiumAllocation(userId: string) {
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+
+  // Try to find existing active freemium allocation
+  let freemiumAllocation = (await freeCreditCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    end_date: { $gte: new Date() },
+  })) as FreeCredit | null;
+
+  // If no active freemium allocation exists, create a new one
+  if (!freemiumAllocation) {
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + FREEMIUM_DURATION_DAYS);
+
+    const newFreemiumAllocation = {
+      user_id: Types.ObjectId(userId),
+      start_date: startDate,
+      end_date: endDate,
+      total_credits: FREEMIUM_DEFAULT_CREDITS,
+      credits_used: 0,
+      allowed_save_words: FREEMIUM_DEFAULT_SAVE_WORDS,
+      allowed_save_words_used: 0,
+    };
+
+    freemiumAllocation = (await freeCreditCollection.create(
+      newFreemiumAllocation
+    )) as FreeCredit;
+  }
+
+  return freemiumAllocation;
+}
+
+export async function isUserOnFreemium(userId: string) {
+  // check if user has active subscription
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeSubscription = await subscriptionsCollection.count({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  });
+
+  return activeSubscription === 0;
+}
+
+export async function updateFreemiumAllocation(options: {
+  userId: string;
+  increment: {
+    allowed_save_words_used?: number;
+    credits_used?: number;
+  };
+}) {
+  const { userId, increment } = options;
+
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+
+  const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+
+  const updatedFreemiumAllocation = await freeCreditCollection.updateOne(
+    { _id: freemiumAllocation._id },
+    { $inc: increment }
+  );
+
+  return updatedFreemiumAllocation;
+}
 
 /**
  * Check credit allocation for a user
@@ -37,15 +119,23 @@ export async function checkCreditAllocation(props: {
     end_date: { $gte: new Date() },
   })) as Subscription | null;
 
-  if (!activeSubscription) {
-    return {
-      availableCredits: 0,
-      allowedToProceed: false,
-    };
-  }
+  let availableCredits = 0;
+  let subscriptionEndsAt: Date;
+  let isFreemium = false;
 
-  // Calculate available credits directly from the subscription
-  const availableCredits = activeSubscription.available_credit || 0;
+  if (activeSubscription) {
+    // User has active paid subscription
+    availableCredits = activeSubscription.available_credit || 0;
+    subscriptionEndsAt = activeSubscription.end_date;
+  } else {
+    // No active subscription, check freemium allocation
+    const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+    availableCredits =
+      (freemiumAllocation.total_credits || 0) -
+      (freemiumAllocation.credits_used || 0);
+    subscriptionEndsAt = freemiumAllocation.end_date;
+    isFreemium = true;
+  }
 
   const allowedToProceed =
     availableCredits >= (minCredits || LOW_CREDITS_THRESHOLD);
@@ -57,8 +147,9 @@ export async function checkCreditAllocation(props: {
 
   return {
     availableCredits,
-    subscriptionEndsAt: activeSubscription.end_date,
+    subscriptionEndsAt,
     allowedToProceed,
+    isFreemium,
   };
 }
 
@@ -257,38 +348,6 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
   }
 }
 
-export async function checkAndUpdateExpiredSubscriptions() {
-  const subscriptionsCollection = getCollection<Subscription>(
-    DATABASE,
-    SUBSCRIPTION_COLLECTION
-  );
-
-  // Find subscriptions that have expired but still have 'active' status
-  const now = new Date();
-  const expiredSubscriptionsQuery = subscriptionsCollection.find({
-    status: "active",
-    end_date: { $lt: now },
-  });
-
-  const expiredSubscriptions = await expiredSubscriptionsQuery;
-
-  // Update each expired subscription
-  for (const subscription of expiredSubscriptions) {
-    await subscriptionsCollection.updateOne(
-      { _id: subscription._id },
-      { $set: { status: "expired" } }
-    );
-
-    // Emit subscription expired event
-    emitSubscriptionExpiredEvent(
-      subscription.user_id.toString(),
-      subscription._id
-    );
-  }
-
-  return { expiredCount: expiredSubscriptions.length };
-}
-
 /**
  * Record generic usage
  */
@@ -323,43 +382,29 @@ export async function recordUsage(props: {
     end_date: { $gte: new Date() },
   })) as Subscription | null;
 
-  if (!activeSubscription) {
-    // Even without active subscription, record the usage but flag as unpaid
-    const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
-    const newUsage = {
-      user_id: Types.ObjectId(userId),
-      subscription_id: null,
-      service_type: serviceType,
-      credit_used: creditAmount,
-      token_count: tokenCount,
-      model_used: modelUsed,
-      status: "unpaid",
-      details: {
-        ...details,
-        costBreakdown: costResult.items,
-      },
-    };
+  let availableCredits = 0;
+  let subscriptionId: any = null;
+  let isFreemium = false;
 
-    const usageRecord = await usageCollection.create(newUsage);
-
-    // No credits available
-    return {
-      remainingCredits: 0,
-      usageId: usageRecord._id,
-      totalUsage: creditAmount,
-      status: "unpaid",
-      costResult,
-    };
+  if (activeSubscription) {
+    // User has active paid subscription
+    availableCredits = activeSubscription.available_credit || 0;
+    subscriptionId = activeSubscription._id;
+  } else {
+    // No active subscription, use freemium allocation
+    const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+    availableCredits =
+      (freemiumAllocation.total_credits || 0) -
+      (freemiumAllocation.credits_used || 0);
+    subscriptionId = "freemium";
+    isFreemium = true;
   }
-
-  // Calculate available credits
-  const availableCredits = activeSubscription.available_credit || 0;
 
   // Record usage in database regardless of available credits
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
   const newUsage = {
     user_id: Types.ObjectId(userId),
-    subscription_id: activeSubscription._id,
+    subscription_id: subscriptionId,
     service_type: serviceType,
     credit_used: creditAmount,
     token_count: tokenCount,
@@ -373,20 +418,49 @@ export async function recordUsage(props: {
 
   const usageRecord = await usageCollection.create(newUsage);
 
-  // Update subscription's credits_used
-  await subscriptionsCollection.updateOne(
-    { _id: activeSubscription._id },
-    { $inc: { credits_used: creditAmount } }
-  );
+  let remainingCredits = 0;
 
-  // Get updated subscription
-  const updatedSubscription = (await subscriptionsCollection.findOne({
-    _id: activeSubscription._id,
-  })) as Subscription | null;
+  if (isFreemium) {
+    // Update freemium allocation's credits_used
+    const freeCreditCollection = getCollection<FreeCredit>(
+      DATABASE,
+      FREE_CREDIT_COLLECTION
+    );
 
-  const remainingCredits = updatedSubscription
-    ? updatedSubscription.available_credit || 0
-    : 0;
+    await freeCreditCollection.updateOne(
+      {
+        user_id: Types.ObjectId(userId),
+        end_date: { $gte: new Date() },
+      },
+      { $inc: { credits_used: creditAmount } }
+    );
+
+    // Get updated freemium allocation
+    const updatedFreemiumAllocation = (await freeCreditCollection.findOne({
+      user_id: Types.ObjectId(userId),
+      end_date: { $gte: new Date() },
+    })) as FreeCredit | null;
+
+    remainingCredits = updatedFreemiumAllocation
+      ? (updatedFreemiumAllocation.total_credits || 0) -
+        (updatedFreemiumAllocation.credits_used || 0)
+      : 0;
+  } else {
+    // Update subscription's credits_used
+    await subscriptionsCollection.updateOne(
+      { _id: activeSubscription!._id },
+      { $inc: { credits_used: creditAmount } }
+    );
+
+    // Get updated subscription
+    const updatedSubscription = (await subscriptionsCollection.findOne({
+      _id: activeSubscription!._id,
+    })) as Subscription | null;
+
+    remainingCredits = updatedSubscription
+      ? updatedSubscription.available_credit || 0
+      : 0;
+  }
 
   // Check if credits are low and emit event if needed
   if (remainingCredits < LOW_CREDITS_THRESHOLD) {
@@ -398,6 +472,7 @@ export async function recordUsage(props: {
     usageId: usageRecord._id,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     costResult,
+    isFreemium,
   };
 }
 

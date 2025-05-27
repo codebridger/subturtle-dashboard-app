@@ -69,10 +69,10 @@
   dependencies:
     vary "^1.1.2"
 
-"@modular-rest/server@^1.14.0":
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-1.14.0.tgz#37c7435e09c7c55b05c236635c319ef284979fda"
-  integrity sha512-YN1APXmBLctxLy11PAuhZYoiptEmVXR9VxUhahvJrGNZjc8xg09slQ4/ey+s8jEH+dokdCG9eWDIoNG+YqY8Sg==
+"@modular-rest/server@1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-1.15.0.tgz#5339eb991e7c64120a1cd094eec75a8f7abe5be1"
+  integrity sha512-OJejPiM5aceZkIkEj1pnhAOpJM/eg/7EKOw8SseBJjiMWy/1ku5xXKDQ2XOUh0njcmYvCGR5zZn7Z83qVXRwzA==
   dependencies:
     "@koa/cors" "^3.1.0"
     colog "^1.0.4"

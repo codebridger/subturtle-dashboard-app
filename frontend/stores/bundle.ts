@@ -1,4 +1,4 @@
-import { createPagination, dataProvider } from '@modular-rest/client';
+import { createPagination, dataProvider, functionProvider } from '@modular-rest/client';
 import type { PaginationType } from '@modular-rest/client/dist/types/data-provider';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
@@ -108,16 +108,13 @@ export const useBundleStore = defineStore('bundle', () => {
     }
 
     function removePhrase(id: string) {
-        return dataProvider
-            .updateOne({
-                database: DATABASE.USER_CONTENT,
-                collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: {
-                    _id: bundleDetail.value?._id,
+        return functionProvider
+            .run({
+                name: 'removePhrase',
+                args: {
+                    phraseId: id,
+                    bundleId: bundleDetail.value?._id,
                     refId: authUser.value?.id,
-                },
-                update: {
-                    $pull: { phrases: id },
                 },
             })
             .then((_data) => {

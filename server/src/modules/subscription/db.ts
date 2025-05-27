@@ -2,7 +2,8 @@ import { defineCollection, Schema, Permission } from "@modular-rest/server";
 import { Types } from "mongoose";
 import {
   DATABASE,
-  PAYMENT_COLLECTION,
+  FREE_CREDIT_COLLECTION,
+  FREEMIUM_DURATION_DAYS,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
@@ -142,8 +143,7 @@ const usageCollection = defineCollection({
         ref: `${DATABASE}.users`,
       },
       subscription_id: {
-        type: Types.ObjectId,
-        ref: `${DATABASE}.${SUBSCRIPTION_COLLECTION}`,
+        type: String,
       },
       service_type: {
         type: String,
@@ -190,4 +190,76 @@ const usageCollection = defineCollection({
   ],
 });
 
-module.exports = [subscriptionCollection, usageCollection];
+const freeCreaditCollection = defineCollection({
+  database: DATABASE,
+  collection: FREE_CREDIT_COLLECTION,
+  schema: new Schema(
+    {
+      user_id: {
+        type: Types.ObjectId,
+        required: true,
+        ref: `${DATABASE}.users`,
+      },
+      start_date: {
+        type: Date,
+        required: true,
+        default: Date.now,
+      },
+      end_date: {
+        type: Date,
+        required: true,
+      },
+      total_credits: {
+        type: Number,
+        required: true,
+      },
+      credits_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      allowed_save_words: {
+        type: Number,
+        required: true,
+      },
+      allowed_save_words_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+    },
+    {
+      timestamps: true,
+      toJSON: { virtuals: true },
+      toObject: { virtuals: true },
+    }
+  ),
+  permissions: [
+    new Permission({
+      accessType: "user_access",
+      read: true,
+      write: true,
+      onlyOwnData: true,
+      ownerIdField: "user_id",
+    }),
+  ],
+});
+
+const expirationTime = FREEMIUM_DURATION_DAYS * 24 * 60 * 60;
+freeCreaditCollection.schema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: expirationTime }
+);
+
+// Add virtual property for available credits
+freeCreaditCollection.schema
+  .virtual("available_credit")
+  .get(function (this: any) {
+    return this.total_credits - this.credits_used;
+  });
+
+module.exports = [
+  subscriptionCollection,
+  usageCollection,
+  freeCreaditCollection,
+];
