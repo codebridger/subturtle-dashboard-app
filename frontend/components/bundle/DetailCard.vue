@@ -50,18 +50,37 @@
                             </li>
 
                             <li class="cursor-pointer">
-                                <a
-                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    @click="
-                                        onRemove();
-                                        close();
-                                    "
-                                >
-                                    <div>
-                                        <div class="font-semibold">{{ t('remove') }}</div>
-                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
-                                    </div>
-                                </a>
+                                <!-- Delete Confirmation Modal -->
+                                <Modal :title="t('bundle.detail_card.confirm_deletion')">
+                                    <template #trigger="{ toggleModal }">
+                                        <a
+                                            class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            @click="
+                                                toggleModal(true);
+                                                close();
+                                            "
+                                        >
+                                            <div>
+                                                <div class="font-semibold">{{ t('remove') }}</div>
+                                                <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
+                                            </div>
+                                        </a>
+                                    </template>
+
+                                    <template #default>
+                                        <div class="flex flex-col space-y-2 p-4">
+                                            <p>{{ t('bundle.detail_card.confirm_deletion_message') }}</p>
+                                        </div>
+                                    </template>
+
+                                    <template #footer="{ toggleModal }">
+                                        <!-- Footer -->
+                                        <div class="flex justify-end space-x-2">
+                                            <Button @click="toggleModal(false)" :label="t('cancel')" />
+                                            <Button color="danger" @click="confirmRemoveBundle(toggleModal)" :label="t('remove')" />
+                                        </div>
+                                    </template>
+                                </Modal>
                             </li>
                         </ul>
                     </template>
@@ -73,6 +92,7 @@
 
 <script setup lang="ts">
     import { IconButton, Card, Input, Dropdown, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';
@@ -126,6 +146,11 @@
             .finally(() => {
                 isSubmitting.value = false;
             });
+    }
+
+    function confirmRemoveBundle(toggleModal: (state: boolean) => void) {
+        toggleModal(false);
+        onRemove();
     }
 
     function onRemove() {

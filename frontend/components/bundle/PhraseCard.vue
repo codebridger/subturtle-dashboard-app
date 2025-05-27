@@ -22,8 +22,26 @@
                     @click="playPhraseAudio"
                     :disabled="isLoadingAudio || isPlayingAudio"
                 />
+                <!-- Delete Confirmation Modal -->
+                <Modal :title="t('bundle.phrase_card.confirm_deletion')">
+                    <template #trigger="{ toggleModal }">
+                        <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="toggleModal(true)" />
+                    </template>
 
-                <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="removePhrase" />
+                    <template #default>
+                        <div class="flex flex-col space-y-2 p-4">
+                            <p>{{ t('bundle.phrase_card.confirm_deletion_message') }}</p>
+                        </div>
+                    </template>
+
+                    <template #footer="{ toggleModal }">
+                        <!-- Footer -->
+                        <div class="flex justify-end space-x-2">
+                            <Button @click="toggleModal(false)">Cancel</Button>
+                            <Button color="danger" @click="confirmRemovePhrase(toggleModal)">Delete</Button>
+                        </div>
+                    </template>
+                </Modal>
             </GroupTransition>
         </div>
         <div class="flex space-x-4 p-5">
@@ -56,7 +74,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, IconButton, TextArea } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, IconButton, TextArea, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { useForm } from 'vee-validate';
     import { useBundleStore } from '~/stores/bundle';
     import * as yup from 'yup';
@@ -150,6 +169,11 @@
                 });
         }
     });
+
+    function confirmRemovePhrase(toggleModal: (state: boolean) => void) {
+        toggleModal(false);
+        removePhrase();
+    }
 
     function removePhrase() {
         isSubmitting.value = true;
