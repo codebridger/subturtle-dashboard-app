@@ -3,15 +3,30 @@
         <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" @changed="bundleStore.updateBundleDetail(id, $event)" />
 
         <!-- Practice Features -->
-        <section class="flex flex-wrap items-start justify-between">
-            <section class="my-4 flex flex-1 flex-wrap gap-2">
+        <section class="my-4 flex flex-wrap items-start justify-between">
+            <section class="flex flex-1 flex-wrap gap-2">
                 <StartLiveSessionFormModal v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
                 <Button :to="`#/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
 
                 <!-- <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" /> -->
             </section>
+            <section class="flex flex-1 flex-wrap justify-end gap-2">
+                <!-- Freemium Status Badge -->
+                <div class="flex flex-col items-center justify-center">
+                    <div
+                        class="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                    >
+                        <Icon name="IconLock" class="h-4 w-4" />
+                        <span
+                            >{{ freemiumData?.allowed_save_words_used || 0 }}/{{ freemiumData?.allowed_save_words || 0 }}
+                            {{ t('freemium.limitation.free_spots_left') }}</span
+                        >
+                    </div>
+                    <a href="#" class="text-sm font-medium text-orange-800 dark:text-orange-200">Remove limits? Click here</a>
+                </div>
 
-            <Button class="mt-4" color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
+                <Button color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
+            </section>
         </section>
 
         <!-- Phrase List -->
