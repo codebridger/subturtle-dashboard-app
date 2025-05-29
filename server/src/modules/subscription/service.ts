@@ -31,10 +31,10 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
   );
 
   // Try to find existing active freemium allocation
-  let freemiumAllocation = (await freeCreditCollection.findOne({
+  let freemiumAllocation: any | null = await freeCreditCollection.findOne({
     user_id: Types.ObjectId(userId),
     end_date: { $gte: new Date() },
-  })) as FreeCredit | null;
+  });
 
   // If no active freemium allocation exists, create a new one
   if (!freemiumAllocation) {
@@ -52,12 +52,19 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
       allowed_save_words_used: 0,
     };
 
-    freemiumAllocation = (await freeCreditCollection.create(
-      newFreemiumAllocation
-    )) as FreeCredit;
+    freemiumAllocation = await freeCreditCollection
+      .create(newFreemiumAllocation)
+      .then((doc) => doc.toObject());
+  } else {
+    freemiumAllocation = freemiumAllocation.toObject();
   }
 
-  return freemiumAllocation;
+  // Recheck and return the correct type
+  freemiumAllocation = freemiumAllocation._doc
+    ? freemiumAllocation._doc
+    : freemiumAllocation;
+
+  return freemiumAllocation as FreeCredit;
 }
 
 export async function isUserOnFreemium(userId: string) {

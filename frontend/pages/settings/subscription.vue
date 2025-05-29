@@ -163,17 +163,17 @@
 
 <script setup lang="ts">
     import { Card, Button, Progress, Icon } from '@codebridger/lib-vue-components/elements.ts';
-    import { toastError } from '@codebridger/lib-vue-components/toast.ts';
 
     import { ref } from 'vue';
     import { functionProvider } from '@modular-rest/client';
-    import type { SubscriptionType } from '~/types/database.type';
     import type { SubscriptionPlan } from '../../../server/src/modules/subscription/types';
+    import { useProfileStore } from '~/stores/profile';
     const { t } = useI18n();
     const isLoading = ref(false);
     const error = ref('');
 
     const config = useRuntimeConfig();
+    const profileStore = useProfileStore();
 
     definePageMeta({
         layout: 'default',
@@ -191,30 +191,8 @@
         expiresAt: string;
     }
 
-    const activeSubscriptionData = ref<SubscriptionType | null>(null);
-    const isSubscriptionLoading = ref(true);
-
-    function fetchSubscription() {
-        isSubscriptionLoading.value = true;
-        functionProvider
-            .run<SubscriptionType | null>({
-                name: 'getSubscriptionDetails',
-                args: {
-                    userId: authUser.value?.id,
-                },
-            })
-            .then((res) => {
-                console.log(res);
-                activeSubscriptionData.value = res;
-            })
-            .catch((res) => {
-                console.error('Error fetching subscription:', res);
-                toastError(res.error || t('subscription.unexpected-error'), { position: 'top-end' });
-            })
-            .finally(() => {
-                isSubscriptionLoading.value = false;
-            });
-    }
+    const activeSubscriptionData = computed(() => profileStore.activeSubscription);
+    const isSubscriptionLoading = computed(() => profileStore.isSubscriptionFetching);
 
     function fetchPlans() {
         return functionProvider
@@ -228,7 +206,6 @@
     }
 
     onMounted(() => {
-        fetchSubscription();
         fetchPlans();
     });
 

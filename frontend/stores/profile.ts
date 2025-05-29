@@ -1,59 +1,108 @@
-import { authentication, dataProvider } from '@modular-rest/client';
-import type User from '@modular-rest/client/dist/class/user';
+import { authentication, dataProvider, functionProvider } from '@modular-rest/client';
+import { toastError } from '@codebridger/lib-vue-components/toast.ts';
 import { defineStore } from 'pinia';
 
-import { COLLECTIONS, DATABASE, type ProfileType } from '~/types/database.type';
+import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
+
 export const useProfileStore = defineStore('profile', () => {
-  const authUser = computed(() => authentication.user);
-  const isLogin = computed(() => authentication.isLogin);
+    const authUser = computed(() => authentication.user);
+    const isLogin = computed(() => authentication.isLogin);
 
-  const userDetail = ref<ProfileType>();
-  const profilePicture = computed(() => userDetail.value?.gPicture || '');
-  const email = computed(() => authUser.value?.email);
+    // profile
+    const userDetail = ref<ProfileType>();
+    const profilePicture = computed(() => userDetail.value?.gPicture || '');
+    const email = computed(() => authUser.value?.email);
 
-  function logout() {
-    authentication.logout();
-    userDetail.value = undefined;
-  }
+    // subscription
+    const isFreemium = ref(false);
+    const isSubscriptionFetching = ref(true);
+    const activeSubscription = ref<SubscriptionType | null>(null);
+    const freemiumAllocation = ref<FreemiumAllocationType | null>(null);
 
-  function getProfileInfo() {
-    return dataProvider
-      .findOne<ProfileType>({
-        database: DATABASE.USER_CONTENT,
-        collection: COLLECTIONS.PROFILE,
-        query: {
-          refId: authentication.user?.id,
-        },
-      })
-      .then((profile) => {
-        userDetail.value = profile;
-        return profile;
-      });
-  }
+    function fetchSubscription() {
+        isSubscriptionFetching.value = true;
 
-  function loginWithLastSession(token?: string) {
-    return authentication
-      .loginWithLastSession(token)
-      .then((user) => {
-        return getProfileInfo();
-      })
+        return functionProvider
+            .run<SubscriptionType | FreemiumAllocationType>({
+                name: 'getSubscriptionDetails',
+                args: {
+                    userId: authUser.value?.id,
+                },
+            })
+            .then((res) => {
+                isFreemium.value = res.is_freemium;
 
-      .catch((error) => {
-        console.error(error);
+                if (!res.is_freemium) {
+                    activeSubscription.value = res;
+                } else {
+                    freemiumAllocation.value = res as FreemiumAllocationType;
+                }
+            })
+            .catch((res) => {
+                console.error('Error fetching subscription:', res);
+                toastError(res.error || 'Unable to fetch subscription details', { position: 'top-end' });
+            })
+            .finally(() => {
+                isSubscriptionFetching.value = false;
+            });
+    }
 
-        return null;
-      });
-  }
+    function logout() {
+        authentication.logout();
+        userDetail.value = undefined;
+    }
 
-  return {
-    authUser,
-    userDetail,
-    isLogin,
-    profilePicture,
-    email,
+    function getProfileInfo() {
+        return dataProvider
+            .findOne<ProfileType>({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PROFILE,
+                query: {
+                    refId: authentication.user?.id,
+                },
+            })
+            .then((profile) => {
+                userDetail.value = profile;
+                return profile;
+            })
+            .catch((error) => {
+                toastError(error.error || 'Unable to fetch profile info', { position: 'top-end' });
+            });
+    }
 
-    logout,
-    getProfileInfo,
-    loginWithLastSession,
-  };
+    // bootstrap the profile store
+    function bootstrap() {
+        return Promise.all([
+            // Fetch profile info
+            getProfileInfo(),
+            // Fetch subscription details
+            fetchSubscription(),
+        ]);
+    }
+
+    function loginWithLastSession() {
+        return authentication
+            .loginWithLastSession()
+            .then(() => {
+                return bootstrap();
+            })
+            .catch((error) => null);
+    }
+
+    return {
+        authUser,
+        userDetail,
+        isLogin,
+        profilePicture,
+        email,
+
+        activeSubscription,
+        isSubscriptionFetching,
+        fetchSubscription,
+
+        logout,
+        getProfileInfo,
+        loginWithLastSession,
+        bootstrap,
+    };
 });

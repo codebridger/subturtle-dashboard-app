@@ -67,7 +67,7 @@
 </template>
 
 <script lang="ts" setup>
-    import { useAppStore } from '@/stores/index';
+    // import { useAppStore } from '@/stores/index';
     import { useRouter } from 'vue-router';
     import { Button } from '@codebridger/lib-vue-components/elements.ts';
 
@@ -81,8 +81,8 @@
         layout: 'spotlight',
     });
 
-    const store = useAppStore();
-    const { setLocale } = useI18n();
+    // const store = useAppStore();
+    // const { setLocale } = useI18n();
 
     // multi language
     //   const changeLanguage = (item: any) => {
