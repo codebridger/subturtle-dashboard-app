@@ -98,6 +98,8 @@ export const useProfileStore = defineStore('profile', () => {
 
         activeSubscription,
         isSubscriptionFetching,
+        isFreemium,
+        freemiumAllocation,
         fetchSubscription,
 
         logout,
