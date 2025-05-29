@@ -20,7 +20,20 @@ const getSubscriptionDetails = defineFunction({
         throw new Error("User ID is required");
       }
 
-      return getSubscription(userId);
+      const subscription = await getSubscription(userId);
+
+      if (!subscription) {
+        const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+        return {
+          ...freemiumAllocation,
+          is_freemium: true,
+        };
+      } else {
+        return {
+          ...subscription,
+          is_freemium: false,
+        };
+      }
     } catch (error: any) {
       throw new Error(
         error.message || "Failed to retrieve subscription details"

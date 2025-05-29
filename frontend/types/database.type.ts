@@ -51,9 +51,14 @@ export interface PopulatedPhraseBundleType {
     phrases: PhraseType[];
 }
 
-import type { Subscription } from '../../server/src/modules/subscription/types';
+import type { FreeCredit, Subscription } from '../../server/src/modules/subscription/types';
 
 export interface SubscriptionType extends Subscription {
     label: string;
     portal_url: string;
+    is_freemium: boolean;
+}
+
+export interface FreemiumAllocationType extends FreeCredit {
+    is_freemium: true;
 }

@@ -1,12 +1,12 @@
 import { createPagination, dataProvider, functionProvider } from '@modular-rest/client';
-import type { PaginationType } from '@modular-rest/client/dist/types/data-provider';
+import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
 
 export const useBundleStore = defineStore('bundle', () => {
     const bundleDetail = ref<PhraseBundleType | null>(null);
 
-    const phrasePagination = ref<PaginationType | null>(null);
+    const phrasePagination = ref<Types.PaginationType | null>(null);
 
     const tempPhrases = ref<Array<NewPhraseType>>([]);
     const phrases = ref<Array<PhraseType>>([]);

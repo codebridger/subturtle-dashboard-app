@@ -4,6 +4,7 @@
     import { authentication } from '@modular-rest/client';
     import { useRoute, useRouter } from 'vue-router';
     import { useProfileStore } from '~/stores/profile';
+    import { toastError } from '@codebridger/lib-vue-components/toast.ts';
 
     const route = useRoute();
     const router = useRouter();
@@ -18,12 +19,12 @@
         if (token) {
             authentication
                 .loginWithToken(token, true)
-                .then(profileStore.getProfileInfo)
+                .then(profileStore.bootstrap)
                 .then(() => {
                     router.push('/');
                 })
                 .catch((error) => {
-                    console.error(error);
+                    toastError(error.error || 'Unable to login with token', { position: 'top-end' });
                     router.push('/auth/login');
                 });
         }
