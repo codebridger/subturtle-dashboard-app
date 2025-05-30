@@ -73,6 +73,7 @@
     import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+    import { useProfileStore } from '~/stores/profile';
 
     definePageMeta({
         // @ts-ignore
@@ -231,6 +232,10 @@
                 tools: tools,
                 audioRef: audioRef.value,
                 onUpdate: handleSessionEvent,
+            })
+            .then((_res) => {
+                // fetch subscription to update the freemium allocation
+                return useProfileStore().fetchSubscription();
             })
             .catch((error) => {
                 errorMode.value = true;
