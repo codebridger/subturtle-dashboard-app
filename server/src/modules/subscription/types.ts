@@ -52,6 +52,8 @@ export interface FreeCredit {
   credits_used: number;
   allowed_save_words: number;
   allowed_save_words_used: number;
+  allowed_lived_sessions: number;
+  allowed_lived_sessions_used: number;
   available_credit?: number;
   createdAt?: Date;
   updatedAt?: Date;

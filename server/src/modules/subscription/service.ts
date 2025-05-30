@@ -8,6 +8,7 @@ import {
   FREEMIUM_DEFAULT_CREDITS,
   FREEMIUM_DEFAULT_SAVE_WORDS,
   FREEMIUM_DURATION_DAYS,
+  FREEMIUM_DEFAULT_LIVED_SESSIONS,
 } from "../../config";
 import { LOW_CREDITS_THRESHOLD } from "./config";
 
@@ -50,6 +51,8 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
       credits_used: 0,
       allowed_save_words: FREEMIUM_DEFAULT_SAVE_WORDS,
       allowed_save_words_used: 0,
+      allowed_lived_sessions: FREEMIUM_DEFAULT_LIVED_SESSIONS,
+      allowed_lived_sessions_used: 0,
     };
 
     freemiumAllocation = await freeCreditCollection
@@ -86,6 +89,7 @@ export async function updateFreemiumAllocation(options: {
   userId: string;
   increment: {
     allowed_save_words_used?: number;
+    allowed_lived_sessions_used?: number;
     credits_used?: number;
   };
 }) {

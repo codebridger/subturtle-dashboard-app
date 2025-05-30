@@ -18,4 +18,5 @@ export const PAYMENT_SESSION_COLLECTION = "payment_session";
 // Freemium default values
 export const FREEMIUM_DEFAULT_CREDITS = 1000000; // 1M credits
 export const FREEMIUM_DEFAULT_SAVE_WORDS = 50; // 50 words can be saved
+export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 lived sessions can be created
 export const FREEMIUM_DURATION_DAYS = 30; // 1 month

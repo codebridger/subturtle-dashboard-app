@@ -9,7 +9,13 @@ import {
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import { extractCostCalculationInput } from "./utils";
-import { checkCreditAllocation, recordUsage } from "../subscription/service";
+import {
+  checkCreditAllocation,
+  recordUsage,
+  isUserOnFreemium,
+  getOrCreateFreemiumAllocation,
+  updateFreemiumAllocation,
+} from "../subscription/service";
 import { LIVE_SESSION_MODEL, LIVE_SESSION_TRANSCRIPTION_MODEL } from "./config";
 const fetch = require("node-fetch");
 interface PracticeSetup {
@@ -45,7 +51,9 @@ const requestEphemeralToken = defineFunction({
       }
     }
 
+    //
     // Check if user has active subscription and has enough credits
+    //
     const { allowedToProceed } = await checkCreditAllocation({
       userId: setup.userId,
       minCredits: 500000,
@@ -56,6 +64,36 @@ const requestEphemeralToken = defineFunction({
         "User does not have enough credit or does not have an active subscription"
       );
     }
+
+    //
+    // Check if user has enough allowed lived sessions
+    //
+    const isOnFreemium = await isUserOnFreemium(setup.userId);
+    if (isOnFreemium) {
+      const freemiumAllocation = await getOrCreateFreemiumAllocation(
+        setup.userId
+      );
+
+      if (
+        freemiumAllocation.allowed_lived_sessions_used >=
+        freemiumAllocation.allowed_lived_sessions
+      ) {
+        throw new Error(
+          "User has reached the maximum number of allowed lived sessions"
+        );
+      }
+
+      await updateFreemiumAllocation({
+        userId: setup.userId,
+        increment: {
+          allowed_lived_sessions_used: 1,
+        },
+      });
+    }
+
+    //
+    // Create live session
+    //
 
     try {
       // https://platform.openai.com/docs/guides/realtime-webrtc#creating-an-ephemeral-token

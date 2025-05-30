@@ -227,6 +227,15 @@ const freeCreaditCollection = defineCollection({
         required: true,
         default: 0,
       },
+      allowed_lived_sessions: {
+        type: Number,
+        required: true,
+      },
+      allowed_lived_sessions_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
     },
     {
       timestamps: true,
