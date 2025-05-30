@@ -2,6 +2,7 @@ import { createPagination, dataProvider, functionProvider } from '@modular-rest/
 import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
+import { useProfileStore } from './profile';
 
 export const useBundleStore = defineStore('bundle', () => {
     const bundleDetail = ref<PhraseBundleType | null>(null);
@@ -129,10 +130,20 @@ export const useBundleStore = defineStore('bundle', () => {
             translation: '',
             id: new Date().getTime().toString(),
         });
+
+        const profileStore = useProfileStore();
+        if (profileStore.isFreemium) {
+            profileStore.freemiumAllocation!.allowed_save_words_used++;
+        }
     }
 
     function removeTemporarilyPhrase(id: string) {
         tempPhrases.value = tempPhrases.value.filter((p) => p.id !== id);
+
+        const profileStore = useProfileStore();
+        if (profileStore.isFreemium) {
+            profileStore.freemiumAllocation!.allowed_save_words_used--;
+        }
     }
 
     async function createPhrase(newPhrase: NewPhraseType) {

@@ -22,8 +22,12 @@
                     @click="playPhraseAudio"
                     :disabled="isLoadingAudio || isPlayingAudio"
                 />
-                <!-- Delete Confirmation Modal -->
-                <Modal :title="t('bundle.phrase_card.confirm_deletion')">
+
+                <!-- Delete Button for new phrase -->
+                <IconButton v-else icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="removePhrase" />
+
+                <!-- Delete Confirmation Modal for saved phrase -->
+                <Modal v-if="!props.newPhrase" :title="t('bundle.phrase_card.confirm_deletion')">
                     <template #trigger="{ toggleModal }">
                         <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting" @click="toggleModal(true)" />
                     </template>
@@ -38,7 +42,14 @@
                         <!-- Footer -->
                         <div class="flex justify-end space-x-2">
                             <Button @click="toggleModal(false)">Cancel</Button>
-                            <Button color="danger" @click="confirmRemovePhrase(toggleModal)">Delete</Button>
+                            <Button
+                                color="danger"
+                                @click="
+                                    toggleModal(false);
+                                    removePhrase();
+                                "
+                                >Delete</Button
+                            >
                         </div>
                     </template>
                 </Modal>
@@ -169,11 +180,6 @@
                 });
         }
     });
-
-    function confirmRemovePhrase(toggleModal: (state: boolean) => void) {
-        toggleModal(false);
-        removePhrase();
-    }
 
     function removePhrase() {
         isSubmitting.value = true;
