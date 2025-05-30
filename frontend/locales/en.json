@@ -34,6 +34,19 @@
         "filter_bundles": "Filter bundles...",
         "select_bundle": "Select Bundle"
     },
+    "freemium": {
+        "limitation": {
+            "title": "Upgrade Required",
+            "no_phrase_spots_left": "No free phrase spots left",
+            "upgrade_message": "Upgrade to Pro to save and practice phrases without limits.",
+            "upgrade_to_pro_message": "Upgrade to Pro to save and practice phrases without limits.",
+            "free_spots_left": "Free spots left to save phrases",
+            "go_back": "Go Pro!",
+            "upgrade_now": "Upgrade Now",
+            "upgrade": "Upgrade",
+            "continue_with_limits": "Continue with limits :("
+        }
+    },
     "statistic": {
         "your-statistic": "Your Statistic",
         "recent": "Recent",
