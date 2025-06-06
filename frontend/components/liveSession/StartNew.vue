@@ -15,9 +15,22 @@
                 </option>
             </select>
         </Card>
-        <Card class="space-y-4 shadow-none" :class="{ 'cursor-not-allowed opacity-50': !formData.bundleId }">
-            <StartLiveSessionForm v-model="formData" ref="formRef" @start="handleStartLiveSession" />
-            <Button color="primary" block :disabled="!isFormValid || !formData.bundleId" @click="startSession" :label="t('live-practice.start')" />
+        <Card class="space-y-4 !p-0 shadow-none" :class="{ 'cursor-not-allowed opacity-50': !formData.bundleId }">
+            <StartLiveSessionForm class="m-4" v-model="formData" ref="formRef" @start="handleStartLiveSession" />
+
+            <!-- Freemium: Show freemium limit card -->
+            <div v-if="profileStore.isFreemium">
+                <FreemiumLimitationModal @upgrade="handleConfirmUpgrade">
+                    <template #trigger="{ toggleModal }">
+                        <FreemiumLimitCard type="liveSession" :action-label="t('live-practice.start')" @action="startSession" @upgrade="toggleModal(true)" />
+                    </template>
+                </FreemiumLimitationModal>
+            </div>
+
+            <!-- Premium: Regular start button -->
+            <div class="m-4" v-else>
+                <Button color="primary" block :disabled="!isFormValid || !formData.bundleId" @click="startSession" :label="t('live-practice.start')" />
+            </div>
         </Card>
     </section>
 </template>
@@ -28,12 +41,16 @@
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
     import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
+    import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+    import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
+    import { useProfileStore } from '~/stores/profile';
+
     const router = useRouter();
+    const { t } = useI18n();
+    const profileStore = useProfileStore();
 
     const bundleList = ref<PhraseBundleType[]>([]);
     const filter = ref('');
-
-    const { t } = useI18n();
 
     const controller = dataProvider.list<PhraseBundleType>(
         {
@@ -118,5 +135,10 @@
         // URL should not include # at the beginning
         const url = `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`;
         router.push(url);
+    }
+
+    function handleConfirmUpgrade() {
+        // Redirect to subscription page
+        router.push('/settings/subscription');
     }
 </script>

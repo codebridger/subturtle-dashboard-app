@@ -14,7 +14,11 @@
             <section class="flex flex-1 flex-wrap items-start justify-end gap-2">
                 <!-- Freemium: Combined Limitation + Add Phrase in Beautiful Gradient Wrapper -->
                 <div v-if="profileStore.isFreemium">
-                    <FreemiumAlertsAddPhraseCard @add-phrase="bundleStore.addEmptyTemporarilyPhrase()" @upgrade="goToUpgrade()" />
+                    <FreemiumLimitationModal @upgrade="handleConfirmUpgrade">
+                        <template #trigger="{ toggleModal }">
+                            <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase" @upgrade="toggleModal(true)" />
+                        </template>
+                    </FreemiumLimitationModal>
                 </div>
 
                 <!-- Premium: Simple Add Phrase Button -->
@@ -86,7 +90,8 @@
     import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import { useProfileStore } from '~/stores/profile';
-    import AddPhraseCard from '~/components/freemium_alerts/AddPhraseCard.vue';
+    import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
+    import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 
     const { t } = useI18n();
     const router = useRouter();
@@ -142,7 +147,13 @@
         router.push(url);
     }
 
-    function goToUpgrade() {
+    function handleFreemiumAddPhrase() {
+        // User is not at limit yet, so add the phrase
+        bundleStore.addEmptyTemporarilyPhrase();
+    }
+
+    function handleConfirmUpgrade() {
+        // Redirect to subscription page
         router.push('/settings/subscription');
     }
 </script>

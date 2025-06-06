@@ -39,12 +39,14 @@
             "title": "Upgrade Required",
             "no_phrase_spots_left": "No free phrase spots left",
             "upgrade_message": "Upgrade to Pro to save and practice phrases without limits.",
-            "upgrade_to_pro_message": "Upgrade to Pro to save and practice phrases without limits.",
             "free_spots_left": "Free spots left to save phrases",
-            "go_back": "Go Pro!",
+            "free_sessions_left": "Free live practice sessions left",
+            "go_pro": "Go Pro!",
             "upgrade_now": "Upgrade Now",
             "upgrade": "Upgrade",
-            "continue_with_limits": "Continue with limits :("
+            "continue_with_limits": "Continue with limits :(",
+            "no_free_spots_left": "No free phrase spots left.",
+            "upgrade_to_pro_message": "Upgrade to Pro to save and practice phrases without limits."
         }
     },
     "statistic": {
