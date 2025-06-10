@@ -28,9 +28,17 @@ function getKeys() {
 // The createRest function returns a promise
 const app = createRest({
   port: parseInt(process.env.PORT || "8080"),
-  modulesPath: path.join(__dirname, '../dist', "modules"),
-  uploadDirectory: path.join(__dirname, '../dist', "uploads"),
+  modulesPath: path.join(__dirname, "../dist", "modules"),
+  uploadDirectory: path.join(__dirname, "../dist", "uploads"),
   keypair: process.env.KEYPAIR ? getKeys() : undefined,
+  cors: {
+    origin: [
+      "https://www.youtube.com",
+      "https://www.netflix.com",
+      "https://www.subturtle.app",
+      "https://subturtle.app",
+    ],
+  },
   mongo: {
     mongoBaseAddress:
       process.env.MONGO_BASE_ADDRESS || "mongodb://localhost:27017",
