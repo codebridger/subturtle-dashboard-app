@@ -32,12 +32,34 @@ const app = createRest({
   uploadDirectory: path.join(__dirname, "../dist", "uploads"),
   keypair: process.env.KEYPAIR ? getKeys() : undefined,
   cors: {
-    origin: [
-      "https://www.youtube.com",
-      "https://www.netflix.com",
-      "https://www.subturtle.app",
-      "https://subturtle.app",
-    ],
+    origin(ctx: any) {
+      const requestOrigin = ctx.get("Origin");
+      const allowedOrigins = [
+        "https://www.youtube.com",
+        "https://www.netflix.com",
+        "https://www.subturtle.app",
+        "https://subturtle.app",
+      ];
+
+      // Handle requests without Origin header (like direct API calls)
+      if (!requestOrigin) {
+        console.warn("Request without Origin header detected");
+        return false; // Reject requests without origin in production
+      }
+
+      // Check if the origin is in our allowed list
+      if (allowedOrigins.includes(requestOrigin)) {
+        return requestOrigin;
+      }
+
+      // Log suspicious requests for monitoring
+      console.warn(
+        `Blocked CORS request from unauthorized origin: ${requestOrigin}`
+      );
+
+      // In production, reject unauthorized origins
+      return false;
+    },
   },
   mongo: {
     mongoBaseAddress:
