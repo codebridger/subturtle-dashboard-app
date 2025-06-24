@@ -6,10 +6,26 @@
 
         <StartLiveSessionForm v-model="formData" ref="formRef" />
 
-        <template #footer="{ toggleModal }">
-            <div class="flex justify-end space-x-2">
-                <Button @click="toggleModal(false)" :label="t('live-practice.cancel')" />
-                <Button color="primary" :disabled="!isFormValid" @click="startSession" :label="t('live-practice.start')" />
+        <template #footer>
+            <div class="-m-5">
+                <!-- Freemium: Show freemium limit card -->
+                <div v-if="profileStore.isFreemium">
+                    <FreemiumLimitationModal @upgrade="handleConfirmUpgrade">
+                        <template #trigger="{ toggleModal: toggleLimitationModal }">
+                            <FreemiumLimitCard
+                                type="liveSession"
+                                :action-label="t('live-practice.start')"
+                                @action="startSession"
+                                @upgrade="toggleLimitationModal(true)"
+                            />
+                        </template>
+                    </FreemiumLimitationModal>
+                </div>
+
+                <!-- Premium: Regular start button -->
+                <div v-else>
+                    <Button color="primary" :disabled="!isFormValid" @click="startSession" :label="t('live-practice.start')" />
+                </div>
             </div>
         </template>
     </Modal>
@@ -20,8 +36,13 @@
     import { Button } from '@codebridger/lib-vue-components/elements.ts';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import StartLiveSessionForm from './StartLiveSessionForm.vue';
+    import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+    import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
+    import { useProfileStore } from '~/stores/profile';
 
     const { t } = useI18n();
+    const router = useRouter();
+    const profileStore = useProfileStore();
 
     const props = defineProps<{
         modelValue: boolean;
@@ -74,5 +95,10 @@
         }
 
         emit('update:modelValue', false);
+    }
+
+    function handleConfirmUpgrade() {
+        // Redirect to subscription page
+        router.push('/settings/subscription');
     }
 </script>
