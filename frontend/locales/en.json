@@ -47,6 +47,13 @@
             "continue_with_limits": "Continue with limits :(",
             "no_free_spots_left": "No free phrase spots left.",
             "upgrade_to_pro_message": "Upgrade to Pro to save and practice phrases without limits."
+        },
+        "timer": {
+            "remaining_time": "Free session time remaining",
+            "time_expired": "Free Session Time Expired",
+            "session_limit_reached": "Your 5-minute free session limit has been reached.",
+            "upgrade_for_unlimited": "Upgrade to Pro for unlimited session time.",
+            "exit_session": "Exit Session"
         }
     },
     "statistic": {

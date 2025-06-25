@@ -31,7 +31,7 @@
     },
     "dependencies": {
         "@codebridger/lib-vue-components": "1.18.0",
-        "@modular-rest/client": "^1.6.2",
+        "@modular-rest/client": "^1.11.0",
         "@pinia/nuxt": "^0.4.6",
         "apexcharts": "^4.4.0",
         "pinia": "^2.0.22",
