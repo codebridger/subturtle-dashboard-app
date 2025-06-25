@@ -122,61 +122,31 @@
     <audio ref="ai-agent"></audio>
 
     <!-- Timer Expired Modal -->
-    <Modal :modelValue="showTimerExpiredModal" @close="handleTimerModalClose" :title="t('freemium.timer.time_expired')" size="md" preventClose hideClose>
-        <template #trigger>
-            <!-- This modal is triggered programmatically -->
-        </template>
-        <template #default>
-            <div
-                class="rounded-lg bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 backdrop-blur-sm dark:from-pink-900/20 dark:via-purple-900/30 dark:to-blue-900/20"
-            >
-                <div class="flex flex-col space-y-4 p-6">
-                    <div class="text-center">
-                        <div
-                            class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-200 to-purple-300 shadow-lg dark:from-pink-800 dark:to-purple-700"
-                        >
-                            <Icon name="IconClock" class="h-8 w-8 text-purple-700 dark:text-purple-200" />
-                        </div>
-                        <h3
-                            class="mb-3 bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-xl font-bold text-transparent dark:from-purple-300 dark:to-blue-300"
-                        >
-                            {{ t('freemium.timer.session_limit_reached') }}
-                        </h3>
-                        <p class="mx-auto max-w-sm leading-relaxed text-purple-600 dark:text-purple-300">
-                            {{ t('freemium.timer.upgrade_for_unlimited') }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </template>
-
-        <template #footer>
-            <div class="flex justify-end space-x-3 pt-2">
-                <Button
-                    @click="endLiveSession"
-                    :label="t('freemium.timer.exit_session')"
-                    class="border border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-900/20"
-                />
-                <Button
-                    color="primary"
-                    @click="handleUpgrade"
-                    :label="t('freemium.limitation.go_pro')"
-                    iconName="IconCrown"
-                    class="border-none bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md transition-all duration-300 hover:from-pink-600 hover:to-purple-700 hover:shadow-lg"
-                />
-            </div>
-        </template>
-    </Modal>
+    <FreemiumLimitationModal
+        v-model="showTimerExpiredModal"
+        :modal-title="t('freemium.timer.time_expired')"
+        :main-message="t('freemium.timer.session_limit_reached')"
+        :sub-message="t('freemium.timer.upgrade_for_unlimited')"
+        icon-name="IconClock"
+        :primary-button-label="t('freemium.limitation.go_pro')"
+        :secondary-button-label="t('freemium.timer.exit_session')"
+        :auto-redirect-on-upgrade="false"
+        prevent-close
+        hide-close
+        @upgrade="handleUpgrade"
+        @secondary="endLiveSession"
+        @close="handleTimerModalClose"
+    />
 </template>
 
 <script setup lang="ts">
     import { Card, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import { useProfileStore } from '~/stores/profile';
+    import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 
     definePageMeta({
         // @ts-ignore
@@ -209,7 +179,7 @@
     });
 
     // Timer functionality for freemium users
-    const FREEMIUM_TIME_LIMIT = 5 * 2; // 5 minutes in seconds
+    const FREEMIUM_TIME_LIMIT = 10; // 5 minutes in seconds
     const timeRemaining = ref(FREEMIUM_TIME_LIMIT);
     const timerInterval = ref<NodeJS.Timeout | null>(null);
     const showTimerExpiredModal = ref(false);

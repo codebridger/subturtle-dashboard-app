@@ -10,7 +10,14 @@
             <div class="-m-5">
                 <!-- Freemium: Show freemium limit card -->
                 <div v-if="profileStore.isFreemium">
-                    <FreemiumLimitationModal @upgrade="handleConfirmUpgrade">
+                    <FreemiumLimitationModal
+                        :modal-title="t('freemium.limitation.title')"
+                        :main-message="t('freemium.limitation.no_free_spots_left')"
+                        :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
+                        :primary-button-label="t('freemium.limitation.go_pro')"
+                        :secondary-button-label="t('freemium.limitation.continue_with_limits')"
+                        @upgrade="handleConfirmUpgrade"
+                    >
                         <template #trigger="{ toggleModal: toggleLimitationModal }">
                             <FreemiumLimitCard
                                 type="liveSession"
