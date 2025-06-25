@@ -543,3 +543,72 @@ export async function getSubscription(userId: string) {
 
   return jsonSubscription;
 }
+
+/**
+ * Clear all subscriptions for a user (for testing purposes)
+ */
+export async function clearUserSubscriptions(userId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+
+  const result = await subscriptionsCollection.deleteMany({
+    user_id: Types.ObjectId(userId),
+  });
+
+  return {
+    success: true,
+    deletedCount: result.deletedCount,
+    message: `Deleted ${result.deletedCount} subscription(s) for user ${userId}`,
+  };
+}
+
+/**
+ * Clear all freemium allocations for a user (for testing purposes)
+ */
+export async function clearUserFreemiumAllocations(userId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+
+  const result = await freeCreditCollection.deleteMany({
+    user_id: Types.ObjectId(userId),
+  });
+
+  return {
+    success: true,
+    deletedCount: result.deletedCount,
+    message: `Deleted ${result.deletedCount} freemium allocation(s) for user ${userId}`,
+  };
+}
+
+/**
+ * Clear all usage records for a user (for testing purposes)
+ */
+export async function clearUserUsageRecords(userId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
+
+  const result = await usageCollection.deleteMany({
+    user_id: Types.ObjectId(userId),
+  });
+
+  return {
+    success: true,
+    deletedCount: result.deletedCount,
+    message: `Deleted ${result.deletedCount} usage record(s) for user ${userId}`,
+  };
+}

@@ -4,10 +4,10 @@ import Stripe from "stripe";
 import { PaymentProvider } from "./adapters";
 
 const name = "gateway";
-const router = new Router();
+const getway = new Router();
 
 // Handle Stripe webhook events
-router.post("/webhook/stripe", async (ctx: any) => {
+getway.post("/webhook/stripe", async (ctx: any) => {
   let event: Stripe.Event;
 
   try {
@@ -85,5 +85,5 @@ router.post("/webhook/stripe", async (ctx: any) => {
 //   }
 // });
 
-export const main = router;
 export { name };
+export const main = getway;

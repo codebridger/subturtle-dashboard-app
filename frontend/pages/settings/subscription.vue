@@ -1,5 +1,5 @@
 <template>
-    <div class="container mx-auto p-4">
+    <div class="container mx-auto flex flex-col gap-4 p-4">
         <!-- Active Plan Card -->
         <Card v-if="activeSubscriptionData !== null" class="w-full rounded-lg border border-gray-100 shadow-sm">
             <h2 class="text-xl font-bold text-gray-900">
@@ -49,43 +49,54 @@
         </Card>
 
         <!-- Credit Infomation (Dev Only) -->
-        <Card v-if="activeSubscriptionData !== null && config.public.isNotProduction" class="w-full rounded-lg border border-gray-100 shadow-sm">
-            <h2 class="text-xl font-bold text-gray-900">Credit Infomation (Dev Only)</h2>
-            <!-- Credits and USD Table -->
-            <div class="mt-6" v-if="activeSubscriptionData">
-                <div class="overflow-x-auto">
-                    <table class="w-full table-auto border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-200">
-                                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.metric') }}</th>
-                                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.credits') }}</th>
-                                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.credit-in-usd') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="border-b border-gray-200">
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.total') }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.total_credits }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.total_credit_in_usd }}</td>
-                            </tr>
-                            <tr class="border-b border-gray-200">
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.available') }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.available_credit }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">${{ activeSubscriptionData.available_credit_in_usd }}</td>
-                            </tr>
-                            <tr>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.used') }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.credits_used }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">${{ activeSubscriptionData.used_credit_in_usd }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <Card v-if="config.public.isNotProduction" class="w-full rounded-lg border border-gray-100 shadow-sm">
+            <template v-if="activeSubscriptionData !== null">
+                <h2 class="text-xl font-bold text-gray-900">Credit Infomation (Dev Only)</h2>
+                <!-- Credits and USD Table -->
+                <div class="my-6" v-if="activeSubscriptionData">
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-auto border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.metric') }}</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.credits') }}</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">{{ t('subscription.credit-in-usd') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-200">
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.total') }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.total_credits }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.total_credit_in_usd }}</td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.available') }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.available_credit }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">${{ activeSubscriptionData.available_credit_in_usd }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.used') }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ activeSubscriptionData.credits_used }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">${{ activeSubscriptionData.used_credit_in_usd }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+            </template>
+
+            <!-- Profile Reset Section -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Profile Reset</h3>
+                    <p class="mt-1 text-sm text-gray-500">Clear all subscription and freemium data for testing purposes. This action cannot be undone.</p>
+                </div>
+                <Button @click="handleProfileReset" color="danger" :loading="isResetLoading" class="ml-4"> Reset Profile </Button>
             </div>
         </Card>
 
         <!-- Pricing Tables -->
-        <div class="mt-8 max-w-full dark:text-white-dark">
+        <div class="mt-4 max-w-full dark:text-white-dark">
             <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
                 <!-- Plan Cards -->
                 <Card
@@ -170,6 +181,7 @@
     import { useProfileStore } from '~/stores/profile';
     const { t } = useI18n();
     const isLoading = ref(false);
+    const isResetLoading = ref(false);
     const error = ref('');
 
     const config = useRuntimeConfig();
@@ -192,7 +204,6 @@
     }
 
     const activeSubscriptionData = computed(() => profileStore.activeSubscription);
-    const isSubscriptionLoading = computed(() => profileStore.isSubscriptionFetching);
 
     function fetchPlans() {
         return functionProvider
@@ -242,6 +253,38 @@
             console.error('Checkout error:', err);
         } finally {
             isLoading.value = false;
+        }
+    }
+
+    async function handleProfileReset() {
+        if (!confirm('Are you sure you want to reset your profile? This will clear all subscription and freemium data and cannot be undone.')) {
+            return;
+        }
+
+        isResetLoading.value = true;
+        error.value = '';
+
+        try {
+            await functionProvider.run({
+                name: 'clearSubscriptionAndFreemium',
+                args: {
+                    userId: profileStore.authUser?.id,
+                },
+            });
+
+            // Refresh the profile data to reflect changes
+            await profileStore.fetchSubscription();
+
+            // Show success message
+            alert('Profile reset successfully! All subscription and freemium data has been cleared.');
+
+            // refresh the page
+            window.location.reload();
+        } catch (err: any) {
+            error.value = err.message || 'Failed to reset profile';
+            console.error('Profile reset error:', err);
+        } finally {
+            isResetLoading.value = false;
         }
     }
 </script>
