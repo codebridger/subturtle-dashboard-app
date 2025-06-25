@@ -121,6 +121,11 @@ export const useBundleStore = defineStore('bundle', () => {
             .then((_data) => {
                 const index = phrases.value.findIndex((p) => p._id === id);
                 phrases.value.splice(index, 1);
+
+                const profileStore = useProfileStore();
+                if (profileStore.isFreemium) {
+                    profileStore.freemiumAllocation!.allowed_save_words_used--;
+                }
             });
     }
 
