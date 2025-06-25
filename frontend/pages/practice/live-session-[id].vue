@@ -11,59 +11,13 @@
     >
         <template v-if="bundle">
             <!-- Freemium Timer Section -->
-            <section v-if="profileStore.isFreemium" class="w-full px-4 py-2">
-                <Card
-                    class="border border-pink-200/50 bg-gradient-to-r from-pink-100 via-purple-50 to-blue-100 shadow-none backdrop-blur-sm transition-all duration-300 dark:border-purple-500/30 dark:from-pink-900/20 dark:via-purple-900/30 dark:to-blue-900/20"
-                >
-                    <div class="flex items-center justify-center gap-4 py-2">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-pink-200 to-purple-300 shadow-inner dark:from-pink-800 dark:to-purple-700"
-                            >
-                                <Icon name="IconClock" class="h-4 w-4 text-purple-700 dark:text-purple-200" />
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div>
-                                    <div
-                                        class="bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-sm font-semibold text-transparent dark:from-purple-300 dark:to-blue-300"
-                                    >
-                                        {{ formatTime(timeRemaining) }}
-                                    </div>
-                                    <div class="text-xs text-purple-600 dark:text-purple-300">{{ t('freemium.timer.remaining_time') }}</div>
-                                </div>
-                                <!-- Progress Ring -->
-                                <div class="relative flex h-12 w-12 items-center justify-center">
-                                    <svg class="h-12 w-12 -rotate-90 transform" viewBox="0 0 36 36">
-                                        <path
-                                            class="text-purple-200 dark:text-purple-800"
-                                            d="M18 2.0845
-                                                a 15.9155 15.9155 0 0 1 0 31.831
-                                                a 15.9155 15.9155 0 0 1 0 -31.831"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        ></path>
-                                        <path
-                                            class="text-gradient-to-r from-pink-500 via-purple-500 to-blue-500"
-                                            :class="timeRemaining <= 60 ? 'text-red-500' : 'text-purple-500'"
-                                            d="M18 2.0845
-                                                a 15.9155 15.9155 0 0 1 0 31.831
-                                                a 15.9155 15.9155 0 0 1 0 -31.831"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            :stroke-dasharray="`${timerProgress}, 100`"
-                                        ></path>
-                                    </svg>
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        <span class="text-xs font-bold text-purple-700 dark:text-purple-200"> {{ Math.ceil(timeRemaining / 60) }}m </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-            </section>
+            <FreemiumTimer
+                v-if="profileStore.isFreemium"
+                :duration="timerConfig.duration"
+                :label="t('freemium.timer.remaining_time')"
+                @expired="showTimerExpiredModal = true"
+                @warning="handleTimerWarning"
+            />
 
             <section :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-center md:justify-center', 'sm:px-5 md:px-32 lg:px-52']">
                 <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'py-4']">
@@ -147,6 +101,7 @@
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import { useProfileStore } from '~/stores/profile';
     import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+    import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 
     definePageMeta({
         // @ts-ignore
@@ -178,16 +133,14 @@
         return selectedPhrases.value.length || 0;
     });
 
-    // Timer functionality for freemium users
-    const FREEMIUM_TIME_LIMIT = 10; // 5 minutes in seconds
-    const timeRemaining = ref(FREEMIUM_TIME_LIMIT);
-    const timerInterval = ref<NodeJS.Timeout | null>(null);
+    // Timer modal state
     const showTimerExpiredModal = ref(false);
 
-    const timerProgress = computed(() => {
-        const progress = (timeRemaining.value / FREEMIUM_TIME_LIMIT) * 100;
-        return Math.max(0, Math.min(100, progress));
-    });
+    // Timer configuration - can be customized per use case
+    const timerConfig = {
+        duration: 5 * 60, // 5 minutes for live sessions
+        // duration: 10, // 10 seconds for quick demo
+    };
 
     const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
 
@@ -237,15 +190,6 @@
         });
 
         await createLiveSession();
-
-        // Start timer for freemium users
-        if (profileStore.isFreemium) {
-            startFreemiumTimer();
-        }
-    });
-
-    onBeforeUnmount(() => {
-        clearFreemiumTimer();
     });
 
     const tools = {
@@ -408,31 +352,10 @@
         return phrases;
     }
 
-    // Timer functions
-    function startFreemiumTimer() {
-        if (timerInterval.value) return;
-
-        timerInterval.value = setInterval(() => {
-            timeRemaining.value--;
-
-            if (timeRemaining.value <= 0) {
-                clearFreemiumTimer();
-                showTimerExpiredModal.value = true;
-            }
-        }, 1000);
-    }
-
-    function clearFreemiumTimer() {
-        if (timerInterval.value) {
-            clearInterval(timerInterval.value);
-            timerInterval.value = null;
-        }
-    }
-
-    function formatTime(seconds: number): string {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    function handleTimerWarning(timeRemaining: number) {
+        // Optional: Handle timer warning events
+        // Could be used for warnings at specific time intervals
+        console.log(`Timer warning: ${timeRemaining} seconds remaining`);
     }
 
     function handleTimerModalClose() {
@@ -440,7 +363,6 @@
     }
 
     function handleUpgrade() {
-        clearFreemiumTimer();
         router.push('/settings/subscription');
     }
 </script>
