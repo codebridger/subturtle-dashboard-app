@@ -25,19 +25,21 @@ interface PhraseBundleSchema {
   phrases: string[];
 }
 
+const phraseSchema = new Schema<PhraseSchema>(
+  {
+    phrase: { type: String },
+    translation: { type: String },
+    translation_language: String,
+    refId: String,
+    images: [schemas.file],
+  },
+  { timestamps: true }
+);
+
 const phraseCollection = defineCollection({
   database: DATABASE,
   collection: PHRASE_COLLECTION,
-  schema: new Schema<PhraseSchema>(
-    {
-      phrase: { type: String },
-      translation: { type: String },
-      translation_language: String,
-      refId: String,
-      images: [schemas.file],
-    },
-    { timestamps: true }
-  ),
+  schema: phraseSchema,
   permissions: [
     new Permission({
       accessType: "user_access",

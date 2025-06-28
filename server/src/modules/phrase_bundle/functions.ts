@@ -19,6 +19,7 @@ interface RemovePhraseParams {
 interface CreatePhraseParams {
   phrase: string;
   translation: string;
+  translation_language?: string;
   bundleIds: string[];
   refId: string;
 }
@@ -135,6 +136,7 @@ const createPhrase = defineFunction({
   callback: async ({
     phrase,
     translation,
+    translation_language,
     bundleIds,
     refId,
   }: CreatePhraseParams): Promise<any> => {
@@ -154,44 +156,74 @@ const createPhrase = defineFunction({
       throw new Error("One or more bundles not found or access denied");
     }
 
-    // Create new phrase document
-    const newPhraseDoc = {
-      phrase,
-      translation,
-      refId,
-    };
+    // Check if phrase already exists
+    const existingPhrase = await phraseCollection.findOne({
+      refId: refId,
+      phrase: phrase.trim(),
+      translation: translation.trim(),
+    });
 
-    // Insert new phrase
-    const insertedPhrases = await phraseCollection.insertMany([newPhraseDoc]);
+    let phraseId: string;
+    let isNewPhrase = false;
 
-    if (!insertedPhrases || insertedPhrases.length === 0) {
-      throw new Error("Failed to create phrase");
+    if (existingPhrase) {
+      // Use existing phrase
+      phraseId = existingPhrase._id;
+    } else {
+      // Create new phrase document
+      const newPhraseDoc = {
+        phrase: phrase.trim(),
+        translation: translation.trim(),
+        translation_language: translation_language?.trim(),
+        refId,
+      };
+
+      // Insert new phrase
+      const insertedPhrases = await phraseCollection.insertMany([newPhraseDoc]);
+
+      if (!insertedPhrases || insertedPhrases.length === 0) {
+        throw new Error("Failed to create phrase");
+      }
+
+      phraseId = insertedPhrases[0]._id;
+      isNewPhrase = true;
+
+      // Update freemium allocation only for new phrases
+      const user_id = refId;
+      const isFreemium = await isUserOnFreemium(user_id);
+
+      if (isFreemium) {
+        await updateFreemiumAllocation({
+          userId: user_id,
+          increment: { allowed_save_words_used: 1 },
+        });
+      }
     }
 
-    const insertedPhrase = insertedPhrases[0];
-
-    // Update all bundles to include the new phrase
+    // Update all bundles to include the phrase (if not already present)
     await Promise.all(
       bundleIds.map((bundleId) =>
         phraseBundleCollection.updateOne(
-          { _id: bundleId, refId: refId },
-          { $push: { phrases: insertedPhrase._id } }
+          {
+            _id: bundleId,
+            refId: refId,
+            phrases: { $ne: phraseId }, // Only add if not already present
+          },
+          { $push: { phrases: phraseId } }
         )
       )
     );
 
-    // Update freemium allocation (only once, regardless of number of bundles)
-    const user_id = refId;
-    const isFreemium = await isUserOnFreemium(user_id);
-
-    if (isFreemium) {
-      await updateFreemiumAllocation({
-        userId: user_id,
-        increment: { allowed_save_words_used: 1 },
-      });
-    }
-
-    return insertedPhrase;
+    // Return the phrase (either existing or newly created)
+    return (
+      existingPhrase || {
+        _id: phraseId,
+        phrase: phrase.trim(),
+        translation: translation.trim(),
+        translation_language: translation_language?.trim(),
+        refId,
+      }
+    );
   },
 });
 
