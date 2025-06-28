@@ -283,10 +283,10 @@
   dependencies:
     mime "^3.0.0"
 
-"@codebridger/lib-vue-components@1.18.0":
-  version "1.18.0"
-  resolved "https://npm.pkg.github.com/download/@codebridger/lib-vue-components/1.18.0/8782d19fdd862cd3a4042459f4a96b863643e713#8782d19fdd862cd3a4042459f4a96b863643e713"
-  integrity sha512-mYNu8kpW85Wcm66erL3IuoSx5g19akrFAFs/DoDkoTiIH7Pn6F67rffTvFNINYp8dkn4o8PyQWghkSy64ra1xw==
+"@codebridger/lib-vue-components@^1.19.0":
+  version "1.19.0"
+  resolved "https://npm.pkg.github.com/download/@codebridger/lib-vue-components/1.19.0/29d9e6a35318149450b61ab9812e0c879a8c8eb1#29d9e6a35318149450b61ab9812e0c879a8c8eb1"
+  integrity sha512-zWUPUNpu/kb1iOVM0zF0Egj1sKZ2/Uy26cGFxznSjzM4eLqy0UeyWnxx7OGf3BHcWJWyDCS2X3ZtDuWJXnJVHQ==
   dependencies:
     "@headlessui/vue" "^1.7.23"
     "@storybook/builder-vite" "^8.4.5"
@@ -1537,18 +1537,18 @@
   integrity sha512-0dxmVj4gxg3Jg879kvFS/msl4s9F3T9UXC1InxgOf7t5NvcPD97u/WTA5vL/IxWHMn7qSxBozqrnnE2wvl1m8g==
 
 "@storybook/builder-vite@^8.4.5":
-  version "8.6.6"
-  resolved "https://registry.yarnpkg.com/@storybook/builder-vite/-/builder-vite-8.6.6.tgz#0fe537271c420d9db007b445cd55bf4fc3b6a46b"
-  integrity sha512-1/RZMdzg4QvrLA7lsN21+ofcf/Uwne+R6RM+sE+AzkTRS2EREa+KwFPBCP8n+iIrhmOU0IG8XnNDiReLzi5alA==
+  version "8.6.14"
+  resolved "https://registry.yarnpkg.com/@storybook/builder-vite/-/builder-vite-8.6.14.tgz#9065e9cb99154f09a1cf38af5a423c94b3ef3f10"
+  integrity sha512-ajWYhy32ksBWxwWHrjwZzyC0Ii5ZTeu5lsqA95Q/EQBB0P5qWlHWGM3AVyv82Mz/ND03ebGy123uVwgf6olnYQ==
   dependencies:
-    "@storybook/csf-plugin" "8.6.6"
+    "@storybook/csf-plugin" "8.6.14"
     browser-assert "^1.2.1"
     ts-dedent "^2.0.0"
 
-"@storybook/csf-plugin@8.6.6":
-  version "8.6.6"
-  resolved "https://registry.yarnpkg.com/@storybook/csf-plugin/-/csf-plugin-8.6.6.tgz#a689849d0e0875c56805812b18e61eda37e5e862"
-  integrity sha512-gOPcLjjPQn/CVIUVJ32HU8bAnem/Uc554BGrn+aI2z8vTRA32t8fEDfACqHp8SsVUwBK1gD/O/LiQggS9U4KuQ==
+"@storybook/csf-plugin@8.6.14":
+  version "8.6.14"
+  resolved "https://registry.yarnpkg.com/@storybook/csf-plugin/-/csf-plugin-8.6.14.tgz#c7fc0361204a34693e8d62ebe5922d77dfec06c0"
+  integrity sha512-dErtc9teAuN+eelN8FojzFE635xlq9cNGGGEu0WEmMUQ4iJ8pingvBO1N8X3scz4Ry7KnxX++NNf3J3gpxS8qQ==
   dependencies:
     unplugin "^1.3.1"
 
@@ -1596,17 +1596,17 @@
     lodash.merge "^4.6.2"
     postcss-selector-parser "6.0.10"
 
-"@tanstack/virtual-core@3.13.4":
-  version "3.13.4"
-  resolved "https://registry.yarnpkg.com/@tanstack/virtual-core/-/virtual-core-3.13.4.tgz#31ac7710d102ed59463f922ab088dde5a9e62010"
-  integrity sha512-fNGO9fjjSLns87tlcto106enQQLycCKR4DPNpgq3djP5IdcPFdPAmaKjsgzIeRhH7hWrELgW12hYnRthS5kLUw==
+"@tanstack/virtual-core@3.13.12":
+  version "3.13.12"
+  resolved "https://registry.yarnpkg.com/@tanstack/virtual-core/-/virtual-core-3.13.12.tgz#1dff176df9cc8f93c78c5e46bcea11079b397578"
+  integrity sha512-1YBOJfRHV4sXUmWsFSf5rQor4Ss82G8dQWLRbnk3GA4jeP8hQt1hxXh0tmflpC0dz3VgEv/1+qwPyLeWkQuPFA==
 
 "@tanstack/vue-virtual@^3.0.0-beta.60":
-  version "3.13.4"
-  resolved "https://registry.yarnpkg.com/@tanstack/vue-virtual/-/vue-virtual-3.13.4.tgz#0e5e8b6ba03a9a5f27793b2b4325bc4a80b60ad3"
-  integrity sha512-1fPrd3hE1SS4R/9JbX1AlzueY4duCK7ixuLcMW5GMnk9N6WbLo9MioNKiv22V+UaXKOLNy8tLdzT8NYerOFTOQ==
+  version "3.13.12"
+  resolved "https://registry.yarnpkg.com/@tanstack/vue-virtual/-/vue-virtual-3.13.12.tgz#a66daac9e6822ce4bcba76a3954937440697c264"
+  integrity sha512-vhF7kEU9EXWXh+HdAwKJ2m3xaOnTTmgcdXcF2pim8g4GvI7eRrk2YRuV5nUlZnd/NbCIX4/Ja2OZu5EjJL06Ww==
   dependencies:
-    "@tanstack/virtual-core" "3.13.4"
+    "@tanstack/virtual-core" "3.13.12"
 
 "@trysound/sax@0.2.0":
   version "0.2.0"
@@ -6142,9 +6142,9 @@ svgo@^3.3.2:
     picocolors "^1.0.0"
 
 sweetalert2@^11.15.3:
-  version "11.17.2"
-  resolved "https://registry.yarnpkg.com/sweetalert2/-/sweetalert2-11.17.2.tgz#a11852713c8eea274d9e1d233522322cc63cf5be"
-  integrity sha512-HKxDr1IyV3Lxr3W6sb61qm/p2epFIEdr5EKwteRFHnIg6f8nHFl2kX++DBVz16Mac+fFiU3hMpjq1L6yE2Ge5w==
+  version "11.22.1"
+  resolved "https://registry.yarnpkg.com/sweetalert2/-/sweetalert2-11.22.1.tgz#3edcc20c6b090b835b278fb5cfaa2bcaa3154576"
+  integrity sha512-3dGb50jlfcJ0OHZ5D4hJWK/cIYAfCnxK5QQVndOJqhyiCYJozINEfHG7wvRbkACj60hDnPWu+t9EFcbYWaSEuQ==
 
 sync-child-process@^1.0.2:
   version "1.0.2"
