@@ -90,15 +90,14 @@ export const useBundleStore = defineStore('bundle', () => {
     }
 
     function updatePhrase(id: string, updated: { [key: string]: any }) {
-        return dataProvider
-            .updateOne({
-                database: DATABASE.USER_CONTENT,
-                collection: COLLECTIONS.PHRASE,
-                query: {
-                    _id: id,
+        return functionProvider
+            .run({
+                name: 'updatePhrase',
+                args: {
+                    phraseId: id,
                     refId: authUser.value?.id,
+                    update: updated,
                 },
-                update: updated,
             })
             .then((_data) => {
                 const index = phrases.value.findIndex((p) => p._id === id);
@@ -124,7 +123,11 @@ export const useBundleStore = defineStore('bundle', () => {
 
                 const profileStore = useProfileStore();
                 if (profileStore.isFreemium) {
-                    profileStore.freemiumAllocation!.allowed_save_words_used--;
+                    const currentValue = profileStore.freemiumAllocation!.allowed_save_words_used;
+                    // Prevent going below 0
+                    if (currentValue > 0) {
+                        profileStore.freemiumAllocation!.allowed_save_words_used--;
+                    }
                 }
             });
     }
@@ -147,7 +150,11 @@ export const useBundleStore = defineStore('bundle', () => {
 
         const profileStore = useProfileStore();
         if (profileStore.isFreemium) {
-            profileStore.freemiumAllocation!.allowed_save_words_used--;
+            const currentValue = profileStore.freemiumAllocation!.allowed_save_words_used;
+            // Prevent going below 0
+            if (currentValue > 0) {
+                profileStore.freemiumAllocation!.allowed_save_words_used--;
+            }
         }
     }
 
@@ -155,49 +162,29 @@ export const useBundleStore = defineStore('bundle', () => {
         const index = tempPhrases.value.findIndex((p) => p.id === newPhrase.id);
         tempPhrases.value = tempPhrases.value.filter((p) => p.id !== newPhrase.id);
 
-        const newDoc = {
-            ...newPhrase,
-            refId: authUser.value?.id,
-        } as { [ket: string]: any };
-
-        delete newDoc['id'];
-
         return new Promise<PhraseType>(async (resolve, reject) => {
-            // Insert new phrase
-            const insertedPhrase = await dataProvider
-                .insertOne({
-                    database: DATABASE.USER_CONTENT,
-                    collection: COLLECTIONS.PHRASE,
-                    doc: newDoc,
-                })
-                .catch(reject);
-
-            if (!insertedPhrase) return;
-
-            // Update phrase bundle
-            await dataProvider
-                .updateOne({
-                    database: DATABASE.USER_CONTENT,
-                    collection: COLLECTIONS.PHRASE_BUNDLE,
-                    query: {
-                        _id: bundleDetail.value?._id,
+            try {
+                const insertedPhrase = (await functionProvider.run({
+                    name: 'createPhrase',
+                    args: {
+                        phrase: newPhrase.phrase,
+                        translation: newPhrase.translation,
+                        bundleId: bundleDetail.value?._id,
                         refId: authUser.value?.id,
                     },
-                    update: {
-                        $push: { phrases: insertedPhrase._id },
-                    },
-                })
-                .then(() => resolve(insertedPhrase))
-                .catch(reject);
-        })
-            .then((insertedPhrase) => {
-                bundleDetail.value?.phrases.unshift(insertedPhrase._id);
-                phrases.value.unshift(insertedPhrase);
-            })
-            .catch((error) => {
+                })) as PhraseType;
+
+                if (insertedPhrase) {
+                    bundleDetail.value?.phrases.unshift(insertedPhrase._id);
+                    phrases.value.unshift(insertedPhrase);
+                    resolve(insertedPhrase);
+                }
+            } catch (error) {
                 // add back the phrase if there is an error
                 tempPhrases.value.splice(index, 0, newPhrase);
-            });
+                reject(error);
+            }
+        });
     }
 
     return {

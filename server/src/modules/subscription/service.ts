@@ -102,9 +102,33 @@ export async function updateFreemiumAllocation(options: {
 
   const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
 
+  // Build safe increment object that won't result in negative values for allowed_save_words_used
+  const safeIncrement: any = {};
+
+  if (increment.allowed_save_words_used !== undefined) {
+    const currentValue = freemiumAllocation.allowed_save_words_used || 0;
+    const newValue = currentValue + increment.allowed_save_words_used;
+    if (newValue >= 0) {
+      safeIncrement.allowed_save_words_used = increment.allowed_save_words_used;
+    } else {
+      // If it would go below 0, set it to 0
+      safeIncrement.allowed_save_words_used = -currentValue;
+    }
+  }
+
+  // Other properties can go below 0, so apply increments directly
+  if (increment.allowed_lived_sessions_used !== undefined) {
+    safeIncrement.allowed_lived_sessions_used =
+      increment.allowed_lived_sessions_used;
+  }
+
+  if (increment.credits_used !== undefined) {
+    safeIncrement.credits_used = increment.credits_used;
+  }
+
   const updatedFreemiumAllocation = await freeCreditCollection.updateOne(
     { _id: freemiumAllocation._id },
-    { $inc: increment }
+    { $inc: safeIncrement }
   );
 
   return updatedFreemiumAllocation;

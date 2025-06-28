@@ -16,6 +16,19 @@ interface RemovePhraseParams {
   refId: string;
 }
 
+interface CreatePhraseParams {
+  phrase: string;
+  translation: string;
+  bundleId: string;
+  refId: string;
+}
+
+interface UpdatePhraseParams {
+  phraseId: string;
+  refId: string;
+  update: { [key: string]: any };
+}
+
 const removeBundle = defineFunction({
   name: "removeBundle",
   permissionTypes: ["user_access"],
@@ -116,4 +129,99 @@ const removePhrase = defineFunction({
   },
 });
 
-module.exports.functions = [removeBundle, removePhrase];
+const createPhrase = defineFunction({
+  name: "createPhrase",
+  permissionTypes: ["user_access"],
+  callback: async ({
+    phrase,
+    translation,
+    bundleId,
+    refId,
+  }: CreatePhraseParams): Promise<any> => {
+    const phraseBundleCollection = getCollection<any>(
+      DATABASE,
+      BUNDLE_COLLECTION
+    );
+    const phraseCollection = getCollection(DATABASE, PHRASE_COLLECTION);
+
+    // Verify bundle exists and user has access
+    const bundle = await phraseBundleCollection.findOne({
+      _id: bundleId,
+      refId: refId,
+    });
+
+    if (!bundle) {
+      throw new Error("Bundle not found or access denied");
+    }
+
+    // Create new phrase document
+    const newPhraseDoc = {
+      phrase,
+      translation,
+      refId,
+    };
+
+    // Insert new phrase
+    const insertedPhrases = await phraseCollection.insertMany([newPhraseDoc]);
+
+    if (!insertedPhrases || insertedPhrases.length === 0) {
+      throw new Error("Failed to create phrase");
+    }
+
+    const insertedPhrase = insertedPhrases[0];
+
+    // Update phrase bundle to include the new phrase
+    await phraseBundleCollection.updateOne(
+      { _id: bundleId, refId: refId },
+      { $push: { phrases: insertedPhrase._id } }
+    );
+
+    // Update freemium allocation
+    const user_id = refId;
+    const isFreemium = await isUserOnFreemium(user_id);
+
+    if (isFreemium) {
+      await updateFreemiumAllocation({
+        userId: user_id,
+        increment: { allowed_save_words_used: 1 },
+      });
+    }
+
+    return insertedPhrase;
+  },
+});
+
+const updatePhrase = defineFunction({
+  name: "updatePhrase",
+  permissionTypes: ["user_access"],
+  callback: async ({
+    phraseId,
+    refId,
+    update,
+  }: UpdatePhraseParams): Promise<void> => {
+    const phraseCollection = getCollection(DATABASE, PHRASE_COLLECTION);
+
+    // Verify phrase exists and user has access
+    const phrase = await phraseCollection.findOne({
+      _id: phraseId,
+      refId: refId,
+    });
+
+    if (!phrase) {
+      throw new Error("Phrase not found or access denied");
+    }
+
+    // Update the phrase
+    await phraseCollection.updateOne(
+      { _id: phraseId, refId: refId },
+      { $set: update }
+    );
+  },
+});
+
+module.exports.functions = [
+  removeBundle,
+  removePhrase,
+  createPhrase,
+  updatePhrase,
+];
