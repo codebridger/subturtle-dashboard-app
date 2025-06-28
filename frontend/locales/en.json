@@ -146,7 +146,9 @@
     "auth": {
         "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
         "signin_with_google": "SIGN IN WITH GOOGLE",
-        "login_boxed": "Login Boxed"
+        "login_page": "Login Page",
+        "signin": "Sign In",
+        "signup": "Sign Up"
     },
     "practice": {
         "nav": "Practice"
