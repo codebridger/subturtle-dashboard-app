@@ -19,7 +19,7 @@ interface RemovePhraseParams {
 interface CreatePhraseParams {
   phrase: string;
   translation: string;
-  bundleId: string;
+  bundleIds: string[];
   refId: string;
 }
 
@@ -135,7 +135,7 @@ const createPhrase = defineFunction({
   callback: async ({
     phrase,
     translation,
-    bundleId,
+    bundleIds,
     refId,
   }: CreatePhraseParams): Promise<any> => {
     const phraseBundleCollection = getCollection<any>(
@@ -144,14 +144,14 @@ const createPhrase = defineFunction({
     );
     const phraseCollection = getCollection(DATABASE, PHRASE_COLLECTION);
 
-    // Verify bundle exists and user has access
-    const bundle = await phraseBundleCollection.findOne({
-      _id: bundleId,
+    // Verify all bundles exist and user has access
+    const bundlesCount = await phraseBundleCollection.countDocuments({
+      _id: { $in: bundleIds },
       refId: refId,
     });
 
-    if (!bundle) {
-      throw new Error("Bundle not found or access denied");
+    if (bundlesCount !== bundleIds.length) {
+      throw new Error("One or more bundles not found or access denied");
     }
 
     // Create new phrase document
@@ -170,13 +170,17 @@ const createPhrase = defineFunction({
 
     const insertedPhrase = insertedPhrases[0];
 
-    // Update phrase bundle to include the new phrase
-    await phraseBundleCollection.updateOne(
-      { _id: bundleId, refId: refId },
-      { $push: { phrases: insertedPhrase._id } }
+    // Update all bundles to include the new phrase
+    await Promise.all(
+      bundleIds.map((bundleId) =>
+        phraseBundleCollection.updateOne(
+          { _id: bundleId, refId: refId },
+          { $push: { phrases: insertedPhrase._id } }
+        )
+      )
     );
 
-    // Update freemium allocation
+    // Update freemium allocation (only once, regardless of number of bundles)
     const user_id = refId;
     const isFreemium = await isUserOnFreemium(user_id);
 
