@@ -73,8 +73,8 @@
             <div class="flex-1">
                 <TextArea
                     type="text"
-                    :label="t('translation')"
-                    :placeholder="t('bundle.phrase_card.translation_placeholder')"
+                    :label="isLinguisticPhrase ? t('definition') : t('translation')"
+                    :placeholder="isLinguisticPhrase ? t('bundle.phrase_card.definition_placeholder') : t('bundle.phrase_card.translation_placeholder')"
                     v-model="translation"
                     :error="!!error"
                     :error-message="error || ''"
@@ -124,6 +124,14 @@
         return props.phrase?.type === 'linguistic';
     });
 
+    // Computed property for translation/definition value
+    const translationValue = computed(() => {
+        if (isLinguisticPhrase.value) {
+            return props.phrase?.linguistic_data?.definition || '';
+        }
+        return props.phrase?.translation || '';
+    });
+
     const { defineField, errors, handleSubmit, resetForm, meta, isFieldDirty, validate } = useForm({
         validationSchema: yup.object({
             phrase: yup.string().required('Phrase is required'),
@@ -135,7 +143,7 @@
         },
         initialValues: {
             phrase: props.phrase?.phrase || '',
-            translation: props.phrase?.translation || '',
+            translation: translationValue.value,
         },
     });
 

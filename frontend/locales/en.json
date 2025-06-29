@@ -28,6 +28,7 @@
         "phrase_card": {
             "phrase_placeholder": "Type your phrase here",
             "translation_placeholder": "Type your translation here",
+            "definition_placeholder": "Definition will be displayed here",
             "confirm_deletion": "Confirm Phrase Deletion",
             "confirm_deletion_message": "Are you sure you want to delete this phrase?"
         },
@@ -198,6 +199,7 @@
     "remove": "Remove",
     "bundle_pharase": "The Bundle and phrases",
     "title_description": "The title and description",
+    "definition": "Definition",
     "title": "Title",
     "phrase": "Phrase",
     "translation": "Translation",
