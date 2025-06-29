@@ -1,11 +1,11 @@
 <template>
-    <div>
+    <div class="h-screen overflow-hidden">
         <div class="absolute inset-0">
             <img :src="backgroundImage" alt="background gradient" class="h-full w-full object-cover" />
         </div>
         <div
             :class="`bg-[url(${mapBackgroundImage})]`"
-            class="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-16 py-10 dark:bg-[#060818]"
+            class="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-8 py-2 dark:bg-[#060818]"
         >
             <img :src="comingSoonObject1" alt="coming soon object 1" class="absolute left-0 top-1/2 h-full max-h-[893px] -translate-y-1/2" />
             <img :src="comingSoonObject2" alt="coming soon object 2" class="absolute left-[30%] top-0 h-40" />
@@ -15,21 +15,15 @@
                 class="relative flex min-h-[758px] w-full max-w-[1502px] flex-row justify-between gap-0 overflow-hidden rounded-md bg-white/60 backdrop-blur-lg dark:bg-black/50"
             >
                 <div
-                    class="relative -ms-28 inline-flex w-full max-w-[835px] items-center justify-center bg-[linear-gradient(225deg,rgba(239,18,98,1)_0%,rgba(67,97,238,1)_100%)] p-5 ltr:skew-x-[14deg] rtl:skew-x-[-14deg]"
+                    class="relative -ms-28 inline-flex w-full max-w-[835px] items-center justify-center bg-[#220660] p-5 ltr:skew-x-[14deg] rtl:skew-x-[-14deg]"
                 >
-                    <div
-                        class="absolute inset-y-0 w-16 from-primary/10 via-transparent to-transparent ltr:-right-20 ltr:bg-gradient-to-r rtl:-left-20 rtl:bg-gradient-to-l"
-                    ></div>
                     <div class="ltr:-skew-x-[14deg] rtl:skew-x-[14deg]">
-                        <NuxtLink to="/" class="ms-10 block w-72">
-                            <img :src="logoWhite" alt="Logo" class="w-full" />
-                        </NuxtLink>
-                        <div class="mt-24 block w-full max-w-[430px]">
+                        <div class="w-full">
                             <img :src="loginCover" alt="Cover Image" class="w-full" />
                         </div>
                     </div>
                 </div>
-                <div class="relative flex w-full max-w-[667px] flex-col items-center justify-center gap-6 px-4 px-6 pb-16 pt-6">
+                <div class="relative flex w-full max-w-[667px] flex-col items-center justify-center gap-6 px-6 pb-16 pt-6">
                     <div class="mx-auto w-full max-w-[440px]">
                         <div class="mb-40">
                             <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
@@ -94,7 +88,7 @@
     const comingSoonObject3 = computed(() => '/assets/images/auth/coming-soon-object3.png');
     const polygonObject = computed(() => '/assets/images/auth/polygon-object.svg');
     const logoWhite = computed(() => '/assets/images/auth/logo-white.svg');
-    const loginCover = computed(() => '/assets/images/auth/login-cover.svg');
+    const loginCover = computed(() => '/assets/images/auth/login-cover.png');
     const mapBackgroundImage = computed(() => '/assets/images/auth/map.png');
 
     function triggerGoogleLoginProcess() {
