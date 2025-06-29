@@ -1,5 +1,5 @@
 <template>
-    <div class="main-section relative font-nunito text-sm font-normal antialiased">
+    <App>
         <div class="text-black dark:text-white-dark">
             <!-- screen loader -->
             <div
@@ -45,11 +45,12 @@
             </div>
             <NuxtPage />
         </div>
-    </div>
+    </App>
 </template>
 
 <script setup lang="ts">
     import { ref, onMounted } from 'vue';
+    import { App } from '@codebridger/lib-vue-components/shell.ts';
     import { useAppStore } from '@codebridger/lib-vue-components/store.ts';
     const store = useAppStore();
     const showTopButton = ref(false);

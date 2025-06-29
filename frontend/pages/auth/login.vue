@@ -5,27 +5,30 @@
         </div>
         <div
             :class="`bg-[url(${mapBackgroundImage})]`"
-            class="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-8 py-2 dark:bg-[#060818]"
+            class="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-6 py-10 dark:bg-[#060818] sm:px-16"
         >
             <img :src="comingSoonObject1" alt="coming soon object 1" class="absolute left-0 top-1/2 h-full max-h-[893px] -translate-y-1/2" />
-            <img :src="comingSoonObject2" alt="coming soon object 2" class="absolute left-[30%] top-0 h-40" />
+            <img :src="comingSoonObject2" alt="coming soon object 2" class="absolute left-24 top-0 h-40 md:left-[30%]" />
             <img :src="comingSoonObject3" alt="coming soon object 3" class="absolute right-0 top-0 h-[300px]" />
             <img :src="polygonObject" alt="polygon object" class="absolute bottom-0 end-[28%]" />
             <div
-                class="relative flex min-h-[758px] w-full max-w-[1502px] flex-row justify-between gap-0 overflow-hidden rounded-md bg-white/60 backdrop-blur-lg dark:bg-black/50"
+                class="relative flex w-full max-w-[1502px] flex-col justify-between overflow-hidden rounded-md bg-white/60 backdrop-blur-lg dark:bg-black/50 lg:min-h-[700px] lg:flex-row lg:gap-10 xl:gap-0"
             >
                 <div
-                    class="relative -ms-28 inline-flex w-full max-w-[835px] items-center justify-center bg-[#220660] p-5 ltr:skew-x-[14deg] rtl:skew-x-[-14deg]"
+                    class="relative hidden w-full items-center justify-center bg-[#220660] p-5 lg:inline-flex lg:max-w-[835px] xl:-ms-28 ltr:xl:skew-x-[14deg] rtl:xl:skew-x-[-14deg]"
                 >
-                    <div class="ltr:-skew-x-[14deg] rtl:skew-x-[14deg]">
+                    <div
+                        class="absolute inset-y-0 w-8 from-primary/10 via-transparent to-transparent xl:w-16 ltr:-right-10 ltr:bg-gradient-to-r ltr:xl:-right-20 rtl:-left-10 rtl:bg-gradient-to-l rtl:xl:-left-20"
+                    ></div>
+                    <div class="ltr:xl:-skew-x-[14deg] rtl:xl:skew-x-[14deg]">
                         <div class="w-full">
                             <img :src="loginCover" alt="Cover Image" class="w-full" />
                         </div>
                     </div>
                 </div>
-                <div class="relative flex w-full max-w-[667px] flex-col items-center justify-center gap-6 px-6 pb-16 pt-6">
-                    <div class="mx-auto w-full max-w-[440px]">
-                        <div class="mb-40">
+                <div class="relative flex w-full flex-col items-center justify-center gap-6 px-4 pb-16 pt-6 sm:px-6 lg:max-w-[667px]">
+                    <div class="w-full max-w-[440px] lg:mt-16">
+                        <div class="mb-16 lg:mb-40">
                             <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">{{ t('auth.signin') }}</h1>
                             <p class="text-base font-bold leading-normal text-white-dark">
                                 Use one of your social accounts to {{ t('auth.signin') }} / {{ t('auth.signup') }}.
