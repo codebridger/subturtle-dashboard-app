@@ -26,8 +26,10 @@
                 <div class="relative flex w-full max-w-[667px] flex-col items-center justify-center gap-6 px-6 pb-16 pt-6">
                     <div class="mx-auto w-full max-w-[440px]">
                         <div class="mb-40">
-                            <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
-                            <p class="text-base font-bold leading-normal text-white-dark">Use one of your social accounts to sing-in / sign-up.</p>
+                            <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">{{ t('auth.signin') }}</h1>
+                            <p class="text-base font-bold leading-normal text-white-dark">
+                                Use one of your social accounts to {{ t('auth.signin') }} / {{ t('auth.signup') }}.
+                            </p>
                         </div>
                         <form class="space-y-5 dark:text-white" @submit.prevent="router.push('/')">
                             <Button
@@ -45,7 +47,7 @@
                         </div>
                         <div class="text-center dark:text-white">
                             Don't have an account ?
-                            <span class="text-primary"> Just sign-in you will get a new account. </span>
+                            <span class="text-primary"> Just sign in and you will get a new account. </span>
                         </div>
                     </div>
                 </div>
@@ -62,7 +64,7 @@
 
     const { t } = useI18n();
 
-    useHead({ title: t('auth.login_boxed') });
+    useHead({ title: t('auth.login_page') });
 
     const router = useRouter();
 
@@ -87,9 +89,8 @@
     const comingSoonObject2 = computed(() => '/assets/images/auth/coming-soon-object2.png');
     const comingSoonObject3 = computed(() => '/assets/images/auth/coming-soon-object3.png');
     const polygonObject = computed(() => '/assets/images/auth/polygon-object.svg');
-    const logoWhite = computed(() => '/assets/images/auth/logo-white.svg');
-    const loginCover = computed(() => '/assets/images/auth/login-cover.png');
     const mapBackgroundImage = computed(() => '/assets/images/auth/map.png');
+    const loginCover = computed(() => '/assets/images/auth/login-cover.png');
 
     function triggerGoogleLoginProcess() {
         const config = useRuntimeConfig();
