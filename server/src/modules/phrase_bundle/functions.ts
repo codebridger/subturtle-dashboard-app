@@ -5,6 +5,9 @@ import {
   updateFreemiumAllocation,
 } from "../subscription/service";
 
+// Import the PhraseSchema type from the database module
+import { PhraseSchema } from "./db";
+
 interface RemoveBundleParams {
   _id: string;
   refId: string;
@@ -16,10 +19,8 @@ interface RemovePhraseParams {
   refId: string;
 }
 
-interface CreatePhraseParams {
-  phrase: string;
-  translation: string;
-  translation_language?: string;
+// Use PhraseSchema type and add bundleIds for the function parameters
+interface CreatePhraseParams extends Omit<PhraseSchema, "refId"> {
   bundleIds: string[];
   refId: string;
 }
@@ -139,6 +140,11 @@ const createPhrase = defineFunction({
     translation_language,
     bundleIds,
     refId,
+    type = "normal", // Default to normal type
+    context,
+    direction,
+    language_info,
+    linguistic_data,
   }: CreatePhraseParams): Promise<any> => {
     const phraseBundleCollection = getCollection<any>(
       DATABASE,
@@ -156,11 +162,12 @@ const createPhrase = defineFunction({
       throw new Error("One or more bundles not found or access denied");
     }
 
-    // Check if phrase already exists
+    // Check if phrase already exists (considering type)
     const existingPhrase = await phraseCollection.findOne({
       refId: refId,
       phrase: phrase.trim(),
       translation: translation.trim(),
+      type: type, // Include type in the search
     });
 
     let phraseId: string;
@@ -170,13 +177,22 @@ const createPhrase = defineFunction({
       // Use existing phrase
       phraseId = existingPhrase._id;
     } else {
-      // Create new phrase document
-      const newPhraseDoc = {
+      // Create new phrase document based on type
+      const newPhraseDoc: any = {
         phrase: phrase.trim(),
         translation: translation.trim(),
         translation_language: translation_language?.trim(),
         refId,
+        type,
       };
+
+      // Add linguistic-specific fields if type is linguistic
+      if (type === "linguistic") {
+        if (context) newPhraseDoc.context = context;
+        if (direction) newPhraseDoc.direction = direction;
+        if (language_info) newPhraseDoc.language_info = language_info;
+        if (linguistic_data) newPhraseDoc.linguistic_data = linguistic_data;
+      }
 
       // Insert new phrase
       const insertedPhrases = await phraseCollection.insertMany([newPhraseDoc]);
@@ -222,6 +238,13 @@ const createPhrase = defineFunction({
         translation: translation.trim(),
         translation_language: translation_language?.trim(),
         refId,
+        type,
+        ...(type === "linguistic" && {
+          context,
+          direction,
+          language_info,
+          linguistic_data,
+        }),
       }
     );
   },

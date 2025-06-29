@@ -171,6 +171,7 @@ export const useBundleStore = defineStore('bundle', () => {
                         translation: newPhrase.translation,
                         bundleIds: [bundleDetail.value?._id],
                         refId: authUser.value?.id,
+                        type: 'normal',
                     },
                 })) as PhraseType;
 

@@ -9,12 +9,27 @@ import { phraseBundleTriggers } from "./triggers";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
 
-interface PhraseSchema {
+export interface PhraseSchema {
+  refId: string;
+  images: any[];
+  type: "normal" | "linguistic";
+
+  // normal
   phrase: string;
   translation: string;
   translation_language: string;
-  refId: string;
-  images: any[];
+
+  // linguistic
+  context?: string;
+  direction?: {
+    source: "ltr" | "rtl";
+    target: "ltr" | "rtl";
+  };
+  language_info?: {
+    source: string;
+    target: string;
+  };
+  linguistic_data?: any;
 }
 
 interface PhraseBundleSchema {
@@ -32,6 +47,17 @@ const phraseSchema = new Schema<PhraseSchema>(
     translation_language: String,
     refId: String,
     images: [schemas.file],
+    type: { type: String, enum: ["normal", "linguistic"], default: "normal" },
+    context: String,
+    direction: {
+      source: { type: String, enum: ["ltr", "rtl"] },
+      target: { type: String, enum: ["ltr", "rtl"] },
+    },
+    language_info: {
+      source: String,
+      target: String,
+    },
+    linguistic_data: Schema.Types.Mixed,
   },
   { timestamps: true }
 );
