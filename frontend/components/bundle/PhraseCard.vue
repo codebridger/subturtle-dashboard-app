@@ -8,7 +8,7 @@
                     icon="IconChecks"
                     rounded="full"
                     size="sm"
-                    v-if="getSubmitButtonStatus()"
+                    v-if="getSubmitButtonStatus() && !isLinguisticPhrase"
                     :disabled="phrase.length === 0 || translation.length === 0"
                     :color="props.newPhrase ? 'default' : 'warning'"
                     @click="onSubmit"
@@ -66,6 +66,7 @@
                     :error="!!error"
                     :error-message="error || ''"
                     :loading="!!props.newPhrase && isSubmitting"
+                    :disabled="isLinguisticPhrase"
                 />
             </div>
 
@@ -78,6 +79,7 @@
                     :error="!!error"
                     :error-message="error || ''"
                     :loading="!!props.newPhrase && isSubmitting"
+                    :disabled="isLinguisticPhrase"
                 />
             </div>
         </div>
@@ -117,6 +119,11 @@
         },
     });
 
+    // Computed property to check if the phrase is linguistic type
+    const isLinguisticPhrase = computed(() => {
+        return props.phrase?.type === 'linguistic';
+    });
+
     const { defineField, errors, handleSubmit, resetForm, meta, isFieldDirty, validate } = useForm({
         validationSchema: yup.object({
             phrase: yup.string().required('Phrase is required'),
@@ -136,12 +143,22 @@
     const [translation] = defineField('translation');
 
     function getSubmitButtonStatus() {
+        // Don't show submit button for linguistic phrases
+        if (isLinguisticPhrase.value) {
+            return false;
+        }
+
         const conditions = [isFieldDirty('phrase'), isFieldDirty('translation'), Object.keys(errors.value).length > 0];
 
         return conditions.some((condition) => condition);
     }
 
     const onSubmit = handleSubmit(async () => {
+        // Prevent submission for linguistic phrases
+        if (isLinguisticPhrase.value) {
+            return;
+        }
+
         const validated = await validate();
 
         if (!validated.valid || !meta.value.dirty) return;
