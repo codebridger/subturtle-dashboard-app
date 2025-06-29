@@ -21,7 +21,30 @@
                 .loginWithToken(token, true)
                 .then(profileStore.bootstrap)
                 .then(() => {
-                    router.push('/');
+                    // Check for redirect URL in query parameter first, then in sessionStorage
+                    const redirectUrl = (route.query.redirect as string) || sessionStorage.getItem('auth_redirect_url');
+
+                    // Clear the redirect URL from sessionStorage
+                    sessionStorage.removeItem('auth_redirect_url');
+
+                    if (redirectUrl) {
+                        // Validate the redirect URL to ensure it's safe
+                        try {
+                            const url = new URL(redirectUrl, window.location.origin);
+                            // Only allow same-origin redirects for security
+                            if (url.origin === window.location.origin) {
+                                router.push(url.pathname + url.search + url.hash);
+                            } else {
+                                // External URL, redirect to home for security
+                                router.push('/');
+                            }
+                        } catch (error) {
+                            // Invalid URL, redirect to home
+                            router.push('/');
+                        }
+                    } else {
+                        router.push('/');
+                    }
                 })
                 .catch((error) => {
                     toastError(error.error || 'Unable to login with token', { position: 'top-end' });
