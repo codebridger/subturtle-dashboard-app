@@ -61,8 +61,8 @@
 
 <script lang="ts" setup>
     // import { useAppStore } from '@/stores/index';
-    import { useRouter } from 'vue-router';
-    import { computed } from 'vue';
+    import { useRouter, useRoute } from 'vue-router';
+    import { computed, onMounted } from 'vue';
     import { Button } from '@codebridger/lib-vue-components/elements.ts';
 
     const { t } = useI18n();
@@ -70,6 +70,7 @@
     useHead({ title: t('auth.login_page') });
 
     const router = useRouter();
+    const route = useRoute();
 
     definePageMeta({
         layout: 'auth',
@@ -95,9 +96,27 @@
     const mapBackgroundImage = computed(() => '/assets/images/auth/map.png');
     const loginCover = computed(() => '/assets/images/auth/login-cover.png');
 
+    // Handle redirect parameter
+    onMounted(() => {
+        const redirectUrl = route.query.redirect as string;
+        if (redirectUrl) {
+            // Store redirect URL in session storage
+            sessionStorage.setItem('auth_redirect_url', redirectUrl);
+        }
+    });
+
     function triggerGoogleLoginProcess() {
         const config = useRuntimeConfig();
-        const url = `${config.public.BASE_URL_API}/auth/google`;
+        const redirectUrl = route.query.redirect as string;
+
+        let url = `${config.public.BASE_URL_API}/auth/google`;
+
+        // Pass redirect parameter to backend if present
+        if (redirectUrl) {
+            const urlParams = new URLSearchParams({ redirect: redirectUrl });
+            url += `?${urlParams.toString()}`;
+        }
+
         window.open(url, '_self');
     }
 </script>
