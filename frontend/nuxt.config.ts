@@ -47,7 +47,7 @@ export default defineNuxtConfig({
         },
     },
 
-    css: ['~/assets/css/app.css', '@codebridger/lib-vue-components/style.css'],
+    css: ['@codebridger/lib-vue-components/style.css', '~/assets/css/app.css'],
 
     postcss: {
         plugins: {

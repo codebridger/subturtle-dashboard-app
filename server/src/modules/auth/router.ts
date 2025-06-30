@@ -35,6 +35,10 @@ auth.get("/google", async (ctx) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPE,
+    // Pass through the redirect parameter as state to preserve it through OAuth flow
+    state: ctx.query.redirect
+      ? JSON.stringify({ redirect: ctx.query.redirect })
+      : undefined,
   });
 
   ctx.response.redirect(url);
@@ -64,6 +68,17 @@ auth.get("/google/code-login", async (ctx) => {
   if (!ctx.query.code) {
     ctx.throw(400, "Unsuccessful login, please try again.");
     return;
+  }
+
+  // Extract redirect URL from state parameter if present
+  let redirectUrl: string | null = null;
+  if (ctx.query.state) {
+    try {
+      const state = JSON.parse(ctx.query.state as string);
+      redirectUrl = state.redirect;
+    } catch (error) {
+      // Invalid state, continue without redirect
+    }
   }
 
   const { tokens } = await oauth2Client.getToken(ctx.query.code as string);
@@ -114,7 +129,13 @@ auth.get("/google/code-login", async (ctx) => {
 
   const token = await userManager.issueTokenForUser(email);
 
-  ctx.response.redirect(`${REDIRECT_URI_DASHBOARD}?token=${token}`);
+  // Build redirect URL with token and optional redirect parameter
+  let finalRedirectUrl = `${REDIRECT_URI_DASHBOARD}?token=${token}`;
+  if (redirectUrl) {
+    finalRedirectUrl += `&redirect=${encodeURIComponent(redirectUrl)}`;
+  }
+
+  ctx.response.redirect(finalRedirectUrl);
 });
 
 auth.get("/google/access-token-login", async (ctx) => {
