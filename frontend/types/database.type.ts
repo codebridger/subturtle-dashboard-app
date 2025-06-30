@@ -1,4 +1,5 @@
 import { type FileDocument } from '@modular-rest/client/dist/types/types';
+import { type PhraseSchema } from '../../server/src/modules/phrase_bundle/db';
 
 export const DATABASE = {
     USER_CONTENT: 'user_content',
@@ -19,13 +20,8 @@ export interface ProfileType {
     images: FileDocument[];
 }
 
-export interface PhraseType {
+export interface PhraseType extends PhraseSchema {
     _id: string;
-    refId: string;
-    phrase: string;
-    translation: string;
-    translation_language: string;
-    images?: FileDocument[];
 }
 
 export interface NewPhraseType {
@@ -49,4 +45,16 @@ export interface PopulatedPhraseBundleType {
     title: string;
     image: FileDocument[];
     phrases: PhraseType[];
+}
+
+import type { FreeCredit, Subscription } from '../../server/src/modules/subscription/types';
+
+export interface SubscriptionType extends Subscription {
+    label: string;
+    portal_url: string;
+    is_freemium: boolean;
+}
+
+export interface FreemiumAllocationType extends FreeCredit {
+    is_freemium: true;
 }

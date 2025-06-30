@@ -3,15 +3,43 @@
         <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" @changed="bundleStore.updateBundleDetail(id, $event)" />
 
         <!-- Practice Features -->
-        <section class="flex flex-wrap items-start justify-between">
-            <section class="my-4 flex flex-1 flex-wrap gap-2">
-                <StartLiveSessionForm v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
+        <section class="my-4 flex flex-wrap items-start justify-between">
+            <section class="flex flex-1 flex-wrap gap-2">
+                <StartLiveSessionFormModal v-model="isLiveSessionModalOpen" @start="handleStartLiveSession" />
                 <Button :to="`#/practice/flashcards-${id}`" iconName="IconOpenBook" :label="t('flashcard-tool.label')" />
 
                 <!-- <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" /> -->
             </section>
 
-            <Button class="mt-4" color="primary" @click="bundleStore.addEmptyTemporarilyPhrase()" iconName="IconFolderMinus" :label="t('bundle.add_phrase')" />
+            <section class="flex flex-1 flex-wrap items-start justify-end gap-2">
+                <!-- Freemium: Combined Limitation + Add Phrase in Beautiful Gradient Wrapper -->
+                <div v-if="profileStore.isFreemium">
+                    <FreemiumLimitationModal
+                        :modal-title="t('freemium.limitation.title')"
+                        :main-message="t('freemium.limitation.no_free_spots_left')"
+                        :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
+                        :primary-button-label="t('freemium.limitation.go_pro')"
+                        :secondary-button-label="t('freemium.limitation.continue_with_limits')"
+                        @upgrade="handleConfirmUpgrade"
+                    >
+                        <template #trigger="{ toggleModal }">
+                            <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase" @upgrade="toggleModal(true)" />
+                        </template>
+                    </FreemiumLimitationModal>
+                </div>
+
+                <!-- Premium: Simple Add Phrase Button -->
+                <div v-else class="flex items-start">
+                    <Button
+                        color="primary"
+                        size="md"
+                        @click="bundleStore.addEmptyTemporarilyPhrase()"
+                        iconName="IconPlus"
+                        label="Add Phrase"
+                        class="min-w-[140px]"
+                    />
+                </div>
+            </section>
         </section>
 
         <!-- Phrase List -->
@@ -63,14 +91,18 @@
 </template>
 
 <script setup lang="ts">
-    import { Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
     import { Modal, Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { useBundleStore } from '@/stores/bundle';
-    import StartLiveSessionForm from '@/components/bundle/StartLiveSessionForm.vue';
+    import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+    import { useProfileStore } from '~/stores/profile';
+    import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
+    import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 
     const { t } = useI18n();
     const router = useRouter();
+    const profileStore = useProfileStore();
 
     definePageMeta({
         layout: 'default',
@@ -120,5 +152,15 @@
         // Uerl should not be include # at the beginning
         const url = `/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`;
         router.push(url);
+    }
+
+    function handleFreemiumAddPhrase() {
+        // User is not at limit yet, so add the phrase
+        bundleStore.addEmptyTemporarilyPhrase();
+    }
+
+    function handleConfirmUpgrade() {
+        // Redirect to subscription page
+        router.push('/settings/subscription');
     }
 </script>

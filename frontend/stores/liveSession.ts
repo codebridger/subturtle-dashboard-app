@@ -58,6 +58,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
             const session = await functionProvider.run<LiveSessionType>({
                 name: 'request-live-session-ephemeral-token',
                 args: {
+                    userId: authUser.value?.id,
                     voice: sessionDetails.voice || 'alloy',
                     instructions: sessionDetails.instructions,
                     tools: Object.values(tools).map((t) => t.definition),
@@ -202,7 +203,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
             }
 
             if (eventData.response.usage) {
-                updateTokenUsage(eventData.response.usage);
+                updateTokenUsageWithPartialData(eventData.response.usage);
                 updateLiveSessionRecordOnServer();
             }
         }
@@ -353,7 +354,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
         return isMicrophoneMuted.value;
     }
 
-    function updateTokenUsage(usage: TokenUsageType) {
+    function updateTokenUsageWithPartialData(partialUsage: TokenUsageType) {
         if (!tokenUsage.value) {
             tokenUsage.value = {
                 total_tokens: 0,
@@ -376,20 +377,30 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
         }
 
         // Accumulate top-level token counts
-        tokenUsage.value.total_tokens += usage.total_tokens;
-        tokenUsage.value.input_tokens += usage.input_tokens;
-        tokenUsage.value.output_tokens += usage.output_tokens;
+        tokenUsage.value.total_tokens += partialUsage.total_tokens;
+        tokenUsage.value.input_tokens += partialUsage.input_tokens;
+        tokenUsage.value.output_tokens += partialUsage.output_tokens;
 
         // Accumulate input token details
-        tokenUsage.value.input_token_details.cached_tokens += usage.input_token_details.cached_tokens;
-        tokenUsage.value.input_token_details.text_tokens += usage.input_token_details.text_tokens;
-        tokenUsage.value.input_token_details.audio_tokens += usage.input_token_details.audio_tokens;
-        tokenUsage.value.input_token_details.cached_tokens_details.text_tokens += usage.input_token_details.cached_tokens_details.text_tokens;
-        tokenUsage.value.input_token_details.cached_tokens_details.audio_tokens += usage.input_token_details.cached_tokens_details.audio_tokens;
+        tokenUsage.value.input_token_details.cached_tokens += partialUsage.input_token_details.cached_tokens;
+        tokenUsage.value.input_token_details.text_tokens += partialUsage.input_token_details.text_tokens;
+        tokenUsage.value.input_token_details.audio_tokens += partialUsage.input_token_details.audio_tokens;
+        tokenUsage.value.input_token_details.cached_tokens_details.text_tokens += partialUsage.input_token_details.cached_tokens_details.text_tokens;
+        tokenUsage.value.input_token_details.cached_tokens_details.audio_tokens += partialUsage.input_token_details.cached_tokens_details.audio_tokens;
 
         // Accumulate output token details
-        tokenUsage.value.output_token_details.text_tokens += usage.output_token_details.text_tokens;
-        tokenUsage.value.output_token_details.audio_tokens += usage.output_token_details.audio_tokens;
+        tokenUsage.value.output_token_details.text_tokens += partialUsage.output_token_details.text_tokens;
+        tokenUsage.value.output_token_details.audio_tokens += partialUsage.output_token_details.audio_tokens;
+
+        // Update the live session record on the server
+        return functionProvider.run({
+            name: 'update-live-session-record',
+            args: {
+                sessionId: id.value,
+                userId: authUser.value?.id,
+                update: { partialUsage },
+            },
+        });
     }
 
     function createLiveSessionRecordOnServer() {
@@ -421,7 +432,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
             args: {
                 sessionId: id.value,
                 userId: authUser.value?.id,
-                update: { usage: tokenUsage.value, dialogs: [lastDialog] },
+                update: { totalUsage: tokenUsage.value, dialogs: [lastDialog] },
             },
         });
     }

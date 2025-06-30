@@ -10,6 +10,15 @@
         @end-session="endLiveSession"
     >
         <template v-if="bundle">
+            <!-- Freemium Timer Section -->
+            <FreemiumTimer
+                v-if="profileStore.isFreemium"
+                :duration="timerConfig.duration"
+                :label="t('freemium.timer.remaining_time')"
+                @expired="showTimerExpiredModal = true"
+                @warning="handleTimerWarning"
+            />
+
             <section :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-center md:justify-center', 'sm:px-5 md:px-32 lg:px-52']">
                 <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'py-4']">
                     <!-- All phrases -->
@@ -58,20 +67,41 @@
 
         <template #error-mode>
             <div class="flex flex-col items-center justify-center">
-                <h1 class="text-2xl font-bold">Oops, something went wrong</h1>
+                <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
+                <Button class="mt-8" to="/">{{ t('live-practice.back-to-dashboard') }}</Button>
             </div>
         </template>
     </MaterialPracticeToolScaffold>
     <audio ref="ai-agent"></audio>
+
+    <!-- Timer Expired Modal -->
+    <FreemiumLimitationModal
+        v-model="showTimerExpiredModal"
+        :modal-title="t('freemium.timer.time_expired')"
+        :main-message="t('freemium.timer.session_limit_reached')"
+        :sub-message="t('freemium.timer.upgrade_for_unlimited')"
+        icon-name="IconClock"
+        :primary-button-label="t('freemium.limitation.go_pro')"
+        :secondary-button-label="t('freemium.timer.exit_session')"
+        :auto-redirect-on-upgrade="false"
+        prevent-close
+        hide-close
+        @upgrade="handleUpgrade"
+        @secondary="endLiveSession"
+        @close="handleTimerModalClose"
+    />
 </template>
 
 <script setup lang="ts">
-    import { Card } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+    import { useProfileStore } from '~/stores/profile';
+    import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+    import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 
     definePageMeta({
         // @ts-ignore
@@ -82,11 +112,13 @@
 
     const route = useRoute();
     const router = useRouter();
+    const { t } = useI18n();
     const { id } = route.params;
     const { sessionData } = route.query;
     const sessionDataParsed = JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType;
 
     const liveSessionStore = useLiveSessionStore();
+    const profileStore = useProfileStore();
     const errorMode = ref(false);
     const errorMessage = ref('');
 
@@ -100,6 +132,15 @@
     const totalPhrases = computed<number>(() => {
         return selectedPhrases.value.length || 0;
     });
+
+    // Timer modal state
+    const showTimerExpiredModal = ref(false);
+
+    // Timer configuration - can be customized per use case
+    const timerConfig = {
+        duration: 5 * 60, // 5 minutes for live sessions
+        // duration: 10, // 10 seconds for quick demo
+    };
 
     const audioRef = useTemplateRef<HTMLAudioElement>('ai-agent');
 
@@ -230,9 +271,13 @@
                 audioRef: audioRef.value,
                 onUpdate: handleSessionEvent,
             })
+            .then((_res) => {
+                // fetch subscription to update the freemium allocation
+                return useProfileStore().fetchSubscription();
+            })
             .catch((error) => {
                 errorMode.value = true;
-                errorMessage.value = error?.message || 'Failed to start live session';
+                errorMessage.value = error?.error || error?.message || 'Failed to start live session';
             });
     }
 
@@ -305,5 +350,19 @@
         }
 
         return phrases;
+    }
+
+    function handleTimerWarning(timeRemaining: number) {
+        // Optional: Handle timer warning events
+        // Could be used for warnings at specific time intervals
+        console.log(`Timer warning: ${timeRemaining} seconds remaining`);
+    }
+
+    function handleTimerModalClose() {
+        showTimerExpiredModal.value = false;
+    }
+
+    function handleUpgrade() {
+        router.push('/settings/subscription');
     }
 </script>

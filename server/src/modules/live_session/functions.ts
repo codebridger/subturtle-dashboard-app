@@ -1,17 +1,25 @@
 import { defineFunction, getCollection } from "@modular-rest/server";
 import {
   ConversationDialogType,
-  LivePracticeSessionSetupType,
   LiveSessionMetadataType,
+  LiveSessionRecordType,
   LiveSessionType,
   SessionType,
   TokenUsageType,
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
-import { language } from "googleapis/build/src/apis/language";
+import { extractCostCalculationInput } from "./utils";
+import {
+  checkCreditAllocation,
+  recordUsage,
+  isUserOnFreemium,
+  getOrCreateFreemiumAllocation,
+  updateFreemiumAllocation,
+} from "../subscription/service";
+import { LIVE_SESSION_MODEL, LIVE_SESSION_TRANSCRIPTION_MODEL } from "./config";
 const fetch = require("node-fetch");
-
 interface PracticeSetup {
+  userId: string;
   instructions?: string;
   voice?: string;
   turn_detection?: boolean;
@@ -43,6 +51,50 @@ const requestEphemeralToken = defineFunction({
       }
     }
 
+    //
+    // Check if user has active subscription and has enough credits
+    //
+    const { allowedToProceed } = await checkCreditAllocation({
+      userId: setup.userId,
+      minCredits: 500000,
+    });
+
+    if (!allowedToProceed) {
+      throw new Error(
+        "User does not have enough credit or does not have an active subscription"
+      );
+    }
+
+    //
+    // Check if user has enough allowed lived sessions
+    //
+    const isOnFreemium = await isUserOnFreemium(setup.userId);
+    if (isOnFreemium) {
+      const freemiumAllocation = await getOrCreateFreemiumAllocation(
+        setup.userId
+      );
+
+      if (
+        freemiumAllocation.allowed_lived_sessions_used >=
+        freemiumAllocation.allowed_lived_sessions
+      ) {
+        throw new Error(
+          "User has reached the maximum number of allowed lived sessions"
+        );
+      }
+
+      await updateFreemiumAllocation({
+        userId: setup.userId,
+        increment: {
+          allowed_lived_sessions_used: 1,
+        },
+      });
+    }
+
+    //
+    // Create live session
+    //
+
     try {
       // https://platform.openai.com/docs/guides/realtime-webrtc#creating-an-ephemeral-token
       // https://platform.openai.com/docs/api-reference/realtime-sessions/create
@@ -53,10 +105,10 @@ const requestEphemeralToken = defineFunction({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini-realtime-preview",
+          model: LIVE_SESSION_MODEL,
           temperature: 0.6,
           input_audio_transcription: {
-            model: "gpt-4o-mini-transcribe",
+            model: LIVE_SESSION_TRANSCRIPTION_MODEL,
           },
           ...additionalSetup,
         }),
@@ -109,24 +161,45 @@ const updateLiveSession = defineFunction({
   name: "update-live-session-record",
   permissionTypes: ["user_access"],
   callback: async function (context: {
-    userId: String;
-    sessionId: String;
-    update: { usage?: TokenUsageType; dialogs?: ConversationDialogType[] };
+    userId: string;
+    sessionId: string;
+    update: {
+      partialUsage: TokenUsageType;
+      totalUsage?: TokenUsageType;
+      dialogs?: ConversationDialogType[];
+    };
   }) {
     const { userId, sessionId, update } = context;
-    const collection = getCollection(DATABASE, LIVE_SESSION_COLLECTION);
+    const collection = getCollection<LiveSessionRecordType>(
+      DATABASE,
+      LIVE_SESSION_COLLECTION
+    );
 
     try {
       if (Object.keys(update).length === 0) {
         throw new Error("one of usage or dialogs must be provided");
       }
 
-      // Handle usage update
-      if (update.usage) {
+      // Handle total usage update
+      if (update.totalUsage) {
         await collection.updateOne(
           { _id: sessionId, refId: userId },
-          { $set: { usage: update.usage } }
+          {
+            $set: { usage: update.totalUsage },
+          }
         );
+      }
+
+      // Handle partial usage update
+      if (update.partialUsage) {
+        // Report total usage to subscription service
+        const costs = extractCostCalculationInput(update.partialUsage);
+        await recordUsage({
+          userId,
+          serviceType: "live_session",
+          costInputs: costs,
+          modelUsed: LIVE_SESSION_MODEL,
+        });
       }
 
       // Handle dialogs update
@@ -135,7 +208,7 @@ const updateLiveSession = defineFunction({
           {
             _id: sessionId,
             refId: userId,
-          },
+          } as any,
           { dialogs: 1 }
         );
 
@@ -160,10 +233,9 @@ const updateLiveSession = defineFunction({
           }
         }
 
-        await collection.updateOne(
-          { _id: sessionId, refId: userId },
-          { $set: { dialogs: updatedDialogs } }
-        );
+        await collection.updateOne({ _id: sessionId, refId: userId } as any, {
+          $set: { dialogs: updatedDialogs },
+        });
       }
 
       return { success: true, sessionId };
@@ -173,7 +245,7 @@ const updateLiveSession = defineFunction({
   },
 });
 
-export const functions = [
+module.exports.functions = [
   requestEphemeralToken,
   createLiveSession,
   updateLiveSession,

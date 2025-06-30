@@ -1,16 +1,14 @@
 <template>
-    <div>
-        <h1>{{ t('membership-plans') }}</h1>
-    </div>
+    <section class="p-4">
+        <LiveSessionStartNew />
+    </section>
 </template>
 
 <script setup lang="ts">
     const { t } = useI18n();
-
     definePageMeta({
         layout: 'default',
-        title: () => t('membership-plans'),
-        // @ts-ignore
+        title: () => t('live-session.start-new-session'),
         middleware: ['auth'],
     });
 </script>

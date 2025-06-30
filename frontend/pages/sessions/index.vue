@@ -97,7 +97,7 @@
 
     definePageMeta({
         layout: 'default',
-        title: () => t('session.history'),
+        title: () => t('live-session.session-history'),
         middleware: ['auth'],
     });
 

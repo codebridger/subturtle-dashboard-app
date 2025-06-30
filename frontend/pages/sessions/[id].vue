@@ -11,6 +11,21 @@
             </p>
         </div>
 
+        <!-- Cost Information -->
+        <div v-if="session?.cost && config.public.isNotProduction" class="mb-6 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+            <h2 class="mb-2 text-lg font-semibold">{{ t('live-session.cost-info') }}</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('live-session.total-tokens') }}</p>
+                    <p class="font-medium">{{ session.cost.totalTokens.toLocaleString() }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('live-session.total-cost') }}</p>
+                    <p class="font-medium">${{ session.cost.totalCostInUsd.toFixed(6) }}</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Dialog Messages -->
         <div class="space-y-4">
             <div v-for="dialog in session?.dialogs" :key="dialog.id" class="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
@@ -51,6 +66,8 @@
     const loading = ref(true);
     const session = ref<LiveSessionRecordType | null>(null);
     const { t } = useI18n();
+
+    const config = useRuntimeConfig();
 
     definePageMeta({
         layout: 'default',

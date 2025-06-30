@@ -2,12 +2,20 @@ import * as path from "path";
 import { createRest, CmsTrigger, getCollection } from "@modular-rest/server";
 import { permissionGroups } from "./permissions";
 import fs from "fs";
+import { authTriggers } from "./triggers";
 // Load .env file
 require("dotenv").config({
   path: path.resolve(__dirname, "../.env"),
 });
 
 function getKeys() {
+  if (process.env.PRIVATE_KEY && process.env.PUBLIC_KEY) {
+    return {
+      private: process.env.PRIVATE_KEY,
+      public: process.env.PUBLIC_KEY,
+    };
+  }
+
   try {
     return {
       private: fs.readFileSync(
@@ -30,7 +38,7 @@ const app = createRest({
   port: parseInt(process.env.PORT || "8080"),
   modulesPath: path.join(__dirname, "../dist", "modules"),
   uploadDirectory: path.join(__dirname, "../dist", "uploads"),
-  keypair: process.env.KEYPAIR ? getKeys() : undefined,
+  keypair: getKeys(),
   cors: {
     origin(ctx: any) {
       const requestOrigin = ctx.get("Origin");
@@ -39,6 +47,8 @@ const app = createRest({
         "https://www.netflix.com",
         "https://www.subturtle.app",
         "https://subturtle.app",
+        "https://www.dashboard.subturtle.app",
+        "https://dashboard.subturtle.app",
       ];
 
       // Handle requests without Origin header (like direct API calls)
@@ -67,8 +77,8 @@ const app = createRest({
     dbPrefix: process.env.MONGO_DB_PREFIX || "subturtle_",
   },
   staticPath: {
-    rootDir: path.join(__dirname, "public"),
-    rootPath: "/",
+    actualPath: path.join(__dirname, "public"),
+    path: "/",
   },
   adminUser: {
     email: process.env.ADMIN_EMAIL || "",
@@ -78,19 +88,7 @@ const app = createRest({
     return "123456";
   },
   permissionGroups,
-  authTriggers: [
-    new CmsTrigger("insert-one", (context) => {
-      // console.log("User created", context);
-
-      getCollection("user_content", "phrase_bundle").insertMany([
-        {
-          refId: context.queryResult._id,
-          title: "Default Bundle",
-          phrases: [],
-        },
-      ]);
-    }),
-  ],
+  authTriggers: authTriggers,
 }).catch((err) => {
   console.error(err);
   process.exit(1);

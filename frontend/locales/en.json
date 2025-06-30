@@ -21,13 +21,41 @@
         },
         "detail_card": {
             "submit": "Submit",
-            "title_required": "Title is required"
+            "title_required": "Title is required",
+            "confirm_deletion": "Confirm Bundle Deletion",
+            "confirm_deletion_message": "Are you sure you want to delete this bundle?"
         },
         "phrase_card": {
             "phrase_placeholder": "Type your phrase here",
-            "translation_placeholder": "Type your translation here"
+            "translation_placeholder": "Type your translation here",
+            "definition_placeholder": "Definition will be displayed here",
+            "confirm_deletion": "Confirm Phrase Deletion",
+            "confirm_deletion_message": "Are you sure you want to delete this phrase?"
         },
-        "filter_bundles": "Filter bundles..."
+        "filter_bundles": "Filter bundles...",
+        "select_bundle": "Select Bundle"
+    },
+    "freemium": {
+        "limitation": {
+            "title": "Upgrade Required",
+            "no_phrase_spots_left": "No free phrase spots left",
+            "upgrade_message": "Upgrade to Pro to save and practice phrases without limits.",
+            "free_spots_left": "Free spots left to save phrases",
+            "free_sessions_left": "Free live practice sessions left",
+            "go_pro": "Go Pro!",
+            "upgrade_now": "Upgrade Now",
+            "upgrade": "Upgrade",
+            "continue_with_limits": "Continue with limits :(",
+            "no_free_spots_left": "No free phrase spots left.",
+            "upgrade_to_pro_message": "Upgrade to Pro to save and practice phrases without limits."
+        },
+        "timer": {
+            "remaining_time": "Free session time remaining",
+            "time_expired": "Free Session Time Expired",
+            "session_limit_reached": "Your 5-minute free session limit has been reached.",
+            "upgrade_for_unlimited": "Upgrade to Pro for unlimited session time.",
+            "exit_session": "Exit Session"
+        }
     },
     "statistic": {
         "your-statistic": "Your Statistic",
@@ -61,17 +89,60 @@
         "max-30-phrases-error": "Maximum 30 phrases are allowed",
         "positive-numbers-required": "Only positive numbers are allowed",
         "from-less-than-to-error": "From phrase must be less than or equal to To phrase",
-        "total-phrases-required": "Total phrases is required"
+        "total-phrases-required": "Total phrases is required",
+        "back-to-dashboard": "Back to Dashboard",
+        "oops-something-went-wrong": "Oops, something went wrong"
     },
-    "membership-plans": {
-        "title": "Membership Plans",
+    "subscription": {
+        "title": "Subscription",
+        "subscription-plans": "Subscription Plans",
         "plans-price-details": "Plans & Price Details",
         "invoice-date": "Invoice Date:",
         "due-date": "Due Date:",
-        "cancel-subscription": "Cancel Subscription",
+        "manage-subscription": "Manage Subscription",
         "solo-influencer-plan": "Solo Influencer Plan",
         "enter-account-numbers": "Enter your account numbers:",
-        "buy-now": "Buy Now"
+        "buy-now": "Buy Now",
+        "price": "Price",
+        "credits": "Credits",
+        "duration": "Duration",
+        "days": "days",
+        "processing": "Processing",
+        "subscribe-now": "Subscribe Now",
+        "checkout-failed": "Checkout failed, please try again",
+        "unexpected-error": "An unexpected error occurred",
+        "verifying-payment": "Verifying Payment",
+        "please-wait": "Please wait while we verify your payment...",
+        "payment-successful": "Payment Successful!",
+        "subscription-activated": "Your subscription has been activated successfully.",
+        "go-home": "Go Home",
+        "payment-verification-failed": "Payment Verification Failed",
+        "payment-verification-error": "We couldn't verify your payment.",
+        "try-again": "Try Again",
+        "payment-canceled": "Payment Canceled",
+        "payment-canceled-message": "Your payment was canceled. No charges were made.",
+        "missing-session-id": "Missing session ID in the URL",
+        "verification-failed": "Payment verification failed",
+        "payment-result": "Payment Result",
+        "monthly-subscription": "Monthly Subscription",
+        "monthly-description": "Access to all features for 30 days with 1000 credits",
+        "features": "What's Included",
+        "active-plan": "Active Plan",
+        "freemium": "Freemium Plan",
+        "premium": "Premium Plan",
+        "pro": "Pro Plan",
+        "joined-at": "Joined at",
+        "month": "Month",
+        "current-plan": "Current Plan",
+        "downgrade-plan": "Downgrade Plan",
+        "upgrade-plan": "Upgrade Plan",
+        "started-at": "Started at",
+        "metric": "Metric",
+        "total": "Total",
+        "available": "Available",
+        "used": "Used",
+        "credit-in-usd": "Credit in USD",
+        "plan": "Plan"
     },
     "auth": {
         "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
@@ -94,7 +165,26 @@
         "phrase-range": "Phrase Range",
         "total-phrases": "Total Phrases",
         "selection-mode": "Selection Mode",
-        "ai-character": "AI Character"
+        "ai-character": "AI Character",
+        "cost-info": "Cost Information",
+        "total-tokens": "Total Tokens",
+        "total-cost": "Total Cost (USD)",
+        "start-new-session": "Start New Session"
+    },
+    "profile": {
+        "profile": "Profile"
+    },
+    "billing": {
+        "billing": "Billing",
+        "invoice": "Invoice",
+        "next-billing-date": "Next Billing Date",
+        "invoice-number": "Invoice Number",
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status",
+        "renew-now": "Renew Now",
+        "days-left": "Days Left",
+        "payment-history": "Payment History"
     },
     "dashboard": "Dashboard",
     "ai-coaching": "AI Coaching",
@@ -109,7 +199,13 @@
     "remove": "Remove",
     "bundle_pharase": "The Bundle and phrases",
     "title_description": "The title and description",
+    "definition": "Definition",
     "title": "Title",
     "phrase": "Phrase",
-    "translation": "Translation"
+    "translation": "Translation",
+    "settings": "Settings",
+    "logout": "Log out",
+    "sign-out": "Sign Out",
+    "confirm-sign-out": "Confirm Sign Out",
+    "confirm-sign-out-message": "Are you sure you want to sign out of your account?"
 }

@@ -30,8 +30,8 @@
         "vue-tsc": "^0.40.4"
     },
     "dependencies": {
-        "@codebridger/lib-vue-components": "^1.17.0-dev.15",
-        "@modular-rest/client": "^1.6.2",
+        "@codebridger/lib-vue-components": "1.18.0",
+        "@modular-rest/client": "^1.11.0",
         "@pinia/nuxt": "^0.4.6",
         "apexcharts": "^4.4.0",
         "pinia": "^2.0.22",

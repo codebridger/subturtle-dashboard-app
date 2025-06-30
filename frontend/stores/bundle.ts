@@ -1,12 +1,13 @@
-import { createPagination, dataProvider } from '@modular-rest/client';
-import type { PaginationType } from '@modular-rest/client/dist/types/data-provider';
+import { createPagination, dataProvider, functionProvider } from '@modular-rest/client';
+import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
+import { useProfileStore } from './profile';
 
 export const useBundleStore = defineStore('bundle', () => {
     const bundleDetail = ref<PhraseBundleType | null>(null);
 
-    const phrasePagination = ref<PaginationType | null>(null);
+    const phrasePagination = ref<Types.PaginationType | null>(null);
 
     const tempPhrases = ref<Array<NewPhraseType>>([]);
     const phrases = ref<Array<PhraseType>>([]);
@@ -89,15 +90,14 @@ export const useBundleStore = defineStore('bundle', () => {
     }
 
     function updatePhrase(id: string, updated: { [key: string]: any }) {
-        return dataProvider
-            .updateOne({
-                database: DATABASE.USER_CONTENT,
-                collection: COLLECTIONS.PHRASE,
-                query: {
-                    _id: id,
+        return functionProvider
+            .run({
+                name: 'updatePhrase',
+                args: {
+                    phraseId: id,
                     refId: authUser.value?.id,
+                    update: updated,
                 },
-                update: updated,
             })
             .then((_data) => {
                 const index = phrases.value.findIndex((p) => p._id === id);
@@ -108,21 +108,27 @@ export const useBundleStore = defineStore('bundle', () => {
     }
 
     function removePhrase(id: string) {
-        return dataProvider
-            .updateOne({
-                database: DATABASE.USER_CONTENT,
-                collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: {
-                    _id: bundleDetail.value?._id,
+        return functionProvider
+            .run({
+                name: 'removePhrase',
+                args: {
+                    phraseId: id,
+                    bundleId: bundleDetail.value?._id,
                     refId: authUser.value?.id,
-                },
-                update: {
-                    $pull: { phrases: id },
                 },
             })
             .then((_data) => {
                 const index = phrases.value.findIndex((p) => p._id === id);
                 phrases.value.splice(index, 1);
+
+                const profileStore = useProfileStore();
+                if (profileStore.isFreemium) {
+                    const currentValue = profileStore.freemiumAllocation!.allowed_save_words_used;
+                    // Prevent going below 0
+                    if (currentValue > 0) {
+                        profileStore.freemiumAllocation!.allowed_save_words_used--;
+                    }
+                }
             });
     }
 
@@ -132,59 +138,54 @@ export const useBundleStore = defineStore('bundle', () => {
             translation: '',
             id: new Date().getTime().toString(),
         });
+
+        const profileStore = useProfileStore();
+        if (profileStore.isFreemium) {
+            profileStore.freemiumAllocation!.allowed_save_words_used++;
+        }
     }
 
     function removeTemporarilyPhrase(id: string) {
         tempPhrases.value = tempPhrases.value.filter((p) => p.id !== id);
+
+        const profileStore = useProfileStore();
+        if (profileStore.isFreemium) {
+            const currentValue = profileStore.freemiumAllocation!.allowed_save_words_used;
+            // Prevent going below 0
+            if (currentValue > 0) {
+                profileStore.freemiumAllocation!.allowed_save_words_used--;
+            }
+        }
     }
 
     async function createPhrase(newPhrase: NewPhraseType) {
         const index = tempPhrases.value.findIndex((p) => p.id === newPhrase.id);
         tempPhrases.value = tempPhrases.value.filter((p) => p.id !== newPhrase.id);
 
-        const newDoc = {
-            ...newPhrase,
-            refId: authUser.value?.id,
-        } as { [ket: string]: any };
-
-        delete newDoc['id'];
-
         return new Promise<PhraseType>(async (resolve, reject) => {
-            // Insert new phrase
-            const insertedPhrase = await dataProvider
-                .insertOne({
-                    database: DATABASE.USER_CONTENT,
-                    collection: COLLECTIONS.PHRASE,
-                    doc: newDoc,
-                })
-                .catch(reject);
-
-            if (!insertedPhrase) return;
-
-            // Update phrase bundle
-            await dataProvider
-                .updateOne({
-                    database: DATABASE.USER_CONTENT,
-                    collection: COLLECTIONS.PHRASE_BUNDLE,
-                    query: {
-                        _id: bundleDetail.value?._id,
+            try {
+                const insertedPhrase = (await functionProvider.run({
+                    name: 'createPhrase',
+                    args: {
+                        phrase: newPhrase.phrase,
+                        translation: newPhrase.translation,
+                        bundleIds: [bundleDetail.value?._id],
                         refId: authUser.value?.id,
+                        type: 'normal',
                     },
-                    update: {
-                        $push: { phrases: insertedPhrase._id },
-                    },
-                })
-                .then(() => resolve(insertedPhrase))
-                .catch(reject);
-        })
-            .then((insertedPhrase) => {
-                bundleDetail.value?.phrases.unshift(insertedPhrase._id);
-                phrases.value.unshift(insertedPhrase);
-            })
-            .catch((error) => {
+                })) as PhraseType;
+
+                if (insertedPhrase) {
+                    bundleDetail.value?.phrases.unshift(insertedPhrase._id);
+                    phrases.value.unshift(insertedPhrase);
+                    resolve(insertedPhrase);
+                }
+            } catch (error) {
                 // add back the phrase if there is an error
                 tempPhrases.value.splice(index, 0, newPhrase);
-            });
+                reject(error);
+            }
+        });
     }
 
     return {
