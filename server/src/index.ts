@@ -41,7 +41,7 @@ const app = createRest({
   keypair: getKeys(),
   cors: {
     origin(ctx: any) {
-      const requestOrigin = ctx.get("Origin");
+      const requestOrigin = ctx.get("Origin") as string;
       const allowedOrigins = [
         //dev
         "http://localhost:3000",
@@ -65,14 +65,11 @@ const app = createRest({
       }
 
       // Check if the origin is in our allowed list
-      if (allowedOrigins.includes(requestOrigin)) {
-        return requestOrigin;
+      for (const origin of allowedOrigins) {
+        if (requestOrigin.startsWith(origin)) {
+          return requestOrigin;
+        }
       }
-
-      // Log suspicious requests for monitoring
-      console.warn(
-        `Blocked CORS request from unauthorized origin: ${requestOrigin}`
-      );
 
       // In production, reject unauthorized origins
       return false;
