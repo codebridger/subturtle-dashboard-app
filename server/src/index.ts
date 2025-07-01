@@ -53,7 +53,7 @@ const app = createRest({
         "https://dashboard.subturtle.app",
 
         // Chrome extension - prod
-        "chrome-extension://gaplicnpaiidofkoeonioomcnadoofkf",
+        "chrome-extension://",
         "https://www.youtube.com",
         "https://www.netflix.com",
       ];
