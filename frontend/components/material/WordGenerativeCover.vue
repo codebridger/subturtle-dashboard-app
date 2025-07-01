@@ -2,7 +2,7 @@
     <div class="relative">
         <iframe ref="container" :class="[...props.classes, 'bg-blue-400']" :src="getUrl()" />
         <!-- Transparent overlay to handle clicks properly -->
-        <div class="absolute inset-0 z-10 cursor-pointer" @click="emitClick"></div>
+        <div class="absolute inset-0 z-10 cursor-pointer" @click="emitClick" />
     </div>
 </template>
 

@@ -5,7 +5,7 @@
                 <IconButton class="absolute right-2 top-2 z-10 min-w-10 justify-center p-2" rounded="md">
                     {{ bundle.phrases.length }}
                 </IconButton>
-                <MaterialWordGenerativeCover :words="phraseList" :classes="['h-fit w-full']" @click="navigateToBundle" />
+                <MaterialWordGenerativeCover :words="phraseList" :classes="[' w-full']" @click="navigateToBundle" />
             </section>
             <section class="p-6">
                 <span class="mb-2 text-sm font-bold text-gray-800 dark:text-white">

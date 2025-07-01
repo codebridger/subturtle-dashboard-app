@@ -43,6 +43,9 @@ const app = createRest({
     origin(ctx: any) {
       const requestOrigin = ctx.get("Origin");
       const allowedOrigins = [
+        //dev
+        "http://localhost:3000",
+
         // Subturtle domains
         "https://subturtle.app",
         "https://www.subturtle.app",
