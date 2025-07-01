@@ -12,13 +12,18 @@ const translateWithContext = defineFunction({
   permissionTypes: ["anonymous_access"],
   callback: async (params: TranslateWithContextParams) => {
     // Extract parameters
-    const {
+    let {
       phrase,
       context,
       translationType = "simple",
       sourceLanguage = "",
       targetLanguage = "",
     } = params;
+
+    // normalize the source language
+    if (sourceLanguage.toLowerCase() === "auto") {
+      sourceLanguage = "";
+    }
 
     try {
       if (translationType === "detailed") {
