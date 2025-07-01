@@ -43,12 +43,16 @@ const app = createRest({
     origin(ctx: any) {
       const requestOrigin = ctx.get("Origin");
       const allowedOrigins = [
-        "https://www.youtube.com",
-        "https://www.netflix.com",
-        "https://www.subturtle.app",
+        // Subturtle domains
         "https://subturtle.app",
+        "https://www.subturtle.app",
         "https://www.dashboard.subturtle.app",
         "https://dashboard.subturtle.app",
+
+        // Chrome extension - prod
+        "chrome-extension://gaplicnpaiidofkoeonioomcnadoofkf",
+        "https://www.youtube.com",
+        "https://www.netflix.com",
       ];
 
       // Handle requests without Origin header (like direct API calls)
