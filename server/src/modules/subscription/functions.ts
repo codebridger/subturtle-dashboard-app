@@ -104,6 +104,15 @@ const getSubscriptionPlans = defineFunction({
       }
     };
 
+    // Ensure payment adapter is initialized before using it
+    try {
+      await paymentAdapterFactory.initialize();
+    } catch (error) {
+      console.warn("Failed to initialize payment adapter:", error);
+      // Return only freemium plan if adapter initialization fails
+      return plans;
+    }
+
     const adapter = paymentAdapterFactory.getAdapter(
       PaymentProvider.STRIPE
     ) as StripeAdapter;

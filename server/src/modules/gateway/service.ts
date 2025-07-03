@@ -7,13 +7,17 @@ import { PaymentProvider, paymentAdapterFactory } from "./adapters";
 
 // Initialize the payment adapters
 async function initializePaymentAdapters() {
-  await paymentAdapterFactory.initialize();
+  try {
+    await paymentAdapterFactory.initialize();
+    console.log("Payment adapters initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize payment adapters:", error);
+    // Don't throw here to prevent module loading failures
+  }
 }
 
 // Initialize on module load
-initializePaymentAdapters().catch((err) => {
-  console.error("Failed to initialize payment adapters:", err);
-});
+initializePaymentAdapters();
 
 /**
  * Create a checkout session
