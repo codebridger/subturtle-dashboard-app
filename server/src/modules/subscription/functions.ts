@@ -50,7 +50,7 @@ const getSubscriptionPlans = defineFunction({
       {
         name: "Freemium Plan",
         price: "0",
-        currency: "£",
+        currency: "$",
         description: "Great for casual learners",
         features: [
           "Translate captions in real time",
