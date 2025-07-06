@@ -42,7 +42,7 @@
                     <p class="mb-6 text-gray-600" v-if="error">{{ error }}</p>
                     <div class="flex justify-center space-x-4">
                         <NuxtLink
-                            to="/membership-plans"
+                            to="/settings/subscription"
                             class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-md transition duration-300 hover:bg-blue-700"
                         >
                             {{ t('subscription.try-again') }}
