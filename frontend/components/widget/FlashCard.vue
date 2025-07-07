@@ -59,51 +59,47 @@
 
                     <!-- Back Side: Comprehensive linguistic information -->
                     <template v-else>
-                        <div class="h-full w-full overflow-y-auto">
-                            <div class="space-y-4 p-2">
-                                <!-- Language code in corner -->
-                                <div class="absolute right-4 top-4 rounded bg-gray-100 px-2 py-1 text-xs text-gray-400">
+                        <div class="relative flex h-full w-full flex-col items-center justify-center">
+                            <!-- Top row: badges (left) and lang code (right) -->
+                            <div class="flex w-full items-start justify-between px-6 pt-4">
+                                <div class="flex min-w-0 flex-col items-start gap-1">
+                                    <template v-if="props.linguisticData?.type || props.linguisticData?.formality_level">
+                                        <div class="mb-0.5 pl-0.5 text-[10px] text-gray-400">Attributes</div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <span
+                                                v-if="props.linguisticData?.type"
+                                                class="truncate rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase text-blue-800"
+                                            >
+                                                {{ props.linguisticData.type }}
+                                            </span>
+                                            <span
+                                                v-if="props.linguisticData?.formality_level"
+                                                class="truncate rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase text-orange-800"
+                                            >
+                                                {{ props.linguisticData.formality_level }}
+                                            </span>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="ml-2 shrink-0 rounded bg-gray-100 px-2 py-1 text-xs text-gray-400">
                                     {{ props.languageInfo?.target || 'TRG' }}
                                 </div>
+                            </div>
 
-                                <!-- Translation Header -->
-                                <div class="border-b border-gray-200 pb-4 text-center">
-                                    <div class="mb-2 text-3xl font-bold" :dir="props.direction?.target || 'ltr'">
-                                        {{ props.back || 'Translation' }}
-                                    </div>
-
-                                    <!-- Context moved here from front side -->
-                                    <div
-                                        v-if="props.context"
-                                        class="mx-auto mt-2 max-w-2xl text-sm italic text-gray-600"
-                                        :dir="props.direction?.source || 'ltr'"
-                                    >
-                                        "{{ props.context }}"
-                                    </div>
-
-                                    <!-- Type and Formality Badges -->
-                                    <div class="mt-3 flex flex-wrap justify-center gap-2">
-                                        <span
-                                            v-if="props.linguisticData?.type"
-                                            class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase text-blue-800"
-                                        >
-                                            {{ props.linguisticData.type }}
-                                        </span>
-                                        <span
-                                            v-if="props.linguisticData?.formality_level"
-                                            class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase text-orange-800"
-                                        >
-                                            {{ props.linguisticData.formality_level }}
-                                        </span>
-                                    </div>
+                            <!-- Main Content (centered) -->
+                            <div v-if="!showExamples" class="flex h-full w-full flex-col items-center justify-center">
+                                <div class="mb-3 text-center text-2xl font-medium" :dir="props.direction?.target || 'ltr'">
+                                    {{ props.back || 'Translation' }}
                                 </div>
+                            </div>
 
-                                <!-- Examples Section -->
-                                <div v-if="props.linguisticData?.examples?.length" class="rounded-lg bg-gray-50 p-4">
-                                    <div class="mb-3 text-sm font-bold text-gray-700">Examples</div>
+                            <!-- Examples Section (centered, only if toggled) -->
+                            <div v-if="showExamples && props.linguisticData?.examples?.length" class="flex h-full w-full flex-col items-center justify-center">
+                                <div class="w-full max-w-2xl rounded-lg bg-gray-50 p-4">
+                                    <div class="mb-3 text-center text-sm font-bold text-gray-700">Examples</div>
                                     <div class="space-y-4">
                                         <div
-                                            v-for="(example, index) in props.linguisticData.examples.slice(0, 2)"
+                                            v-for="(example, index) in props.linguisticData.examples"
                                             :key="index"
                                             class="rounded-lg border-l-4 border-blue-200 bg-white p-3"
                                         >
@@ -114,11 +110,23 @@
                                                 {{ example.source }}
                                             </div>
                                         </div>
-                                        <div v-if="props.linguisticData.examples.length > 2" class="text-center">
-                                            <div class="text-xs text-gray-400">+{{ props.linguisticData.examples.length - 2 }} more examples</div>
-                                        </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Examples Toggle Button at bottom -->
+                            <div class="absolute bottom-8 left-0 right-0 flex justify-center">
+                                <button
+                                    v-if="props.linguisticData?.examples?.length"
+                                    @click.stop="toggleExamples"
+                                    class="rounded px-2 py-1 text-sm font-medium text-blue-600 underline transition-colors hover:text-blue-800 focus:outline-none"
+                                >
+                                    {{
+                                        showExamples
+                                            ? 'Hide Examples'
+                                            : `Show Examples${props.linguisticData?.examples?.length ? ` (${props.linguisticData.examples.length})` : ''}`
+                                    }}
+                                </button>
                             </div>
                         </div>
                     </template>
@@ -164,6 +172,7 @@
     }
 
     const isFlipped = ref(false);
+    const showExamples = ref(false);
 
     const props = withDefaults(defineProps<FlashCardProps>(), {
         phraseType: 'normal',
@@ -175,11 +184,16 @@
         isFlipped.value = !isFlipped.value;
     }
 
+    function toggleExamples() {
+        showExamples.value = !showExamples.value;
+    }
+
     // Reset flip state when phrase changes
     watch(
         () => props.front,
         () => {
             isFlipped.value = false;
+            showExamples.value = false;
         }
     );
 </script>
