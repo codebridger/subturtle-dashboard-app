@@ -28,7 +28,7 @@
                     </p>
                 </div>
 
-                <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'py-4']">
+                <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'p-4']">
                     <!-- All phrases -->
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)" class="cursor-pointer">
                         <Card
@@ -60,9 +60,9 @@
                             <span class="absolute bottom-0 right-0 scale-75 rounded-xl bg-gray-100 px-2 text-xs text-gray-500"> {{ index + 1 }} </span>
                             <span
                                 v-if="activePhrase && activePhrase._id === phrase._id"
-                                class="absolute right-0 top-0 scale-75 rounded-xl bg-primary px-2 text-xs text-white"
+                                class="absolute right-0 top-0 scale-75 rounded-xl p-2 text-xs text-white"
                             >
-                                <Icon name="IconPlay" class="h-3 w-3" />
+                                <Icon name="IconChatDot" class="text-primary" />
                             </span>
                         </Card>
                     </div>
