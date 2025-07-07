@@ -107,9 +107,9 @@ const requestEphemeralToken = defineFunction({
         body: JSON.stringify({
           model: LIVE_SESSION_MODEL,
           temperature: 0.6,
-          input_audio_transcription: {
-            model: LIVE_SESSION_TRANSCRIPTION_MODEL,
-          },
+          // input_audio_transcription: {
+          //   model: LIVE_SESSION_TRANSCRIPTION_MODEL,
+          // },
           ...additionalSetup,
         }),
       });
