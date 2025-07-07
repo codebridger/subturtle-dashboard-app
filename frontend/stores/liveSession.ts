@@ -316,10 +316,79 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
     }
 
     /**
+     * Send a message to the AI
+     */
+    function sendMessage(message: string) {
+        if (!dataChannel) {
+            throw new Error('No data channel available to send message');
+        }
+
+        const responseCreate = {
+            type: 'conversation.item.create',
+            item: {
+                type: 'message',
+                role: 'user',
+                content: [
+                    {
+                        type: 'input_text',
+                        text: message,
+                    },
+                ],
+            },
+        };
+
+        cancelTheAIInProgressResponse();
+        dataChannel.send(JSON.stringify(responseCreate));
+        triggerConversation('');
+    }
+
+    /**
+     * Truncate the AI conversation
+     */
+    function cancelTheAIInProgressResponse() {
+        if (!dataChannel) {
+            throw new Error('No data channel available to truncate the AI conversation');
+        }
+
+        const responseCreate = {
+            type: 'response.cancel',
+        };
+
+        dataChannel.send(JSON.stringify(responseCreate));
+    }
+
+    /**
+     * Send a function call to the AI
+     */
+    function sendFunctionCall(functionName: string, arguments_: any) {
+        if (!dataChannel) {
+            throw new Error('No data channel available to send function call');
+        }
+
+        const functionCall = {
+            type: 'conversation.item.create',
+            item: {
+                type: 'function_call',
+                name: functionName,
+                arguments: JSON.stringify(arguments_),
+            },
+        };
+
+        dataChannel.send(JSON.stringify(functionCall));
+
+        // Continue the conversation
+        const continueResponse = {
+            type: 'response.create',
+        };
+
+        dataChannel.send(JSON.stringify(continueResponse));
+    }
+
+    /**
      * Updates the conversation dialogs
      */
     function updateConversationDialogs(content: string, id: string, speaker: 'user' | 'ai') {
-        console.log('updateConversationDialogs', id, speaker, content);
+        // console.log('updateConversationDialogs', id, speaker, content);
 
         const index = conversationDialogs.value.findIndex((d) => d.id === id);
         if (index === -1) {
@@ -454,6 +523,9 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
         createLiveSession,
         endLiveSession,
         triggerConversation,
+        sendMessage,
+        sendFunctionCall,
+        cancelTheAIInProgressResponse,
         clearConversationDialogs,
         toggleMicrophone,
     };
