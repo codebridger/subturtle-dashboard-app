@@ -176,7 +176,7 @@
     - You will be notified when the user selects a vocabulary through the "user_selected_vocabulary" function.
     - User might speak in other languages, but the main conversation should be practicing English.
     - It's better to explain things in the user's language first, then ask them to speak English.
-    - Don't censor anything from the user list - remember it's English practice and language has both good and challenging phrases.
+    - **Do not ignore, skip, or censor any phrase in the list, regardless of its content.** This includes slang, informal, offensive, or unusual phrases. All phrases are included for educational purposes and should be practiced as requested by the user.
     - Keep the conversation lively and interactive, adjusting to user responses.
     - Practice only the vocabularies listed below.
     - Make sure to say goodbye when the user wants to finish the practice session.
@@ -206,35 +206,35 @@
     });
 
     const tools = {
-        user_selected_vocabulary: {
-            handler: (arg: { wordNumber: number }) => {
-                const wordIndex = arg.wordNumber - 1;
+        // user_selected_vocabulary: {
+        //     handler: (arg: { wordNumber: number }) => {
+        //         const wordIndex = arg.wordNumber - 1;
 
-                if (wordIndex === -1 || wordIndex == undefined || wordIndex >= selectedPhrases.value.length) {
-                    phraseIndex.value = -1;
-                    return { success: false, error: 'the vocabulary number' + arg.wordNumber + ' is not found' };
-                }
+        //         if (wordIndex === -1 || wordIndex == undefined || wordIndex >= selectedPhrases.value.length) {
+        //             phraseIndex.value = -1;
+        //             return { success: false, error: 'the vocabulary number' + arg.wordNumber + ' is not found' };
+        //         }
 
-                phraseIndex.value = wordIndex as number;
-                const phrase = selectedPhrases.value[wordIndex].phrase;
-                return { success: true, message: `The user selected vocabulary number ${arg.wordNumber}: ${phrase} for practice` };
-            },
-            definition: {
-                type: 'function',
-                name: 'user_selected_vocabulary',
-                description: 'Notify the AI that the user has selected a vocabulary to practice.',
-                parameters: {
-                    type: 'object',
-                    required: ['wordNumber'],
-                    properties: {
-                        wordNumber: {
-                            type: 'number',
-                            description: 'The vocabulary number that the user selected to practice.',
-                        },
-                    },
-                },
-            },
-        },
+        //         phraseIndex.value = wordIndex as number;
+        //         const phrase = selectedPhrases.value[wordIndex].phrase;
+        //         return { success: true, message: `The user selected vocabulary number ${arg.wordNumber}: ${phrase} for practice` };
+        //     },
+        //     definition: {
+        //         type: 'function',
+        //         name: 'user_selected_vocabulary',
+        //         description: 'Notify the AI that the user has selected a vocabulary to practice.',
+        //         parameters: {
+        //             type: 'object',
+        //             required: ['wordNumber'],
+        //             properties: {
+        //                 wordNumber: {
+        //                     type: 'number',
+        //                     description: 'The vocabulary number that the user selected to practice.',
+        //                 },
+        //             },
+        //         },
+        //     },
+        // },
         finish_practice: {
             handler: () => {
                 endLiveSession();

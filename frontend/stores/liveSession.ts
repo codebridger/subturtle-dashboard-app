@@ -11,6 +11,7 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
     const isMicrophoneMuted = ref(false);
     const tokenUsage = ref<TokenUsageType | null>(null);
     const metadata = ref<LiveSessionMetadataType | null>(null);
+    const latestResponseEventId = ref<string | null>(null);
 
     // RTCPeerConnection state
     let peerConnection: RTCPeerConnection | null = null;
@@ -190,6 +191,8 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
                 updateConversationDialogs(transcript, item_id, 'user');
                 updateLiveSessionRecordOnServer();
             }
+        } else if (type === 'response.created') {
+            latestResponseEventId.value = event_id;
         }
 
         // Handle function calls
@@ -350,11 +353,19 @@ export const useLiveSessionStore = defineStore('liveSession', () => {
             throw new Error('No data channel available to truncate the AI conversation');
         }
 
-        const responseCreate = {
+        const cancelEvent = {
             type: 'response.cancel',
+            event_id: latestResponseEventId.value,
         };
 
-        dataChannel.send(JSON.stringify(responseCreate));
+        dataChannel.send(JSON.stringify(cancelEvent));
+
+        const stopAudioEvent = {
+            type: 'output_audio_buffer.clear',
+            event_id: latestResponseEventId.value,
+        };
+
+        dataChannel.send(JSON.stringify(stopAudioEvent));
     }
 
     /**
