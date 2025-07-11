@@ -1,5 +1,5 @@
 import { authentication, dataProvider, functionProvider } from '@modular-rest/client';
-import { toastError } from '@codebridger/lib-vue-components/toast.ts';
+import { toastError, toastSuccess } from '@codebridger/lib-vue-components/toast.ts';
 import { defineStore } from 'pinia';
 
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
@@ -70,6 +70,66 @@ export const useProfileStore = defineStore('profile', () => {
             });
     }
 
+    function updateProfile(profileData: { name?: string; gPicture?: string }) {
+        return functionProvider
+            .run({
+                name: 'updateProfile',
+                args: {
+                    userId: authUser.value?.id,
+                    ...profileData,
+                },
+            })
+            .then(() => {
+                // Refresh profile info after update
+                return getProfileInfo();
+            })
+            .then(() => {
+                toastSuccess('Profile updated successfully', { position: 'top-end' });
+            })
+            .catch((error) => {
+                toastError(error.error || 'Unable to update profile', { position: 'top-end' });
+                throw error;
+            });
+    }
+
+    function uploadProfilePicture(file: File) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = async () => {
+                try {
+                    const result = await functionProvider.run({
+                        name: 'uploadProfilePicture',
+                        args: {
+                            userId: authUser.value?.id,
+                            file: {
+                                buffer: Array.from(new Uint8Array(reader.result as ArrayBuffer)),
+                                mimetype: file.type,
+                                originalname: file.name,
+                            },
+                        },
+                    });
+
+                    // Refresh profile info after upload
+                    await getProfileInfo();
+                    toastSuccess('Profile picture uploaded successfully', { position: 'top-end' });
+                    resolve(result);
+                } catch (error: any) {
+                    toastError(error.error || 'Unable to upload profile picture', { position: 'top-end' });
+                    reject(error);
+                }
+            };
+
+            reader.onerror = () => {
+                const error = new Error('Failed to read file');
+                toastError('Failed to read file', { position: 'top-end' });
+                reject(error);
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
     // bootstrap the profile store
     function bootstrap() {
         return Promise.all([
@@ -104,6 +164,8 @@ export const useProfileStore = defineStore('profile', () => {
 
         logout,
         getProfileInfo,
+        updateProfile,
+        uploadProfilePicture,
         loginWithLastSession,
         bootstrap,
     };

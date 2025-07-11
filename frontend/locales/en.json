@@ -179,7 +179,8 @@
         "full-name": "Full Name",
         "email": "Email",
         "password": "Password",
-        "reset-password": "Reset Password"
+        "reset-password": "Reset Password",
+        "uploading": "Uploading..."
     },
     "billing": {
         "billing": "Billing",
