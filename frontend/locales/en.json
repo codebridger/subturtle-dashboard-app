@@ -174,7 +174,12 @@
         "start-new-session": "Start New Session"
     },
     "profile": {
-        "profile": "Profile"
+        "profile": "Profile",
+        "receive-daily-practice-email-reminders": "Receive daily practice email reminders?",
+        "full-name": "Full Name",
+        "email": "Email",
+        "password": "Password",
+        "reset-password": "Reset Password"
     },
     "billing": {
         "billing": "Billing",
