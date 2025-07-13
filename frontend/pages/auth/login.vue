@@ -64,6 +64,7 @@
     import { useRouter, useRoute } from 'vue-router';
     import { computed, onMounted } from 'vue';
     import { Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { authentication } from '@modular-rest/client';
 
     const { t } = useI18n();
 
@@ -103,6 +104,8 @@
             // Store redirect URL in session storage
             sessionStorage.setItem('auth_redirect_url', redirectUrl);
         }
+
+        authentication.loginAsAnonymous();
     });
 
     function triggerGoogleLoginProcess() {
