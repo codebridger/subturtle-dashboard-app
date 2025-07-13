@@ -20,10 +20,10 @@
                         :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
                         :primary-button-label="t('freemium.limitation.go_pro')"
                         :secondary-button-label="t('freemium.limitation.continue_with_limits')"
-                        @upgrade="handleConfirmUpgrade"
+                        auto-redirect-on-upgrade
                     >
                         <template #trigger="{ toggleModal }">
-                            <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase" @upgrade="toggleModal(true)" />
+                            <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase" @upgrade-needed="toggleModal(true)" />
                         </template>
                     </FreemiumLimitationModal>
                 </div>
@@ -157,10 +157,5 @@
     function handleFreemiumAddPhrase() {
         // User is not at limit yet, so add the phrase
         bundleStore.addEmptyTemporarilyPhrase();
-    }
-
-    function handleConfirmUpgrade() {
-        // Redirect to subscription page
-        router.push('/settings/subscription');
     }
 </script>

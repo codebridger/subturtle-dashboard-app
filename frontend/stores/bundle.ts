@@ -207,7 +207,9 @@ export const useBundleStore = defineStore('bundle', () => {
                 reject(error);
             }
         }).then((phrase) => {
-            analytic.track('phrase_saved');
+            analytic.track('phrase_saved', {
+                freemium: useProfileStore().isFreemium,
+            });
             return phrase;
         });
     }

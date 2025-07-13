@@ -51,8 +51,8 @@
 <script setup lang="ts">
     import { Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
     import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+    import { analytic } from '~/plugins/mixpanel';
 
-    const { t } = useI18n();
     const router = useRouter();
 
     // Props for customization
@@ -95,6 +95,16 @@
         }
     );
 
+    watch(
+        () => props.modelValue,
+        (value) => {
+            if (value === true) {
+                analytic.track('upgrade-modal_opened');
+            }
+        },
+        { immediate: true }
+    );
+
     const emit = defineEmits<{
         'update:modelValue': [value: boolean];
         close: [];
@@ -119,6 +129,7 @@
         // Default behavior: redirect to subscription page (can be overridden by parent)
         if (props.autoRedirectOnUpgrade) {
             router.push('/settings/subscription');
+            analytic.track('upgrade-cta_clicked');
         }
     }
 
