@@ -121,6 +121,8 @@ export const useBundleStore = defineStore('bundle', () => {
                 Object.keys(updated).forEach((key: string, i) => {
                     phrases.value[index][key as keyof PhraseType] = updated[key as keyof PhraseType];
                 });
+
+                analytic.track('phrase_updated_in-bundle');
             });
     }
 
@@ -146,6 +148,8 @@ export const useBundleStore = defineStore('bundle', () => {
                         profileStore.freemiumAllocation!.allowed_save_words_used--;
                     }
                 }
+
+                analytic.track('phrase_removed_from-bundle');
             });
     }
 
@@ -202,6 +206,9 @@ export const useBundleStore = defineStore('bundle', () => {
                 tempPhrases.value.splice(index, 0, newPhrase);
                 reject(error);
             }
+        }).then((phrase) => {
+            analytic.track('phrase_saved_to-bundle');
+            return phrase;
         });
     }
 
