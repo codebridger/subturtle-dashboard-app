@@ -3,7 +3,7 @@
         <h1 class="mb-6 text-lg font-bold">{{ t('profile.profile') }}</h1>
         <!-- User Details Section -->
         <Card class="shadow-none">
-            <form @submit.prevent="">
+            <form @submit.prevent="handleSubmit">
                 <div class="flex flex-col sm:flex-row">
                     <div class="mb-5 w-full items-center justify-center sm:w-2/12 ltr:sm:mr-4 rtl:sm:ml-4">
                         <div class="group relative h-24 w-24">
@@ -35,7 +35,7 @@
                                 type="file"
                                 accept="image/*"
                                 class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                @change=""
+                                @change="handleImageUpload"
                                 :disabled="isUploading"
                             />
                         </div>
@@ -96,13 +96,88 @@
 
     const name = ref('');
     const email = computed(() => profileStore.email || '');
-    const profilePhotoPreview = computed(() => profileStore.userDetail?.gPicture || '');
+    const profilePhotoPreview = computed(() => {
+        // Check if there are uploaded images first, then fallback to gPicture
+        if (profileStore.userDetail?.images && profileStore.userDetail.images.length > 0) {
+            // For now, use the first image. We'll need to check what property has the URL
+            const firstImage = profileStore.userDetail.images[0];
+            // Common properties that might contain the URL
+            return (
+                (firstImage as any)?.url ||
+                (firstImage as any)?.path ||
+                (firstImage as any)?.src ||
+                profileStore.userDetail.gPicture ||
+                '/assets/images/user.png'
+            );
+        }
+        return profileStore.userDetail?.gPicture || '/assets/images/user.png';
+    });
     const options = [{ label: t('profile.receive-daily-practice-email-reminders'), value: 'dailyReminders' }];
 
     const selectedValues = ref<Record<string, boolean>>({});
     const isSubmitting = ref(false);
     const isUploading = ref(false);
     const fileInput = ref<HTMLInputElement>();
+
+    const handleSubmit = async () => {
+        if (isSubmitting.value) return;
+
+        const trimmedName = name.value.trim();
+        if (!trimmedName) {
+            toastError('Please enter your full name', { position: 'top-end' });
+            return;
+        }
+
+        isSubmitting.value = true;
+
+        try {
+            await profileStore.updateProfile({
+                name: trimmedName,
+            });
+            // The success message is handled by the store
+        } catch (error) {
+            // Error message is handled by the store
+            console.error('Profile update failed:', error);
+        } finally {
+            isSubmitting.value = false;
+        }
+    };
+
+    const handleImageUpload = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toastError('Please select a valid image file', { position: 'top-end' });
+            return;
+        }
+
+        // Validate file size (e.g., 5MB limit)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+            toastError('Image file size should be less than 5MB', { position: 'top-end' });
+            return;
+        }
+
+        isUploading.value = true;
+
+        try {
+            await profileStore.uploadProfileImage(file);
+            // The success message is handled by the store
+        } catch (error) {
+            // Error message is handled by the store
+            console.error('Image upload failed:', error);
+        } finally {
+            isUploading.value = false;
+            // Reset the file input
+            if (fileInput.value) {
+                fileInput.value.value = '';
+            }
+        }
+    };
 
     onMounted(async () => {
         await profileStore.getProfileInfo();

@@ -1,5 +1,5 @@
 import { authentication, dataProvider, functionProvider } from '@modular-rest/client';
-import { toastError } from '@codebridger/lib-vue-components/toast.ts';
+import { toastError, toastSuccess } from '@codebridger/lib-vue-components/toast.ts';
 import { defineStore } from 'pinia';
 
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
@@ -70,6 +70,58 @@ export const useProfileStore = defineStore('profile', () => {
             });
     }
 
+    function updateProfile(profileData: { name: string; gPicture?: string }) {
+        return functionProvider
+            .run({
+                name: 'updateProfile',
+                args: {
+                    userId: authUser.value?.id,
+                    name: profileData.name,
+                    ...(profileData.gPicture && { gPicture: profileData.gPicture }),
+                },
+            })
+            .then((response) => {
+                // Update the local userDetail with the new data
+                if (userDetail.value) {
+                    userDetail.value.name = profileData.name;
+                    if (profileData.gPicture) {
+                        userDetail.value.gPicture = profileData.gPicture;
+                    }
+                }
+                toastSuccess('Profile updated successfully', { position: 'top-end' });
+                return response;
+            })
+            .catch((error) => {
+                toastError(error.error || 'Unable to update profile', { position: 'top-end' });
+                throw error;
+            });
+    }
+
+    function uploadProfileImage(file: File) {
+        return dataProvider
+            .updateOne({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PROFILE,
+                query: {
+                    refId: authentication.user?.id,
+                },
+                update: {
+                    images: [file],
+                },
+            })
+            .then((response) => {
+                // Refresh profile info to get the updated image URL
+                return getProfileInfo();
+            })
+            .then(() => {
+                toastSuccess('Profile image updated successfully', { position: 'top-end' });
+            })
+            .catch((error) => {
+                toastError(error.error || 'Unable to upload profile image', { position: 'top-end' });
+                throw error;
+            });
+    }
+
     // bootstrap the profile store
     function bootstrap() {
         return Promise.all([
@@ -104,6 +156,8 @@ export const useProfileStore = defineStore('profile', () => {
 
         logout,
         getProfileInfo,
+        updateProfile,
+        uploadProfileImage,
         loginWithLastSession,
         bootstrap,
     };
