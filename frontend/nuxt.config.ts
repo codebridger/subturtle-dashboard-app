@@ -13,6 +13,8 @@ export default defineNuxtConfig({
             isProduction: process.env.NUXT_PUBLIC_MODE?.toLowerCase() === 'production',
             isNotProduction: process.env.NUXT_PUBLIC_MODE?.toLowerCase() !== 'production',
             mode: process.env.NUXT_PUBLIC_MODE,
+            MIXPANEL_PROJECT_TOKEN: process.env.NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN,
+            MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
         },
     },
 
@@ -57,6 +59,8 @@ export default defineNuxtConfig({
         },
     },
 
+    plugins: ['~/plugins/mixpanel.ts'],
+
     modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
 
     i18n: {
@@ -80,6 +84,6 @@ export default defineNuxtConfig({
 
     // Make sure your build options are properly set
     build: {
-        transpile: ['@tiny-ideas-lr/lib-vue-components'],
+        transpile: ['@tiny-ideas-lr/lib-vue-components', 'mixpanel-browser'],
     },
 });

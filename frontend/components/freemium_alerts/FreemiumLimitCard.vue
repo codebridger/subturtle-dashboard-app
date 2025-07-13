@@ -111,12 +111,12 @@
     // Events
     const emit = defineEmits<{
         action: [];
-        upgrade: [];
+        'upgrade-needed': [];
     }>();
 
     function handleAction() {
         if (isAtLimit.value) {
-            emit('upgrade');
+            emit('upgrade-needed');
         } else {
             emit('action');
         }

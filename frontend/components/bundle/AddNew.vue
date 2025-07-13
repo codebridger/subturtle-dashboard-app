@@ -41,6 +41,7 @@
     import { useForm } from 'vee-validate';
     import * as yup from 'yup';
     import { COLLECTIONS, DATABASE } from '~/types/database.type';
+    import { analytic } from '~/plugins/mixpanel';
     const { t } = useI18n();
 
     const router = useRouter();
@@ -87,6 +88,8 @@
                 },
             })
             .then(({ _id }) => {
+                analytic.track('phrase-bundle_created');
+
                 isPending.value = false;
                 toggleModal(false);
                 router.push({ path: '/bundles/' + _id });

@@ -117,6 +117,7 @@
     import { useProfileStore } from '~/stores/profile';
     import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
     import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
+    import { analytic } from '~/plugins/mixpanel';
 
     definePageMeta({
         // @ts-ignore
@@ -285,10 +286,13 @@
                 onUpdate: handleSessionEvent,
             })
             .then((_res) => {
+                analytic.track('live-session_started');
                 // fetch subscription to update the freemium allocation
                 return useProfileStore().fetchSubscription();
             })
             .catch((error) => {
+                analytic.track('live-session_failed');
+
                 errorMode.value = true;
                 errorMessage.value = error?.error || error?.message || 'Failed to start live session';
             });

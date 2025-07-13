@@ -3,6 +3,7 @@ import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
 import { useProfileStore } from './profile';
+import { analytic } from '~/plugins/mixpanel';
 
 export const useBundleStore = defineStore('bundle', () => {
     const bundleDetail = ref<PhraseBundleType | null>(null);
@@ -60,6 +61,22 @@ export const useBundleStore = defineStore('bundle', () => {
                 Object.keys(updated).forEach((key: string, i) => {
                     bundleDetail.value![key as keyof PhraseBundleType] = updated[key as keyof PhraseBundleType];
                 });
+
+                analytic.track('phrase-bundle_updated');
+            });
+    }
+
+    function removeBundle(id: string) {
+        return functionProvider
+            .run({
+                name: 'removeBundle',
+                args: {
+                    _id: id,
+                    refId: authUser.value?.id,
+                },
+            })
+            .then(() => {
+                analytic.track('phrase-bundle_removed');
             });
     }
 
@@ -104,6 +121,8 @@ export const useBundleStore = defineStore('bundle', () => {
                 Object.keys(updated).forEach((key: string, i) => {
                     phrases.value[index][key as keyof PhraseType] = updated[key as keyof PhraseType];
                 });
+
+                analytic.track('phrase_updated');
             });
     }
 
@@ -129,6 +148,8 @@ export const useBundleStore = defineStore('bundle', () => {
                         profileStore.freemiumAllocation!.allowed_save_words_used--;
                     }
                 }
+
+                analytic.track('phrase_removed');
             });
     }
 
@@ -185,6 +206,11 @@ export const useBundleStore = defineStore('bundle', () => {
                 tempPhrases.value.splice(index, 0, newPhrase);
                 reject(error);
             }
+        }).then((phrase) => {
+            analytic.track('phrase_saved', {
+                freemium: useProfileStore().isFreemium,
+            });
+            return phrase;
         });
     }
 
@@ -194,6 +220,7 @@ export const useBundleStore = defineStore('bundle', () => {
         tempPhrases,
         fetchBundleDetail,
         updateBundleDetail,
+        removeBundle,
         phrasePagination,
         getPhraseNumber,
         fetchPhrases,
