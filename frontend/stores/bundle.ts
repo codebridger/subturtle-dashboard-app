@@ -122,7 +122,7 @@ export const useBundleStore = defineStore('bundle', () => {
                     phrases.value[index][key as keyof PhraseType] = updated[key as keyof PhraseType];
                 });
 
-                analytic.track('phrase_updated_in-bundle');
+                analytic.track('phrase_updated');
             });
     }
 
@@ -149,7 +149,7 @@ export const useBundleStore = defineStore('bundle', () => {
                     }
                 }
 
-                analytic.track('phrase_removed_from-bundle');
+                analytic.track('phrase_removed');
             });
     }
 
@@ -207,7 +207,7 @@ export const useBundleStore = defineStore('bundle', () => {
                 reject(error);
             }
         }).then((phrase) => {
-            analytic.track('phrase_saved_to-bundle');
+            analytic.track('phrase_saved');
             return phrase;
         });
     }
