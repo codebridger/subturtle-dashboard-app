@@ -63,6 +63,16 @@ export const useBundleStore = defineStore('bundle', () => {
             });
     }
 
+    function removeBundle(id: string) {
+        return functionProvider.run({
+            name: 'removeBundle',
+            args: {
+                _id: id,
+                refId: authUser.value?.id,
+            },
+        });
+    }
+
     function fetchPhrases(page: number) {
         if (page > (phrasePagination.value?.pages ?? 0)) {
             return Promise.resolve();
@@ -194,6 +204,7 @@ export const useBundleStore = defineStore('bundle', () => {
         tempPhrases,
         fetchBundleDetail,
         updateBundleDetail,
+        removeBundle,
         phrasePagination,
         getPhraseNumber,
         fetchPhrases,

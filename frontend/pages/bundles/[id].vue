@@ -1,6 +1,6 @@
 <template>
     <div class="p-4">
-        <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" @changed="bundleStore.updateBundleDetail(id, $event)" />
+        <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" />
 
         <!-- Practice Features -->
         <section class="my-4 flex flex-wrap items-start justify-between">
@@ -91,8 +91,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal, Pagination } from '@codebridger/lib-vue-components/complex.ts';
+    import { Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { useBundleStore } from '@/stores/bundle';
     import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
