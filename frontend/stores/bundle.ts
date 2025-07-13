@@ -3,6 +3,7 @@ import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
 import { useProfileStore } from './profile';
+import { analytic } from '~/plugins/mixpanel';
 
 export const useBundleStore = defineStore('bundle', () => {
     const bundleDetail = ref<PhraseBundleType | null>(null);
@@ -60,17 +61,23 @@ export const useBundleStore = defineStore('bundle', () => {
                 Object.keys(updated).forEach((key: string, i) => {
                     bundleDetail.value![key as keyof PhraseBundleType] = updated[key as keyof PhraseBundleType];
                 });
+
+                analytic.track('phrase-bundle_updated');
             });
     }
 
     function removeBundle(id: string) {
-        return functionProvider.run({
-            name: 'removeBundle',
-            args: {
-                _id: id,
-                refId: authUser.value?.id,
-            },
-        });
+        return functionProvider
+            .run({
+                name: 'removeBundle',
+                args: {
+                    _id: id,
+                    refId: authUser.value?.id,
+                },
+            })
+            .then(() => {
+                analytic.track('phrase-bundle_removed');
+            });
     }
 
     function fetchPhrases(page: number) {

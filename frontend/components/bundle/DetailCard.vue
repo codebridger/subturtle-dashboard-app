@@ -133,9 +133,6 @@
             .updateBundleDetail(props.bundleDetail._id, {
                 title: values.title,
             })
-            .then(() => {
-                analytic.track('phrase-bundle_updated');
-            })
             .finally(() => {
                 isSubmitting.value = false;
             });
@@ -150,8 +147,6 @@
         bundleStore
             .removeBundle(props.bundleDetail._id)
             .then(() => {
-                analytic.track('phrase-bundle_removed');
-
                 router.push('/bundles');
             })
             .catch((error) => {
