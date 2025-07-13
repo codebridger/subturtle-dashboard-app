@@ -3,7 +3,7 @@
         <h1 class="mb-6 text-lg font-bold">{{ t('profile.profile') }}</h1>
         <!-- User Details Section -->
         <Card class="shadow-none">
-            <form @submit.prevent="handleSubmit">
+            <form @submit.prevent="">
                 <div class="flex flex-col sm:flex-row">
                     <div class="mb-5 w-full items-center justify-center sm:w-2/12 ltr:sm:mr-4 rtl:sm:ml-4">
                         <div class="group relative h-24 w-24">
@@ -35,7 +35,7 @@
                                 type="file"
                                 accept="image/*"
                                 class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                @change="handleFileUpload"
+                                @change=""
                                 :disabled="isUploading"
                             />
                         </div>
@@ -108,52 +108,4 @@
         await profileStore.getProfileInfo();
         name.value = profileStore.userDetail?.name || '';
     });
-
-    const handleSubmit = async () => {
-        isSubmitting.value = true;
-
-        try {
-            await profileStore.updateProfile({
-                name: name.value,
-            });
-        } catch (error) {
-            console.error('Error updating profile:', error);
-        } finally {
-            isSubmitting.value = false;
-        }
-    };
-
-    const handleFileUpload = async (event: Event) => {
-        const target = event.target as HTMLInputElement;
-        const file = target.files?.[0];
-
-        if (!file) return;
-
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            toastError('Please select an image file', { position: 'top-end' });
-            return;
-        }
-
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-            toastError('File size must be less than 5MB', { position: 'top-end' });
-            return;
-        }
-
-        isUploading.value = true;
-
-        try {
-            await profileStore.uploadProfilePicture(file);
-            // Clear the input
-            if (fileInput.value) {
-                fileInput.value.value = '';
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-        } finally {
-            isUploading.value = false;
-        }
-    };
 </script>
