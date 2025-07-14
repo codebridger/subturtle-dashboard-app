@@ -4,7 +4,6 @@ import {
   clearUserFreemiumAllocations,
   clearUserUsageRecords,
 } from "../subscription/service";
-import { updateUserProfile } from "./service";
 
 /**
  * Remove subscription and freemium allocation for a user
@@ -49,47 +48,4 @@ const clearSubscriptionAndFreemium = defineFunction({
   },
 });
 
-/**
- * Update user profile information
- */
-const updateProfile = defineFunction({
-  name: "updateProfile",
-  permissionTypes: ["user_access"],
-  callback: async (params) => {
-    const { userId, name, gPicture } = params;
-
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
-
-    if (!name || name.trim() === "") {
-      throw new Error("Name is required");
-    }
-
-    try {
-      // Update user profile using the service
-      await updateUserProfile(
-        {
-          refId: userId,
-          name: name.trim(),
-          ...(gPicture && { gPicture }),
-        },
-        true // rewrite = true to update existing profile
-      );
-
-      reply.create("s", {
-        message: "Profile updated successfully",
-        data: {
-          name: name.trim(),
-          ...(gPicture && { gPicture }),
-        },
-      });
-    } catch (error: any) {
-      reply.create("e", {
-        message: `Failed to update profile: ${error.message}`,
-      });
-    }
-  },
-});
-
-module.exports.functions = [clearSubscriptionAndFreemium, updateProfile];
+module.exports.functions = [clearSubscriptionAndFreemium];

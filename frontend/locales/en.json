@@ -180,7 +180,9 @@
         "email": "Email",
         "password": "Password",
         "reset-password": "Reset Password",
-        "uploading": "Uploading..."
+        "uploading": "Uploading...",
+        "profile-updated": "Profile updated successfully",
+        "profile-update-failed": "Failed to update profile"
     },
     "billing": {
         "billing": "Billing",

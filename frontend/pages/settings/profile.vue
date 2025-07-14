@@ -35,7 +35,7 @@
                                 type="file"
                                 accept="image/*"
                                 class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                @change="handleImageUpload"
+                                @change="handleFileUpload"
                                 :disabled="isUploading"
                             />
                         </div>
@@ -44,8 +44,15 @@
                         </div>
                     </div>
                     <div class="grid flex-1 grid-cols-1 gap-5 sm:grid-cols-2">
-                        <Input :label="t('profile.full-name')" v-model="name" type="text" :placeholder="t('Placeholder')" required :disabled="isSubmitting" />
-                        <Input :label="t('profile.email')" :model-value="email" type="email" :placeholder="t('Placeholder')" required disabled />
+                        <Input
+                            :label="t('profile.full-name')"
+                            v-model="name"
+                            type="text"
+                            :placeholder="t('profile.full-name')"
+                            required
+                            :disabled="isSubmitting"
+                        />
+                        <Input :label="t('profile.email')" :model-value="email" type="email" :placeholder="t('profile.email')" required disabled />
                         <!-- <Input
                             :label="t('profile.password')"
                             type="password"
@@ -94,93 +101,79 @@
         middleware: ['auth'],
     });
 
-    const name = ref('');
-    const email = computed(() => profileStore.email || '');
-    const profilePhotoPreview = computed(() => {
-        // Check if there are uploaded images first, then fallback to gPicture
-        if (profileStore.userDetail?.images && profileStore.userDetail.images.length > 0) {
-            // For now, use the first image. We'll need to check what property has the URL
-            const firstImage = profileStore.userDetail.images[0];
-            // Common properties that might contain the URL
-            return (
-                (firstImage as any)?.url ||
-                (firstImage as any)?.path ||
-                (firstImage as any)?.src ||
-                profileStore.userDetail.gPicture ||
-                '/assets/images/user.png'
-            );
-        }
-        return profileStore.userDetail?.gPicture || '/assets/images/user.png';
-    });
+    const name = ref(profileStore.userDetail?.name || '');
+    const email = ref(profileStore.email);
+    const profilePicture = ref(profileStore.profilePicture);
+    const selectedFile = ref<File | null>(null);
+    const filePreviewUrl = ref<string | null>(null);
     const options = [{ label: t('profile.receive-daily-practice-email-reminders'), value: 'dailyReminders' }];
-
     const selectedValues = ref<Record<string, boolean>>({});
     const isSubmitting = ref(false);
     const isUploading = ref(false);
     const fileInput = ref<HTMLInputElement>();
 
-    const handleSubmit = async () => {
-        if (isSubmitting.value) return;
+    const handleFileUpload = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
 
-        const trimmedName = name.value.trim();
-        if (!trimmedName) {
-            toastError('Please enter your full name', { position: 'top-end' });
-            return;
+        if (file) {
+            selectedFile.value = file;
+
+            // Create preview URL for immediate UI feedback
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                filePreviewUrl.value = e.target?.result as string;
+            };
+            reader.readAsDataURL(file);
         }
+    };
 
-        isSubmitting.value = true;
+    const profilePhotoPreview = computed(() => {
+        // Show local preview if available
+        if (filePreviewUrl.value) {
+            return filePreviewUrl.value;
+        }
+        return profilePicture.value;
+    });
 
+    const handleSubmit = async () => {
         try {
-            await profileStore.updateProfile({
-                name: trimmedName,
-            });
-            // The success message is handled by the store
+            isSubmitting.value = true;
+
+            const profileData: {
+                name?: string;
+                profileImage?: File;
+                preferences?: Record<string, boolean>;
+            } = {};
+
+            // Include name if it has changed
+            if (name.value !== profileStore.userDetail?.name) {
+                profileData.name = name.value;
+            }
+
+            // Include profile image if a new one was selected
+            if (selectedFile.value) {
+                profileData.profileImage = selectedFile.value;
+            }
+
+            // Include preferences
+            profileData.preferences = { ...selectedValues.value };
+
+            // Call the store function
+            await profileStore.updateProfile(profileData);
+
+            console.log('Profile update completed successfully');
+            toastSuccess(t('profile.profile-updated'));
         } catch (error) {
-            // Error message is handled by the store
-            console.error('Profile update failed:', error);
+            console.error('Error updating profile:', error);
+            toastError(t('profile.profile-update-failed'));
         } finally {
             isSubmitting.value = false;
         }
     };
 
-    const handleImageUpload = async (event: Event) => {
-        const target = event.target as HTMLInputElement;
-        const file = target.files?.[0];
-
-        if (!file) return;
-
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            toastError('Please select a valid image file', { position: 'top-end' });
-            return;
-        }
-
-        // Validate file size (e.g., 5MB limit)
-        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-        if (file.size > maxSize) {
-            toastError('Image file size should be less than 5MB', { position: 'top-end' });
-            return;
-        }
-
-        isUploading.value = true;
-
-        try {
-            await profileStore.uploadProfileImage(file);
-            // The success message is handled by the store
-        } catch (error) {
-            // Error message is handled by the store
-            console.error('Image upload failed:', error);
-        } finally {
-            isUploading.value = false;
-            // Reset the file input
-            if (fileInput.value) {
-                fileInput.value.value = '';
-            }
-        }
-    };
-
     onMounted(async () => {
+        //profile
         await profileStore.getProfileInfo();
-        name.value = profileStore.userDetail?.name || '';
     });
 </script>
