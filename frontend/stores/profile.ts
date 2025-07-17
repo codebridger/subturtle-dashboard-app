@@ -89,6 +89,44 @@ export const useProfileStore = defineStore('profile', () => {
             .catch((error) => null);
     }
 
+    function updateProfile(profileData: { name?: string; profileImage?: File; preferences?: Record<string, boolean> }) {
+        console.log('updateProfile called with:', profileData);
+
+        // For now, return a resolved promise with local state updates
+        // In the future, this would use dataProvider.updateOne() or functionProvider.run()
+        return Promise.resolve(profileData)
+            .then((data) => {
+                if (userDetail.value) {
+                    // Update name if provided
+                    if (data.name !== undefined) {
+                        console.log('Updating name from:', userDetail.value.name, 'to:', data.name);
+                        userDetail.value.name = data.name;
+                    }
+
+                    // Handle profile image update (placeholder for now)
+                    if (data.profileImage) {
+                        console.log('Profile image update requested:', data.profileImage.name);
+                        // TODO: In future, this would upload the image and update userDetail.value.images
+                    }
+
+                    // Handle preferences update
+                    if (data.preferences) {
+                        console.log('Preferences update:', data.preferences);
+                        // TODO: Add preferences to ProfileType schema if needed
+                    }
+
+                    console.log('Updated userDetail:', userDetail.value);
+                }
+
+                return userDetail.value;
+            })
+            .catch((error) => {
+                console.error('Error updating profile:', error);
+                toastError(error.error || 'Unable to update profile', { position: 'top-end' });
+                throw error;
+            });
+    }
+
     return {
         authUser,
         userDetail,
@@ -106,5 +144,6 @@ export const useProfileStore = defineStore('profile', () => {
         getProfileInfo,
         loginWithLastSession,
         bootstrap,
+        updateProfile,
     };
 });

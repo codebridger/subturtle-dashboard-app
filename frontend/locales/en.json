@@ -174,7 +174,15 @@
         "start-new-session": "Start New Session"
     },
     "profile": {
-        "profile": "Profile"
+        "profile": "Profile",
+        "receive-daily-practice-email-reminders": "Receive daily practice email reminders?",
+        "full-name": "Full Name",
+        "email": "Email",
+        "password": "Password",
+        "reset-password": "Reset Password",
+        "uploading": "Uploading...",
+        "profile-updated": "Profile updated successfully",
+        "profile-update-failed": "Failed to update profile"
     },
     "billing": {
         "billing": "Billing",
@@ -209,5 +217,7 @@
     "logout": "Log out",
     "sign-out": "Sign Out",
     "confirm-sign-out": "Confirm Sign Out",
-    "confirm-sign-out-message": "Are you sure you want to sign out of your account?"
+    "confirm-sign-out-message": "Are you sure you want to sign out of your account?",
+    "save-changes": "Save Changes",
+    "coming-soon": "Coming soon"
 }
