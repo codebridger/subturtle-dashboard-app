@@ -1,6 +1,6 @@
 <template>
     <div class="p-4">
-        <h1 class="mb-6 text-lg font-bold">{{ t('profile.profile') }}</h1>
+        <!-- <h1 class="mb-6 text-lg font-bold">{{ t('profile.profile') }}</h1> -->
         <section class="mx-auto max-w-3xl space-y-4 p-4">
             <!-- User Details Section -->
             <Card class="shadow-none">
@@ -68,14 +68,14 @@
                             />
                             <Input :label="t('profile.email')" :model-value="email" type="email" :placeholder="t('profile.email')" required disabled />
                         </div>
-                        <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="pointer-events-none mb-6">
                             <CheckboxInput
                                 v-for="option in options"
                                 :key="option.value"
                                 v-model="selectedValues[option.value]"
-                                :text="option.label"
+                                :text="`${option.label} (${t('coming-soon')})`"
                                 :value="option.value"
-                                :disabled="isSubmitting"
+                                :disabled="true"
                             />
                         </div>
 
@@ -85,10 +85,10 @@
                                     :label="t('save-changes')"
                                     type="submit"
                                     size="lg"
-                                    shadow
+                                    :shadow="!(isSubmitting || isUploading || !hasChanges)"
                                     color="primary"
                                     :loading="isSubmitting"
-                                    :disabled="isSubmitting || isUploading"
+                                    :disabled="isSubmitting || isUploading || !hasChanges"
                                 />
                             </div>
                         </div>
@@ -125,6 +125,17 @@
     const isSubmitting = ref(false);
     const isUploading = ref(false);
     const fileInput = ref<HTMLInputElement>();
+
+    // Track initial values for change detection
+    const initialName = ref('');
+    const initialSelectedValues = ref<Record<string, boolean>>({});
+    const hasChanges = computed(() => {
+        const nameChanged = name.value !== initialName.value;
+        const preferencesChanged = JSON.stringify(selectedValues.value) !== JSON.stringify(initialSelectedValues.value);
+        const fileChanged = selectedFile.value !== null;
+
+        return nameChanged || preferencesChanged || fileChanged;
+    });
 
     const handleFileUpload = (event: Event) => {
         const target = event.target as HTMLInputElement;
@@ -189,5 +200,26 @@
     onMounted(async () => {
         //profile
         await profileStore.getProfileInfo();
+
+        // Initialize initial values for change detection
+        initialName.value = profileStore.userDetail?.name || '';
+        initialSelectedValues.value = { ...selectedValues.value };
     });
 </script>
+
+<style scoped>
+    /* Override hover styles for disabled checkboxes */
+    :deep(.checkbox-input:has(input:disabled)) {
+        cursor: not-allowed;
+    }
+
+    :deep(.checkbox-input:has(input:disabled) .checkbox-label) {
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    :deep(.checkbox-input:has(input:disabled):hover .checkbox-label) {
+        color: inherit;
+        text-decoration: none;
+    }
+</style>
