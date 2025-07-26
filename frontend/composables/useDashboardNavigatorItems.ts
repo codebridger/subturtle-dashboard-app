@@ -37,11 +37,11 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
         {
             title: t('settings'),
             children: [
-                {
-                    title: t('profile.profile'),
-                    icon: 'IconUser',
-                    to: '/settings/profile',
-                },
+                // {
+                //     title: t('profile.profile'),
+                //     icon: 'IconUser',
+                //     to: '/settings/profile',
+                // },
                 {
                     title: t('subscription.title'),
                     icon: 'IconCreditCard',

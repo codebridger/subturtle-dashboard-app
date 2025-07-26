@@ -27,11 +27,11 @@
                         class="dark:hover:text-white"
                         @click="
                             close();
-                            goToMembership();
+                            goToProfileSettings();
                         "
                     >
-                        <Icon name="IconDollarSignCircle" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                        {{ t('subscription.title') }}
+                        <Icon name="IconUser" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
+                        {{ t('profile.profile') }}
                     </a>
                 </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
@@ -88,7 +88,7 @@
         logout();
     }
 
-    function goToMembership() {
-        router.push('/settings/subscription');
+    function goToProfileSettings() {
+        router.push('/settings/profile');
     }
 </script>

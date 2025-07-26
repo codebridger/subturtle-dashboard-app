@@ -37,7 +37,7 @@
                                 accept="image/*"
                                 class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                                 @change="handleFileUpload"
-                                :disabled="isUploading"
+                                :disabled="true"
                             />
                         </div>
                         <div v-if="isUploading" class="mt-2 text-center text-sm text-gray-500">
@@ -187,7 +187,6 @@
             // Call the store function
             await profileStore.updateProfile(profileData);
 
-            console.log('Profile update completed successfully');
             toastSuccess(t('profile.profile-updated'));
         } catch (error) {
             console.error('Error updating profile:', error);
