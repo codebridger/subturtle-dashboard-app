@@ -89,6 +89,28 @@ export const useProfileStore = defineStore('profile', () => {
             .catch((error) => null);
     }
 
+    function updateProfile(profileData: { name?: string; profileImage?: File; preferences?: Record<string, boolean> }) {
+        if (!profileData.name) {
+            return Promise.resolve(userDetail.value);
+        }
+
+        return dataProvider
+            .updateOne({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PROFILE,
+                query: {
+                    refId: authentication.user?.id,
+                },
+                update: {
+                    name: profileData.name,
+                },
+            })
+            .then((res) => {
+                userDetail.value!.name = profileData.name || '';
+                return res;
+            });
+    }
+
     return {
         authUser,
         userDetail,
@@ -106,5 +128,6 @@ export const useProfileStore = defineStore('profile', () => {
         getProfileInfo,
         loginWithLastSession,
         bootstrap,
+        updateProfile,
     };
 });

@@ -283,10 +283,10 @@
   dependencies:
     mime "^3.0.0"
 
-"@codebridger/lib-vue-components@^1.19.0":
-  version "1.19.0"
-  resolved "https://npm.pkg.github.com/download/@codebridger/lib-vue-components/1.19.0/29d9e6a35318149450b61ab9812e0c879a8c8eb1#29d9e6a35318149450b61ab9812e0c879a8c8eb1"
-  integrity sha512-zWUPUNpu/kb1iOVM0zF0Egj1sKZ2/Uy26cGFxznSjzM4eLqy0UeyWnxx7OGf3BHcWJWyDCS2X3ZtDuWJXnJVHQ==
+"@codebridger/lib-vue-components@^1.20.0":
+  version "1.20.0"
+  resolved "https://npm.pkg.github.com/download/@codebridger/lib-vue-components/1.20.0/bd7f4c0f755eb572b2345f5580b7f59b3f8c9935#bd7f4c0f755eb572b2345f5580b7f59b3f8c9935"
+  integrity sha512-u5cSYCagjpsbAdGQh/zDXV82nzdOpXoBOYmeGPlT36fy/D2RnQCGoy8diczXbmVOkaNX/0tF0+jzn8dcRdckbQ==
   dependencies:
     "@headlessui/vue" "^1.7.23"
     "@storybook/builder-vite" "^8.4.5"
