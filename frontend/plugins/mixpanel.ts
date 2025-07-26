@@ -40,7 +40,6 @@ export default defineNuxtPlugin((nuxtApp) => {
         watch(
             isLogin,
             () => {
-                console.log('isLogin', isLogin.value);
                 if (isLogin.value === true) {
                     mixpanel.identify(authUser.value?.id);
                     mixpanel.people.set({
@@ -52,8 +51,6 @@ export default defineNuxtPlugin((nuxtApp) => {
             },
             { immediate: true }
         );
-
-        console.log('mixpanel initialized successfully');
     } catch (error) {
         console.error('Failed to initialize mixpanel:', error);
     }

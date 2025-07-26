@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6">
+    <div class="p-4">
         <h1 class="mb-6 text-lg font-bold">{{ t('statistic.your-statistic') }}</h1>
         <section class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
             <Card class="col-span-1 rounded-md shadow-none lg:col-span-3">
