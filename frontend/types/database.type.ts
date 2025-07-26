@@ -1,5 +1,5 @@
 import { type FileDocument } from '@modular-rest/client/dist/types/types';
-import { type PhraseSchema } from '../../server/src/modules/phrase_bundle/db';
+import { type PhraseSchema, type LinguisticData } from '../../server/src/modules/phrase_bundle/db';
 
 export const DATABASE = {
     USER_CONTENT: 'user_content',
@@ -11,6 +11,9 @@ export const COLLECTIONS = {
     PROFILE: 'profile',
     LIVE_SESSION: 'live_session',
 };
+
+// Re-export LinguisticData type for frontend use
+export type { LinguisticData };
 
 export interface ProfileType {
     _id: string;

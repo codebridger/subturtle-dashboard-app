@@ -35,7 +35,7 @@ export class PaymentAdapterFactory {
     const adapter = this.adapters.get(provider);
     if (!adapter) {
       throw new Error(
-        `Payment adapter for provider ${provider} not registered`
+        `Payment adapter for provider ${provider} not registered. Please ensure the adapter is initialized before use.`
       );
     }
     return adapter;
@@ -64,6 +64,11 @@ export class PaymentAdapterFactory {
    * Initialize adapters with configuration
    */
   public async initialize(): Promise<void> {
+    // Check if already initialized
+    if (this.adapters.has(PaymentProvider.STRIPE)) {
+      return;
+    }
+
     // Initialize Stripe adapter by default
     const stripeAdapter = new StripeAdapter(
       process.env.STRIPE_SECRET_KEY || ""

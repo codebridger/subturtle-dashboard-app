@@ -1,6 +1,6 @@
 <template>
     <div class="p-4">
-        <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" @changed="bundleStore.updateBundleDetail(id, $event)" />
+        <BundleDetailCard v-if="bundleStore.bundleDetail" :bundle-detail="bundleStore.bundleDetail" />
 
         <!-- Practice Features -->
         <section class="my-4 flex flex-wrap items-start justify-between">
@@ -20,10 +20,10 @@
                         :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
                         :primary-button-label="t('freemium.limitation.go_pro')"
                         :secondary-button-label="t('freemium.limitation.continue_with_limits')"
-                        @upgrade="handleConfirmUpgrade"
+                        auto-redirect-on-upgrade
                     >
                         <template #trigger="{ toggleModal }">
-                            <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase" @upgrade="toggleModal(true)" />
+                            <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase" @upgrade-needed="toggleModal(true)" />
                         </template>
                     </FreemiumLimitationModal>
                 </div>
@@ -91,8 +91,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal, Pagination } from '@codebridger/lib-vue-components/complex.ts';
+    import { Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
     import { useBundleStore } from '@/stores/bundle';
     import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
@@ -157,10 +157,5 @@
     function handleFreemiumAddPhrase() {
         // User is not at limit yet, so add the phrase
         bundleStore.addEmptyTemporarilyPhrase();
-    }
-
-    function handleConfirmUpgrade() {
-        // Redirect to subscription page
-        router.push('/settings/subscription');
     }
 </script>

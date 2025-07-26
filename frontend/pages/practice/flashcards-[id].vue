@@ -8,7 +8,37 @@
     >
         <div :class="['flex h-full w-full flex-col items-center p-5', 'md:px-16 md:py-14']">
             <div :class="['w-full flex-1 ', 'md:max-h-[80%] md:max-w-[80%]', 'lg:max-h-[65%] lg:max-w-[65%]']">
-                <WidgetFlashCard v-if="phrase" :key="phraseIndex" :front="phrase.phrase" :back="phrase.translation" />
+                <!-- ========== NORMAL TYPE FLASHCARD ========== -->
+                <WidgetFlashCard
+                    v-if="phrase && isNormalType"
+                    :key="`normal-${phraseIndex}`"
+                    :phrase-type="'normal'"
+                    :front="phrase.phrase"
+                    :back="phrase.translation"
+                    :context="phrase.context"
+                    :translation-language="phrase.translation_language"
+                />
+
+                <!-- ========== LINGUISTIC TYPE FLASHCARD ========== -->
+                <WidgetFlashCard
+                    v-else-if="phrase && isLinguisticType"
+                    :key="`linguistic-${phraseIndex}`"
+                    :phrase-type="'linguistic'"
+                    :front="phrase.phrase"
+                    :back="phrase.linguistic_data?.definition || phrase.phrase"
+                    :context="phrase.context"
+                    :direction="phrase.direction"
+                    :language-info="phrase.language_info"
+                    :linguistic-data="phrase.linguistic_data"
+                />
+
+                <!-- ========== FALLBACK FOR UNKNOWN TYPE ========== -->
+                <WidgetFlashCard
+                    v-else-if="phrase"
+                    :key="`fallback-${phraseIndex}`"
+                    :front="phrase.phrase"
+                    :back="phrase.translation || 'No translation available'"
+                />
             </div>
 
             <selection class="my-6 flex max-h-[65%] w-full max-w-[65%] items-center justify-between">
@@ -60,6 +90,23 @@
         return phraseIndex.value < totalPhrases.value - 1;
     });
 
+    // ========== PHRASE TYPE DETECTION LOGIC ==========
+    /**
+     * Determines if the current phrase is of "normal" type
+     * Normal type phrases have: phrase, translation, translation_language
+     */
+    const isNormalType = computed(() => {
+        return phrase.value?.type === 'normal';
+    });
+
+    /**
+     * Determines if the current phrase is of "linguistic" type
+     * Linguistic type phrases have: phrase, context, direction, language_info, linguistic_data
+     */
+    const isLinguisticType = computed(() => {
+        return phrase.value?.type === 'linguistic';
+    });
+
     onMounted(() => {
         fetchFlashcard();
     });
@@ -88,7 +135,8 @@
                 toastError({ title: 'Failed to fetch flashcard' });
             })
             .finally(() => {
-                console.log(bundle.value);
+                console.log('Bundle loaded:', bundle.value);
+                console.log('Current phrase type:', phrase.value?.type);
             });
     }
 

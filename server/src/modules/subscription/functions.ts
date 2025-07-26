@@ -50,7 +50,7 @@ const getSubscriptionPlans = defineFunction({
       {
         name: "Freemium Plan",
         price: "0",
-        currency: "£",
+        currency: "$",
         description: "Great for casual learners",
         features: [
           "Translate captions in real time",
@@ -103,6 +103,15 @@ const getSubscriptionPlans = defineFunction({
           return currency;
       }
     };
+
+    // Ensure payment adapter is initialized before using it
+    try {
+      await paymentAdapterFactory.initialize();
+    } catch (error) {
+      console.warn("Failed to initialize payment adapter:", error);
+      // Return only freemium plan if adapter initialization fails
+      return plans;
+    }
 
     const adapter = paymentAdapterFactory.getAdapter(
       PaymentProvider.STRIPE

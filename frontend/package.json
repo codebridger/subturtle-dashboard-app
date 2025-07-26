@@ -31,9 +31,10 @@
     },
     "dependencies": {
         "@codebridger/lib-vue-components": "^1.20.0",
-        "@modular-rest/client": "^1.11.0",
+        "@modular-rest/client": "^1.14.0",
         "@pinia/nuxt": "^0.4.6",
         "apexcharts": "^4.4.0",
+        "mixpanel-browser": "^2.66.0",
         "pinia": "^2.0.22",
         "vee-validate": "^4.15.0",
         "vue": "^3.5.12",

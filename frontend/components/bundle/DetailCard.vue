@@ -97,6 +97,8 @@
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
+    import { analytic } from '~/plugins/mixpanel';
+    import { useBundleStore } from '~/stores/bundle';
 
     const { t } = useI18n();
 
@@ -111,10 +113,7 @@
         },
     });
 
-    const emit = defineEmits<{
-        changed: [values: { [key: string]: any }];
-        removed: [];
-    }>();
+    const bundleStore = useBundleStore();
 
     const isSubmitting = ref(false);
     const isEditMode = ref(false);
@@ -123,25 +122,16 @@
     });
 
     function onSubmit(values: any) {
+        if (isSubmitting.value) {
+            return;
+        }
+
         isSubmitting.value = true;
         isEditMode.value = false;
 
-        dataProvider
-            .updateOne({
-                database: DATABASE.USER_CONTENT,
-                collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: {
-                    _id: props.bundleDetail._id,
-                    refId: authUser.value?.id,
-                },
-                update: {
-                    $set: {
-                        title: values.title,
-                    },
-                },
-            })
-            .then(() => {
-                emit('changed', values);
+        bundleStore
+            .updateBundleDetail(props.bundleDetail._id, {
+                title: values.title,
             })
             .finally(() => {
                 isSubmitting.value = false;
@@ -154,14 +144,8 @@
     }
 
     function onRemove() {
-        functionProvider
-            .run({
-                name: 'removeBundle',
-                args: {
-                    _id: props.bundleDetail._id,
-                    refId: authUser.value?.id,
-                },
-            })
+        bundleStore
+            .removeBundle(props.bundleDetail._id)
             .then(() => {
                 router.push('/bundles');
             })

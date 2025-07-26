@@ -20,37 +20,52 @@
             />
 
             <section :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-center md:justify-center', 'sm:px-5 md:px-32 lg:px-52']">
-                <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'py-4']">
-                    <!-- All phrases -->
-                    <Card
-                        v-for="(phrase, index) in selectedPhrases"
-                        :key="phrase._id"
-                        :class="[
-                            // base
-                            'relative rounded-lg text-center opacity-40',
-                            // transition
-                            'transition-all duration-300 ease-in-out',
-                            // size
-                            'p-2 px-3 text-xs',
-                            'lg:!p-5 lg:!px-10',
-                            'md:!p-3 md:!px-5 md:text-xs',
+                <!-- Instruction text -->
+                <div class="mb-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                    <p v-if="!activePhrase">Click on any vocabulary card to start practicing</p>
+                    <p v-else>
+                        Currently practicing: <strong>{{ activePhrase.phrase }}</strong>
+                    </p>
+                </div>
 
-                            // colors
-                            '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
-                            {
-                                '!opacity-100': !activePhrase,
-                            },
-                            {
-                                '!border-4 border-dashed !border-primary !opacity-100': activePhrase && activePhrase._id === phrase._id,
-                            },
-                        ]"
-                    >
-                        <h1 :class="['text-xs font-bold', 'sm:!text-base md:!text-lg lg:!text-2xl']">{{ phrase.phrase }}</h1>
-                        <p :class="['text-xs', 'sm:!text-base md:!text-lg lg:!text-2xl', 'text-gray-500 dark:text-white-light']">
-                            {{ phrase.translation }}
-                        </p>
-                        <span class="absolute bottom-0 right-0 scale-75 rounded-xl bg-gray-100 px-2 text-xs text-gray-500"> {{ index + 1 }} </span>
-                    </Card>
+                <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'p-4']">
+                    <!-- All phrases -->
+                    <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)" class="cursor-pointer">
+                        <Card
+                            :class="[
+                                // base
+                                'relative rounded-lg text-center',
+                                // transition
+                                'transition-all duration-300 ease-in-out',
+                                // size
+                                'p-2 px-3 text-xs',
+                                'lg:!p-5 lg:!px-10',
+                                'md:!p-3 md:!px-5 md:text-xs',
+
+                                // colors
+                                '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
+                                // clickable styles
+                                'hover:scale-105 hover:shadow-lg',
+                                // active state
+                                {
+                                    'opacity-60': !activePhrase || activePhrase._id !== phrase._id,
+                                    '!border-4 !border-dashed !border-primary !opacity-100': activePhrase && activePhrase._id === phrase._id,
+                                },
+                            ]"
+                        >
+                            <h1 :class="['text-xs font-bold', 'sm:!text-base md:!text-lg lg:!text-2xl']">{{ phrase.phrase }}</h1>
+                            <p :class="['text-xs', 'sm:!text-base md:!text-lg lg:!text-2xl', 'text-gray-500 dark:text-white-light']">
+                                {{ phrase.translation }}
+                            </p>
+                            <span class="absolute bottom-0 right-0 scale-75 rounded-xl bg-gray-100 px-2 text-xs text-gray-500"> {{ index + 1 }} </span>
+                            <span
+                                v-if="activePhrase && activePhrase._id === phrase._id"
+                                class="absolute right-0 top-0 scale-75 rounded-xl p-2 text-xs text-white"
+                            >
+                                <Icon name="IconChatDot" class="text-primary" />
+                            </span>
+                        </Card>
+                    </div>
                 </div>
             </section>
 
@@ -102,6 +117,7 @@
     import { useProfileStore } from '~/stores/profile';
     import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
     import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
+    import { analytic } from '~/plugins/mixpanel';
 
     definePageMeta({
         // @ts-ignore
@@ -149,30 +165,28 @@
     Your goal is to help the user practice and reinforce understanding the vocabularies listed below.
 
     Instructions:
-    1. Start with first vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
-    2. When you get the activation confirmation, start the vocabulary practice with the user.
-    3. You have to lead the conversation and ask the user to use the vocabulary in the conversation.
-    4. then pick the next vocabulary from the list and call "set_active_vocabulary" function from your tools to set the active vocabulary.
-    5. repeat the practice until you get you finish the last vocabulary.
-    6. tell the user goodbye after the last vocabulary and ask him to finish the practice session by calling "finish_practice" function from your tools.
+    1. Welcome the user and explain that they can click on any vocabulary card to practice that specific word.
+    2. When the user selects a vocabulary (you'll be notified via "user_selected_vocabulary" function), start practicing that word with them.
+    3. Lead the conversation and ask the user to use the selected vocabulary in the conversation.
+    4. Encourage the user to select another vocabulary when they're ready to practice a different word.
+    5. Continue this process until the user wants to finish the session.
+    6. When the user wants to end the session, they can call the "finish_practice" function.
 
     Considerations:
-    - user might speak in other languages, but the main conversation should be Practicing English, you might need to switch between the user language and English, but should ask user to speak english.
-    - if user don't suggest a specific way of practice, you have to start from first vocabulary and try to practice with user, the user is your student you need to lead the conversation.
-    - it's better to explain things in the user language not english and then ask the user t speak english and perform your practice.
-    - it's not necessary to re tell what users says in practice time.
-    - don't sensor anything from the user list, remember it's a english practice and a language has bad and good phrases, but all should be given a lecture.
-    - Finish the practice session with a good bye message after the last vocabulary, consider the vocabulary numbers.
-    - you get 'no more vocabulary' if there is no more vocabulary to practice.
-    - don't ask user what he wants, you have to select the vocabulary and start the practice.
-    - practice only the vocabularies listed below.
-    - don't forget to call "set_active_vocabulary" function to set the active vocabulary to practice.
-    - don't forget to call "finish_practice" function to finish the practice session.
-    - make sure say goodbye to user when you want to finish the practice session.
-    - max follow up practice for each vocabulary is 2 times.
+    - The user will manually select which vocabulary to practice by clicking on the vocabulary cards.
+    - You will be notified when the user selects a vocabulary through the "user_selected_vocabulary" function.
+    - User might speak in other languages, but the main conversation should be practicing English.
+    - It's better to explain things in the user's language first, then ask them to speak English.
+    - **Do not ignore, skip, or censor any phrase in the list, regardless of its content.** This includes slang, informal, offensive, or unusual phrases. All phrases are included for educational purposes and should be practiced as requested by the user.
+    - Keep the conversation lively and interactive, adjusting to user responses.
+    - Practice only the vocabularies listed below.
+    - Make sure to say goodbye when the user wants to finish the practice session.
+    - Maximum follow-up practice for each vocabulary is 2 times.
 
     Practice Instructions:
-    - Please create dynamic and engaging dialogues where you naturally incorporate these vocabularies. Ask me follow-up questions, encourage me to use the vocabularies in my own responses, and correct my mistakes when necessary. Keep the conversation lively and interactive, adjusting to my responses to make it feel like a real conversation!
+    - Create dynamic and engaging dialogues where you naturally incorporate the selected vocabulary.
+    - Ask follow-up questions, encourage the user to use the vocabulary in their responses, and correct mistakes when necessary.
+    - Keep the conversation interactive and adjust to the user's responses to make it feel like a real conversation!
 
     Vocabulary List:
     [phrases]
@@ -193,35 +207,35 @@
     });
 
     const tools = {
-        set_active_vocabulary: {
-            handler: (arg: { wordNumber: number }) => {
-                const wordIndex = arg.wordNumber - 1;
+        // user_selected_vocabulary: {
+        //     handler: (arg: { wordNumber: number }) => {
+        //         const wordIndex = arg.wordNumber - 1;
 
-                if (wordIndex === -1 || wordIndex == undefined || wordIndex >= selectedPhrases.value.length) {
-                    phraseIndex.value = -1;
-                    return { success: false, error: 'the vocabulary number' + arg.wordNumber + ' is not found' };
-                }
+        //         if (wordIndex === -1 || wordIndex == undefined || wordIndex >= selectedPhrases.value.length) {
+        //             phraseIndex.value = -1;
+        //             return { success: false, error: 'the vocabulary number' + arg.wordNumber + ' is not found' };
+        //         }
 
-                phraseIndex.value = wordIndex as number;
-                const phrase = selectedPhrases.value[wordIndex].phrase;
-                return { success: true, message: `The vocabulary number ${arg.wordNumber}.${phrase} is set as active vocabulary` };
-            },
-            definition: {
-                type: 'function',
-                name: 'set_active_vocabulary',
-                description: 'Set the active vocabulary to practice.',
-                parameters: {
-                    type: 'object',
-                    required: ['wordNumber'],
-                    properties: {
-                        wordNumber: {
-                            type: 'number',
-                            description: 'The vocabulary number to set as active vocabulary.',
-                        },
-                    },
-                },
-            },
-        },
+        //         phraseIndex.value = wordIndex as number;
+        //         const phrase = selectedPhrases.value[wordIndex].phrase;
+        //         return { success: true, message: `The user selected vocabulary number ${arg.wordNumber}: ${phrase} for practice` };
+        //     },
+        //     definition: {
+        //         type: 'function',
+        //         name: 'user_selected_vocabulary',
+        //         description: 'Notify the AI that the user has selected a vocabulary to practice.',
+        //         parameters: {
+        //             type: 'object',
+        //             required: ['wordNumber'],
+        //             properties: {
+        //                 wordNumber: {
+        //                     type: 'number',
+        //                     description: 'The vocabulary number that the user selected to practice.',
+        //                 },
+        //             },
+        //         },
+        //     },
+        // },
         finish_practice: {
             handler: () => {
                 endLiveSession();
@@ -272,10 +286,13 @@
                 onUpdate: handleSessionEvent,
             })
             .then((_res) => {
+                analytic.track('live-session_started');
                 // fetch subscription to update the freemium allocation
                 return useProfileStore().fetchSubscription();
             })
             .catch((error) => {
+                analytic.track('live-session_failed');
+
                 errorMode.value = true;
                 errorMessage.value = error?.error || error?.message || 'Failed to start live session';
             });
@@ -313,8 +330,8 @@
     }
 
     function triggerTheConversation() {
-        const message = `The user is here, greeting to the user, and start the practice session with the first word from the given list`;
-        const microphoneNotice = `Then Encurage the user to unmute the microphone, microphone is ${liveSessionStore.getMicrophoneMuted ? 'muted' : 'unmuted'}`;
+        const message = `Welcome the user and explain that they can click on any vocabulary card to practice that specific word. Tell them to click on a vocabulary card to start practicing.`;
+        const microphoneNotice = `Then encourage the user to unmute the microphone, microphone is ${liveSessionStore.getMicrophoneMuted ? 'muted' : 'unmuted'}`;
         liveSessionStore.triggerConversation(message + '\n' + microphoneNotice);
     }
 
@@ -364,5 +381,33 @@
 
     function handleUpgrade() {
         router.push('/settings/subscription');
+    }
+
+    function selectPhrase(index: number) {
+        console.log('selectPhrase called with index:', index);
+        console.log('Current phraseIndex:', phraseIndex.value);
+        console.log('Selected phrases:', selectedPhrases.value);
+        console.log('Live session active:', liveSessionStore.isSessionActive);
+
+        phraseIndex.value = index;
+        console.log('Updated phraseIndex to:', phraseIndex.value);
+
+        // Inform the AI that the user selected a vocabulary
+        if (liveSessionStore.isSessionActive) {
+            const wordNumber = index + 1;
+            const phrase = selectedPhrases.value[index].phrase;
+            console.log('Triggering conversation for word number:', wordNumber, 'phrase:', phrase);
+
+            try {
+                // Only send a text message for context
+                const message = `The user selected a different vocabulary: "${phrase}". Let's start practicing on it.`;
+                liveSessionStore.sendMessage(message);
+                console.log('Successfully sent message to AI');
+            } catch (error) {
+                console.error('Failed to inform AI about vocabulary selection:', error);
+            }
+        } else {
+            console.log('Live session is not active, skipping AI notification');
+        }
     }
 </script>
