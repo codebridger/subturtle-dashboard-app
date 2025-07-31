@@ -1,0 +1,466 @@
+---
+description: This is the main guideline for writing tests in this frontend project (Nuxt 3)
+alwaysApply: false
+---
+# Testing Guidelines for Nuxt 3 Frontend Project
+
+## Overview
+This project uses a comprehensive testing strategy with:
+- **Unit Tests**: Vitest for non-component scripts (utilities, composables, stores, API functions)
+- **Component Tests**: Vitest + Vue Test Utils for Vue component testing
+- **E2E Tests**: Playwright for end-to-end testing
+
+## Testing Stack
+
+### Unit Testing
+- **Framework**: Vitest (recommended for Nuxt 3)
+- **Scope**: Non-component scripts (utilities, composables, stores, API functions)
+- **Mocking**: Vitest built-in mocking capabilities
+
+### Component Testing
+- **Framework**: Vitest + Vue Test Utils
+- **Scope**: Vue components and their behavior
+- **Additional Tools**: Testing Library for Vue (when needed)
+
+### E2E Testing
+- **Framework**: Playwright
+- **Browser Support**: Chromium, Firefox, WebKit
+- **Parallel Execution**: Yes
+- **Visual Testing**: Built-in screenshot and video recording
+
+## Project Structure
+
+```
+frontend/
+├── tests/
+│   ├── unit/                    # Unit tests
+│   │   ├── components/          # Component tests
+│   │   ├── composables/         # Composable tests
+│   │   ├── utils/              # Utility function tests
+│   │   └── stores/             # Pinia store tests
+│   ├── e2e/                    # E2E tests
+│   │   ├── specs/              # Test specifications
+│   │   ├── fixtures/           # Test data
+│   │   └── utils/              # E2E test utilities
+│   └── fixtures/               # Shared test data
+├── vitest.config.ts            # Vitest configuration
+├── playwright.config.ts        # Playwright configuration
+└── package.json               # Test scripts
+```
+
+## Unit Testing Guidelines
+
+### Scope
+Unit tests are for **non-component scripts only**:
+- Utility functions (`utils/`)
+- Composables (`composables/`)
+- Pinia stores (`stores/`)
+- API functions and services
+- Helper functions and pure logic
+
+### File Naming Convention
+- Test files should be named `*.test.ts` or `*.spec.ts`
+- Place test files next to the source files they test
+- For utilities: `utilityName.test.ts`
+- For composables: `composableName.test.ts`
+- For stores: `storeName.test.ts`
+
+## Component Testing Guidelines
+
+### Scope
+Component tests are for **Vue components only**:
+- Vue components (`components/`)
+- Page components (`pages/`)
+- Layout components (`layouts/`)
+
+### Component Testing Best Practices
+
+```typescript
+// Example: components/bundle/DetailCard.test.ts
+import { describe, it, expect, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { createTestingPinia } from '@pinia/testing'
+import DetailCard from './DetailCard.vue'
+
+describe('DetailCard', () => {
+  it('renders bundle title correctly', () => {
+    const wrapper = mount(DetailCard, {
+      props: {
+        bundle: {
+          id: '1',
+          title: 'Test Bundle',
+          description: 'Test Description'
+        }
+      },
+      global: {
+        plugins: [createTestingPinia()]
+      }
+    })
+    
+    expect(wrapper.text()).toContain('Test Bundle')
+  })
+
+  it('emits edit event when edit button is clicked', async () => {
+    const wrapper = mount(DetailCard, {
+      props: {
+        bundle: { id: '1', title: 'Test' }
+      },
+      global: {
+        plugins: [createTestingPinia()]
+      }
+    })
+    
+    await wrapper.find('[data-testid="edit-button"]').trigger('click')
+    expect(wrapper.emitted('edit')).toBeTruthy()
+  })
+})
+```
+
+### Composable Testing
+
+```typescript
+// Example: composables/useDashboardNavigatorItems.test.ts
+import { describe, it, expect } from 'vitest'
+import { useDashboardNavigatorItems } from './useDashboardNavigatorItems'
+
+describe('useDashboardNavigatorItems', () => {
+  it('returns correct navigation items', () => {
+    const { items } = useDashboardNavigatorItems()
+    
+    expect(items).toBeDefined()
+    expect(Array.isArray(items)).toBe(true)
+    expect(items.length).toBeGreaterThan(0)
+  })
+})
+```
+
+### Store Testing
+
+```typescript
+// Example: stores/bundle.test.ts
+import { describe, it, expect, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useBundleStore } from './bundle'
+
+describe('Bundle Store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('initializes with empty bundles', () => {
+    const store = useBundleStore()
+    expect(store.bundles).toEqual([])
+  })
+
+  it('adds bundle correctly', () => {
+    const store = useBundleStore()
+    const newBundle = { id: '1', title: 'Test Bundle' }
+    
+    store.addBundle(newBundle)
+    expect(store.bundles).toContain(newBundle)
+  })
+})
+```
+
+### Utility Function Testing
+
+```typescript
+// Example: utils/auth.test.ts
+import { describe, it, expect, vi } from 'vitest'
+import { validateToken } from './auth'
+
+describe('Auth Utils', () => {
+  it('validates correct token format', () => {
+    const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    expect(validateToken(validToken)).toBe(true)
+  })
+
+  it('rejects invalid token format', () => {
+    const invalidToken = 'invalid-token'
+    expect(validateToken(invalidToken)).toBe(false)
+  })
+})
+```
+
+## E2E Testing Guidelines
+
+### Test Structure
+
+```typescript
+// Example: tests/e2e/specs/auth.spec.ts
+import { test, expect } from '@playwright/test'
+
+test.describe('Authentication Flow', () => {
+  test('user can login successfully', async ({ page }) => {
+    await page.goto('/auth/login')
+    
+    await page.fill('[data-testid="email-input"]', 'test@example.com')
+    await page.fill('[data-testid="password-input"]', 'password123')
+    await page.click('[data-testid="login-button"]')
+    
+    await expect(page).toHaveURL('/dashboard')
+    await expect(page.locator('[data-testid="user-menu"]')).toBeVisible()
+  })
+
+  test('shows error for invalid credentials', async ({ page }) => {
+    await page.goto('/auth/login')
+    
+    await page.fill('[data-testid="email-input"]', 'invalid@example.com')
+    await page.fill('[data-testid="password-input"]', 'wrongpassword')
+    await page.click('[data-testid="login-button"]')
+    
+    await expect(page.locator('[data-testid="error-message"]')).toBeVisible()
+    await expect(page.locator('[data-testid="error-message"]')).toContainText('Invalid credentials')
+  })
+})
+```
+
+### Page Object Model
+
+```typescript
+// Example: tests/e2e/utils/LoginPage.ts
+export class LoginPage {
+  constructor(private page: any) {}
+
+  async goto() {
+    await this.page.goto('/auth/login')
+  }
+
+  async login(email: string, password: string) {
+    await this.page.fill('[data-testid="email-input"]', email)
+    await this.page.fill('[data-testid="password-input"]', password)
+    await this.page.click('[data-testid="login-button"]')
+  }
+
+  async getErrorMessage() {
+    return this.page.locator('[data-testid="error-message"]')
+  }
+}
+```
+
+## Test Data Management
+
+### Fixtures
+- Use `tests/fixtures/` for shared test data
+- Create JSON files for complex data structures
+- Use factories for generating test data
+
+```typescript
+// Example: tests/fixtures/bundleFactory.ts
+export const createBundle = (overrides = {}) => ({
+  id: 'test-id',
+  title: 'Test Bundle',
+  description: 'Test Description',
+  createdAt: new Date().toISOString(),
+  ...overrides
+})
+```
+
+## Testing Best Practices
+
+### 1. Test Organization
+- Group related tests using `describe` blocks
+- Use descriptive test names that explain the expected behavior
+- Follow AAA pattern: Arrange, Act, Assert
+
+### 2. Component Testing
+- Test component behavior, not implementation details
+- Use `data-testid` attributes for reliable element selection
+- Test user interactions and events
+- Mock external dependencies
+
+### 3. E2E Testing
+- Test critical user journeys
+- Focus on business value, not technical implementation
+- Use page objects for maintainable tests
+- Test across different browsers
+
+### 4. Test Data
+- Use factories for generating test data
+- Keep test data minimal and focused
+- Avoid hardcoded values in tests
+- Use fixtures for complex data structures
+
+### 5. Assertions
+- Make assertions specific and meaningful
+- Test one thing per test case
+- Use descriptive assertion messages
+- Avoid testing implementation details
+
+## Test Scripts
+
+Add these scripts to `package.json`:
+
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:unit": "vitest --config vitest.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch"
+  }
+}
+```
+
+## Configuration Files
+
+### Vitest Configuration
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.ts']
+  }
+})
+```
+
+### Playwright Configuration
+```typescript
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test'
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+})
+```
+
+## Code Coverage
+
+- Aim for at least 80% code coverage
+- Focus on critical business logic
+- Don't sacrifice quality for coverage percentage
+- Use coverage reports to identify untested areas
+
+## Continuous Integration
+
+### GitHub Actions Example
+```yaml
+name: Tests
+on: [push, pull_request]
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run test:coverage
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run test:e2e
+```
+
+## Common Testing Patterns
+
+### 1. Async Testing
+```typescript
+it('handles async operations', async () => {
+  const wrapper = mount(AsyncComponent)
+  await wrapper.vm.$nextTick()
+  expect(wrapper.text()).toContain('Loaded')
+})
+```
+
+### 2. Mocking API Calls
+```typescript
+vi.mock('@/utils/api', () => ({
+  fetchData: vi.fn().mockResolvedValue({ data: 'test' })
+}))
+```
+
+### 3. Testing Events
+```typescript
+it('emits correct event', async () => {
+  const wrapper = mount(Component)
+  await wrapper.find('button').trigger('click')
+  expect(wrapper.emitted('click')).toBeTruthy()
+})
+```
+
+### 4. Testing Router
+```typescript
+const mockRouter = {
+  push: vi.fn()
+}
+
+mount(Component, {
+  global: {
+    mocks: {
+      $router: mockRouter
+    }
+  }
+})
+```
+
+## Troubleshooting
+
+### Common Issues
+1. **Component not rendering**: Check if all required props are provided
+2. **Async operations**: Use `await` and `$nextTick()`
+3. **Router mocking**: Ensure router is properly mocked
+4. **Store state**: Use `createTestingPinia` for store testing
+
+### Debug Tips
+- Use `console.log` in tests for debugging
+- Use Playwright's `--headed` flag for visual debugging
+- Use Vitest's `--reporter=verbose` for detailed output
+- Use browser dev tools in E2E tests with `page.pause()`
+
+## Resources
+
+- [Vitest Documentation](https://vitest.dev/)
+- [Vue Test Utils](https://test-utils.vuejs.org/)
+- [Playwright Documentation](https://playwright.dev/)
+- [Testing Library](https://testing-library.com/docs/vue-testing-library/intro/)
+- [Nuxt 3 Testing Guide](https://nuxt.com/docs/guide/concepts/testing)
+description:
+globs:
+alwaysApply: false
+---
