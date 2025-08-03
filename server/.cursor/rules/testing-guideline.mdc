@@ -2,3 +2,228 @@
 description: This is the main guideline for writing tests in this server project
 alwaysApply: false
 ---
+# Server Testing Guideline for LLMs
+
+## Quick Reference
+
+**Framework**: `@modular-rest/server` v1.15.0 + TypeScript + MongoDB
+**Testing Stack**: Jest + mongodb-memory-server
+**Pattern**: Modular architecture with `defineFunction` APIs
+
+## Core Testing Patterns
+
+### 1. MongoDB Mocking Strategy
+
+The project uses `getCollection` from `@modular-rest/server` to access MongoDB collections. Mock this function to test database operations without a real database:
+
+```typescript
+// Mock getCollection from modular-rest
+jest.mock("@modular-rest/server", () => ({
+  ...jest.requireActual("@modular-rest/server"),
+  getCollection: jest.fn(),
+}));
+
+const createMockCollection = () => ({
+  findOne: jest.fn(),
+  find: jest.fn().mockReturnValue({ toArray: jest.fn(), count: jest.fn() }),
+  create: jest.fn(),
+  updateOne: jest.fn(),
+  count: jest.fn(),
+  toObject: jest.fn(),
+});
+
+// Use in tests
+const mockCollection = createMockCollection();
+(getCollection as jest.Mock).mockReturnValue(mockCollection);
+```
+
+### 2. API Function Testing
+
+API functions are created using `defineFunction` from modular-rest. Test the callback directly instead of making HTTP requests:
+
+```typescript
+// Test defineFunction callbacks directly
+const { getSubscriptionDetails } = await import('./functions');
+const result = await getSubscriptionDetails.callback({ userId: 'user123' });
+expect(result).toEqual(expectedData);
+```
+
+### 3. External API Mocking
+
+Mock external services to avoid real API calls during testing:
+
+```typescript
+// Stripe API mocking
+jest.mock('stripe', () => jest.fn(() => ({
+  products: { list: jest.fn().mockResolvedValue({ data: [] }) },
+  prices: { list: jest.fn().mockResolvedValue({ data: [] }) },
+})));
+
+// OpenRouter API mocking
+jest.mock('node-fetch', () => jest.fn(() => Promise.resolve({
+  ok: true,
+  json: () => Promise.resolve({ choices: [{ message: { content: 'mock' } }] }),
+})));
+```
+
+## Test Organization Structure
+
+Mirror the source structure for tests to maintain consistency:
+
+```
+src/modules/subscription/__tests__/
+├── calculator.test.ts    # Service unit tests (pure functions)
+├── functions.test.ts     # API function tests (defineFunction callbacks)
+├── service.test.ts       # Business logic tests (with mocked DB)
+└── mocks.ts             # Module-specific mocks and factories
+```
+
+## Key Testing Rules
+
+1. **Mock external dependencies** - Always mock Stripe, OpenRouter, Google OAuth to avoid real API calls
+2. **Test function callbacks directly** - Don't test HTTP endpoints, test the `defineFunction` callback functions
+3. **Use test data factories** - Create consistent mock data with factory functions
+4. **Mock getCollection** - Mock database operations for unit tests, use real DB only for integration tests
+5. **Test both success and error scenarios** - Ensure error handling works correctly
+6. **Maintain TypeScript types** - Keep type safety in tests by using proper interfaces
+
+## Complete Example Test
+
+Here's a complete example showing how to test a subscription function:
+
+```typescript
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+
+describe('Subscription Functions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return subscription details for user with active subscription', async () => {
+    // Arrange - Set up test data and mocks
+    const mockSubscription = { user_id: '123', status: 'active', total_credits: 10000000 };
+    mockGetSubscription.mockResolvedValue(mockSubscription);
+    
+    // Act - Call the function being tested
+    const { getSubscriptionDetails } = await import('./functions');
+    const result = await getSubscriptionDetails.callback({ userId: '123' });
+    
+    // Assert - Verify the expected behavior
+    expect(result).toEqual({ ...mockSubscription, is_freemium: false });
+    expect(mockGetSubscription).toHaveBeenCalledWith('123');
+  });
+
+  it('should return freemium allocation when user has no subscription', async () => {
+    // Arrange
+    mockGetSubscription.mockResolvedValue(null);
+    const mockFreemium = { user_id: '123', total_credits: 5000000 };
+    mockGetOrCreateFreemiumAllocation.mockResolvedValue(mockFreemium);
+    
+    // Act
+    const { getSubscriptionDetails } = await import('./functions');
+    const result = await getSubscriptionDetails.callback({ userId: '123' });
+    
+    // Assert
+    expect(result).toEqual({ ...mockFreemium, is_freemium: true });
+  });
+
+  it('should throw error when userId is missing', async () => {
+    // Act & Assert
+    const { getSubscriptionDetails } = await import('./functions');
+    await expect(
+      getSubscriptionDetails.callback({})
+    ).rejects.toThrow('User ID is required');
+  });
+});
+```
+
+## Setup and Configuration
+
+### Install Dependencies
+```bash
+npm install --save-dev jest @types/jest ts-jest mongodb-memory-server
+```
+
+### Jest Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/index.ts',
+  ],
+};
+```
+
+### Test Setup File
+```typescript
+// src/__tests__/setup.ts
+import { jest } from '@jest/globals';
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+afterEach(() => {
+  // Clean up after each test
+});
+```
+
+## Testing Priority Order
+
+Follow this order when implementing tests:
+
+1. **Calculator services** - Start with pure functions that have no dependencies (e.g., `calculator.ts`)
+2. **Service functions** - Test business logic with mocked database operations
+3. **API functions** - Test `defineFunction` callbacks with mocked services
+4. **Integration tests** - Use real MongoDB with mongodb-memory-server for end-to-end testing
+
+## Common Testing Scenarios
+
+### Testing Database Operations
+```typescript
+// Mock the collection
+const mockCollection = createMockCollection();
+(getCollection as jest.Mock).mockReturnValue(mockCollection);
+
+// Test database queries
+mockCollection.findOne.mockResolvedValue(mockData);
+const result = await someService.getData('user123');
+expect(mockCollection.findOne).toHaveBeenCalledWith({ user_id: 'user123' });
+```
+
+### Testing Error Handling
+```typescript
+// Mock service to throw error
+mockGetSubscription.mockRejectedValue(new Error('Database connection failed'));
+
+// Test error handling
+await expect(
+  getSubscriptionDetails.callback({ userId: 'user123' })
+).rejects.toThrow('Failed to retrieve subscription details');
+```
+
+### Testing External API Integration
+```typescript
+// Mock Stripe webhook
+const mockStripeEvent = { type: 'payment_intent.succeeded', data: { object: {} } };
+stripe.webhooks.constructEvent.mockReturnValue(mockStripeEvent);
+
+// Test webhook handling
+const result = await handleStripeWebhook(mockEvent, mockSignature);
+expect(result).toBeDefined();
+```
+
+## Best Practices Summary
+
+- **Isolate tests** - Each test should be independent and not rely on other tests
+- **Use descriptive names** - Test names should clearly describe what is being tested
+- **Follow AAA pattern** - Arrange (setup), Act (execute), Assert (verify)
+- **Mock consistently** - Use the same mocking patterns across all tests
+- **Test edge cases** - Don't just test happy paths, test error conditions too
+- **Keep tests fast** - Use mocks to avoid slow external API calls and database operations 
