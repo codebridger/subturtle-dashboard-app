@@ -1,0 +1,123 @@
+---
+description: Main guideline for server development include all consideration of the project.
+alwaysApply: false
+---
+# Server Development Guideline for LLMs
+
+## Framework & Architecture
+- **Framework**: `@modular-rest/server` (v1.15.0) - TypeScript Node.js backend
+- **Database**: MongoDB with Mongoose schemas
+- **Pattern**: Modular architecture with separate modules for each domain
+- **Documentation**: https://modular-rest.github.io/modular-rest/server-client-ts/ai-context.html
+
+## Project Structure
+```
+src/
+├── index.ts              # Main server entry point with createRest config
+├── config.ts             # Database collection constants
+├── permissions.ts        # Permission groups (anonymous, end-user, administrator)
+├── triggers.ts           # Database triggers for user creation
+├── modules/              # Business logic modules
+│   ├── auth/            # Authentication & OAuth
+│   ├── subscription/    # Credit-based subscription system
+│   ├── gateway/         # Payment processing (Stripe)
+│   ├── translation/     # AI translation services
+│   ├── profile/         # User profile management
+│   ├── phrase_bundle/   # Language learning bundles
+│   ├── live_session/    # Real-time learning sessions
+│   └── statistic/       # Usage analytics
+└── utils/               # Shared utilities (OpenRouter API)
+```
+
+## Module Structure Pattern
+Each module follows this structure:
+- `types.ts` - TypeScript interfaces and types
+- `db.ts` - MongoDB collection definitions and schemas
+- `functions.ts` - Client-accessible API functions
+- `service.ts` - Core business logic
+- `router.ts` - Custom HTTP routes (if needed)
+- `config.ts` - Module-specific configuration
+- `events.ts` - Event emitters (if needed)
+
+## Key Patterns & Conventions
+
+### 1. Database Collections
+```typescript
+// Use getCollection from modular-rest
+import { getCollection } from "@modular-rest/server";
+const collection = getCollection<Type>(DATABASE, COLLECTION_NAME);
+```
+
+### 2. Type Safety
+- Use Zod for schema validation: `z.object({...})`
+- Export TypeScript types: `export type Type = z.infer<typeof Schema>`
+- Use `zodToJsonSchema` for AI structured output
+
+### 3. Error Handling
+- Use `ctx.throw(status, message)` for HTTP errors
+- Validate inputs with Zod schemas
+- Handle async operations with try-catch
+
+### 4. Authentication
+- Use `userManager` from modular-rest for user context
+- Check permissions with `permissionGroups`
+- OAuth integration with Google
+
+### 5. Payment Integration
+- Stripe adapter pattern in `gateway/adapters/`
+- Factory pattern for payment providers
+- Webhook handling for payment events
+
+### 6. Credit System
+- Freemium model with credit allocation
+- High-precision calculations with `decimal.js-light`
+- Usage tracking and cost calculation
+
+## Environment Variables
+```bash
+# Required
+MONGO_BASE_ADDRESS=mongodb://localhost:27017
+MONGO_DB_PREFIX=subturtle_
+STRIPE_SECRET_KEY=sk_test_...
+OPENROUTER_API_KEY=sk-or-v1_...
+GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+
+# Optional
+PORT=8080
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=secure_password
+```
+
+## Development Commands
+```bash
+npm run build    # TypeScript compilation
+npm run dev      # Development with ts-node
+npm start        # Production start
+```
+
+## Testing
+- Create/update test files when adding features
+- Use existing test patterns in modules
+- Follow testing guidelines in separate file
+
+## Code Style
+- Use TypeScript strict mode
+- Prefer async/await over callbacks
+- Use descriptive variable names
+- Add JSDoc comments for complex functions
+- Follow existing naming conventions
+
+## Security Considerations
+- Validate all inputs with Zod schemas
+- Use environment variables for secrets
+- Implement proper CORS configuration
+- Check user permissions before operations
+- Sanitize data before database operations
+
+## Common Pitfalls
+- Don't use axios (use node-fetch v2)
+- Don't hardcode API keys
+- Don't skip input validation
+- Don't forget error handling
+- Don't mix sync/async operations 
