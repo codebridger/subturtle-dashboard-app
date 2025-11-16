@@ -31,9 +31,10 @@ export async function getSimpleTranslation({
     const response = await openRouter.createChatCompletion({
       models: [
         // Accepted models
-        "google/gemini-2.5-flash-preview", // 1m context, $0.15/M input, $0.60/M output
+        "google/gemini-2.5-flash-lite", // 1.05M context, $0.10/M input, $0.40/M output
+        "google/gemini-2.5-flash", // 1m context, $0.15/M input, $0.60/M output
         "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
-        "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
+        // "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
       ],
       messages: [
         {
@@ -87,9 +88,10 @@ export async function getDetailedTranslation({
         options: {
           models: [
             // Accepted models
-            "google/gemini-2.5-flash-preview", // 1m context, $0.15/M input, $0.60/M output
+            "google/gemini-2.5-flash-lite", // 1.05M context, $0.10/M input, $0.40/M output
+            "google/gemini-2.5-flash", // 1m context, $0.15/M input, $0.60/M output
             "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
-            "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
+            // "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
           ],
           messages: [
             {
@@ -103,9 +105,6 @@ export async function getDetailedTranslation({
           ],
           temperature: 0,
           max_tokens: 700,
-          provider: {
-            require_parameters: true,
-          },
         },
         zodSchema: LanguageLearningDataSchema, // Pass the Zod schema directly
         schemaName: "language_learning_data",
