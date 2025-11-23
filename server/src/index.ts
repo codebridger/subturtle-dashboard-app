@@ -56,6 +56,7 @@ const app = createRest({
         "chrome-extension://",
         "https://www.youtube.com",
         "https://www.netflix.com",
+        "https://teams.microsoft.com",
       ];
 
       // Handle requests without Origin header (like direct API calls)
