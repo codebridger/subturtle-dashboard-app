@@ -57,6 +57,7 @@ const app = createRest({
         "https://www.youtube.com",
         "https://www.netflix.com",
         "https://teams.microsoft.com",
+        "https://meet.google.com",
       ];
 
       // Handle requests without Origin header (like direct API calls)
