@@ -1,4 +1,5 @@
 import { DatabaseTrigger } from "@modular-rest/server";
+import { LeitnerService } from "../leitner_box/service";
 import {
   isUserOnFreemium,
   updateFreemiumAllocation,
@@ -20,6 +21,19 @@ export const phraseBundleTriggers = [
         },
       });
     }
+
+    // When a new phrase is created, add it to the Leitner system
+    //
+    // Ensure this is a phrase being inserted, not a bundle
+    // We can check for specific phrase fields or just try-catch
+    // But typically this trigger file is attached to phraseCollection too
+    if (doc && doc.phrase && doc.translation && doc.refId) {
+      try {
+        await LeitnerService.addPhraseToBox(doc.refId, doc._id, 1);
+      } catch (e) {
+        console.error("Failed to add phrase to Leitner system", e);
+      }
+    }
   }),
 
   // When a phrase bundle is deleted,
@@ -36,4 +50,6 @@ export const phraseBundleTriggers = [
       });
     }
   }),
+
+
 ];

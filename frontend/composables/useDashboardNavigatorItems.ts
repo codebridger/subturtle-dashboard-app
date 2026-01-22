@@ -17,6 +17,11 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
                     icon: 'IconMenuDatatables',
                     to: '/bundles',
                 },
+                {
+                    title: t('review.title'),
+                    icon: 'IconMenuScrumboard',
+                    to: '/practice/review',
+                },
             ],
         },
         {

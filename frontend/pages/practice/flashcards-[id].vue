@@ -42,17 +42,40 @@
             </div>
 
             <selection class="my-6 flex max-h-[65%] w-full max-w-[65%] items-center justify-between">
-                <div>
+                <div v-if="!isLeitnerMode">
                     <IconButton icon="IconPlayCircle" rounded="md" color="muted" size="lg" disabled />
                 </div>
 
-                <div class="flex space-x-2">
+                <!-- Leitner Controls -->
+                <div v-if="isLeitnerMode" class="flex w-full justify-center space-x-8">
+                     <Button 
+                        @click="submitLeitnerResult(false)" 
+                        color="danger" 
+                        variant="soft"
+                        rounded="full"
+                        size="lg"
+                     >
+                        <Icon name="IconX" class="h-8 w-8" />
+                     </Button>
+                     
+                     <Button 
+                        @click="submitLeitnerResult(true)" 
+                        color="success" 
+                        variant="soft"
+                        rounded="full"
+                        size="lg"
+                     >
+                        <Icon name="IconCheck" class="h-8 w-8" />
+                     </Button>
+                </div>
+
+                <div v-else class="flex space-x-2">
                     <IconButton icon="IconArrowLeft" rounded="md" color="muted" size="lg" @click="prevCard" :disabled="phraseIndex === 0" />
 
                     <IconButton icon="IconArrowRight" rounded="md" color="muted" size="lg" @click="nextCard" :disabled="!isNextAvailable" />
                 </div>
 
-                <div>
+                <div v-if="!isLeitnerMode">
                     <IconButton icon="iconify solar--shuffle-line-duotone" rounded="md" color="muted" size="lg" disabled />
                 </div>
             </selection>
@@ -61,9 +84,11 @@
 </template>
 
 <script setup lang="ts">
-    import { dataProvider } from '@modular-rest/client';
-    import { IconButton } from '@codebridger/lib-vue-components/elements.ts';
+    import { dataProvider, functionProvider } from '@modular-rest/client';
+    import { IconButton, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
     import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
+    import { useProfileStore } from '~/stores/profile';
+    import { storeToRefs } from 'pinia';
 
     definePageMeta({
         // @ts-ignore
@@ -72,10 +97,19 @@
         middleware: ['auth'],
     });
 
-    const { id } = useRoute().params;
+    const route = useRoute();
+    const { id } = route.params;
+    
+    // Auth Store
+    const profileStore = useProfileStore();
+    const { authUser } = storeToRefs(profileStore);
 
     const bundle = ref<PopulatedPhraseBundleType | null>(null);
     const phraseIndex = ref(0);
+
+    const isLeitnerMode = computed(() => {
+        return route.query.type === 'leitner' || id === 'leitner';
+    });
 
     const phrase = computed(() => {
         if (!bundle.value) return null;
@@ -113,10 +147,39 @@
 
     function endFlashcardSession() {
         const router = useRouter();
-        router.push(`/bundles/${id}`);
+        if (isLeitnerMode.value) {
+            router.push('/practice/review');
+        } else {
+            router.push(`/bundles/${id}`);
+        }
     }
 
     function fetchFlashcard() {
+        if (isLeitnerMode.value) {
+             functionProvider.run({
+                 name: 'get-review-bundle',
+                 args: { userId: authUser.value?.id }
+             }).then((res: any) => {
+                 if (!res || !res.items || res.items.length === 0) {
+                     // Empty?
+                     // toastError?
+                     bundle.value = { title: 'Daily Review', phrases: [], refId: authUser.value?.id } as any;
+                     return;
+                 }
+                 // Map items to phrases
+                 const phrases = res.items.map((i: any) => i.phrase);
+                 bundle.value = {
+                     _id: res._id,
+                     title: 'Daily Review',
+                     phrases: phrases,
+                     refId: res.refId
+                 } as any;
+             }).catch(err => {
+                 console.error(err);
+             });
+             return;
+        }
+
         dataProvider
             .findOne<PopulatedPhraseBundleType>({
                 database: DATABASE.USER_CONTENT,
@@ -132,7 +195,7 @@
                 bundle.value = res;
             })
             .catch((err) => {
-                toastError({ title: 'Failed to fetch flashcard' });
+                // toastError({ title: 'Failed to fetch flashcard' });
             })
             .finally(() => {
                 console.log('Bundle loaded:', bundle.value);
@@ -151,6 +214,36 @@
     function prevCard() {
         if (phraseIndex.value > 0) {
             phraseIndex.value--;
+        }
+    }
+
+    async function submitLeitnerResult(correct: boolean) {
+        if (!bundle.value || !phrase.value) return;
+        
+        const currentPhraseId = (phrase.value as any)._id; // phrase._id might be strict
+        
+        // fire and forget? No, we should ensure it is saved? 
+        // Better to await to handle error.
+        try {
+             await functionProvider.run({
+                 name: 'submit-review-result',
+                 args: {
+                     userId: authUser.value?.id,
+                     results: [{ phraseId: currentPhraseId, correct }]
+                 }
+             });
+             
+             // Move to next
+             if (phraseIndex.value < bundle.value.phrases.length - 1) {
+                 phraseIndex.value++;
+             } else {
+                 // End session
+                 alert("Review Session Completed!");
+                 endFlashcardSession();
+             }
+        } catch(e) {
+            console.error("Failed to submit", e);
+            alert("Failed to save progress. Please try again.");
         }
     }
 </script>

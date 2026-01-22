@@ -95,6 +95,12 @@ const app = createRest({
   },
   permissionGroups,
   authTriggers: authTriggers,
+}).then((app) => {
+  // Initialize Schedule Service
+  const {
+    ScheduleService,
+  } = require("./modules/schedule/service");
+  ScheduleService.init();
 }).catch((err) => {
   console.error(err);
   process.exit(1);
