@@ -3,23 +3,43 @@ import { DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION } from "../../config";
 
 interface ScheduleJobSchema {
   name: string;
-  cronExpression: string;
-  routePath: string;
-  method: string;
+  cronExpression?: string;
+  runAt?: Date;
+  functionId: string;
+  args?: any;
+  executionType: "Immediate" | "normal";
+  jobType: "recurrent" | "once";
   lastRun?: Date;
-  status: "active" | "inactive" | "failed";
+  state: "scheduled" | "queued" | "executing" | "executed" | "failed";
+  status: "active" | "inactive";
 }
 
 const scheduleJobSchema = new Schema<ScheduleJobSchema>(
   {
     name: { type: String, required: true, unique: true },
-    cronExpression: { type: String, required: true },
-    routePath: { type: String, required: true },
-    method: { type: String, default: "POST" },
+    cronExpression: { type: String },
+    runAt: { type: Date },
+    functionId: { type: String, required: true },
+    args: { type: Schema.Types.Mixed, default: {} },
+    executionType: {
+      type: String,
+      enum: ["Immediate", "normal"],
+      default: "normal"
+    },
+    jobType: {
+      type: String,
+      enum: ["recurrent", "once"],
+      default: "recurrent"
+    },
     lastRun: Date,
+    state: {
+      type: String,
+      enum: ["scheduled", "queued", "executing", "executed", "failed"],
+      default: "scheduled",
+    },
     status: {
       type: String,
-      enum: ["active", "inactive", "failed"],
+      enum: ["active", "inactive"],
       default: "active",
     },
   },

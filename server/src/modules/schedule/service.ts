@@ -2,11 +2,15 @@ import schedule from "node-schedule";
 import { getCollection } from "@modular-rest/server";
 import { DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION } from "../../config";
 
-const PORT = process.env.PORT || "8080";
-const BASE_URL = `http://localhost:${PORT}`;
-const SYSTEM_SECRET = process.env.SYSTEM_SECRET || "default_system_secret_key";
-
 export class ScheduleService {
+  private static registry = new Map<string, (args: any) => Promise<void>>();
+  private static processingQueue = false;
+
+  static register(id: string, callback: (args: any) => Promise<void>) {
+    console.log(`[ScheduleService] Registering function: ${id}`);
+    this.registry.set(id, callback);
+  }
+
   static async init() {
     try {
       const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
@@ -15,6 +19,8 @@ export class ScheduleService {
       for (const job of jobs) {
         this.scheduleJobInternal(job as any);
       }
+      // Start processing queue in case there are stuck 'queued' jobs from previous sessions
+      this.processQueue();
     } catch (error) {
       console.error("[ScheduleService] Init failed", error);
     }
@@ -22,25 +28,42 @@ export class ScheduleService {
 
   static async createJob(
     name: string,
-    cronExpression: string,
-    routePath: string,
-    method: string = "POST"
+    functionId: string,
+    options: {
+      cronExpression?: string;
+      runAt?: Date;
+      args?: any;
+      executionType?: "Immediate" | "normal";
+      jobType?: "recurrent" | "once";
+    }
   ) {
+    const {
+      cronExpression,
+      runAt,
+      args = {},
+      executionType = "normal",
+      jobType = "recurrent"
+    } = options;
+
     const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
     const existing = await collection.findOne({ name });
 
     const jobData = {
       name,
       cronExpression,
-      routePath,
-      method,
+      runAt,
+      functionId,
+      args,
+      executionType,
+      jobType,
+      state: "scheduled" as const,
       status: "active" as const,
     };
 
     if (existing) {
       await collection.updateOne(
         { name },
-        { $set: { cronExpression, routePath, method, status: "active" } }
+        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", status: "active" } }
       );
       this.cancelJob(name);
     } else {
@@ -64,52 +87,95 @@ export class ScheduleService {
     await collection.deleteOne({ name });
   }
 
-  static scheduleJobInternal(jobData: {
-    name: string;
-    cronExpression: string;
-    routePath: string;
-    method: string;
-  }) {
+  static async scheduleJobInternal(jobData: any) {
     // Cancel existing if any (safety check)
     if (schedule.scheduledJobs[jobData.name]) {
       schedule.scheduledJobs[jobData.name].cancel();
     }
 
-    schedule.scheduleJob(jobData.name, jobData.cronExpression, async () => {
-      console.log(`[ScheduleService] Triggering job: ${jobData.name}`);
-      try {
-        const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
-        await collection.updateOne(
-          { name: jobData.name },
-          { $set: { lastRun: new Date() } }
-        );
+    const scheduleParam = jobData.jobType === "once" ? jobData.runAt : jobData.cronExpression;
+    if (!scheduleParam) return;
 
-        // Append base url if relative path
-        const url = jobData.routePath.startsWith("http")
-          ? jobData.routePath
-          : `${BASE_URL}${jobData.routePath}`;
+    schedule.scheduleJob(jobData.name, scheduleParam, async () => {
+      console.log(`[ScheduleService] Triggered: ${jobData.name}`);
+      const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
 
-        const response = await fetch(url, {
-          method: jobData.method,
-          headers: {
-            "Content-Type": "application/json",
-            "x-system-secret": SYSTEM_SECRET,
-          },
-          body: ["POST", "PUT", "PATCH"].includes(jobData.method.toUpperCase())
-             ? JSON.stringify({ system_secret: SYSTEM_SECRET })
-             : undefined
-        });
+      // Atomic claim
+      const newState = jobData.executionType === "Immediate" ? "executing" : "queued";
+      const claimed = await collection.findOneAndUpdate(
+        {
+          name: jobData.name,
+          state: { $in: ["scheduled", "executed", "failed"] }
+        },
+        { $set: { state: newState } },
+        { returnDocument: 'after' }
+      ) as any;
 
-        if (!response.ok) {
-          console.error(
-            `[ScheduleService] Job ${jobData.name} failed: ${response.status} ${response.statusText}`
-          );
-        } else {
-            console.log(`[ScheduleService] Job ${jobData.name} executed successfully.`);
-        }
-      } catch (e) {
-        console.error(`[ScheduleService] Job ${jobData.name} execution error`, e);
+      if (!claimed) {
+        console.log(`[ScheduleService] Job ${jobData.name} already claimed or running.`);
+        return;
+      }
+
+      if (jobData.executionType === "Immediate") {
+        await this.executeJob(claimed);
+      } else {
+        console.log(`[ScheduleService] Job ${jobData.name} queued for sequential processing.`);
+        this.processQueue();
       }
     });
   }
+
+  private static async executeJob(job: any) {
+    console.log(`[ScheduleService] Executing: ${job.name} (${job.functionId})`);
+    const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
+
+    try {
+      const callback = this.registry.get(job.functionId);
+      if (callback) {
+        await callback(job.args);
+
+        const finalState = job.jobType === "once" ? "executed" : "scheduled";
+        await collection.updateOne(
+          { _id: job._id },
+          { $set: { state: finalState, lastRun: new Date() } }
+        );
+        console.log(`[ScheduleService] Job ${job.name} completed.`);
+      } else {
+        throw new Error(`Function ${job.functionId} not registered`);
+      }
+    } catch (e) {
+      console.error(`[ScheduleService] Job ${job.name} failed:`, e);
+      await collection.updateOne(
+        { _id: job._id },
+        { $set: { state: "failed", lastRun: new Date() } }
+      );
+    }
+  }
+
+  private static async processQueue() {
+    if (this.processingQueue) return;
+    this.processingQueue = true;
+
+    try {
+      const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
+
+      while (true) {
+        // Find next queued job (FIFO by claim time/updatedAt)
+        const job = await collection.findOneAndUpdate(
+          { executionType: "normal", state: "queued", status: "active" },
+          { $set: { state: "executing" } },
+          { sort: { updatedAt: 1 }, returnDocument: 'after' }
+        ) as any;
+
+        if (!job) break;
+
+        await this.executeJob(job);
+      }
+    } catch (e) {
+      console.error("[ScheduleService] Queue processing error:", e);
+    } finally {
+      this.processingQueue = false;
+    }
+  }
 }
+

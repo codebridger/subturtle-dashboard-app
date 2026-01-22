@@ -7,12 +7,26 @@ const createJob = defineFunction({
   name: "create-job",
   permissionTypes: ["admin"], // Assuming admin usage
   callback: async (params: any) => {
-    const { name, cronExpression, routePath, method } = params;
-    await ScheduleService.createJob(
+    const {
       name,
       cronExpression,
-      routePath,
-      method || "POST"
+      runAt,
+      functionId,
+      args,
+      executionType,
+      jobType
+    } = params;
+
+    await ScheduleService.createJob(
+      name,
+      functionId,
+      {
+        cronExpression,
+        runAt: runAt ? new Date(runAt) : undefined,
+        args: args || {},
+        executionType,
+        jobType
+      }
     );
     return { success: true };
   },
