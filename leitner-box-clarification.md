@@ -7,8 +7,8 @@ Develop a Leitner Box-based flashcard review system capable of handling a large 
 #### Requirements:
 1. **Dynamic Box Structure:**
     *   Implement a dynamic Leitner box system where the number of boxes can be expanded or split as needed to accommodate large volumes of phrases.
-    *   Categories of phrases should have their own independent set of Leitner boxes.
-    *   Ensure scalability for systems handling over 1,000 phrases.
+    *   Categories of phrases play as a parallel review phrase beside the actual review list, any correct answer push the phrase to the next box and any incorrect answer push the phrase to the previous box. 
+    *   Ensure scalability for systems handling over 5,000 phrases.
 2. **Phrase Review & Movement Logic:**
     *   Implement logic for moving phrases between boxes based on user performance.
     *   Correctly answered phrases progress to higher-numbered boxes with longer intervals.
@@ -36,66 +36,99 @@ The final implementation should provide an efficient and scalable Leitner box sy
 ## 1. Implamentation Overview
 This document outlines the engineering plan for implementing the Leitner Box Review System within the `Subturtle` application, using `@modular-rest/server` on the backend and Vue.js on the frontend.
 
-## 2. Server-Side Architecture
-We will implement two new modules in the `modules/` directory:
+## 2. Server-Side Architecture & Module Usecases
+The system relies on the interplay of three distinct modules.
 
-### A. Module: `leitner_box`
-This module handles all the core logic, data storage, and review calculations.
+### A. Module: `leitner_box` (The Logic Engine)
+**Role**: Handles the *mathematics* and *storage* of spaced repetition. It doesn't care *when* or *how* the user reviews, only *what* is due and *how* to update progress.
+**Usecase**: "I performed a review on Phrase X, result: Correct. Update its level."
+**Relation**:
+- **To Board**: Provides data ("User has 15 items due").
+- **To Schedule**: None directly (passive module).
 
-**Files:**
-- `db.ts`: Defines the separate database schema.
-- `service.ts`: Contains the business logic (movement, intervals, bundle generation).
-- `functions.ts`: Exposes API endpoints for the frontend.
-
-**Database Schema (Unified System):**
-We will use a **separate database** `subturtle_leitner` for these collections.
-
-```
-// leitner_system collection (Database: subturtle_leitner)
+**Database Schema (`leitner_system` collection in `subturtle_leitner`):**
+```typescript
 {
+  /** Reference to the User owner of this system */
   user: ObjectId (ref: 'user'),
+  
+  /** User-configured settings affecting the algo */
   settings: {
-    dailyLimit: Number, // Soft limit for "suggested" count
-    totalBoxes: Number, // Default 5 (min 3, max 10)
+    /** Soft limit for suggested daily reviews (e.g., 20) */
+    dailyLimit: Number,
+    /** Max box level before 'Mastered'. Default 5 (min 3, max 10) */
+    totalBoxes: Number,
   },
+  
+  /** Array of all phrases currently tracked in the system */
   items: [
     {
-      phraseId: ObjectId, // Cross-database ref to subturtle_user_content.phrase
-      boxLevel: Number, // 1, 2, 3...
+      /** Link to the Phrase in `subturtle_user_content` DB */
+      phraseId: ObjectId, 
+      /** Current Box Level (1 = Daily, 5 = Mastered) */
+      boxLevel: Number, 
+      /** The exact timestamp when this item becomes due for review */
       nextReviewDate: Date,
+      /** Timestamp of the last review attempt */
       lastAttemptDate: Date
     }
   ]
 }
-
-// No "review_bundles" collection. Review is dynamic.
 ```
-*Note: Using cross-database populate to link to phrases in `user_content`.*
 
-**Functions (`functions.ts`):**
-- `getReviewBundle()`: Returns the current batch of phrases to review.
-- `submitReviewResult(results: { phraseId: string, correct: boolean }[])`: Updates the box levels for reviewed items.
-- `addPhraseToBox(phraseId: string)`: Manually adds a phrase to Box 1.
-- `resetBox()`: Resets all progress.
-- `getStats()`: Returns box distribution stats for the Dashboard.
+### B. Module: `board` (The State/Presentation Layer)
+**Role**: Manages the "Activity Board" UI state. It acts as the *Brain* that decides what the user should focus on. It persists notification states (toasts) so they survive refreshes.
+**Usecase**: "The user logged in. Show them a 'Hot' toast for Leitner Review because they have due items."
+**Relation**:
+- **To Leitner**: Queries `LeitnerService.getDueCount()` to determine if a toast is needed.
+- **To Schedule**: Receives "Wake Up" triggers to refresh its state.
 
-### B. Module: `schedule` (General Purpose)
-This module manages background tasks using `node-schedule`. It is designed as a **shared service** that triggers API endpoints (internal webhooks) on a schedule.
+**Database Schema (`board_activities` collection in `subturtle_board`):**
+```typescript
+{
+  /** Reference to the User */
+  user: ObjectId (ref: 'user'),
+  
+  /** List of tracked activities on the board */
+  activities: [
+    {
+      /** The identifier for the type of activity */
+      type: 'leitner_review', // | 'ai_lecture' | 'ai_practice'
+      
+      /** 
+       * Controls notification duplication behavior:
+       * - 'singleton': Only one active toast of this type (e.g. Leitner Review)
+       * - 'unique': Multiple toasts allowed if refIds differ (e.g. Course A, Course B)
+       */
+      toastType: 'singleton' | 'unique',
+      
+      /** Optional ID for 'unique' types (e.g., Lecture ID) */
+      refId: String,
+      
+      /** Current UI State: 'toasted' = show alert, 'idle' = normal display */
+      state: 'idle' | 'toasted', 
+      
+      /** When this state was last computed */
+      lastUpdated: Date,
+      
+      /** Snapshot data for the UI (e.g., preventing re-querying Leitner DB) */
+      meta: {
+          dueCount: Number, 
+          nextCheck: Date
+      }
+    }
+  ]
+}
+```
 
-**Files:**
-- `db.ts`: Stores scheduled jobs metadata (name, cronExpression, routePath, method, lastRun, status) for persistence and execution.
-- `service.ts`: Wraps `node-schedule` and provides methods like `scheduleJob(name, cronExpression, routePath, method)`. It handles the HTTP request execution.
-- `functions.ts`: API to create, list, delete, or manually triggers jobs.
+### C. Module: `schedule` (The Pulse/Trigger)
+**Role**: A general-purpose background job runner. It knows *nothing* about business logic; it only knows *endpoints* and *times*.
+**Usecase**: "Every hour, trigger the `board/refresh` webhook for all active users."
+**Relation**:
+- **To Board**: Calls `BoardService.refresh()` (via webhook).
+- **To Leitner**: No direct relation.
 
-**Mechanism (Webhook/Route Based):**
-- **Persistence**: The database stores the **Route Path** (e.g., `/api/v1/leitner-box/functions/generateDailyBundle`), HTTP method, and cron expression.
-- **Execution**: When the schedule triggers, the service makes an internal HTTP request (Webhook) to the stored path.
-- **Pros**: 
-    - Solves the serialization issue (strings are easy to store).
-    - Decouples the schedule module from specific implementation details.
-    - Allows triggering any API endpoint in the system.
-
-### C. Initialization & Hooks
+### D. Initialization & Hooks
 **Criterion**: "on login step the leitner system is initiated for user".
 
 **Implementation Strategy:**
@@ -122,12 +155,16 @@ This keeps the initialization logic completely handled on the server side withou
         - **If Phrase is New**: Add to **Box 1** and proceed with standard logic.
 
 ### Dynamic Board & Activities
-- **Board Concept**: A central page presenting available "Activities".
-- **Activities**:
-    1.  **Review Leitner Box**: Primary activity.
-    2.  **Take AI Lecture** (Future).
-    3.  **Take AI Practice** (Future).
-- **"Toasting"**: The Board logic determines which activity is "hot" or "due" and suggests it to the user (e.g., via a Dashboard widget or Notification).
+- **Persistence**: Activity states are stored in the DB.
+- **Toast Types**:
+    - **Singleton**: Only one active toast of this kind (e.g., "Leitner Review"). If triggered again, it just updates metadata (e.g., due count).
+    - **Unique**: Can have multiple distinct toasts (e.g., "Lecture: Intro to AI", "Lecture: Advanced JS").
+- **"Toasting"**:
+    - **Trigger**: Schedule runs daily (or hourly) -> `BoardService.refresh()`.
+    - **Logic**: Checks `LeitnerService`. If items are due, sets Activity State to `toasted` with metadata (e.g., "15 items due").
+- **"Consumption" (State Change)**:
+    - User clicks "Review" or enters the activity -> **Toast is Removed** (State -> `consumed/idle`).
+    - **Logic**: The act of *starting* the activity satisfies the prompt.
 
 ### Dynamic Review Logic
 - **No Freeze-Frames**: We do NOT store "Bundles" in the DB.

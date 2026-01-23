@@ -228,5 +228,14 @@
         "title": "Review",
         "recent-lectures": "Recent AI Lectures",
         "view-all": "View All"
+    },
+    "board": {
+        "no_activities": "No activities right now",
+        "all_caught_up": "You are all caught up! Check back later.",
+        "due": "Due",
+        "items_due": "{count} items due for review",
+        "activity_ready": "Ready to start",
+        "start_activity": "Start Activity",
+        "back_to_board": "Back to Board"
     }
 }

@@ -23,9 +23,12 @@ export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 
 // Schedule
 export const DATABASE_SCHEDULE = "cms";
-export const SCHEDULE_JOB_COLLECTION = "job";
+export const SCHEDULE_JOB_COLLECTION = "scheduled_job";
 
-// Leitner System (Generative)
-export const DATABASE_GENERATIVE = "generative";
+// Leitner System
+export const DATABASE_LEITNER = DATABASE;
 export const LEITNER_SYSTEM_COLLECTION = "leitner_system";
-export const LEITNER_REVIEW_BUNDLE_COLLECTION = "leitner_review_bundle";
+
+// Board Module
+export const DATABASE_BOARD = DATABASE;
+export const BOARD_ACTIVITY_COLLECTION = "board_activity";

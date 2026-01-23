@@ -83,8 +83,8 @@ const app = createRest({
     dbPrefix: process.env.MONGO_DB_PREFIX || "subturtle_",
   },
   staticPath: {
-    actualPath: path.join(__dirname, "public"),
-    path: "/",
+    directory: path.join(__dirname, "public"),
+    urlPath: "/",
   },
   adminUser: {
     email: process.env.ADMIN_EMAIL || "",
@@ -100,6 +100,13 @@ const app = createRest({
   const {
     ScheduleService,
   } = require("./modules/schedule/service");
+  const { LeitnerService } = require("./modules/leitner_box/service");
+
+  ScheduleService.register("generate-daily-bundles", async (args: any) => {
+    console.log("[Schedule] Running generate-daily-bundles...");
+    await LeitnerService.generateDailyBundles();
+  });
+
   ScheduleService.init();
 }).catch((err) => {
   console.error(err);

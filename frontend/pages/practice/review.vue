@@ -1,180 +1,134 @@
 <template>
-  <div class="container mx-auto p-6 md:p-12">
-    <div class="mb-8 flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Review Dashboard
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">
-          Track your progress and review due items.
-        </p>
-      </div>
-      <div>
-        <Button class="bg-primary-600 text-white" @click="startReview" :disabled="!hasPendingReview">
-          Start Review
-        </Button>
-      </div>
-    </div>
-
-    <!-- Stats Section -->
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mb-10">
-      <div v-for="(count, box) in stats.boxes" :key="box"
-        class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Box {{ box }}</h3>
-        <p class="text-3xl font-bold text-primary-600 mt-2">{{ count }}</p>
-        <p class="text-sm text-gray-500 mt-1">phrases</p>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex flex-col space-y-4 mb-10">
-      <NuxtLink to="/settings/preferences" class="text-primary-600 hover:underline">
-        Manage Settings
-      </NuxtLink>
-    </div>
-
-    <!-- Recent AI Lectures -->
-    <div class="mt-8">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ t('review.recent-lectures') }}
-        </h2>
-        <NuxtLink to="/sessions" class="text-primary-600 hover:underline text-sm font-medium">
-          {{ t('review.view-all') }}
-        </NuxtLink>
-      </div>
-
-      <div v-if="isLoading" class="flex justify-center py-8">
-        <span
-          class="animate-spin border-4 border-primary-500 border-l-transparent rounded-full w-10 h-10 inline-block align-middle m-auto mb-10"></span>
-      </div>
-      <div v-else-if="!recentSessions.length" class="text-gray-500 dark:text-gray-400 py-4">
-        {{ t('live-session.no-sessions') }}
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="session in recentSessions" :key="session._id"
-          class="rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <NuxtLink :to="`/sessions/${session._id}`" class="block h-full flex flex-col justify-between">
-            <div>
-              <div class="mb-3 flex items-baseline justify-between">
-                <span
-                  class="rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium uppercase text-blue-600 dark:bg-blue-900 dark:text-blue-400">
-                  {{ session.type }}
-                </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ new Date(session.createdAt).toLocaleDateString() }}
-                </span>
-              </div>
-              <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                {{ session.dialogs?.length || 0 }} {{ t('live-session.dialogs') }}
-              </div>
-              <div v-if="session.metadata" class="text-xs text-gray-500 dark:text-gray-400">
-                <div v-if="session.metadata.aiCharacter">AI: {{ session.metadata.aiCharacter }}</div>
-              </div>
-            </div>
-            <div class="mt-4 text-right">
-              <Icon name="IconChevronRight" class="h-5 w-5 ml-auto text-gray-400" />
-            </div>
-          </NuxtLink>
+    <MaterialPracticeToolScaffold
+        :title="$t('review.title')"
+        :activePhrase="currentIndex + 1"
+        :totalPhrases="totalItems"
+        bundleId="leitner"
+        @end-session="endSession"
+    >
+        <div v-if="loading" class="flex h-full w-full items-center justify-center">
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
         </div>
-      </div>
-    </div>
-  </div>
+
+        <div v-else-if="items.length === 0" class="flex h-full w-full flex-col items-center justify-center p-8 text-center">
+             <Icon name="iconify solar--confetti-bold-duotone" class="mb-4 text-6xl text-success-500" />
+             <h2 class="text-2xl font-bold">{{ $t('board.all_caught_up') }}</h2>
+             <Button class="mt-6" @click="endSession" variant="soft">{{ $t('board.back_to_board') }}</Button>
+        </div>
+
+        <div v-else class="flex h-full w-full flex-col items-center p-5 md:px-16 md:py-14">
+            <div :class="['w-full flex-1 ', 'md:max-h-[80%] md:max-w-[80%]', 'lg:max-h-[65%] lg:max-w-[65%]']">
+                <!-- Use WidgetFlashCard based on phrase type -->
+                <WidgetFlashCard
+                    v-if="currentPhrase && currentPhrase.type === 'normal'"
+                    :key="`normal-${currentIndex}`"
+                    :phrase-type="'normal'"
+                    :front="currentPhrase.phrase"
+                    :back="currentPhrase.translation"
+                    :context="currentPhrase.context"
+                    :translation-language="currentPhrase.translation_language"
+                />
+
+                <WidgetFlashCard
+                    v-else-if="currentPhrase && currentPhrase.type === 'linguistic'"
+                    :key="`linguistic-${currentIndex}`"
+                    :phrase-type="'linguistic'"
+                    :front="currentPhrase.phrase"
+                    :back="currentPhrase.linguistic_data?.definition || currentPhrase.phrase"
+                    :context="currentPhrase.context"
+                    :direction="currentPhrase.direction"
+                    :language-info="currentPhrase.language_info"
+                    :linguistic-data="currentPhrase.linguistic_data"
+                />
+
+                <WidgetFlashCard
+                    v-else-if="currentPhrase"
+                    :key="`fallback-${currentIndex}`"
+                    :front="currentPhrase.phrase"
+                    :back="currentPhrase.translation || 'No translation'"
+                />
+            </div>
+
+            <!-- Leitner Controls -->
+            <selection class="my-6 flex max-h-[65%] w-full max-w-[65%] items-center justify-center space-x-8">
+                 <Button 
+                    @click="submitResult(false)" 
+                    color="danger" 
+                    variant="soft"
+                    rounded="full"
+                    size="lg"
+                    class="h-16 w-16"
+                 >
+                    <Icon name="iconify solar--close-circle-bold" class="h-8 w-8" />
+                 </Button>
+                 
+                 <Button 
+                    @click="submitResult(true)" 
+                    color="success" 
+                    variant="soft"
+                    rounded="full"
+                    size="lg"
+                    class="h-16 w-16"
+                 >
+                    <Icon name="iconify solar--check-circle-bold" class="h-8 w-8" />
+                 </Button>
+            </selection>
+        </div>
+    </MaterialPracticeToolScaffold>
 </template>
 
 <script setup lang="ts">
-import { functionProvider, dataProvider } from "@modular-rest/client";
-import { Button, Icon } from "@codebridger/lib-vue-components/elements.ts";
-import { useProfileStore } from "~/stores/profile";
-import { storeToRefs } from "pinia";
-import { COLLECTIONS, DATABASE } from '~/types/database.type';
-import type { LiveSessionRecordType } from '~/types/live-session.type';
-
-const { t } = useI18n();
-const stats = ref({ boxes: {}, totalPhrases: 0 });
-const hasPendingReview = ref(false);
-const recentSessions = ref<LiveSessionRecordType[]>([]);
-const isLoading = ref(false);
-const router = useRouter();
-const profileStore = useProfileStore();
-const { authUser } = storeToRefs(profileStore);
+import { useLeitnerStore } from '~/stores/leitner';
+import { IconButton, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
+import { type PhraseType } from '~/types/database.type';
+import { storeToRefs } from 'pinia';
 
 definePageMeta({
-  middleware: ["auth"],
+    // @ts-ignore
+    layout: 'empty',
+    middleware: ['auth'],
 });
 
-onMounted(() => {
-  if (authUser.value?.id) {
-    fetchStats();
-    checkReview();
-    fetchRecentSessions();
-  } else {
-    // Wait for auth? middleware handles it.
-  }
+const router = useRouter();
+const leitnerStore = useLeitnerStore();
+const { reviewSessionItems } = storeToRefs(leitnerStore);
+
+const loading = ref(true);
+const currentIndex = ref(0);
+
+const items = computed(() => reviewSessionItems.value);
+const totalItems = computed(() => items.value.length);
+
+const currentItem = computed(() => items.value[currentIndex.value]);
+const currentPhrase = computed(() => currentItem.value?.phrase as PhraseType);
+
+onMounted(async () => {
+    loading.value = true;
+    const res = await leitnerStore.fetchReviewSession(20); // Default limit
+    if (res.length === 0) {
+        // Maybe auto-redirect? 
+        // Or show the "caught up" screen
+    }
+    loading.value = false;
 });
 
-async function fetchStats() {
-  try {
-    const res: any = await functionProvider.run({
-      name: "get-stats",
-      args: { userId: authUser.value?.id }
-    });
-    if (res) {
-      stats.value = res;
+async function submitResult(isCorrect: boolean) {
+    if (!currentPhrase.value) return;
+
+    // Submit to store/API
+    const phraseId = currentPhrase.value._id;
+    await leitnerStore.submitReview(phraseId, isCorrect);
+
+    // Move to next
+    if (currentIndex.value < totalItems.value - 1) {
+        currentIndex.value++;
+    } else {
+        // Finished session
+        endSession();
     }
-  } catch (e) {
-    console.error(e);
-  }
 }
 
-async function checkReview() {
-  try {
-    const res: any = await functionProvider.run({
-      name: "get-review-bundle",
-      args: { userId: authUser.value?.id }
-    });
-    if (res && res._id) {
-      hasPendingReview.value = true;
-    }
-  } catch (e) {
-    console.error(e);
-  }
+function endSession() {
+    router.push('/board');
 }
-
-async function fetchRecentSessions() {
-  isLoading.value = true;
-  try {
-    const controller = dataProvider.list<LiveSessionRecordType>(
-      {
-        database: DATABASE.USER_CONTENT,
-        collection: COLLECTIONS.LIVE_SESSION,
-        query: {
-          refId: authUser.value?.id,
-        },
-        options: {
-          sort: { createdAt: -1 },
-        }
-      },
-      {
-        limit: 3,
-        page: 1,
-        onFetched: (data) => {
-          recentSessions.value = data;
-        },
-      }
-    );
-    // Update pagination and fetch
-    await controller.updatePagination();
-    await controller.fetchPage(1);
-  } catch (e) {
-    console.error("Failed to fetch sessions", e);
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-function startReview() {
-  router.push(`/practice/flashcards-leitner?type=leitner`);
-}
-
 </script>

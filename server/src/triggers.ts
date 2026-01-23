@@ -131,7 +131,7 @@ export const authTriggers: CmsTrigger[] = [
       const insertedPhrases = await phraseCollection.insertMany(
         bundleData.phrases
       );
-      const phraseIds = insertedPhrases.map((phrase) => phrase._id);
+      const phraseIds = insertedPhrases.map((phrase: any) => phrase._id);
 
       // Update the bundle to include the phrase IDs
       await bundleCollection.updateOne(
@@ -139,7 +139,7 @@ export const authTriggers: CmsTrigger[] = [
         { $push: { phrases: { $each: phraseIds } } }
       );
     }
-    
+
     // Initialize Leitner System (for new users)
     await LeitnerService.ensureInitialized(userId);
   }),

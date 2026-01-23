@@ -1,65 +1,102 @@
 import { defineFunction } from "@modular-rest/server";
 import { LeitnerService } from "./service";
+import { BoardService } from "../board/service";
 
-const SYSTEM_SECRET = process.env.SYSTEM_SECRET || "default_system_secret_key";
+// Frontend API: Get items to review
+const getReviewSession = defineFunction({
+  name: "get-review-session",
+  permissionTypes: ["user"],
+  callback: async (context) => {
+    if (!context.user) throw new Error("Unauthorized");
+    const { limit } = context.params;
 
-const getReviewBundle = defineFunction({
-  name: "get-review-bundle",
-  permissionTypes: ["user_access"],
-  callback: async (params: any) => {
-    // Assuming params contains userId if user_access is enabled/injected
-    // or we might need to rely on the fact that for user_access, the caller should pass userId?
-    // Actually, secure way is ctx.user. 
-    // If modular-rest injects user into params, we use it.
-    // Based on profile/functions.ts, it uses { userId } = params.
-    const { userId } = params;
-    return await LeitnerService.getReviewBundle(userId);
+    // Ensure initialized (lazy init)
+    await LeitnerService.ensureInitialized(context.user._id);
+
+    const items = await LeitnerService.getDueItems(context.user._id, limit ? parseInt(limit) : 20);
+    return items;
   },
 });
 
-const submitReviewResult = defineFunction({
-  name: "submit-review-result",
-  permissionTypes: ["user_access"],
-  callback: async (params: any) => {
-    const { userId, results } = params;
-    await LeitnerService.submitReviewResult(userId, results);
+// Frontend API: Submit a review result
+const submitReview = defineFunction({
+  name: "submit-review",
+  permissionTypes: ["user"],
+  callback: async (context) => {
+    if (!context.user) throw new Error("Unauthorized");
+    const { phraseId, isCorrect } = context.params;
+
+    if (!phraseId) throw new Error("Phrase ID is required");
+    if (typeof isCorrect !== "boolean") throw new Error("isCorrect boolean is required");
+
+    // Submit review (also triggers init if needed)
+    await LeitnerService.submitReview(context.user._id, phraseId, isCorrect);
+
     return { success: true };
   },
 });
 
-const generateDailyBundles = defineFunction({
-  name: "generate-daily-bundles",
-  permissionTypes: ["anonymous_access"], // Cron triggers this
-  callback: async (params: any) => {
-    // Security check
-    const { system_secret } = params;
-    if (system_secret !== SYSTEM_SECRET) {
-       throw new Error("Unauthorized system call");
+// Internal/Cron API: Check status and update board
+const refreshBoardStatus = defineFunction({
+  name: "refresh-board-status",
+  permissionTypes: ["admin", "system"],
+  callback: async (context) => {
+    const { userId } = context.params;
+    if (!userId) {
+      if (context.user) {
+        await _syncUser(context.user._id);
+        return { success: true };
+      }
+      throw new Error("UserId required for refresh-board-status");
     }
-    
-    await LeitnerService.generateDailyBundles();
+
+    await _syncUser(userId);
     return { success: true };
   },
+});
+
+async function _syncUser(userId: string) {
+  const dueCount = await LeitnerService.getDueCount(userId);
+  await BoardService.refreshActivity(
+    userId,
+    "leitner_review",
+    { dueCount },
+    dueCount > 0,
+    "singleton"
+  );
+}
+
+// Admin/System API: Initialize for a user
+const initLeitner = defineFunction({
+  name: "init-leitner",
+  permissionTypes: ["admin", "system", "user"],
+  callback: async (context) => {
+    const userId = context.params.userId || (context.user ? context.user._id : null);
+    if (!userId) throw new Error("UserId required");
+
+    await LeitnerService.ensureInitialized(userId);
+    return { success: true };
+  }
 });
 
 const getStats = defineFunction({
   name: "get-stats",
-  permissionTypes: ["user_access"],
-  callback: async (params: any) => {
-     const { userId } = params;
-     return await LeitnerService.getStats(userId);
+  permissionTypes: ["user"],
+  callback: async (context) => {
+    if (!context.user) throw new Error("Unauthorized");
+    return LeitnerService.getStats(context.user._id);
   }
 });
 
 const updateSettings = defineFunction({
   name: "update-settings",
-  permissionTypes: ["user_access"],
-  callback: async (params: any) => {
-     const { userId, settings } = params;
-     // settings: { dailyLimit, totalBoxes }
-     await LeitnerService.updateSettings(userId, settings);
-     return { success: true };
+  permissionTypes: ["user"],
+  callback: async (context) => {
+    if (!context.user) throw new Error("Unauthorized");
+    const { settings } = context.params;
+    await LeitnerService.updateSettings(context.user._id, settings);
+    return { success: true };
   }
 });
 
-module.exports.functions = [getReviewBundle, submitReviewResult, generateDailyBundles, getStats, updateSettings];
+module.exports.functions = [getReviewSession, submitReview, refreshBoardStatus, initLeitner, getStats, updateSettings];

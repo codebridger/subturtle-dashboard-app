@@ -1,98 +1,65 @@
-import { Schema, defineCollection } from "@modular-rest/server";
-import { DATABASE_GENERATIVE, LEITNER_SYSTEM_COLLECTION, LEITNER_REVIEW_BUNDLE_COLLECTION } from "../../config";
+import { Schema, defineCollection, Permission } from "@modular-rest/server";
+import { DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION } from "../../config";
 
-interface LeitnerSystemSchema {
-  refId: string; // user id
+export interface LeitnerItem {
+  phraseId: string;
+  boxLevel: number;
+  nextReviewDate: Date;
+  lastAttemptDate: Date;
+  consecutiveIncorrect: number;
+}
+
+export interface LeitnerSystem {
+  userId: string;
   settings: {
     dailyLimit: number;
-    totalBoxes: number; // Default 5 (min 3, max 10)
+    totalBoxes: number;
   };
-  items: Array<{
-    phraseId: string; // ref to phrase refId or string ID
-    boxLevel: number;
-    nextReviewDate: Date;
-    lastAttemptDate: Date;
-  }>;
+  items: LeitnerItem[];
 }
 
-interface ReviewBundleSchema {
-  refId: string; // user id
-  createdAt: Date;
-  type: "daily" | "manual";
-  status: "pending" | "completed" | "expired";
-  items: Array<{
-    phraseId: string;
-    boxLevelAtGeneration: number;
-  }>;
-}
-
-const leitnerSystemSchema = new Schema<LeitnerSystemSchema>(
+const leitnerSystemSchema = new Schema<LeitnerSystem>(
   {
-    refId: { type: String, required: true, unique: true },
+    userId: { type: String, required: true },
     settings: {
-      dailyLimit: { type: Number, default: 15 },
-      totalBoxes: { type: Number, default: 5, min: 3, max: 10 },
-    },
-    items: [
-      {
-        phraseId: { type: String, required: true },
-        boxLevel: { type: Number, default: 1 },
-        nextReviewDate: Date,
-        lastAttemptDate: Date,
-        consecutiveFailures: { type: Number, default: 0 },
+      type: {
+        dailyLimit: { type: Number, default: 20 },
+        totalBoxes: { type: Number, default: 5 },
       },
-    ],
+      required: true,
+    },
+    items: {
+      type: [
+        {
+          phraseId: { type: String, ref: "phrase" }, // Cross-DB reference
+          boxLevel: { type: Number, required: true },
+          nextReviewDate: { type: Date, required: true },
+          lastAttemptDate: { type: Date, required: true },
+          consecutiveIncorrect: { type: Number, default: 0 },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );
 
-const reviewBundleSchema = new Schema<ReviewBundleSchema>(
-  {
-    refId: { type: String, required: true },
-    type: { type: String, enum: ["daily", "manual"], default: "daily" },
-    status: {
-      type: String,
-      enum: ["pending", "completed", "expired"],
-      default: "pending",
-    },
-    items: [
-      {
-        phraseId: String,
-        boxLevelAtGeneration: Number,
-      },
-    ],
-  },
-  { timestamps: true }
-);
-
-const leitnerSystemCollection = defineCollection({
-  database: DATABASE_GENERATIVE,
+export const leitnerSystemCollection = defineCollection({
+  database: DATABASE_LEITNER,
   collection: LEITNER_SYSTEM_COLLECTION,
   schema: leitnerSystemSchema,
   permissions: [
-    {
-      accessType: "user_access",
+    new Permission({
+      accessType: "owner",
       read: true,
-      write: false, // Only modified via service/functions
-      onlyOwnData: true,
-      ownerIdField: "refId",
-    },
-  ],
-});
-
-const reviewBundleCollection = defineCollection({
-  database: DATABASE_GENERATIVE,
-  collection: LEITNER_REVIEW_BUNDLE_COLLECTION,
-  schema: reviewBundleSchema,
-  permissions: [
-    {
-      accessType: "user_access",
+      write: true, // User can update their own settings via service
+    }),
+    new Permission({
+      accessType: "admin",
       read: true,
       write: true,
-      onlyOwnData: true,
-      ownerIdField: "refId",
-    },
+    })
   ],
 });
 
-module.exports = [leitnerSystemCollection, reviewBundleCollection];
+module.exports = [leitnerSystemCollection];

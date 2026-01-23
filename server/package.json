@@ -16,7 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.1.0",
-    "@modular-rest/server": "1.15.0",
+    "@modular-rest/server": "/Users/navid-shad/Projects/CodeBridger/modular-rest/packages/server-ts",
     "@types/koa-router": "^7.4.8",
     "date-and-time": "^3.6.0",
     "decimal.js-light": "^2.5.1",
@@ -24,6 +24,7 @@
     "googleapis": "^129.0.0",
     "koa-router": "^13.0.1",
     "node-fetch": "2",
+    "node-schedule": "^2.1.1",
     "stripe": "^18.0.0",
     "zod": "^3.24.3",
     "zod-to-json-schema": "^3.24.5"
@@ -32,6 +33,7 @@
     "@types/jest": "^30.0.0",
     "@types/koa-router": "^7.4.8",
     "@types/node": "^22.7.5",
+    "@types/node-schedule": "^2.1.8",
     "jest": "^30.0.5",
     "mongodb-memory-server": "^10.2.0",
     "ts-jest": "^29.4.0",
