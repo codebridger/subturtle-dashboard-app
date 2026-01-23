@@ -16,7 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.1.0",
-    "@modular-rest/server": "/Users/navid-shad/Projects/CodeBridger/modular-rest/packages/server-ts",
+    "@modular-rest/server": "^1.21.0",
     "@types/koa-router": "^7.4.8",
     "date-and-time": "^3.6.0",
     "decimal.js-light": "^2.5.1",

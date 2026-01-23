@@ -47,7 +47,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			const items = await functionProvider.run({
 				name: 'get-review-session',
-				args: { limit }
+				args: { limit, userId: authUser.value?.id }
 			}) as LeitnerItemType[];
 
 			reviewSessionItems.value = items || [];
@@ -62,7 +62,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			await functionProvider.run({
 				name: 'submit-review',
-				args: { phraseId, isCorrect }
+				args: { phraseId, isCorrect, userId: authUser.value?.id }
 			});
 
 			// Remove from local session to show progress (if needed)

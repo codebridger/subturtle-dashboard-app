@@ -236,4 +236,27 @@ export class LeitnerService {
       "singleton"
     );
   }
+
+  static async removePhraseFromBox(userId: string, phraseId: string): Promise<void> {
+    const system = await this.getSystem(userId);
+    if (!system) return;
+
+    const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
+
+    // Pull the item from the items array
+    await col.updateOne(
+      { _id: system._id },
+      { $pull: { items: { phraseId: phraseId } } }
+    );
+
+    // Sync Board State
+    const dueCount = await this.getDueCount(userId);
+    await BoardService.refreshActivity(
+      userId,
+      "leitner_review",
+      { dueCount },
+      dueCount > 0,
+      "singleton"
+    );
+  }
 }

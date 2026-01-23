@@ -86,15 +86,38 @@ export const phraseBundleTriggers = [
   new DatabaseTrigger("remove-one", async (context) => {
     const { query } = context;
     const user_id = query?.refId;
-    const isFreemium = await isUserOnFreemium(user_id);
+    const phrase_id = query?._id;
 
-    if (isFreemium) {
-      await updateFreemiumAllocation({
-        userId: user_id,
-        increment: { allowed_save_words_used: -1 },
-      });
+    if (user_id) {
+      const isFreemium = await isUserOnFreemium(user_id);
+      if (isFreemium) {
+        await updateFreemiumAllocation({
+          userId: user_id,
+          increment: { allowed_save_words_used: -1 },
+        });
+      }
+
+      if (phrase_id) {
+        try {
+          await LeitnerService.removePhraseFromBox(user_id, phrase_id.toString());
+        } catch (e) {
+          console.error("Failed to remove phrase from Leitner box", e);
+        }
+      }
     }
   }),
 
+  new DatabaseTrigger("find-one-and-delete", async (context) => {
+    const { query } = context;
+    const user_id = query?.refId;
+    const phrase_id = query?._id;
 
+    if (user_id && phrase_id) {
+      try {
+        await LeitnerService.removePhraseFromBox(user_id, phrase_id.toString());
+      } catch (e) {
+        console.error("Failed to remove phrase from Leitner box (find-one-and-delete)", e);
+      }
+    }
+  }),
 ];

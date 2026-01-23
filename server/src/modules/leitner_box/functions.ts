@@ -5,15 +5,15 @@ import { BoardService } from "../board/service";
 // Frontend API: Get items to review
 const getReviewSession = defineFunction({
   name: "get-review-session",
-  permissionTypes: ["user"],
+  permissionTypes: ["user_access"],
   callback: async (context) => {
-    if (!context.user) throw new Error("Unauthorized");
-    const { limit } = context.params;
+    const { limit, userId } = context;
+    if (!userId) throw new Error("Unauthorized");
 
     // Ensure initialized (lazy init)
-    await LeitnerService.ensureInitialized(context.user._id);
+    await LeitnerService.ensureInitialized(userId);
 
-    const items = await LeitnerService.getDueItems(context.user._id, limit ? parseInt(limit) : 20);
+    const items = await LeitnerService.getDueItems(userId, limit ? parseInt(limit) : 20);
     return items;
   },
 });
@@ -21,16 +21,16 @@ const getReviewSession = defineFunction({
 // Frontend API: Submit a review result
 const submitReview = defineFunction({
   name: "submit-review",
-  permissionTypes: ["user"],
+  permissionTypes: ["user_access"],
   callback: async (context) => {
-    if (!context.user) throw new Error("Unauthorized");
-    const { phraseId, isCorrect } = context.params;
+    const { phraseId, isCorrect, userId } = context;
+    if (!userId) throw new Error("Unauthorized");
 
     if (!phraseId) throw new Error("Phrase ID is required");
     if (typeof isCorrect !== "boolean") throw new Error("isCorrect boolean is required");
 
     // Submit review (also triggers init if needed)
-    await LeitnerService.submitReview(context.user._id, phraseId, isCorrect);
+    await LeitnerService.submitReview(userId, phraseId, isCorrect);
 
     return { success: true };
   },
@@ -39,14 +39,10 @@ const submitReview = defineFunction({
 // Internal/Cron API: Check status and update board
 const refreshBoardStatus = defineFunction({
   name: "refresh-board-status",
-  permissionTypes: ["admin", "system"],
+  permissionTypes: ["user_access"],
   callback: async (context) => {
-    const { userId } = context.params;
+    const { userId } = context;
     if (!userId) {
-      if (context.user) {
-        await _syncUser(context.user._id);
-        return { success: true };
-      }
       throw new Error("UserId required for refresh-board-status");
     }
 
@@ -69,9 +65,9 @@ async function _syncUser(userId: string) {
 // Admin/System API: Initialize for a user
 const initLeitner = defineFunction({
   name: "init-leitner",
-  permissionTypes: ["admin", "system", "user"],
+  permissionTypes: ["user_access"],
   callback: async (context) => {
-    const userId = context.params.userId || (context.user ? context.user._id : null);
+    const { userId } = context;
     if (!userId) throw new Error("UserId required");
 
     await LeitnerService.ensureInitialized(userId);
@@ -81,20 +77,21 @@ const initLeitner = defineFunction({
 
 const getStats = defineFunction({
   name: "get-stats",
-  permissionTypes: ["user"],
+  permissionTypes: ["user_access"],
   callback: async (context) => {
-    if (!context.user) throw new Error("Unauthorized");
-    return LeitnerService.getStats(context.user._id);
+    const { userId } = context;
+    if (!userId) throw new Error("Unauthorized");
+    return LeitnerService.getStats(userId);
   }
 });
 
 const updateSettings = defineFunction({
   name: "update-settings",
-  permissionTypes: ["user"],
+  permissionTypes: ["user_access"],
   callback: async (context) => {
-    if (!context.user) throw new Error("Unauthorized");
-    const { settings } = context.params;
-    await LeitnerService.updateSettings(context.user._id, settings);
+    const { settings, userId } = context;
+    if (!userId) throw new Error("Unauthorized");
+    await LeitnerService.updateSettings(userId, settings);
     return { success: true };
   }
 });
