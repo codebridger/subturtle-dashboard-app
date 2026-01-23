@@ -1,7 +1,6 @@
 ---
+name: Task relative
 description: when ever you see ClickUp rules word in the prompt
-globs: 
-alwaysApply: false
 ---
 # Clickup
 Here are our general rules for working on clickup MCP.

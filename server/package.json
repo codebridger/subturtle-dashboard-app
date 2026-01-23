@@ -10,7 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:verbose": "jest --verbose"
+    "test:verbose": "jest --verbose",
+    "download:docs": "node scripts/download_docs.js"
   },
   "author": "Navid Shad <navidshad72@gmail.com>",
   "license": "MIT",
@@ -35,9 +36,11 @@
     "@types/node": "^22.7.5",
     "@types/node-schedule": "^2.1.8",
     "jest": "^30.0.5",
+    "jsdom": "^27.4.0",
     "mongodb-memory-server": "^10.2.0",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
+    "turndown": "^7.2.2",
     "typescript": "^5.6.3"
   }
 }
