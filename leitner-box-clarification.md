@@ -55,7 +55,7 @@ We will use a **separate database** `subturtle_leitner` for these collections.
 {
   user: ObjectId (ref: 'user'),
   settings: {
-    dailyLimit: Number,
+    dailyLimit: Number, // Soft limit for "suggested" count
     totalBoxes: Number, // Default 5 (min 3, max 10)
   },
   items: [
@@ -68,19 +68,7 @@ We will use a **separate database** `subturtle_leitner` for these collections.
   ]
 }
 
-// review_bundles collection (Database: subturtle_leitner)
-{
-  user: ObjectId (ref: 'user'),
-  createdAt: Date,
-  type: 'daily' | 'manual', 
-  status: 'pending' | 'completed' | 'expired',
-  items: [
-    { 
-      phraseId: ObjectId, 
-      boxLevelAtGeneration: Number // FREEZE-FRAMED: stores the box level when generated
-    } 
-  ]
-}
+// No "review_bundles" collection. Review is dynamic.
 ```
 *Note: Using cross-database populate to link to phrases in `user_content`.*
 
@@ -133,13 +121,24 @@ This keeps the initialization logic completely handled on the server side withou
         - **If Phrase Exists**: Update box level based on result.
         - **If Phrase is New**: Add to **Box 1** and proceed with standard logic.
 
-### Review Bundles
-- **Generation**:
-    - `node-schedule` triggers daily generation (webhook).
-    - Finds items where `nextReviewDate <= Now`.
-    - Creates a `ReviewBundle` document.
-    - **Freeze-Framed**: The bundle stores a snapshot of the `boxLevel` for each item at the moment of generation. This ensures that even if box settings change mid-bundle, the review session remains consistent.
-    - Limit: `MaxBundles` (e.g., 3). If full, oldest *unstarted* bundle is replaced. *In-progress* bundles are kept.
+### Dynamic Board & Activities
+- **Board Concept**: A central page presenting available "Activities".
+- **Activities**:
+    1.  **Review Leitner Box**: Primary activity.
+    2.  **Take AI Lecture** (Future).
+    3.  **Take AI Practice** (Future).
+- **"Toasting"**: The Board logic determines which activity is "hot" or "due" and suggests it to the user (e.g., via a Dashboard widget or Notification).
+
+### Dynamic Review Logic
+- **No Freeze-Frames**: We do NOT store "Bundles" in the DB.
+- **On Click "Review"**:
+    - Frontend requests `leitner/review-items`.
+    - Server queries `leitner_items` where `nextReviewDate <= Now`.
+    - Server returns the list (up to `DailyLimit` or more if user requests).
+- **Daily Limit**:
+    - Acts as a "Target" or "Soft Limit".
+    - The Board says "You have X items due".
+    - If `Due > DailyLimit`, we show `DailyLimit` first, but allow user to continue reviewing the rest ("Overtime").
 
 ### Settings Change Logic
 - **Changing Total Boxes**:
@@ -150,19 +149,20 @@ This keeps the initialization logic completely handled on the server side withou
 ## 4. Frontend Implementation (Vue.js)
 
 **Pages:**
+- `pages/board/index.vue`: **Activity Board**.
+    - Lists activities (Leitner, Lecture, Practice).
+    - Highlights due activities.
 - `pages/practice/flashcards-[id].vue`: **Universal Player**.
     - **Adaptation**:
         - Accepts optional `type=leitner` query param.
+        - If `type=leitner`, it fetches dynamic due items from `leitner/review-items`.
         - **UI Updates**: Add "Known" (Check) and "Unknown" (X) buttons.
         - **Logic**: Reports result to the Leitner system on every rating.
-- `pages/practice/review.vue`: **Review Dashboard**.
-    - Shows current bundles and stats.
-    - Links to the Universal Player for review sessions.
 - `pages/settings/preferences.vue`: **User Preferences**.
     - Contains `LeitnerSettings` for "Daily Limit" and "Total Boxes".
 
 **Components:**
-- `LeitnerDashboard`: Visualization of box distribution.
+- `LeitnerDashboard`: Visualization of box distribution (can be on Board).
 - `LeitnerSettings`: Configuration form.
 
 **Initialization**:

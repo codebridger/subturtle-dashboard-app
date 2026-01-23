@@ -152,7 +152,11 @@
         "signup": "Sign Up"
     },
     "practice": {
-        "nav": "Practice"
+        "nav": "Practice",
+        "title": "Practice"
+    },
+    "activities": {
+        "title": "Activities"
     },
     "live-session": {
         "no-sessions": "No Sessions Yet",

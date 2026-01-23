@@ -12,15 +12,20 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
                     icon: 'IconMenuDashboard',
                     to: '/statistic',
                 },
+            ],
+        },
+        {
+            title: t('practice.title'),
+            children: [
+                {
+                    title: t('activities.title'),
+                    icon: 'iconify solar--rocket-2-bold-duotone',
+                    to: '/board',
+                },
                 {
                     title: t('bundle.nav'),
                     icon: 'IconMenuDatatables',
                     to: '/bundles',
-                },
-                {
-                    title: t('review.title'),
-                    icon: 'IconMenuScrumboard',
-                    to: '/practice/review',
                 },
             ],
         },
