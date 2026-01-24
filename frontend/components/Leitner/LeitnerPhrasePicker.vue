@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { functionProvider, dataProvider } from '@modular-rest/client';
 import { DATABASE, COLLECTIONS } from '~/types/database.type';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
-import { Button } from '@codebridger/lib-vue-components/elements.ts';
+import { Button, Input } from '@codebridger/lib-vue-components/elements.ts';
 import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 
 const props = defineProps<{
@@ -17,6 +17,7 @@ const emit = defineEmits(['update:modelValue', 'phraseAdded', 'phraseRemoved']);
 
 const profileStore = useProfileStore();
 const { authUser } = storeToRefs(profileStore);
+const { t } = useI18n();
 
 const phrases = ref<any[]>([]);
 const bundles = ref<any[]>([]);
@@ -31,6 +32,7 @@ const selectedBundleId = ref('');
 const activeBox = ref<number>(1);
 const pagination = ref<any>(null);
 const phraseFilterIds = ref<string[] | null>(null);
+const showOnlyInBox = ref(false);
 
 const controller = computed(() => {
 	const query: any = {
@@ -38,7 +40,12 @@ const controller = computed(() => {
 		phrase: { $regex: search.value, $options: 'i' }
 	};
 
-	if (phraseFilterIds.value) {
+	if (showOnlyInBox.value) {
+		const filteredIds = Object.entries(phraseToBoxMap.value)
+			.filter(([_, box]) => box === activeBox.value)
+			.map(([id]) => id);
+		query._id = { $in: filteredIds };
+	} else if (phraseFilterIds.value) {
 		query._id = { $in: phraseFilterIds.value };
 	}
 
@@ -143,13 +150,20 @@ watch(() => props.modelValue, (newVal) => {
 		activeBox.value = props.targetBox || 1;
 		search.value = '';
 		selectedBundleId.value = '';
+		showOnlyInBox.value = false;
 		loadPickerData();
 		fetchPhrases();
 	}
 });
 
-watch([search, selectedBundleId, page], () => {
+watch([search, selectedBundleId, page, showOnlyInBox, activeBox], () => {
 	fetchPhrases();
+});
+
+watch(showOnlyInBox, (newVal) => {
+	if (newVal) {
+		selectedBundleId.value = '';
+	}
 });
 
 function close() {
@@ -175,21 +189,34 @@ function close() {
 				</div>
 
 				<!-- Search & Filters -->
-				<div class="flex flex-col gap-4 sm:flex-row">
-					<div class="relative flex-1">
-						<input v-model="search" type="text" placeholder="Search phrases..."
-							class="w-full rounded-md border-gray-300 pl-10 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
-						<span class="absolute left-3 top-2.5 text-gray-400">
-							<i class="fas fa-search"></i>
-						</span>
+				<div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+					<div class="flex-1">
+						<Input v-model="search" iconName="IconSearch" placeholder="Search phrases..." class="w-full" />
 					</div>
-					<select v-model="selectedBundleId"
-						class="rounded-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-						<option value="">All Bundles</option>
-						<option v-for="bundle in bundles" :key="bundle._id" :value="bundle._id">
-							{{ bundle.title }}
-						</option>
-					</select>
+
+					<div
+						class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700">
+						<div class="flex items-center gap-2">
+							<span class="text-xs font-semibold text-gray-500 whitespace-nowrap">Only Box {{ activeBox
+							}}:</span>
+							<label class="relative inline-flex cursor-pointer items-center">
+								<input v-model="showOnlyInBox" type="checkbox" class="peer sr-only" />
+								<div
+									class="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white dark:bg-gray-700">
+								</div>
+							</label>
+						</div>
+
+						<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+						<select v-model="selectedBundleId" :disabled="showOnlyInBox"
+							class="rounded-md border-0 bg-transparent text-sm focus:ring-0 dark:text-white disabled:opacity-50 cursor-pointer">
+							<option value="">All Bundles</option>
+							<option v-for="bundle in bundles" :key="bundle._id" :value="bundle._id">
+								{{ bundle.title }}
+							</option>
+						</select>
+					</div>
 				</div>
 
 				<!-- Phrase List -->
