@@ -14,6 +14,8 @@ export interface LeitnerSystem {
   settings: {
     dailyLimit: number;
     totalBoxes: number;
+    boxIntervals: number[];
+    boxQuotas: number[];
   };
   items: LeitnerItem[];
 }
@@ -23,8 +25,10 @@ const leitnerSystemSchema = new Schema<LeitnerSystem>(
     userId: { type: String, required: true },
     settings: {
       type: {
-        dailyLimit: { type: Number, default: 20 },
+        dailyLimit: { type: Number, default: 20 }, // Deprecated/Fallback
         totalBoxes: { type: Number, default: 5 },
+        boxIntervals: { type: [Number], default: [1, 2, 4, 8, 16] }, // Days wait per box
+        boxQuotas: { type: [Number], default: [20, 10, 5, 5, 5] }, // Max items per session per box
       },
       required: true,
     },

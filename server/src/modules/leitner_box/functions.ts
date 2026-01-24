@@ -96,4 +96,15 @@ const updateSettings = defineFunction({
   }
 });
 
-module.exports.functions = [getReviewSession, submitReview, refreshBoardStatus, initLeitner, getStats, updateSettings];
+const resetSystem = defineFunction({
+  name: "reset-system",
+  permissionTypes: ["user_access"],
+  callback: async (context) => {
+    const { userId } = context;
+    if (!userId) throw new Error("Unauthorized");
+    await LeitnerService.resetSystem(userId);
+    return { success: true };
+  }
+});
+
+module.exports.functions = [getReviewSession, submitReview, refreshBoardStatus, initLeitner, getStats, updateSettings, resetSystem];

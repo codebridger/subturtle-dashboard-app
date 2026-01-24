@@ -10,6 +10,8 @@ type LeitnerSystemDoc = Document & {
   settings: {
     dailyLimit: number;
     totalBoxes: number;
+    boxIntervals: number[];
+    boxQuotas: number[];
   };
   items: LeitnerItem[];
 };
@@ -29,23 +31,40 @@ export class LeitnerService {
         settings: {
           dailyLimit: 20,
           totalBoxes: 5,
+          boxIntervals: [1, 2, 4, 8, 16],
+          boxQuotas: [20, 10, 5, 5, 5]
         },
         items: [],
       });
     }
   }
 
-  static async getDueItems(userId: string, limit: number = 20) {
+  static async getDueItems(userId: string, _limit: number = 20) {
     const system = await this.getSystem(userId);
     if (!system) return [];
 
     const now = new Date();
+    const allDueItems = system.items.filter((item: LeitnerItem) => new Date(item.nextReviewDate) <= now);
 
-    // Sort items (in-memory)
-    let dueItems = system.items.filter((item: LeitnerItem) => new Date(item.nextReviewDate) <= now);
-    dueItems.sort((a: LeitnerItem, b: LeitnerItem) => new Date(a.nextReviewDate).getTime() - new Date(b.nextReviewDate).getTime());
+    // Group by box level
+    const dueByBox: Record<number, LeitnerItem[]> = {};
+    allDueItems.forEach(item => {
+      if (!dueByBox[item.boxLevel]) dueByBox[item.boxLevel] = [];
+      dueByBox[item.boxLevel].push(item);
+    });
 
-    const selectedItems = dueItems.slice(0, limit);
+    let selectedItems: LeitnerItem[] = [];
+
+    // Apply Quotas
+    const quotas = system.settings.boxQuotas || [];
+    for (let boxLevel = 1; boxLevel <= system.settings.totalBoxes; boxLevel++) {
+      const quota = quotas[boxLevel - 1] || 0; // 0 if not defined
+      if (quota > 0 && dueByBox[boxLevel]) {
+        // Sort by most overdue first
+        dueByBox[boxLevel].sort((a, b) => new Date(a.nextReviewDate).getTime() - new Date(b.nextReviewDate).getTime());
+        selectedItems = selectedItems.concat(dueByBox[boxLevel].slice(0, quota));
+      }
+    }
 
     const phraseIds = selectedItems.map((i: LeitnerItem) => i.phraseId);
     if (phraseIds.length === 0) return [];
@@ -87,7 +106,7 @@ export class LeitnerService {
 
     if (!item) {
       const nextBox = isCorrect ? 2 : 1;
-      const nextDate = this.calculateNextDate(nextBox);
+      const nextDate = this.calculateNextDate(nextBox, system.settings.boxIntervals);
 
       newItem = {
         phraseId,
@@ -117,7 +136,7 @@ export class LeitnerService {
         }
       }
 
-      const nextDate = this.calculateNextDate(nextBox);
+      const nextDate = this.calculateNextDate(nextBox, system.settings.boxIntervals);
 
       const updateField = `items.${itemIndex}`;
       await col.updateOne(
@@ -144,9 +163,11 @@ export class LeitnerService {
     );
   }
 
-  private static calculateNextDate(boxLevel: number): Date {
+  private static calculateNextDate(boxLevel: number, intervals: number[]): Date {
     const now = new Date();
-    const days = Math.pow(2, boxLevel - 1);
+    // Use interval from settings (0-indexed array vs 1-indexed box)
+    // Fallback to 1 day if undefined or 0
+    const days = intervals && intervals[boxLevel - 1] ? intervals[boxLevel - 1] : 1;
     now.setDate(now.getDate() + days);
     return now;
   }
@@ -168,7 +189,7 @@ export class LeitnerService {
     };
   }
 
-  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number }): Promise<void> {
+  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[] }): Promise<void> {
     const system = await this.getSystem(userId);
     if (!system) {
       await this.ensureInitialized(userId);
@@ -180,21 +201,64 @@ export class LeitnerService {
     const updatePayload: any = {};
     if (settings.dailyLimit) updatePayload["settings.dailyLimit"] = settings.dailyLimit;
     if (settings.totalBoxes) updatePayload["settings.totalBoxes"] = settings.totalBoxes;
+    if (settings.boxIntervals) updatePayload["settings.boxIntervals"] = settings.boxIntervals;
+    if (settings.boxQuotas) updatePayload["settings.boxQuotas"] = settings.boxQuotas;
 
     await col.updateOne({ _id: system._id }, { $set: updatePayload });
 
-    // If totalBoxes reduced, we might need to clamp items
+    // If totalBoxes reduced, move items in higher boxes to the new max box
     if (settings.totalBoxes && settings.totalBoxes < system.settings.totalBoxes) {
-      // Clamp logic: Items in box > newTotal -> newTotal
-      // This is complex to do atomically with one update if items are just an array.
-      // We might need to iterate or use array filters if possible.
-      // For MVF, we can leave them "stranded" or lazily correct them on next review.
-      // "Lazy correction" in submitReview handles it: Math.min(item.boxLevel + 1, system.settings.totalBoxes)
-      // But what if it's currently 5 and max becomes 3? 
-      // When reviewed, it will use new max. 
-      // But `nextReviewDate` calculation logic might differ. 
-      // It's acceptable for now.
+      const newMaxBox = settings.totalBoxes;
+
+      // We need to pull items down. 
+      // Since Mongo doesn't support "update if > X" easily in array without pipeline or multiple queries,
+      // and we have ~5000 items max, we can do it in memory for safety or use arrayFilters.
+      // Let's use arrayFilters for atomicity if possible, but complexity is high.
+      // Simpler approach: Load items, modify, save.
+
+      const updatedSystem = await this.getSystem(userId); // reload
+      if (!updatedSystem) return;
+
+      let hasChanges = false;
+      updatedSystem.items.forEach(item => {
+        if (item.boxLevel > newMaxBox) {
+          item.boxLevel = newMaxBox;
+          hasChanges = true;
+          // Note: We are NOT changing nextReviewDate immediately. 
+          // They will retain their old review date. When reviewed, they will follow new box rules.
+        }
+      });
+
+      if (hasChanges) {
+        await col.updateOne(
+          { _id: system._id },
+          { $set: { items: updatedSystem.items } }
+        );
+      }
     }
+  }
+
+  static async resetSystem(userId: string): Promise<void> {
+    const system = await this.getSystem(userId);
+    if (!system) return;
+
+    const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
+
+    // Clear all items, keep settings? 
+    // Usually "Reset" implies cleaning the slate.
+    await col.updateOne(
+      { _id: system._id },
+      { $set: { items: [] } }
+    );
+
+    // Sync Board
+    await BoardService.refreshActivity(
+      userId,
+      "leitner_review",
+      { dueCount: 0 },
+      false, // Hide toast
+      "singleton"
+    );
   }
 
   static async addPhraseToBox(userId: string, phraseId: string, initialBox: number = 1): Promise<void> {

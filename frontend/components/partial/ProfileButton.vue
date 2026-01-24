@@ -34,6 +34,18 @@
                         {{ t('profile.profile') }}
                     </a>
                 </li>
+                <li class="cursor-pointer">
+                    <a
+                        class="dark:hover:text-white"
+                        @click="
+                            close();
+                            goToLeitnerSettings();
+                        "
+                    >
+                        <Icon name="IconSettings" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
+                        Leitner Preferences
+                    </a>
+                </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
                     <!-- Sign Out Confirmation Modal -->
                     <Modal :title="t('confirm-sign-out')">
@@ -90,5 +102,9 @@
 
     function goToProfileSettings() {
         router.push('/settings/profile');
+    }
+
+    function goToLeitnerSettings() {
+        router.push('/settings/preferences');
     }
 </script>
