@@ -194,6 +194,9 @@ function close() {
 
 <template>
 	<Modal :modelValue="modelValue" title="Select Phrase" @close="close" size="xl">
+		<template #trigger="{ toggleModal }">
+			<p></p>
+		</template>
 		<template #default>
 			<div class="flex flex-col gap-4">
 				<!-- Box Selector -->
