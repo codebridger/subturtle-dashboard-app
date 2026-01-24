@@ -6,6 +6,7 @@ import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
 import { Button, Input } from '@codebridger/lib-vue-components/elements.ts';
 import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import Toggle from '~/components/material/Toggle.vue';
 
 const props = defineProps<{
 	targetBox: number | null;
@@ -87,6 +88,19 @@ async function loadPickerData() {
 async function fetchPhrases() {
 	loading.value = true;
 	try {
+		if (showOnlyInBox.value) {
+			const filteredIds = Object.entries(phraseToBoxMap.value)
+				.filter(([_, box]) => box === activeBox.value)
+				.map(([id]) => id);
+
+			if (filteredIds.length === 0) {
+				phrases.value = [];
+				totalPhrases.value = 0;
+				loading.value = false;
+				return;
+			}
+		}
+
 		if (selectedBundleId.value) {
 			const bundle = await dataProvider.findOne<any>({
 				database: DATABASE.USER_CONTENT,
@@ -194,18 +208,9 @@ function close() {
 						<Input v-model="search" iconName="IconSearch" placeholder="Search phrases..." class="w-full" />
 					</div>
 
-					<div
-						class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700">
-						<div class="flex items-center gap-2">
-							<span class="text-xs font-semibold text-gray-500 whitespace-nowrap">Only Box {{ activeBox
-							}}:</span>
-							<label class="relative inline-flex cursor-pointer items-center">
-								<input v-model="showOnlyInBox" type="checkbox" class="peer sr-only" />
-								<div
-									class="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white dark:bg-gray-700">
-								</div>
-							</label>
-						</div>
+					<div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700 transition-all"
+						:class="{ 'bg-primary-50/50 border-primary-200 dark:bg-primary-900/10 dark:border-primary-800': showOnlyInBox }">
+						<Toggle v-model="showOnlyInBox" :label="`Only Box ${activeBox}:`" />
 
 						<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
 
