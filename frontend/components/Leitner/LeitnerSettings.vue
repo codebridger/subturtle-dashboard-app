@@ -213,15 +213,25 @@ const localSettings = ref<Settings>({
 
 const showPicker = ref(false);
 const pickingForBox = ref<number | null>(null);
+const isDirty = ref(false);
 
 function openPicker(boxLevel: number) {
     pickingForBox.value = boxLevel;
     showPicker.value = true;
+    isDirty.value = false;
 }
 
 function handlePhraseChange() {
-    emit('saved'); // Triggers stats refresh in parent
+    isDirty.value = true;
 }
+
+watch(showPicker, (newVal, oldVal) => {
+    // If modal was closed and something changed
+    if (oldVal === true && newVal === false && isDirty.value) {
+        emit('saved');
+        isDirty.value = false;
+    }
+});
 
 // Sync props to local state
 watch(
