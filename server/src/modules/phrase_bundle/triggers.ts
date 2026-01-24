@@ -22,10 +22,13 @@ export const phraseBundleTriggers = [
       });
     }
 
-    // When a new phrase is created, add it to the Leitner system
+    // When a new phrase is created, add it to the Leitner system (if autoEntry is enabled)
     if (doc && doc.phrase && doc.translation && doc.refId) {
       try {
-        await LeitnerService.addPhraseToBox(doc.refId, doc._id, 1);
+        const stats = await LeitnerService.getStats(doc.refId);
+        if (stats && stats.settings && stats.settings.autoEntry) {
+          await LeitnerService.addPhraseToBox(doc.refId, doc._id, 1);
+        }
       } catch (e) {
         console.error("Failed to add phrase to Leitner system", e);
       }
@@ -70,11 +73,12 @@ export const phraseBundleTriggers = [
     }
 
     // Process Leitner Additions
-    // This could spam simple addPhraseToBox calls which do DB writes. 
-    // ideally addPhraseToBox could take a batch, but for now we loop.
     for (const item of leitnerAdditions) {
       try {
-        await LeitnerService.addPhraseToBox(item.userId, item.docId, 1);
+        const stats = await LeitnerService.getStats(item.userId);
+        if (stats && stats.settings && stats.settings.autoEntry) {
+          await LeitnerService.addPhraseToBox(item.userId, item.docId, 1);
+        }
       } catch (e) {
         console.error("Failed to add phrase to Leitner system", e);
       }

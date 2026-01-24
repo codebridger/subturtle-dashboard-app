@@ -1,5 +1,5 @@
 import { LeitnerItem } from "./db";
-import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION } from "../../config";
+import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
@@ -12,6 +12,7 @@ type LeitnerSystemDoc = Document & {
     totalBoxes: number;
     boxIntervals: number[];
     boxQuotas: number[];
+    autoEntry: boolean;
   };
   items: LeitnerItem[];
 };
@@ -32,7 +33,8 @@ export class LeitnerService {
           dailyLimit: 20,
           totalBoxes: 5,
           boxIntervals: [1, 2, 4, 8, 16],
-          boxQuotas: [20, 10, 5, 5, 5]
+          boxQuotas: [20, 10, 5, 5, 5],
+          autoEntry: true
         },
         items: [],
       });
@@ -189,7 +191,7 @@ export class LeitnerService {
     };
   }
 
-  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[] }): Promise<void> {
+  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean }): Promise<void> {
     const system = await this.getSystem(userId);
     if (!system) {
       await this.ensureInitialized(userId);
@@ -203,6 +205,7 @@ export class LeitnerService {
     if (settings.totalBoxes) updatePayload["settings.totalBoxes"] = settings.totalBoxes;
     if (settings.boxIntervals) updatePayload["settings.boxIntervals"] = settings.boxIntervals;
     if (settings.boxQuotas) updatePayload["settings.boxQuotas"] = settings.boxQuotas;
+    if (typeof settings.autoEntry === "boolean") updatePayload["settings.autoEntry"] = settings.autoEntry;
 
     await col.updateOne({ _id: system._id }, { $set: updatePayload });
 
@@ -269,24 +272,38 @@ export class LeitnerService {
     }
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
-    const exists = system.items.some(i => i.phraseId.toString() === phraseId.toString());
-
-    if (exists) return; // Idempotent
+    const itemIndex = system.items.findIndex(i => i.phraseId.toString() === phraseId.toString());
 
     const now = new Date();
 
-    const newItem: LeitnerItem = {
-      phraseId,
-      boxLevel: initialBox,
-      nextReviewDate: now,
-      lastAttemptDate: now,
-      consecutiveIncorrect: 0
-    };
+    if (itemIndex >= 0) {
+      // Move existing item
+      const updateField = `items.${itemIndex}`;
+      await col.updateOne(
+        { _id: system._id },
+        {
+          $set: {
+            [`${updateField}.boxLevel`]: initialBox,
+            [`${updateField}.nextReviewDate`]: now,
+            [`${updateField}.lastAttemptDate`]: now,
+          }
+        }
+      );
+    } else {
+      // Add new item
+      const newItem: LeitnerItem = {
+        phraseId,
+        boxLevel: initialBox,
+        nextReviewDate: now,
+        lastAttemptDate: now,
+        consecutiveIncorrect: 0
+      };
 
-    await col.updateOne(
-      { _id: system._id },
-      { $push: { items: newItem } }
-    );
+      await col.updateOne(
+        { _id: system._id },
+        { $push: { items: newItem } }
+      );
+    }
 
     // Sync Board State
     // We can assume at least 1 is due now (the one we just added)
@@ -322,5 +339,31 @@ export class LeitnerService {
       dueCount > 0,
       "singleton"
     );
+  }
+
+  static async getPhraseManagementInfo(userId: string) {
+    console.log('[PhraseManagementInfo] Getting info for userId:', userId);
+    const system = await this.getSystem(userId);
+    const phraseToBoxMap: Record<string, number> = {};
+    if (system && system.items) {
+      system.items.forEach(i => {
+        phraseToBoxMap[i.phraseId.toString()] = i.boxLevel;
+      });
+    }
+
+    const bundleCollection = await getCollection(DATABASE, BUNDLE_COLLECTION);
+    const bundles = await bundleCollection.find({
+      $or: [
+        { refId: userId.toString() },
+        { refId: userId }
+      ]
+    }).select('title _id').lean();
+
+    console.log('[PhraseManagementInfo] Bundles found for', userId, ':', bundles.length);
+
+    return {
+      phraseToBoxMap,
+      bundles: (bundles || []).map((b: any) => ({ _id: b._id.toString(), title: b.title }))
+    };
   }
 }

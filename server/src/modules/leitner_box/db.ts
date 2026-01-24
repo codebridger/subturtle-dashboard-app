@@ -16,6 +16,7 @@ export interface LeitnerSystem {
     totalBoxes: number;
     boxIntervals: number[];
     boxQuotas: number[];
+    autoEntry: boolean;
   };
   items: LeitnerItem[];
 }
@@ -29,6 +30,7 @@ const leitnerSystemSchema = new Schema<LeitnerSystem>(
         totalBoxes: { type: Number, default: 5 },
         boxIntervals: { type: [Number], default: [1, 2, 4, 8, 16] }, // Days wait per box
         boxQuotas: { type: [Number], default: [20, 10, 5, 5, 5] }, // Max items per session per box
+        autoEntry: { type: Boolean, default: true },
       },
       required: true,
     },

@@ -57,7 +57,7 @@ async function fetchStats() {
 }
 
 function onSaved() {
-  // Optionally refetch or show global toast
+  fetchStats();
 }
 
 function onReset() {

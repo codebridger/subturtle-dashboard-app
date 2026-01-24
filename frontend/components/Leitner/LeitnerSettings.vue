@@ -10,16 +10,18 @@
                     </p>
                 </div>
 
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Total Boxes</label>
-                    <div class="flex items-center gap-4">
-                        <input v-model.number="localSettings.totalBoxes" type="number" min="3" max="10"
-                            class="form-input w-24 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                            @change="adjustArrays" />
-                        <span class="text-xs text-gray-500 dark:text-gray-400">
-                            Changing this will resize your learning path.
-                        </span>
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-900 dark:text-white">Auto-Entry</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Automatically add any new saved phrase to
+                            Box 1</p>
                     </div>
+                    <label class="relative inline-flex cursor-pointer items-center">
+                        <input v-model="localSettings.autoEntry" type="checkbox" class="peer sr-only" />
+                        <div
+                            class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white dark:bg-gray-700">
+                        </div>
+                    </label>
                 </div>
             </div>
         </Card>
@@ -82,6 +84,15 @@
                                             class="form-input w-24 rounded-md border-gray-300 py-1.5 pr-8 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
                                         <span class="absolute right-2 top-1.5 text-xs text-gray-400">items</span>
                                     </div>
+                                </div>
+
+                                <!-- Add Phrase Action -->
+                                <div class="flex items-end">
+                                    <Button size="sm" variant="outline" class="flex items-center gap-2"
+                                        @click="openPicker(index + 1)">
+                                        <i class="fas fa-plus"></i>
+                                        Phrases
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -152,6 +163,10 @@
                 </template>
             </Modal>
         </div>
+
+        <!-- Phrase Picker Modal -->
+        <LeitnerPhrasePicker v-model="showPicker" :target-box="pickingForBox" :total-boxes="localSettings.totalBoxes"
+            @phrase-added="handlePhraseChange" @phrase-removed="handlePhraseChange" />
     </div>
 </template>
 
@@ -159,15 +174,16 @@
 import { ref, watch } from 'vue';
 import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
 import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
 import { functionProvider } from '@modular-rest/client';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
-
 interface Settings {
     dailyLimit: number;
     totalBoxes: number;
     boxIntervals: number[];
     boxQuotas: number[];
+    autoEntry: boolean;
 }
 
 const props = defineProps<{
@@ -192,7 +208,20 @@ const localSettings = ref<Settings>({
     totalBoxes: 5,
     boxIntervals: [1, 2, 4, 8, 16],
     boxQuotas: [20, 10, 5, 5, 5],
+    autoEntry: true,
 });
+
+const showPicker = ref(false);
+const pickingForBox = ref<number | null>(null);
+
+function openPicker(boxLevel: number) {
+    pickingForBox.value = boxLevel;
+    showPicker.value = true;
+}
+
+function handlePhraseChange() {
+    emit('saved'); // Triggers stats refresh in parent
+}
 
 // Sync props to local state
 watch(
