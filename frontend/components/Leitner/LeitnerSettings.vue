@@ -16,12 +16,7 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">Automatically add any new saved phrase to
                             Box 1</p>
                     </div>
-                    <label class="relative inline-flex cursor-pointer items-center">
-                        <input v-model="localSettings.autoEntry" type="checkbox" class="peer sr-only" />
-                        <div
-                            class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white dark:bg-gray-700">
-                        </div>
-                    </label>
+                    <Toggle v-model="localSettings.autoEntry" />
                 </div>
             </div>
         </Card>
@@ -175,6 +170,7 @@ import { ref, watch } from 'vue';
 import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
 import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
+import Toggle from '~/components/material/Toggle.vue';
 import { functionProvider } from '@modular-rest/client';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
