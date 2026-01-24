@@ -7,12 +7,20 @@ const docs = [
   {
     name: 'server',
     url: 'https://modular-rest.github.io/modular-rest/server-client-ts/llm-context.html',
-    path: '../../.agent/modular-rest/server.md'
+    path: '../../.agent/modular-rest/modular-rest_server.md',
+    turndown: true,
   },
   {
     name: 'client',
     url: 'https://modular-rest.github.io/modular-rest/js-client/llm-context.html',
-    path: '../../.agent/modular-rest/client.md'
+    path: '../../.agent/modular-rest/modular-rest_client.md',
+    turndown: true,
+  },
+  {
+    name: 'llm',
+    url: 'https://codebridger.github.io/lib-vue-components/llm.md',
+    path: '../../.agent/modular-rest/lib-vue-components.md',
+    turndown: false,
   }
 ];
 
@@ -29,13 +37,13 @@ async function downloadDocs() {
       if (!response.ok) {
         throw new Error(`Failed to fetch ${doc.url}: ${response.statusText}`);
       }
-      const html = await response.text();
+      const resContent = await response.text();
       
-      const dom = new JSDOM(html);
+      const dom = new JSDOM(resContent);
       const document = dom.window.document;
       
       const content = document.querySelector('.vp-doc') || document.querySelector('main') || document.body;
-      const markdown = turndownService.turndown(content.innerHTML);
+      const markdown = doc.turndown ? turndownService.turndown(content.innerHTML) : resContent;
       
       const targetPath = path.resolve(__dirname, doc.path);
       const dir = path.dirname(targetPath);
