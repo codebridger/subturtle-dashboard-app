@@ -216,18 +216,21 @@ function close() {
 					</div>
 
 					<div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700 transition-all"
-						:class="{ 'bg-primary-light border-primary dark:bg-primary-dark-light dark:border-primary': showOnlyInBox }">
-						<Toggle v-model="showOnlyInBox" :label="`Only Box ${activeBox}:`" />
-
-						<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
-
-						<select v-model="selectedBundleId" :disabled="showOnlyInBox"
-							class="rounded-md border-0 bg-transparent text-sm focus:ring-0 dark:text-white disabled:opacity-50 cursor-pointer">
+						:class="{ 'border-primary/50 dark:border-primary/50': showOnlyInBox }">
+						<select v-model="selectedBundleId"
+							class="rounded-md border-0 bg-transparent text-sm focus:ring-0 dark:text-white cursor-pointer min-w-[140px]">
 							<option value="">All Bundles</option>
 							<option v-for="bundle in bundles" :key="bundle._id" :value="bundle._id">
 								{{ bundle.title }}
 							</option>
 						</select>
+
+						<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+						<div class="flex items-center px-2 py-1 rounded-md transition-all"
+							:class="{ 'bg-primary-light dark:bg-primary-dark-light shadow-sm': showOnlyInBox }">
+							<Toggle v-model="showOnlyInBox" :label="`Box ${activeBox}:`" />
+						</div>
 					</div>
 				</div>
 
