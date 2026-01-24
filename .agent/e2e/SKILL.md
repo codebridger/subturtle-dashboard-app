@@ -32,3 +32,4 @@ The application uses hash-based routing (`hashMode: true` in Nuxt config). To au
 - **Blank Page**: Check browser console for authentication errors.
 - **Login Redirect**: If redirected to `/#/auth/login`, the token might be invalid or expired.
 - **Missing Hash**: Always ensure the URL contains `/#/` after the origin.
+- **Login Issue**: If you are not logged in, try to store the token in the browser's local storage `token={YOUR_TOKEN}` and then navigate to the dashboard.
