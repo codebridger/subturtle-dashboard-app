@@ -41,13 +41,24 @@ const controller = computed(() => {
 		phrase: { $regex: search.value, $options: 'i' }
 	};
 
+	let resultIds: string[] | null = null;
 	if (showOnlyInBox.value) {
-		const filteredIds = Object.entries(phraseToBoxMap.value)
+		resultIds = Object.entries(phraseToBoxMap.value)
 			.filter(([_, box]) => box === activeBox.value)
 			.map(([id]) => id);
-		query._id = { $in: filteredIds };
-	} else if (phraseFilterIds.value) {
-		query._id = { $in: phraseFilterIds.value };
+	}
+
+	if (phraseFilterIds.value) {
+		if (resultIds === null) {
+			resultIds = phraseFilterIds.value;
+		} else {
+			const bundleIds = new Set(phraseFilterIds.value);
+			resultIds = resultIds.filter(id => bundleIds.has(id));
+		}
+	}
+
+	if (resultIds !== null) {
+		query._id = { $in: resultIds };
 	}
 
 	return dataProvider.list<any>(
@@ -88,19 +99,6 @@ async function loadPickerData() {
 async function fetchPhrases() {
 	loading.value = true;
 	try {
-		if (showOnlyInBox.value) {
-			const filteredIds = Object.entries(phraseToBoxMap.value)
-				.filter(([_, box]) => box === activeBox.value)
-				.map(([id]) => id);
-
-			if (filteredIds.length === 0) {
-				phrases.value = [];
-				totalPhrases.value = 0;
-				loading.value = false;
-				return;
-			}
-		}
-
 		if (selectedBundleId.value) {
 			const bundle = await dataProvider.findOne<any>({
 				database: DATABASE.USER_CONTENT,
@@ -110,6 +108,21 @@ async function fetchPhrases() {
 			phraseFilterIds.value = bundle?.phrases || [];
 		} else {
 			phraseFilterIds.value = null;
+		}
+
+		// Check for early empty result when filtering by box
+		if (showOnlyInBox.value) {
+			const boxIds = Object.entries(phraseToBoxMap.value)
+				.filter(([_, box]) => box === activeBox.value)
+				.map(([id]) => id);
+
+			// If box is empty, or if we intersect and result is empty
+			if (boxIds.length === 0 || (phraseFilterIds.value && boxIds.filter(id => phraseFilterIds.value!.includes(id)).length === 0)) {
+				phrases.value = [];
+				totalPhrases.value = 0;
+				loading.value = false;
+				return;
+			}
 		}
 
 		await nextTick(); // Ensure computed controller updates with new phraseFilterIds
@@ -174,12 +187,6 @@ watch([search, selectedBundleId, page, showOnlyInBox, activeBox], () => {
 	fetchPhrases();
 });
 
-watch(showOnlyInBox, (newVal) => {
-	if (newVal) {
-		selectedBundleId.value = '';
-	}
-});
-
 function close() {
 	emit('update:modelValue', false);
 }
@@ -209,7 +216,7 @@ function close() {
 					</div>
 
 					<div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700 transition-all"
-						:class="{ 'bg-primary-50/50 border-primary-200 dark:bg-primary-900/10 dark:border-primary-800': showOnlyInBox }">
+						:class="{ 'bg-primary-light border-primary dark:bg-primary-dark-light dark:border-primary': showOnlyInBox }">
 						<Toggle v-model="showOnlyInBox" :label="`Only Box ${activeBox}:`" />
 
 						<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
