@@ -23,19 +23,26 @@ export class LeitnerService {
     return (await col.findOne({ userId })) as unknown as LeitnerSystemDoc;
   }
 
+  public static readonly DEFAULT_SETTINGS = {
+    dailyLimit: 20,
+    totalBoxes: 5,
+    boxIntervals: [1, 2, 4, 8, 16],
+    boxQuotas: [20, 10, 5, 5, 5],
+    autoEntry: true
+  };
+
+  static async getSettings(userId: string) {
+    const system = await this.getSystem(userId);
+    return system?.settings || this.DEFAULT_SETTINGS;
+  }
+
   static async ensureInitialized(userId: string) {
     const existing = await this.getSystem(userId);
     if (!existing) {
       const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
       await col.create({
         userId,
-        settings: {
-          dailyLimit: 20,
-          totalBoxes: 5,
-          boxIntervals: [1, 2, 4, 8, 16],
-          boxQuotas: [20, 10, 5, 5, 5],
-          autoEntry: true
-        },
+        settings: this.DEFAULT_SETTINGS,
         items: [],
       });
     }

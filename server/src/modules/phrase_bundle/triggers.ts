@@ -25,8 +25,8 @@ export const phraseBundleTriggers = [
     // When a new phrase is created, add it to the Leitner system (if autoEntry is enabled)
     if (doc && doc.phrase && doc.translation && doc.refId) {
       try {
-        const stats = await LeitnerService.getStats(doc.refId);
-        if (stats && stats.settings && stats.settings.autoEntry) {
+        const settings = await LeitnerService.getSettings(doc.refId);
+        if (settings && settings.autoEntry) {
           await LeitnerService.addPhraseToBox(doc.refId, doc._id, 1);
         }
       } catch (e) {
@@ -73,10 +73,16 @@ export const phraseBundleTriggers = [
     }
 
     // Process Leitner Additions
+    const userSettingsCache: Record<string, any> = {};
+
     for (const item of leitnerAdditions) {
       try {
-        const stats = await LeitnerService.getStats(item.userId);
-        if (stats && stats.settings && stats.settings.autoEntry) {
+        if (!userSettingsCache[item.userId]) {
+          userSettingsCache[item.userId] = await LeitnerService.getSettings(item.userId);
+        }
+        const settings = userSettingsCache[item.userId];
+
+        if (settings && settings.autoEntry) {
           await LeitnerService.addPhraseToBox(item.userId, item.docId, 1);
         }
       } catch (e) {
