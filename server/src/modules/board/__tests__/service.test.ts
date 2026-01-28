@@ -88,6 +88,26 @@ describe("BoardService Tests", () => {
 				})
 			);
 		});
+
+		// Use-case: A user finishes a review session. The activity card was "toasted" (showing as due),
+		// but now that due items are zero, meta.isActive becomes false. 
+		// The card should move to "idle" so it's hidden from the board.
+		it("should clear toasted state if isActive is explicitly false", async () => {
+			const existing = { _id: "act_1", state: "toasted", persistent: true, meta: { isActive: true } };
+			mockCollection.findOne.mockResolvedValue(existing);
+
+			await BoardService.refreshActivity(userId, "test_type", { isActive: false }, false);
+
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ _id: "act_1" },
+				expect.objectContaining({
+					$set: expect.objectContaining({
+						state: "idle",
+						meta: expect.objectContaining({ isActive: false })
+					})
+				})
+			);
+		});
 	});
 
 	describe("getBoard", () => {

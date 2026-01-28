@@ -174,7 +174,7 @@ export class LeitnerService {
       userId,
       "leitner_review",
       { dueCount, isActive: dueCount > 0 },
-      dueCount > 0, // only toast if items remain
+      false, // don't re-toast during session
       "singleton",
       undefined,
       true // persistent

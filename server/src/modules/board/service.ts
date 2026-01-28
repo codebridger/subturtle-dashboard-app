@@ -46,6 +46,11 @@ export class BoardService {
 				updateData.state = "toasted";
 			}
 
+			// If it's toasted but now meta says it's not active anymore, move back to idle
+			if (existing.state === "toasted" && meta?.isActive === false) {
+				updateData.state = "idle";
+			}
+
 			await col.updateOne({ _id: existing._id }, { $set: updateData });
 		} else if (shouldToast || persistent) {
 			// Create new activity if it should toast OR if it's persistent
