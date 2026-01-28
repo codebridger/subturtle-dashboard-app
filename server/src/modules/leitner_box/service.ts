@@ -75,6 +75,12 @@ export class LeitnerService {
       }
     }
 
+    // Apply Daily Limit
+    const limit = system.settings.dailyLimit || _limit;
+    if (selectedItems.length > limit) {
+      selectedItems = selectedItems.slice(0, limit);
+    }
+
     const phraseIds = selectedItems.map((i: LeitnerItem) => i.phraseId);
     if (phraseIds.length === 0) return [];
 
@@ -95,7 +101,8 @@ export class LeitnerService {
     const system = await this.getSystem(userId);
     if (!system) return 0;
     const now = new Date();
-    return system.items.filter((item: LeitnerItem) => new Date(item.nextReviewDate) <= now).length;
+    const count = system.items.filter((item: LeitnerItem) => new Date(item.nextReviewDate) <= now).length;
+    return Math.min(count, system.settings.dailyLimit || 20);
   }
 
   static async submitReview(userId: string, phraseId: string, isCorrect: boolean): Promise<void> {

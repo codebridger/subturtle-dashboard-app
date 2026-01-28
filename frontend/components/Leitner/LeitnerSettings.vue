@@ -27,6 +27,15 @@
                     <input v-model.number="localSettings.totalBoxes" type="number" min="1" max="10"
                         class="form-input w-24 rounded-md border-gray-300 py-1.5 px-3 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
                 </div>
+
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-900 dark:text-white">Daily Limit</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Max phrases to review per session</p>
+                    </div>
+                    <input v-model.number="localSettings.dailyLimit" type="number" min="1"
+                        class="form-input w-24 rounded-md border-gray-300 py-1.5 px-3 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
+                </div>
             </div>
         </Card>
 
