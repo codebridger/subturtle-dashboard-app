@@ -173,9 +173,11 @@ export class LeitnerService {
     await BoardService.refreshActivity(
       userId,
       "leitner_review",
-      { dueCount },
+      { dueCount, isActive: dueCount > 0 },
       dueCount > 0, // only toast if items remain
-      "singleton"
+      "singleton",
+      undefined,
+      true // persistent
     );
   }
 
@@ -272,9 +274,11 @@ export class LeitnerService {
     await BoardService.refreshActivity(
       userId,
       "leitner_review",
-      { dueCount: 0 },
+      { dueCount: 0, isActive: false },
       false, // Hide toast
-      "singleton"
+      "singleton",
+      undefined,
+      true // persistent
     );
   }
 
@@ -326,9 +330,11 @@ export class LeitnerService {
     await BoardService.refreshActivity(
       userId,
       "leitner_review",
-      { dueCount },
+      { dueCount, isActive: dueCount > 0 },
       dueCount > 0,
-      "singleton"
+      "singleton",
+      undefined,
+      true // persistent
     );
   }
 

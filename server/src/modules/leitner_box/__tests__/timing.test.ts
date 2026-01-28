@@ -12,6 +12,7 @@ jest.mock("@modular-rest/server", () => ({
 }));
 
 // Mock BoardService
+import { BoardService } from "../../board/service";
 jest.mock("../../board/service", () => ({
 	BoardService: {
 		refreshActivity: jest.fn(),
@@ -73,6 +74,19 @@ describe("LeitnerService Timing Tests", () => {
 		mockSystemCollection.findOne.mockResolvedValue(system);
 
 		// Add phrase
+		mockSystemCollection.findOne
+			.mockResolvedValueOnce(system) // For the initial check in addPhraseToBox
+			.mockResolvedValue({ // For the subsequent getDueCount call
+				...system,
+				items: [{
+					phraseId,
+					boxLevel: 1,
+					nextReviewDate: new Date("2026-01-28T10:00:00Z"),
+					lastAttemptDate: new Date("2026-01-28T10:00:00Z"),
+					consecutiveIncorrect: 0
+				}]
+			});
+
 		await LeitnerService.addPhraseToBox(userId, phraseId);
 
 		// Verify updateOne was called with current time
@@ -89,20 +103,23 @@ describe("LeitnerService Timing Tests", () => {
 			})
 		);
 
-		// Mock system with the new item for getDueItems
-		system.items.push({
-			phraseId,
-			boxLevel: 1,
-			nextReviewDate: new Date("2026-01-28T10:00:00Z"),
-			lastAttemptDate: new Date("2026-01-28T10:00:00Z"),
-			consecutiveIncorrect: 0
-		} as any);
 
 		mockPhraseCollection.find.mockResolvedValue([{ _id: phraseId, content: "Hello" }]);
 
 		const dueItems = await LeitnerService.getDueItems(userId);
 		expect(dueItems.length).toBe(1);
 		expect(dueItems[0].phraseId).toBe(phraseId);
+
+
+		expect(BoardService.refreshActivity).toHaveBeenCalledWith(
+			userId,
+			"leitner_review",
+			expect.objectContaining({ dueCount: 1, isActive: true }),
+			true,
+			"singleton",
+			undefined,
+			true
+		);
 	});
 
 	it("Case 3: Promotion Timing - should schedule next review according to Box 2 interval", async () => {
@@ -341,6 +358,28 @@ describe("LeitnerService Timing Tests", () => {
 					"items.0.nextReviewDate": expectedDate,
 				})
 			})
+		);
+	});
+
+	it("Case 10: Board Sync Logic - should not toast if no items are due", async () => {
+		const system = {
+			_id: "sys_1",
+			userId,
+			settings: LeitnerService.DEFAULT_SETTINGS,
+			items: []
+		};
+		mockSystemCollection.findOne.mockResolvedValue(system);
+
+		await LeitnerService.resetSystem(userId);
+
+		expect(BoardService.refreshActivity).toHaveBeenCalledWith(
+			userId,
+			"leitner_review",
+			expect.objectContaining({ dueCount: 0, isActive: false }),
+			false, // shouldToast is false when dueCount is 0
+			"singleton",
+			undefined,
+			true // persistent
 		);
 	});
 });

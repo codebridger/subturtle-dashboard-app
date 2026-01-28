@@ -20,7 +20,8 @@ export class BoardService {
 		meta: any,
 		shouldToast: boolean,
 		toastType: "singleton" | "unique" = "singleton",
-		refId?: string
+		refId?: string,
+		persistent: boolean = false
 	) {
 		const col = await getCollection(DATABASE_BOARD, BOARD_ACTIVITY_COLLECTION);
 		const query: any = { userId, type };
@@ -35,6 +36,7 @@ export class BoardService {
 			const updateData: Partial<BoardActivity> = {
 				lastUpdated: new Date(),
 				meta: { ...existing.meta, ...meta },
+				persistent: persistent || existing.persistent,
 			};
 
 			// Only re-toast if explicitly requested.
@@ -45,14 +47,15 @@ export class BoardService {
 			}
 
 			await col.updateOne({ _id: existing._id }, { $set: updateData });
-		} else if (shouldToast) {
-			// Create new activity only if there's something to toast
+		} else if (shouldToast || persistent) {
+			// Create new activity if it should toast OR if it's persistent
 			await col.create({
 				userId,
 				type,
 				toastType,
 				refId,
-				state: "toasted",
+				state: shouldToast ? "toasted" : "idle",
+				persistent,
 				lastUpdated: new Date(),
 				meta,
 			});
@@ -79,10 +82,17 @@ export class BoardService {
 	}
 
 	/**
-	 * Get all active (toasted) activities for a user
+	 * Get all active activities for a user.
+	 * Returns activities that are 'toasted' OR (persistent AND meta.isActive)
 	 */
 	static async getBoard(userId: string) {
 		const col = await getCollection(DATABASE_BOARD, BOARD_ACTIVITY_COLLECTION);
-		return col.find({ userId, state: "toasted" });
+		return col.find({
+			userId,
+			$or: [
+				{ state: "toasted" },
+				{ persistent: true, "meta.isActive": true }
+			]
+		});
 	}
 }

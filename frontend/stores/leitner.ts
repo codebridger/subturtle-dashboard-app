@@ -34,10 +34,18 @@ export const useLeitnerStore = defineStore('leitner', () => {
 				name: 'consume-activity',
 				args: { type, refId, userId: authUser.value?.id }
 			});
-			// Optimistic update: remove from local state
-			boardActivities.value = boardActivities.value.filter(a =>
-				!(a.type === type && a.refId === refId)
-			);
+			// Optimistic update
+			boardActivities.value = boardActivities.value
+				.map((a) => {
+					if (a.type === type && a.refId === refId) {
+						if (a.persistent) {
+							return { ...a, state: 'idle' as const };
+						}
+						return null;
+					}
+					return a;
+				})
+				.filter((a): a is BoardActivityType => a !== null);
 		} catch (error) {
 			console.error('Failed to consume activity:', error);
 		}

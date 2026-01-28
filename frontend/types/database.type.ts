@@ -74,6 +74,7 @@ export interface BoardActivityType {
     toastType: 'singleton' | 'unique';
     refId?: string;
     state: 'idle' | 'toasted';
+    persistent: boolean;
     lastUpdated: string; // Dates often come as strings from JSON
     meta: any;
 }

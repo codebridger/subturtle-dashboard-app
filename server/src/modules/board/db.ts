@@ -8,6 +8,7 @@ export interface BoardActivity {
 	toastType: "singleton" | "unique";
 	refId?: string; // e.g. lecture ID
 	state: "idle" | "toasted";
+	persistent: boolean;
 	lastUpdated: Date;
 	meta: any;
 }
@@ -19,6 +20,7 @@ const boardActivitySchema = new Schema<BoardActivity>(
 		toastType: { type: String, required: true, enum: ["singleton", "unique"] },
 		refId: { type: String },
 		state: { type: String, required: true, enum: ["idle", "toasted"] },
+		persistent: { type: Boolean, default: false },
 		lastUpdated: { type: Date, default: Date.now },
 		meta: { type: Schema.Types.Mixed }, // Meta can be anything
 	},

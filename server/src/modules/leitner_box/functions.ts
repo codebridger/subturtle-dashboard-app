@@ -56,9 +56,11 @@ async function _syncUser(userId: string) {
 	await BoardService.refreshActivity(
 		userId,
 		"leitner_review",
-		{ dueCount },
+		{ dueCount, isActive: dueCount > 0 },
 		dueCount > 0,
-		"singleton"
+		"singleton",
+		undefined,
+		true // persistent
 	);
 }
 
