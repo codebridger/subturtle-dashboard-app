@@ -1,202 +1,321 @@
 <template>
-    <div class="flex flex-col gap-6">
-        <!-- Header / Total Boxes -->
-        <Card class="rounded-lg border border-gray-100 shadow-sm dark:border-gray-700">
-            <div class="flex flex-col gap-4 p-6">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Leitner System Configuration</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                        Configure your spaced repetition journey. Items move down the chain as you learn them.
-                    </p>
+    <div class="flex flex-col gap-8 pb-20">
+        <!-- Header / Stats Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card
+                class="p-4 bg-gradient-to-br from-primary-light to-white dark:from-primary-dark-light dark:to-gray-800 border-none shadow-sm overflow-hidden relative">
+                <div class="relative z-10">
+                    <p class="text-xs font-bold text-primary uppercase tracking-wider">Total Progress</p>
+                    <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ stats?.totalItems || 0 }}</h3>
+                    <p class="text-xs text-gray-500">Collected phrases</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                    <Icon name="IconFolder" class="!w-24 !h-24 text-primary" />
+                </div>
+            </Card>
+
+            <Card
+                class="p-4 bg-gradient-to-br from-success-light to-white dark:from-success-dark-light dark:to-gray-800 border-none shadow-sm overflow-hidden relative">
+                <div class="relative z-10">
+                    <p class="text-xs font-bold text-success uppercase tracking-wider">Next Session</p>
+                    <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.reviewHour }}:00</h3>
+                    <p class="text-xs text-gray-500">Daily reminder set</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                    <Icon name="IconClock" class="!w-24 !h-24 text-success" />
+                </div>
+            </Card>
+
+            <Card
+                class="p-4 bg-gradient-to-br from-warning-light to-white dark:from-warning-dark-light dark:to-gray-800 border-none shadow-sm overflow-hidden relative">
+                <div class="relative z-10">
+                    <p class="text-xs font-bold text-warning uppercase tracking-wider">Boxes Active</p>
+                    <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.totalBoxes }}</h3>
+                    <p class="text-xs text-gray-500">Step progression</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                    <Icon name="IconArchive" class="!w-24 !h-24 text-warning" />
+                </div>
+            </Card>
+        </div>
+
+        <!-- Main Configuration Card -->
+        <Card class="rounded-2xl border border-gray-100 shadow-sm dark:border-gray-700 overflow-hidden">
+            <!-- <div class="h-1.5 bg-gradient-to-r from-primary via-secondary to-primary-light"></div> -->
+            <div class="flex flex-col gap-6 p-8">
+                <div class="flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <Icon name="IconSettings" class="!w-6 !h-6" />
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Leitner System Configuration</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Configure your spaced repetition journey. Items move down the chain as you learn them.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-900 dark:text-white">Auto-Entry</label>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Automatically add any new saved phrase to
-                            Box 1</p>
+                <div
+                    class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <!-- Toggle: Auto Entry -->
+                    <div class="flex items-center justify-between group">
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <div class="flex items-center justify-center p-0.5">
+                                    <Icon name="iconify solar--rocket-bold"
+                                        class="text-primary opacity-50 !w-4 !h-4 shrink-0" />
+                                </div>
+                                <label
+                                    class="font-bold text-gray-800 dark:text-gray-200 leading-none">Auto-Entry</label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 max-w-[200px]">Automatically add any new
+                                saved phrase to Box 1</p>
+                        </div>
+                        <Toggle v-model="localSettings.autoEntry" />
                     </div>
-                    <Toggle v-model="localSettings.autoEntry" />
-                </div>
 
-                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-900 dark:text-white">Total Boxes</label>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Total number of boxes in the chain</p>
+                    <!-- Input: Total Boxes -->
+                    <div class="flex items-center justify-between group">
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <div class="flex items-center justify-center p-0.5">
+                                    <Icon name="iconify solar--layers-bold"
+                                        class="text-primary opacity-50 !w-4 !h-4 shrink-0" />
+                                </div>
+                                <label class="font-bold text-gray-800 dark:text-gray-200 leading-none">Total
+                                    Boxes</label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Total number of boxes in the chain</p>
+                        </div>
+                        <div class="relative">
+                            <input v-model.number="localSettings.totalBoxes" type="number" min="1" max="10"
+                                class="form-input w-24 rounded-lg border-gray-200 bg-gray-50 py-2 px-3 text-sm font-bold focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-gray-600 dark:bg-gray-700 transition-all text-center" />
+                        </div>
                     </div>
-                    <input v-model.number="localSettings.totalBoxes" type="number" min="1" max="10"
-                        class="form-input w-24 rounded-md border-gray-300 py-1.5 px-3 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
-                </div>
 
-                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-900 dark:text-white">Daily Limit</label>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Max phrases to review per session</p>
+                    <!-- Input: Daily Limit -->
+                    <div class="flex items-center justify-between group">
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <div class="flex items-center justify-center p-0.5">
+                                    <Icon name="IconChartSquare" class="text-primary opacity-50 !w-4 !h-4 shrink-0" />
+                                </div>
+                                <label class="font-bold text-gray-800 dark:text-gray-200 leading-none">Global Daily
+                                    Limit</label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Max phrases to review per session</p>
+                        </div>
+                        <div class="relative">
+                            <input v-model.number="localSettings.dailyLimit" type="number" min="1"
+                                class="form-input w-24 rounded-lg border-gray-200 bg-gray-50 py-2 px-3 text-sm font-bold focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-gray-600 dark:bg-gray-700 transition-all text-center" />
+                        </div>
                     </div>
-                    <input v-model.number="localSettings.dailyLimit" type="number" min="1"
-                        class="form-input w-24 rounded-md border-gray-300 py-1.5 px-3 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
-                </div>
 
-                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-900 dark:text-white">Review Interval</label>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Frequency of review sessions</p>
+                    <!-- Input: Session Hour -->
+                    <div class="flex items-center justify-between group relative z-50">
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <div class="flex items-center justify-center p-0.5">
+                                    <Icon name="IconClock" class="text-primary opacity-50 !w-4 !h-4 shrink-0" />
+                                </div>
+                                <label class="font-bold text-gray-800 dark:text-gray-200 leading-none">Reminder
+                                    Hour</label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Time to trigger review notifications</p>
+                        </div>
+                        <HourSelector v-model="localSettings.reviewHour" />
                     </div>
-                    <div class="relative">
-                        <input v-model.number="localSettings.reviewInterval" type="number" min="1"
-                            class="form-input w-24 rounded-md border-gray-300 py-1.5 pr-12 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
-                        <span class="absolute right-2 top-1.5 text-xs text-gray-400">days</span>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-900 dark:text-white">Session Hour</label>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Time to trigger review notifications</p>
-                    </div>
-                    <HourSelector v-model="localSettings.reviewHour" />
                 </div>
             </div>
         </Card>
 
-        <div class="relative flex flex-col pt-4">
+        <!-- Vertical Flow Chain -->
+        <div class="relative flex flex-col space-y-0 px-4 md:px-0">
             <template v-for="(box, index) in localSettings.totalBoxes" :key="index">
-                <!-- Content Row: Card + Centered Circle -->
-                <div class="flex gap-6 items-stretch">
-                    <!-- Visual Column: Centered Circle with Top/Bottom connectors -->
-                    <div class="flex flex-col items-center w-12 min-w-[3rem]">
-                        <!-- Top Line Segment: Connects circle to top of row. Hidden for first item. -->
-                        <div class="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700" :class="{ 'invisible': index === 0 }">
+                <div class="relative flex gap-8 items-stretch">
+                    <!-- Visual Progression Column -->
+                    <div class="flex flex-col items-center w-12 pt-4">
+                        <!-- Top Connection ( bridges the gap from previous row's bottom line) -->
+                        <div v-if="index > 0"
+                            class="h-4 w-1 bg-gradient-to-b from-gray-200/50 to-primary/30 dark:from-gray-700/50 dark:to-primary/50 -mt-4 mb-0">
                         </div>
 
-                        <!-- The Circle -->
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border-4 bg-white shadow-sm transition-all z-10 my-1"
+                        <!-- Box Circle -->
+                        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 bg-white shadow-lg transition-all z-10 my-0"
                             :class="[
-                                index === 0 ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400' : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400',
-                                getItemCount(index) > 0 ? 'ring-4 ring-primary-50 dark:ring-primary-900/20' : ''
+                                index === 0 ? 'border-primary text-primary dark:border-primary-400 dark:text-primary-400 ring-4 ring-primary/5' : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 dark:bg-gray-800',
+                                getItemCount(index) > 0 ? 'bg-primary/5 border-primary/40' : ''
                             ]">
-                            <span class="text-xs font-bold">{{ index + 1 }}</span>
+                            <!-- Pulse effect for non-empty boxes -->
+                            <div v-if="getItemCount(index) > 0"
+                                class="absolute inset-0 rounded-2xl bg-primary/20 animate-ping opacity-25"></div>
+                            <span class="text-sm font-black">{{ index + 1 }}</span>
                         </div>
 
-                        <!-- Bottom Line Segment: Connects circle to bottom of row. Hidden for last item. -->
-                        <div class="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700"
-                            :class="{ 'invisible': index === localSettings.totalBoxes - 1 }"></div>
+                        <!-- Progress Line Segment (Stretches to fill row height) -->
+                        <div v-if="index < localSettings.totalBoxes - 1"
+                            class="w-1 flex-1 bg-gradient-to-b from-primary/30 to-gray-200 dark:from-primary/50 dark:to-gray-700 rounded-full">
+                        </div>
                     </div>
 
-                    <!-- Card Content -->
-                    <Card
-                        class="flex-1 flex flex-col gap-4 rounded-lg border border-gray-100 p-4 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
-                        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                            <div>
-                                <h4 class="font-bold text-gray-900 dark:text-white">Box {{ index + 1 }}</h4>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                                        {{ getItemCount(index) }}
-                                    </span>
-                                    <span
-                                        class="text-xs font-medium uppercase tracking-wide text-gray-500">Phrases</span>
-                                </div>
-                            </div>
-
-                            <div class="flex flex-col gap-4 sm:flex-row">
-                                <!-- Interval Input -->
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-xs font-semibold text-gray-500">Review Interval</label>
-                                    <div class="relative">
-                                        <input v-model.number="localSettings.boxIntervals[index]" type="number" min="1"
-                                            class="form-input w-24 rounded-md border-gray-300 py-1.5 pr-8 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
-                                        <span class="absolute right-2 top-1.5 text-xs text-gray-400">days</span>
+                    <!-- Box Card Content -->
+                    <div class="flex-1 pb-12 group">
+                        <Card
+                            class="flex flex-col gap-4 rounded-2xl border border-gray-100 p-6 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:border-gray-700 dark:bg-gray-800/50 backdrop-blur-sm group-hover:bg-white dark:group-hover:bg-gray-800">
+                            <div class="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="h-14 w-14 rounded-2xl bg-gray-50 dark:bg-gray-700/50 flex flex-col items-center justify-center border border-gray-100 dark:border-gray-600">
+                                        <span class="text-xl font-black text-primary">{{ getItemCount(index) }}</span>
+                                        <span
+                                            class="text-[10px] font-bold uppercase tracking-tighter text-gray-400">Cards</span>
+                                    </div>
+                                    <div>
+                                        <h4
+                                            class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                            Box {{ index + 1 }}
+                                            <span v-if="index === 0"
+                                                class="px-1.5 py-0 rounded text-[9px] bg-primary/10 text-primary uppercase font-bold border border-primary/20">Entrance</span>
+                                            <span v-else-if="index === localSettings.totalBoxes - 1"
+                                                class="px-1.5 py-0 rounded text-[9px] bg-success/10 text-success uppercase font-bold border border-success/20">Mature</span>
+                                        </h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 italic">Level {{ index + 1 }}
+                                            of knowledge retention</p>
                                     </div>
                                 </div>
 
-                                <!-- Quota Input -->
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-xs font-semibold text-gray-500">Daily Quota</label>
-                                    <div class="relative">
-                                        <input v-model.number="localSettings.boxQuotas[index]" type="number" min="0"
-                                            class="form-input w-24 rounded-md border-gray-300 py-1.5 pr-8 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
-                                        <span class="absolute right-2 top-1.5 text-xs text-gray-400">items</span>
+                                <div class="flex flex-wrap gap-4 items-end">
+                                    <!-- Interval -->
+                                    <div class="flex flex-col gap-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                            <Icon name="IconCalendar" class="!w-3 !h-3 shrink-0" />
+                                            <span class="leading-none">Interval</span>
+                                        </label>
+                                        <div class="relative group/input">
+                                            <input v-model.number="localSettings.boxIntervals[index]" type="number"
+                                                min="1"
+                                                class="form-input w-24 rounded-lg border-gray-100 bg-gray-50/50 py-1.5 px-3 text-sm font-semibold focus:border-primary focus:bg-white transition-all dark:bg-gray-700 dark:border-gray-600" />
+                                            <span
+                                                class="absolute right-2 top-2 text-[10px] text-gray-400 pointer-events-none">days</span>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <!-- Add Phrase Action -->
-                                <div class="flex items-end">
-                                    <Button size="sm" variant="outline" class="flex items-center gap-2"
+                                    <!-- Quota -->
+                                    <div class="flex flex-col gap-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                            <Icon name="IconBolt" class="!w-3 !h-3 shrink-0" />
+                                            <span class="leading-none">Quota</span>
+                                        </label>
+                                        <div class="relative group/input">
+                                            <input v-model.number="localSettings.boxQuotas[index]" type="number" min="0"
+                                                class="form-input w-24 rounded-lg border-gray-100 bg-gray-50/50 py-1.5 px-3 text-sm font-semibold focus:border-primary focus:bg-white transition-all dark:bg-gray-700 dark:border-gray-600" />
+                                            <span
+                                                class="absolute right-2 top-2 text-[10px] text-gray-400 pointer-events-none">items</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Add Phrase Action -->
+                                    <Button size="sm" variant="outline"
+                                        class="h-[38px] px-4 rounded-lg border-primary/20 hover:border-primary text-primary transition-all active:scale-95 flex items-center gap-2"
                                         @click="openPicker(index + 1)">
-                                        <i class="fas fa-plus"></i>
-                                        Phrases
+                                        <template #icon>
+                                            <Icon name="iconify solar--add-circle-bold" class="!w-4 !h-4" />
+                                        </template>
+                                        Manage
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                    </Card>
-                </div>
-
-                <!-- Gap Row used for spacing and continuous line -->
-                <div v-if="index < localSettings.totalBoxes - 1" class="flex gap-6 h-8">
-                    <!-- Visual Column with Line -->
-                    <div class="flex justify-center w-12 min-w-[3rem]">
-                        <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700"></div>
+                        </Card>
                     </div>
                 </div>
             </template>
         </div>
 
-        <!-- Footer Actions -->
+        <!-- Float Action Footer -->
         <div
-            class="sticky bottom-4 z-20 flex items-center justify-between rounded-xl border border-gray-200 bg-white/90 p-4 shadow-lg backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/90">
-            <!-- Reset Confirmation Modal -->
-            <Modal title="Reset Leitner System">
-                <template #trigger="{ toggleModal }">
-                    <Button color="danger" variant="outline" size="sm" :disabled="loading || resetting"
-                        @click="toggleModal(true)">
-                        Reset Progress
-                    </Button>
-                </template>
-                <template #default>
-                    <div class="p-4">
-                        <p class="text-gray-700 dark:text-gray-300">
-                            Are you sure you want to reset your entire Leitner system?
-                            <br /><br />
-                            <strong class="text-red-600">This action cannot be undone.</strong> All your progress, card
-                            levels, and history will be wiped. You will start fresh.
-                        </p>
-                    </div>
-                </template>
-                <template #footer="{ toggleModal }">
-                    <div class="flex justify-end gap-2">
-                        <Button variant="outline" :disabled="resetting" @click="toggleModal(false)">Cancel</Button>
-                        <Button color="danger" :is-loading="resetting" @click="performReset(toggleModal)">Yes, Reset
-                            Everything</Button>
-                    </div>
-                </template>
-            </Modal>
+            class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-2xl flex items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/70 p-4 shadow-2xl backdrop-blur-xl dark:border-gray-700/30 dark:bg-gray-900/70">
+            <div class="flex items-center gap-4 pl-2">
+                <div v-if="settingsDirty" class="flex h-2 w-2 rounded-full bg-warning animate-pulse"></div>
+                <div v-else class="flex h-2 w-2 rounded-full bg-success"></div>
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-400">
+                    {{ settingsDirty ? 'Unsaved changes' : 'Settings synced' }}
+                </span>
+            </div>
 
-            <!-- Save Confirmation Modal -->
-            <Modal title="Save Preferences">
-                <template #trigger="{ toggleModal }">
-                    <Button color="primary" size="md" :is-loading="loading" :disabled="!settingsDirty || resetting"
-                        @click="toggleModal(true)">
-                        Save Preferences
-                    </Button>
-                </template>
-                <template #default>
-                    <div class="p-4">
-                        <p class="text-gray-700 dark:text-gray-300">
-                            Are you sure you want to save these changes?
-                            <br /><br />
-                            Changing intervals or the number of boxes may affect the scheduling of existing items.
-                        </p>
-                    </div>
-                </template>
-                <template #footer="{ toggleModal }">
-                    <div class="flex justify-end gap-2">
-                        <Button variant="outline" :disabled="loading" @click="toggleModal(false)">Cancel</Button>
-                        <Button color="primary" :is-loading="loading" @click="performSave(toggleModal)">Yes, Save
-                            Changes</Button>
-                    </div>
-                </template>
-            </Modal>
+            <div class="flex items-center gap-3">
+                <Modal title="Reset Leitner System">
+                    <template #trigger="{ toggleModal }">
+                        <button
+                            class="px-4 py-2 rounded-xl text-xs font-bold text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+                            :disabled="loading || resetting" @click="toggleModal(true)">
+                            Reset Progress
+                        </button>
+                    </template>
+                    <template #default>
+                        <div class="p-4 flex flex-col items-center text-center gap-4">
+                            <div
+                                class="h-16 w-16 rounded-full bg-danger/10 flex items-center justify-center text-danger">
+                                <Icon name="IconInfoTriangle" class="!w-8 !h-8" />
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white">Dangerous Action!</h4>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                    Are you sure you want to reset your entire Leitner system?
+                                    <br />
+                                    <strong class="text-danger">This cannot be undone.</strong> All progress, card
+                                    levels, and history will be cleared.
+                                </p>
+                            </div>
+                        </div>
+                    </template>
+                    <template #footer="{ toggleModal }">
+                        <div class="flex justify-end gap-3 w-full p-4 border-t dark:border-gray-700">
+                            <Button variant="outline" :disabled="resetting" @click="toggleModal(false)">Keep
+                                Everything</Button>
+                            <Button color="danger" :is-loading="resetting" @click="performReset(toggleModal)">Confirm
+                                Wipe</Button>
+                        </div>
+                    </template>
+                </Modal>
+
+                <Modal title="Confirm Save">
+                    <template #trigger="{ toggleModal }">
+                        <Button color="primary" size="md" rounded="xl" :is-loading="loading"
+                            :disabled="!settingsDirty || resetting"
+                            class="shadow-lg shadow-primary/20 px-8 py-2.5 flex items-center gap-2"
+                            @click="toggleModal(true)">
+                            <template #icon>
+                                <Icon name="IconSave" class="!w-4 !h-4" />
+                            </template>
+                            Save Preferences
+                        </Button>
+                    </template>
+                    <template #default>
+                        <div class="p-4 flex flex-col items-center text-center gap-4">
+                            <div
+                                class="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <Icon name="IconInfoCircle" class="!w-8 !h-8" />
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white">Review Changes</h4>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                    You are about to update your Leitner intervals.
+                                    Existing items might be rescheduled to align with your new configuration.
+                                </p>
+                            </div>
+                        </div>
+                    </template>
+                    <template #footer="{ toggleModal }">
+                        <div class="flex justify-end gap-3 w-full p-4 border-t dark:border-gray-700">
+                            <Button variant="outline" :disabled="loading" @click="toggleModal(false)">Go Back</Button>
+                            <Button color="primary" :is-loading="loading" @click="performSave(toggleModal)">Apply
+                                Now</Button>
+                        </div>
+                    </template>
+                </Modal>
+            </div>
         </div>
 
         <!-- Phrase Picker Modal -->
@@ -207,7 +326,7 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
+import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
 import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
 import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
