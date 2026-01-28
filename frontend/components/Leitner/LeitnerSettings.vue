@@ -18,6 +18,15 @@
                     </div>
                     <Toggle v-model="localSettings.autoEntry" />
                 </div>
+
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-900 dark:text-white">Total Boxes</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Total number of boxes in the chain</p>
+                    </div>
+                    <input v-model.number="localSettings.totalBoxes" type="number" min="1" max="10"
+                        class="form-input w-24 rounded-md border-gray-300 py-1.5 px-3 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
+                </div>
             </div>
         </Card>
 
@@ -110,7 +119,8 @@
             <!-- Reset Confirmation Modal -->
             <Modal title="Reset Leitner System">
                 <template #trigger="{ toggleModal }">
-                    <Button color="danger" variant="outline" size="sm" :disabled="loading" @click="toggleModal(true)">
+                    <Button color="danger" variant="outline" size="sm" :disabled="loading || resetting"
+                        @click="toggleModal(true)">
                         Reset Progress
                     </Button>
                 </template>
@@ -126,8 +136,8 @@
                 </template>
                 <template #footer="{ toggleModal }">
                     <div class="flex justify-end gap-2">
-                        <Button variant="outline" @click="toggleModal(false)">Cancel</Button>
-                        <Button color="danger" :loading="resetting" @click="performReset(toggleModal)">Yes, Reset
+                        <Button variant="outline" :disabled="resetting" @click="toggleModal(false)">Cancel</Button>
+                        <Button color="danger" :is-loading="resetting" @click="performReset(toggleModal)">Yes, Reset
                             Everything</Button>
                     </div>
                 </template>
@@ -136,7 +146,8 @@
             <!-- Save Confirmation Modal -->
             <Modal title="Save Preferences">
                 <template #trigger="{ toggleModal }">
-                    <Button color="primary" size="md" :loading="loading" @click="toggleModal(true)">
+                    <Button color="primary" size="md" :is-loading="loading" :disabled="!settingsDirty || resetting"
+                        @click="toggleModal(true)">
                         Save Preferences
                     </Button>
                 </template>
@@ -151,8 +162,8 @@
                 </template>
                 <template #footer="{ toggleModal }">
                     <div class="flex justify-end gap-2">
-                        <Button variant="outline" @click="toggleModal(false)">Cancel</Button>
-                        <Button color="primary" :loading="loading" @click="performSave(toggleModal)">Yes, Save
+                        <Button variant="outline" :disabled="loading" @click="toggleModal(false)">Cancel</Button>
+                        <Button color="primary" :is-loading="loading" @click="performSave(toggleModal)">Yes, Save
                             Changes</Button>
                     </div>
                 </template>
@@ -169,6 +180,7 @@
 import { ref, watch } from 'vue';
 import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
 import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
 import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
 import Toggle from '~/components/material/Toggle.vue';
 import { functionProvider } from '@modular-rest/client';
@@ -209,7 +221,8 @@ const localSettings = ref<Settings>({
 
 const showPicker = ref(false);
 const pickingForBox = ref<number | null>(null);
-const isDirty = ref(false);
+const isDirty = ref(false); // Phrase changes dirty state
+const settingsDirty = ref(false); // Settings configuration dirty state
 
 function openPicker(boxLevel: number) {
     pickingForBox.value = boxLevel;
@@ -229,6 +242,14 @@ watch(showPicker, (newVal, oldVal) => {
     }
 });
 
+watch(() => localSettings.value.totalBoxes, () => {
+    adjustArrays();
+});
+
+watch(localSettings, () => {
+    settingsDirty.value = true;
+}, { deep: true });
+
 // Sync props to local state
 watch(
     () => props.stats,
@@ -238,6 +259,10 @@ watch(
             localSettings.value = JSON.parse(JSON.stringify(newVal.settings));
             // Ensure arrays are filled if data is partial
             adjustArrays();
+            // Reset dirty state after sync
+            setTimeout(() => {
+                settingsDirty.value = false;
+            }, 0);
         }
     },
     { immediate: true, deep: true }
@@ -289,10 +314,11 @@ async function performSave(toggleModal: (state: boolean) => void) {
             },
         });
         toggleModal(false);
+        settingsDirty.value = false;
         emit('saved');
     } catch (e) {
         console.error(e);
-        alert('Failed to save settings');
+        toastError('Failed to save settings');
     } finally {
         loading.value = false;
     }
@@ -309,10 +335,10 @@ async function performReset(toggleModal: (state: boolean) => void) {
         });
         toggleModal(false);
         emit('reset');
-        alert('System has been reset.');
+        toastSuccess('System has been reset.');
     } catch (e) {
         console.error(e);
-        alert('Failed to reset system');
+        toastError('Failed to reset system');
     } finally {
         resetting.value = false;
     }
