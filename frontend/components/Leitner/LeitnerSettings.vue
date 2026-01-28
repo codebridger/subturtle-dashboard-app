@@ -36,6 +36,26 @@
                     <input v-model.number="localSettings.dailyLimit" type="number" min="1"
                         class="form-input w-24 rounded-md border-gray-300 py-1.5 px-3 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
                 </div>
+
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-900 dark:text-white">Review Interval</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Frequency of review sessions</p>
+                    </div>
+                    <div class="relative">
+                        <input v-model.number="localSettings.reviewInterval" type="number" min="1"
+                            class="form-input w-24 rounded-md border-gray-300 py-1.5 pr-12 text-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700" />
+                        <span class="absolute right-2 top-1.5 text-xs text-gray-400">days</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-900 dark:text-white">Session Hour</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Time to trigger review notifications</p>
+                    </div>
+                    <HourSelector v-model="localSettings.reviewHour" />
+                </div>
             </div>
         </Card>
 
@@ -192,6 +212,7 @@ import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
 import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
 import Toggle from '~/components/material/Toggle.vue';
+import HourSelector from '~/components/material/HourSelector.vue';
 import { functionProvider } from '@modular-rest/client';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
@@ -201,6 +222,8 @@ interface Settings {
     boxIntervals: number[];
     boxQuotas: number[];
     autoEntry: boolean;
+    reviewInterval: number;
+    reviewHour: number;
 }
 
 const props = defineProps<{
@@ -226,6 +249,8 @@ const localSettings = ref<Settings>({
     boxIntervals: [1, 2, 4, 8, 16],
     boxQuotas: [20, 10, 5, 5, 5],
     autoEntry: true,
+    reviewInterval: 1,
+    reviewHour: 9,
 });
 
 const showPicker = ref(false);
@@ -270,6 +295,9 @@ watch(
             adjustArrays();
             // Reset dirty state after sync
             setTimeout(() => {
+                // Ensure defaults if missing in restored settings
+                if (!localSettings.value.reviewInterval) localSettings.value.reviewInterval = 1;
+                if (localSettings.value.reviewHour === undefined) localSettings.value.reviewHour = 9;
                 settingsDirty.value = false;
             }, 0);
         }

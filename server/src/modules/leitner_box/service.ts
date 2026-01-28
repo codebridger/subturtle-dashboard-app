@@ -3,6 +3,7 @@ import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTIO
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
+import { ScheduleService } from "../schedule/service";
 
 // Helper type since modular-rest types are opaque sometimes
 type LeitnerSystemDoc = Document & {
@@ -13,11 +14,15 @@ type LeitnerSystemDoc = Document & {
     boxIntervals: number[];
     boxQuotas: number[];
     autoEntry: boolean;
+    reviewInterval: number;
+    reviewHour: number;
   };
   items: LeitnerItem[];
 };
 
 export class LeitnerService {
+  private static syncedUsers = new Set<string>();
+
   private static async getSystem(userId: string): Promise<LeitnerSystemDoc | null> {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
     return (await col.findOne({ userId })) as unknown as LeitnerSystemDoc;
@@ -28,12 +33,25 @@ export class LeitnerService {
     totalBoxes: 5,
     boxIntervals: [1, 2, 4, 8, 16],
     boxQuotas: [20, 10, 5, 5, 5],
-    autoEntry: true
+    autoEntry: true,
+    reviewInterval: 1,
+    reviewHour: 9
   };
 
   static async getSettings(userId: string) {
     const system = await this.getSystem(userId);
-    return system?.settings || this.DEFAULT_SETTINGS;
+    const settings = system?.settings || this.DEFAULT_SETTINGS;
+
+    // Proactive sync: if we are here and it's initialized but job might be missing 
+    // (e.g. after upgrade), we can trigger a sync.
+    // To avoid too many writes, we only do it if the user is authorized and we just loaded them.
+    // However, syncScheduledJob is idempotent.
+    if (system) {
+      // Run in background to avoid blocking
+      this.syncScheduledJob(userId).catch(e => console.error(`[LeitnerService] Async job sync failed for ${userId}:`, e));
+    }
+
+    return settings;
   }
 
   static async ensureInitialized(userId: string) {
@@ -45,6 +63,7 @@ export class LeitnerService {
         settings: this.DEFAULT_SETTINGS,
         items: [],
       });
+      await this.syncScheduledJob(userId);
     }
   }
 
@@ -200,6 +219,10 @@ export class LeitnerService {
       distribution[item.boxLevel] = (distribution[item.boxLevel] || 0) + 1;
     });
 
+    if (system) {
+      this.syncScheduledJob(userId).catch(e => console.error(`[LeitnerService] Async job sync failed for ${userId}:`, e));
+    }
+
     return {
       settings: system.settings,
       distribution,
@@ -207,7 +230,7 @@ export class LeitnerService {
     };
   }
 
-  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean }): Promise<void> {
+  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean; reviewInterval?: number; reviewHour?: number }): Promise<void> {
     const system = await this.getSystem(userId);
     if (!system) {
       await this.ensureInitialized(userId);
@@ -222,8 +245,16 @@ export class LeitnerService {
     if (settings.boxIntervals) updatePayload["settings.boxIntervals"] = settings.boxIntervals;
     if (settings.boxQuotas) updatePayload["settings.boxQuotas"] = settings.boxQuotas;
     if (typeof settings.autoEntry === "boolean") updatePayload["settings.autoEntry"] = settings.autoEntry;
+    updatePayload["settings.reviewInterval"] = settings.reviewInterval || system.settings.reviewInterval || 1;
+    updatePayload["settings.reviewHour"] = settings.reviewHour !== undefined ? settings.reviewHour : (system.settings.reviewHour !== undefined ? system.settings.reviewHour : 9);
 
     await col.updateOne({ _id: system._id }, { $set: updatePayload });
+
+    // Sync schedule if interval or hour changed
+    if (settings.reviewInterval || settings.reviewHour !== undefined) {
+      this.syncedUsers.delete(userId.toString()); // Force re-sync
+      await this.syncScheduledJob(userId);
+    }
 
     // If totalBoxes reduced, move items in higher boxes to the new max box
     if (settings.totalBoxes && settings.totalBoxes < system.settings.totalBoxes) {
@@ -386,4 +417,43 @@ export class LeitnerService {
       bundles: (bundles || []).map((b: any) => ({ _id: b._id.toString(), title: b.title }))
     };
   }
+
+  private static async syncScheduledJob(userId: string) {
+    if (this.syncedUsers.has(userId.toString())) return;
+
+    const settings = await this.getSettings(userId);
+    const { reviewInterval, reviewHour } = settings;
+
+    // Cron: 0 minute, reviewHour hour, every X days, *, *
+    const cron = `0 ${reviewHour} */${reviewInterval} * *`;
+
+    await ScheduleService.createJob(
+      `leitner-review-${userId}`,
+      'leitner-review-job',
+      {
+        cronExpression: cron,
+        args: { userId },
+        jobType: 'recurrent'
+      }
+    );
+
+    this.syncedUsers.add(userId.toString());
+  }
 }
+
+// Register global schedule job
+ScheduleService.register('leitner-review-job', async (args: { userId: string }) => {
+  const { userId } = args;
+  const dueCount = await LeitnerService.getDueCount(userId);
+  if (dueCount > 0) {
+    await BoardService.refreshActivity(
+      userId,
+      "leitner_review",
+      { dueCount, isActive: true },
+      true, // toast it!
+      "singleton",
+      undefined,
+      true // persistent
+    );
+  }
+});

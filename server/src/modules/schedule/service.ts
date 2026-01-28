@@ -67,6 +67,7 @@ export class ScheduleService {
       );
       this.cancelJob(name);
     } else {
+      console.log(`[ScheduleService] Creating new job: ${name}`);
       await collection.create(jobData);
     }
 
@@ -94,7 +95,10 @@ export class ScheduleService {
     }
 
     const scheduleParam = jobData.jobType === "once" ? jobData.runAt : jobData.cronExpression;
-    if (!scheduleParam) return;
+    if (!scheduleParam) {
+      console.warn(`[ScheduleService] No schedule parameter for job: ${jobData.name}`);
+      return;
+    }
 
     schedule.scheduleJob(jobData.name, scheduleParam, async () => {
       console.log(`[ScheduleService] Triggered: ${jobData.name}`);
