@@ -40,7 +40,7 @@
         </div>
 
         <!-- Main Configuration Card -->
-        <Card class="rounded-2xl border border-gray-100 shadow-sm dark:border-gray-700 overflow-hidden">
+        <Card class="rounded-2xl border border-gray-100 shadow-sm dark:border-gray-700 relative z-20">
             <!-- <div class="h-1.5 bg-gradient-to-r from-primary via-secondary to-primary-light"></div> -->
             <div class="flex flex-col gap-6 p-8">
                 <div class="flex items-center gap-4">
