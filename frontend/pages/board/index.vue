@@ -77,12 +77,6 @@
                         <p class="text-gray-500 dark:text-gray-400 font-medium mb-10 leading-relaxed text-lg">
                             {{ $t('board.all_caught_up') }} Take this moment to explore new phrases.
                         </p>
-
-                        <Button variant="outline" size="lg" icon="iconify solar--add-circle-bold"
-                            class="rounded-2xl px-10 py-6 font-black border-2 hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 transition-all active:scale-95 shadow-xl hover:shadow-primary/20"
-                            @click="router.push('/collection')">
-                            Add New Phrases
-                        </Button>
                     </div>
                 </Card>
             </div>
