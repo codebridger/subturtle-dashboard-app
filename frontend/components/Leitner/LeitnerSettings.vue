@@ -19,7 +19,8 @@
                 <div class="relative z-10">
                     <p class="text-xs font-bold text-success uppercase tracking-wider">Next Session</p>
                     <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.reviewHour }}:00</h3>
-                    <p class="text-xs text-gray-500">Daily reminder set</p>
+                    <p class="text-xs text-gray-500">{{ localSettings.reviewInterval === 1 ? 'Daily' : 'Every ' +
+                        localSettings.reviewInterval + ' days' }} reminder</p>
                 </div>
                 <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
                     <Icon name="IconClock" class="!w-24 !h-24 text-success" />
@@ -111,19 +112,25 @@
                         </div>
                     </div>
 
-                    <!-- Input: Session Hour -->
+                    <!-- Input: Review Interval Group -->
                     <div class="flex items-center justify-between group relative z-50">
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-2 mb-0.5">
                                 <div class="flex items-center justify-center p-0.5">
                                     <Icon name="IconClock" class="text-primary opacity-50 !w-4 !h-4 shrink-0" />
                                 </div>
-                                <label class="font-bold text-gray-800 dark:text-gray-200 leading-none">Reminder
-                                    Hour</label>
+                                <label class="font-bold text-gray-800 dark:text-gray-200 leading-none">Review
+                                    Interval</label>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Time to trigger review notifications</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Session frequency and time</p>
                         </div>
-                        <HourSelector v-model="localSettings.reviewHour" />
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase">Each</span>
+                            <input v-model.number="localSettings.reviewInterval" type="number" min="1"
+                                class="form-input w-16 rounded-lg border-gray-200 bg-gray-50 py-2 px-2 text-sm font-bold focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-gray-600 dark:bg-gray-700 transition-all text-center" />
+                            <span class="text-xs font-bold text-gray-400 uppercase whitespace-nowrap">day at</span>
+                            <HourSelector v-model="localSettings.reviewHour" />
+                        </div>
                     </div>
                 </div>
             </div>
