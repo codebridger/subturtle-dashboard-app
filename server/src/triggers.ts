@@ -1,9 +1,11 @@
 import { CmsTrigger, getCollection } from "@modular-rest/server";
+import { LeitnerService } from "./modules/leitner_box/service";
+import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "./config";
 
 export const authTriggers: CmsTrigger[] = [
   new CmsTrigger("insert-one", async (context) => {
-    const bundleCollection = getCollection("user_content", "phrase_bundle");
-    const phraseCollection = getCollection("user_content", "phrase");
+    const bundleCollection = getCollection(DATABASE, BUNDLE_COLLECTION);
+    const phraseCollection = getCollection(DATABASE, PHRASE_COLLECTION);
 
     const userId = context.queryResult._id;
 
@@ -129,7 +131,7 @@ export const authTriggers: CmsTrigger[] = [
       const insertedPhrases = await phraseCollection.insertMany(
         bundleData.phrases
       );
-      const phraseIds = insertedPhrases.map((phrase) => phrase._id);
+      const phraseIds = insertedPhrases.map((phrase: any) => phrase._id);
 
       // Update the bundle to include the phrase IDs
       await bundleCollection.updateOne(
@@ -137,5 +139,8 @@ export const authTriggers: CmsTrigger[] = [
         { $push: { phrases: { $each: phraseIds } } }
       );
     }
+
+    // Initialize Leitner System (for new users)
+    await LeitnerService.ensureInitialized(userId);
   }),
 ];

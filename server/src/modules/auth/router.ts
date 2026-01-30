@@ -2,6 +2,7 @@ import Router from "koa-router";
 import { reply, userManager } from "@modular-rest/server";
 import { google } from "googleapis";
 import { updateUserProfile } from "../profile/service";
+import { LeitnerService } from "../leitner_box/service";
 
 const name = "auth";
 const auth = new Router();
@@ -127,6 +128,13 @@ auth.get("/google/code-login", async (ctx) => {
     false
   );
 
+  // Initialize Leitner System
+  try {
+    await LeitnerService.ensureInitialized(userId as string);
+  } catch (e) {
+    console.error("Failed to initialize Leitner System on login", e);
+  }
+
   const token = await userManager.issueTokenForUser(email);
 
   // Build redirect URL with token and optional redirect parameter
@@ -174,6 +182,21 @@ auth.get("/google/access-token-login", async (ctx) => {
   }
 
   const token = await userManager.issueTokenForUser(googleEmail);
+
+  // Initialize Leitner System
+  if (registeredUser || (await userManager.getUserByIdentity(googleEmail, "email").catch(() => null))) {
+      // We need the userId. If registeredUser was null but we just registered, fetch ID?
+      // userManager.registerUser returns userId. 
+      // Re-fetching user to get ID if we didn't have it (though we just registered it).
+      const user = await userManager.getUserByIdentity(googleEmail, "email");
+      if (user) {
+          try {
+            await LeitnerService.ensureInitialized(user.id);
+          } catch (e) {
+              console.error("Failed to initialize Leitner System on token login", e);
+          }
+      }
+  }
 
   ctx.body = reply.create("s", { token });
 });

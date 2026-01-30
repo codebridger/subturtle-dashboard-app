@@ -129,7 +129,7 @@ const phraseBundleSchema = new Schema<PhraseBundleSchema>(
     phrases: [
       {
         type: Schema.Types.ObjectId,
-        ref: "phrase",
+        ref: PHRASE_COLLECTION,
       },
     ],
   },

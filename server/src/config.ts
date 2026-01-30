@@ -20,3 +20,15 @@ export const FREEMIUM_DEFAULT_CREDITS = 5000000; // 5M credits
 export const FREEMIUM_DEFAULT_SAVE_WORDS = 50; // 50 words can be saved
 export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 lived sessions can be created
 export const FREEMIUM_DURATION_DAYS = 30; // 1 month
+
+// Schedule
+export const DATABASE_SCHEDULE = "cms";
+export const SCHEDULE_JOB_COLLECTION = "scheduled_job";
+
+// Leitner System
+export const DATABASE_LEITNER = DATABASE;
+export const LEITNER_SYSTEM_COLLECTION = "leitner_system";
+
+// Board Module
+export const DATABASE_BOARD = DATABASE;
+export const BOARD_ACTIVITY_COLLECTION = "board_activity";
