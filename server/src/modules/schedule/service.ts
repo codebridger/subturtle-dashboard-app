@@ -15,7 +15,7 @@ export class ScheduleService {
   static async init() {
     try {
       const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
-      const jobs = await collection.find({ status: "active" });
+      const jobs = await collection.find({});
       console.log(`[ScheduleService] Initializing ${jobs.length} jobs...`);
       for (const job of jobs) {
         this.scheduleJobInternal(job as any);
@@ -61,14 +61,13 @@ export class ScheduleService {
       executionType,
       jobType,
       state: "scheduled" as const,
-      status: "active" as const,
       catchUp,
     };
 
     if (existing) {
       await collection.updateOne(
         { name },
-        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", status: "active", catchUp } }
+        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp } }
       );
       this.cancelJob(name);
     } else {
@@ -176,7 +175,7 @@ export class ScheduleService {
       while (true) {
         // Find next queued job (FIFO by claim time/updatedAt)
         const job = await collection.findOneAndUpdate(
-          { executionType: "normal", state: "queued", status: "active" },
+          { executionType: "normal", state: "queued" },
           { $set: { state: "executing" } },
           { sort: { updatedAt: 1 }, returnDocument: 'after' }
         ) as any;

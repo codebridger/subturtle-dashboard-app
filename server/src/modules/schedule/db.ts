@@ -11,7 +11,6 @@ interface ScheduleJobSchema {
   jobType: "recurrent" | "once";
   lastRun?: Date;
   state: "scheduled" | "queued" | "executing" | "executed" | "failed";
-  status: "active" | "inactive";
   catchUp?: boolean;
 }
 
@@ -37,11 +36,6 @@ const scheduleJobSchema = new Schema<ScheduleJobSchema>(
       type: String,
       enum: ["scheduled", "queued", "executing", "executed", "failed"],
       default: "scheduled",
-    },
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active",
     },
     catchUp: { type: Boolean, default: false },
   },

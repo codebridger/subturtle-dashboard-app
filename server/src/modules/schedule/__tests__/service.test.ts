@@ -48,14 +48,14 @@ describe("ScheduleService", () => {
 	describe("init", () => {
 		it("should initialize active jobs from the database", async () => {
 			const mockJobs = [
-				{ name: "job1", cronExpression: "* * * * *", functionId: "fn1", args: {}, status: "active", jobType: "recurrent" },
-				{ name: "job2", cronExpression: "0 0 * * *", functionId: "fn2", args: { x: 1 }, status: "active", jobType: "recurrent" },
+				{ name: "job1", cronExpression: "* * * * *", functionId: "fn1", args: {}, jobType: "recurrent" },
+				{ name: "job2", cronExpression: "0 0 * * *", functionId: "fn2", args: { x: 1 }, jobType: "recurrent" },
 			];
 			mockCollection.find.mockResolvedValue(mockJobs);
 
 			await ScheduleService.init();
 
-			expect(mockCollection.find).toHaveBeenCalledWith({ status: "active" });
+			expect(mockCollection.find).toHaveBeenCalledWith({});
 			expect(schedule.scheduleJob).toHaveBeenCalledTimes(2);
 		});
 	});
@@ -77,7 +77,6 @@ describe("ScheduleService", () => {
 				name: "new-job",
 				functionId: "test-fn",
 				state: "scheduled",
-				status: "active",
 			}));
 			expect(schedule.scheduleJob).toHaveBeenCalled();
 		});
@@ -93,7 +92,7 @@ describe("ScheduleService", () => {
 
 			expect(mockCollection.updateOne).toHaveBeenCalledWith(
 				{ name: "existing-job" },
-				expect.objectContaining({ $set: expect.objectContaining({ status: "active" }) })
+				expect.objectContaining({ $set: expect.not.objectContaining({ status: "active" }) })
 			);
 			expect(schedule.scheduleJob).toHaveBeenCalled();
 		});
@@ -120,7 +119,6 @@ describe("ScheduleService", () => {
 				jobType: "recurrent",
 				cronExpression: "* * * * *",
 				state: "scheduled",
-				status: "active"
 			};
 
 			const callback = jest.fn() as any;
@@ -162,7 +160,6 @@ describe("ScheduleService", () => {
 				jobType: "once",
 				runAt: new Date(Date.now() + 10000),
 				state: "scheduled",
-				status: "active"
 			};
 
 			const callback = jest.fn() as any;
@@ -193,7 +190,6 @@ describe("ScheduleService", () => {
 				jobType: "recurrent",
 				cronExpression: "* * * * *",
 				state: "scheduled",
-				status: "active"
 			};
 
 			const callback = jest.fn() as any;
@@ -225,7 +221,6 @@ describe("ScheduleService", () => {
 				jobType: "recurrent",
 				cronExpression: "* * * * *",
 				state: "scheduled",
-				status: "active"
 			};
 
 			const callback = jest.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))) as any;
@@ -271,7 +266,6 @@ describe("ScheduleService", () => {
 					cronExpression: "0 9 */1 * *", // Every day at 9 AM
 					functionId: "fn",
 					args: { test: 123 },
-					status: "active",
 					jobType: "recurrent",
 					catchUp: true,
 					lastRun: pastDate,
@@ -309,7 +303,6 @@ describe("ScheduleService", () => {
 					name: "no-catchup-job",
 					cronExpression: "0 9 */1 * *",
 					functionId: "fn",
-					status: "active",
 					jobType: "recurrent",
 					catchUp: false,
 					lastRun: pastDate,
@@ -333,7 +326,6 @@ describe("ScheduleService", () => {
 				jobType: "recurrent",
 				cronExpression: "* * * * *",
 				state: "scheduled",
-				status: "active",
 				args: {}
 			};
 

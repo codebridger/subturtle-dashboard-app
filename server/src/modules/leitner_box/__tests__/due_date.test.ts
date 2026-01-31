@@ -27,8 +27,8 @@ describe("LeitnerService Date Sensitivity", () => {
 			toArray: jest.fn(),
 		};
 		(getCollection as any).mockImplementation((db: string, col: string) => {
-			if (col === "leitner_systems") return Promise.resolve(mockCollection);
-			if (col === "phrases") return Promise.resolve(mockPhraseCollection);
+			if (col === "leitner_system") return Promise.resolve(mockCollection);
+			if (col === "phrase") return Promise.resolve(mockPhraseCollection);
 			return Promise.resolve({});
 		});
 	});
