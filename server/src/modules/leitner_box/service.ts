@@ -72,6 +72,7 @@ export class LeitnerService {
     if (!system) return [];
 
     const now = new Date();
+    now.setHours(23, 59, 59, 999);
     const allDueItems = system.items.filter((item: LeitnerItem) => new Date(item.nextReviewDate) <= now);
 
     // Group by box level
@@ -120,8 +121,10 @@ export class LeitnerService {
     const system = await this.getSystem(userId);
     if (!system) return 0;
     const now = new Date();
+    now.setHours(23, 59, 59, 999);
     const count = system.items.filter((item: LeitnerItem) => new Date(item.nextReviewDate) <= now).length;
-    return Math.min(count, system.settings.dailyLimit || 20);
+    const dueCount = Math.min(count, system.settings.dailyLimit || 20);
+    return dueCount;
   }
 
   static async submitReview(userId: string, phraseId: string, isCorrect: boolean): Promise<void> {

@@ -64,19 +64,6 @@ async function _syncUser(userId: string) {
 	);
 }
 
-// Admin/System API: Initialize for a user
-const initLeitner = defineFunction({
-	name: "init-leitner",
-	permissionTypes: ["user_access"],
-	callback: async (context) => {
-		const { userId } = context;
-		if (!userId) throw new Error("UserId required");
-
-		await LeitnerService.ensureInitialized(userId);
-		return { success: true };
-	}
-});
-
 const getStats = defineFunction({
 	name: "get-stats",
 	permissionTypes: ["user_access"],
@@ -147,7 +134,6 @@ module.exports.functions = [
 	getReviewSession,
 	submitReview,
 	refreshBoardStatus,
-	initLeitner,
 	getStats,
 	updateSettings,
 	resetSystem,

@@ -7,7 +7,7 @@ export interface BoardActivity {
 	type: string; // 'leitner_review' | 'ai_lecture' | 'ai_practice'
 	toastType: "singleton" | "unique";
 	refId?: string; // e.g. lecture ID
-	state: "idle" | "toasted";
+	state: "idle" | "toasted"; // 'idle': pending display, 'toasted': notification shown to user
 	persistent: boolean;
 	lastUpdated: Date;
 	meta: any;
