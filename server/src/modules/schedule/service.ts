@@ -195,7 +195,10 @@ export class ScheduleService {
   private static async checkCatchUp(jobs: any[]) {
     console.log(`[ScheduleService] Checking catch-up for ${jobs.length} jobs...`);
     for (const job of jobs) {
-      if (job.jobType === "recurrent" && job.catchUp && job.cronExpression) {
+
+      const shouldCatchUp = job.catchUp;
+
+      if (job.jobType === "recurrent" && shouldCatchUp && job.cronExpression) {
         try {
           const interval = parser.parseExpression(job.cronExpression);
           const lastOccurrence = interval.prev().toDate();
