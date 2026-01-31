@@ -433,7 +433,8 @@ export class LeitnerService {
       {
         cronExpression: cron,
         args: { userId },
-        jobType: 'recurrent'
+        jobType: 'recurrent',
+        catchUp: true
       }
     );
 
@@ -442,8 +443,8 @@ export class LeitnerService {
 }
 
 // Register global schedule job
-ScheduleService.register('leitner-review-job', async (args: { userId: string }) => {
-  const { userId } = args;
+ScheduleService.register('leitner-review-job', async (args: { userId: string, expectedTime?: Date, executedTime?: Date }) => {
+  const { userId, expectedTime, executedTime } = args;
   const dueCount = await LeitnerService.getDueCount(userId);
   if (dueCount > 0) {
     await BoardService.refreshActivity(

@@ -12,6 +12,7 @@ interface ScheduleJobSchema {
   lastRun?: Date;
   state: "scheduled" | "queued" | "executing" | "executed" | "failed";
   status: "active" | "inactive";
+  catchUp?: boolean;
 }
 
 const scheduleJobSchema = new Schema<ScheduleJobSchema>(
@@ -42,6 +43,7 @@ const scheduleJobSchema = new Schema<ScheduleJobSchema>(
       enum: ["active", "inactive"],
       default: "active",
     },
+    catchUp: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

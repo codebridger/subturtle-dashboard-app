@@ -1,6 +1,7 @@
 import schedule from "node-schedule";
 import { getCollection } from "@modular-rest/server";
 import { DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION } from "../../config";
+import parser from "cron-parser";
 
 export class ScheduleService {
   private static registry = new Map<string, (args: any) => Promise<void>>();
@@ -20,7 +21,8 @@ export class ScheduleService {
         this.scheduleJobInternal(job as any);
       }
       // Start processing queue in case there are stuck 'queued' jobs from previous sessions
-      this.processQueue();
+      await this.checkCatchUp(jobs);
+      await this.processQueue();
     } catch (error) {
       console.error("[ScheduleService] Init failed", error);
     }
@@ -35,6 +37,7 @@ export class ScheduleService {
       args?: any;
       executionType?: "Immediate" | "normal";
       jobType?: "recurrent" | "once";
+      catchUp?: boolean;
     }
   ) {
     const {
@@ -42,7 +45,8 @@ export class ScheduleService {
       runAt,
       args = {},
       executionType = "normal",
-      jobType = "recurrent"
+      jobType = "recurrent",
+      catchUp = false
     } = options;
 
     const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
@@ -58,12 +62,13 @@ export class ScheduleService {
       jobType,
       state: "scheduled" as const,
       status: "active" as const,
+      catchUp,
     };
 
     if (existing) {
       await collection.updateOne(
         { name },
-        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", status: "active" } }
+        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", status: "active", catchUp } }
       );
       this.cancelJob(name);
     } else {
@@ -121,7 +126,7 @@ export class ScheduleService {
       }
 
       if (jobData.executionType === "Immediate") {
-        await this.executeJob(claimed);
+        await this.executeJob(claimed, new Date());
       } else {
         console.log(`[ScheduleService] Job ${jobData.name} queued for sequential processing.`);
         this.processQueue();
@@ -129,14 +134,19 @@ export class ScheduleService {
     });
   }
 
-  private static async executeJob(job: any) {
+  private static async executeJob(job: any, executedTime: Date, expectedTime?: Date) {
     console.log(`[ScheduleService] Executing: ${job.name} (${job.functionId})`);
     const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
 
     try {
       const callback = this.registry.get(job.functionId);
       if (callback) {
-        await callback(job.args);
+        const enhancedArgs = {
+          ...job.args,
+          expectedTime: expectedTime || executedTime,
+          executedTime
+        };
+        await callback(enhancedArgs);
 
         const finalState = job.jobType === "once" ? "executed" : "scheduled";
         await collection.updateOne(
@@ -173,12 +183,49 @@ export class ScheduleService {
 
         if (!job) break;
 
-        await this.executeJob(job);
+        await this.executeJob(job, new Date());
       }
     } catch (e) {
       console.error("[ScheduleService] Queue processing error:", e);
     } finally {
       this.processingQueue = false;
+    }
+  }
+
+  private static async checkCatchUp(jobs: any[]) {
+    console.log(`[ScheduleService] Checking catch-up for ${jobs.length} jobs...`);
+    for (const job of jobs) {
+      if (job.jobType === "recurrent" && job.catchUp && job.cronExpression) {
+        try {
+          const interval = parser.parseExpression(job.cronExpression);
+          const lastOccurrence = interval.prev().toDate();
+          const lastRun = job.lastRun ? new Date(job.lastRun) : new Date(job.createdAt);
+
+          if (lastRun < lastOccurrence) {
+            console.log(`[ScheduleService] Catch-up triggered for ${job.name}. Last run: ${lastRun}, Last occurrence: ${lastOccurrence}`);
+            const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
+            const newState = job.executionType === "Immediate" ? "executing" : "queued";
+
+            const claimed = await collection.findOneAndUpdate(
+              {
+                name: job.name,
+                state: { $in: ["scheduled", "executed", "failed"] }
+              },
+              { $set: { state: newState } },
+              { returnDocument: 'after' }
+            ) as any;
+
+            if (claimed) {
+              if (job.executionType === "Immediate") {
+                await this.executeJob(claimed, new Date(), lastOccurrence);
+              }
+              // If normal, processQueue in init() will pick it up
+            }
+          }
+        } catch (error) {
+          console.error(`[ScheduleService] Catch-up check failed for ${job.name}`, error);
+        }
+      }
     }
   }
 }

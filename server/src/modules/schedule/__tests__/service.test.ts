@@ -260,4 +260,103 @@ describe("ScheduleService", () => {
 			);
 		});
 	});
+
+	describe("Catch-up Mechanism", () => {
+		it("should trigger catch-up for recurrent jobs with catchUp enabled and missed runs", async () => {
+			const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
+			const mockJobs = [
+				{
+					_id: "job-id",
+					name: "catchup-job",
+					cronExpression: "0 9 */1 * *", // Every day at 9 AM
+					functionId: "fn",
+					args: { test: 123 },
+					status: "active",
+					jobType: "recurrent",
+					catchUp: true,
+					lastRun: pastDate,
+					createdAt: pastDate,
+					executionType: "Immediate"
+				}
+			];
+			mockCollection.find.mockResolvedValue(mockJobs);
+			mockCollection.findOneAndUpdate
+				.mockResolvedValueOnce({ ...mockJobs[0], state: "executing" })
+				.mockResolvedValue(null);
+
+			const callback = jest.fn() as any;
+			ScheduleService.register("fn", callback);
+
+			await ScheduleService.init();
+
+			// Verify catch-up was triggered
+			expect(mockCollection.findOneAndUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({ name: "catchup-job", state: { $in: ["scheduled", "executed", "failed"] } }),
+				expect.objectContaining({ $set: { state: "executing" } }),
+				expect.any(Object)
+			);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+				test: 123,
+				expectedTime: expect.any(Date),
+				executedTime: expect.any(Date)
+			}));
+		});
+
+		it("should NOT trigger catch-up if catchUp is false", async () => {
+			const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+			const mockJobs = [
+				{
+					name: "no-catchup-job",
+					cronExpression: "0 9 */1 * *",
+					functionId: "fn",
+					status: "active",
+					jobType: "recurrent",
+					catchUp: false,
+					lastRun: pastDate,
+					createdAt: pastDate
+				}
+			];
+			mockCollection.find.mockResolvedValue(mockJobs);
+			mockCollection.findOneAndUpdate.mockResolvedValue(null);
+
+			await ScheduleService.init();
+
+			// In init(), checkCatchUp should not have called it, but processQueue will
+			expect(mockCollection.findOneAndUpdate).toHaveBeenCalled();
+		});
+
+		it("should pass expectedTime and executedTime to non-catchup jobs too", async () => {
+			const jobData = {
+				name: "normal-job",
+				functionId: "fn",
+				executionType: "Immediate",
+				jobType: "recurrent",
+				cronExpression: "* * * * *",
+				state: "scheduled",
+				status: "active",
+				args: {}
+			};
+
+			const callback = jest.fn() as any;
+			ScheduleService.register("fn", callback);
+
+			let jobCallback: any;
+			(schedule.scheduleJob as jest.Mock).mockImplementation((name, cron, cb) => {
+				jobCallback = cb;
+				return { cancel: jest.fn() };
+			});
+
+			await ScheduleService.scheduleJobInternal(jobData);
+			mockCollection.findOneAndUpdate
+				.mockResolvedValueOnce({ _id: "id", ...jobData, state: "executing" })
+				.mockResolvedValue(null);
+
+			await jobCallback();
+
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+				expectedTime: expect.any(Date),
+				executedTime: expect.any(Date)
+			}));
+		});
+	});
 });
