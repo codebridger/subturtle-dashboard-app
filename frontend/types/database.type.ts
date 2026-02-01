@@ -3,6 +3,8 @@ import { type PhraseSchema, type LinguisticData } from '../../server/src/modules
 
 export const DATABASE = {
     USER_CONTENT: 'user_content',
+    LEITNER: 'subturtle_leitner',
+    BOARD: 'subturtle_board',
 };
 
 export const COLLECTIONS = {
@@ -10,6 +12,8 @@ export const COLLECTIONS = {
     PHRASE_BUNDLE: 'phrase_bundle',
     PROFILE: 'profile',
     LIVE_SESSION: 'live_session',
+    LEITNER_SYSTEM: 'leitner_system',
+    BOARD_ACTIVITY: 'board_activity',
 };
 
 // Re-export LinguisticData type for frontend use
@@ -61,3 +65,38 @@ export interface SubscriptionType extends Subscription {
 export interface FreemiumAllocationType extends FreeCredit {
     is_freemium: true;
 }
+
+// Leitner & Board Types
+export interface BoardActivityType {
+    _id: string;
+    user: string;
+    type: string;
+    toastType: 'singleton' | 'unique';
+    refId?: string;
+    state: 'idle' | 'toasted';
+    persistent: boolean;
+    lastUpdated: string; // Dates often come as strings from JSON
+    meta: any;
+}
+
+export interface LeitnerItemType {
+    phraseId: string | PhraseType;
+    boxLevel: number;
+    nextReviewDate: string;
+    lastAttemptDate: string;
+    consecutiveIncorrect: number;
+    phrase?: PhraseType; // Populated
+}
+
+// Override or extend DATABASE/COLLECTIONS
+export const DATABASE_EXT = {
+    ...DATABASE,
+    LEITNER: 'subturtle_leitner',
+    BOARD: 'subturtle_board'
+};
+
+export const COLLECTIONS_EXT = {
+    ...COLLECTIONS,
+    LEITNER_SYSTEM: 'leitner_system',
+    BOARD_ACTIVITY: 'board_activity'
+};

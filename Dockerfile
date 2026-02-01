@@ -1,4 +1,4 @@
-FROM node:20.9.0-alpine as build-stage
+FROM node:22.17.1-alpine as build-stage
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY /frontend/ .
 
 RUN yarn generate
 
-FROM node:20.9.0-alpine
+FROM node:22.17.1-alpine
 
 WORKDIR /app
 

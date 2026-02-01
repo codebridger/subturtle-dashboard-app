@@ -1,0 +1,163 @@
+---
+description: Main guideline for frontend development guideline include all consideration of the project.
+alwaysApply: false
+---
+# Development Guideline for LLM
+
+## Project Overview
+Nuxt 3 frontend app for Subturtle Dashboard (language learning platform). Uses Vue 3 Composition API, TypeScript, and modular architecture.
+
+## Key Technologies
+- **Framework**: Nuxt 3 with Vue 3 Composition API
+- **UI Library**: `@codebridger/lib-vue-components` - ALWAYS fetch docs from: https://codebridger.github.io/lib-vue-components/llm.md
+- **Backend Client**: `@modular-rest/client` - ALWAYS fetch docs from:
+  - https://modular-rest.github.io/modular-rest/js-client/install.html
+  - https://modular-rest.github.io/modular-rest/js-client/authentication.html
+  - https://modular-rest.github.io/modular-rest/js-client/data-provider.html
+  - https://modular-rest.github.io/modular-rest/js-client/file-provider.html
+- **Styling**: Tailwind CSS
+- **State**: Pinia stores
+- **HTTP**: Use `node-fetch` (NOT axios)
+
+## Project Structure
+```
+components/     # Vue components (organized by feature)
+composables/    # Vue composables
+pages/          # Nuxt pages
+stores/         # Pinia stores
+types/          # TypeScript types
+utils/          # Utility functions
+plugins/        # Nuxt plugins
+middleware/     # Route middleware
+```
+
+## Coding Standards
+
+### Component Structure
+```vue
+<template>
+  <!-- Use @codebridger/lib-vue-components -->
+  <Button color="primary" @click="handleClick">{{ label }}</Button>
+  <Input v-model="value" :error="hasError" />
+</template>
+
+<script setup lang="ts">
+// 1. Imports
+import { Button, Input } from '@codebridger/lib-vue-components/elements';
+
+// 2. Props/Emits
+interface Props { title: string; }
+const props = defineProps<Props>();
+const emit = defineEmits<{ submit: [data: any] }>();
+
+// 3. Reactive data
+const value = ref('');
+
+// 4. Methods
+const handleClick = () => emit('submit', value.value);
+</script>
+```
+
+### API Integration
+```typescript
+import { authentication, dataProvider } from '@modular-rest/client';
+import { DATABASE, COLLECTIONS } from '~/types/database.type';
+
+// Authentication
+await authentication.login(email, password);
+await authentication.loginWithLastSession();
+
+// Data operations
+const data = await dataProvider.find({
+  database: DATABASE.USER_CONTENT,
+  collection: COLLECTIONS.PHRASE_BUNDLE,
+  query: { refId: authUser.value?.id }
+});
+```
+
+### Store Pattern
+```typescript
+export const useStore = defineStore('store', () => {
+  const state = ref({});
+  const actions = {
+    async fetchData() {
+      // API calls here
+    }
+  };
+  return { ...toRefs(state), ...actions };
+});
+```
+
+## Key Patterns
+
+### Authentication
+- Use `authUser` and `isLogin` from `~/utils/auth.ts`
+- Implement auth middleware for protected routes
+- Handle session restoration on app load
+
+### Form Validation
+```typescript
+import { useForm } from 'vee-validate';
+import * as yup from 'yup';
+
+const { errors, defineField } = useForm({
+  validationSchema: yup.object({
+    title: yup.string().required()
+  })
+});
+```
+
+### Error Handling
+- Always wrap API calls in try-catch
+- Use proper error states in components
+- Implement global error handling
+
+### Internationalization
+```typescript
+const { t } = useI18n();
+// Use t('key') for translations
+```
+
+## File Naming
+- Components: PascalCase (`UserProfile.vue`)
+- Pages: kebab-case (`user-profile.vue`)
+- Composables: camelCase with `use` prefix (`useUserData.ts`)
+- Types: camelCase with `.type.ts` suffix (`user.type.ts`)
+
+## Testing Integration
+- When creating/improving features, ALWAYS consider testing
+- Create or update test files accordingly
+- Follow existing test patterns in the project
+
+## Critical Rules
+1. **ALWAYS** use `@codebridger/lib-vue-components` for UI elements
+2. **ALWAYS** use `@modular-rest/client` for API calls
+3. **NEVER** use axios - use `node-fetch` instead
+4. **ALWAYS** use TypeScript for type safety
+5. **ALWAYS** use Vue 3 Composition API with `<script setup>`
+6. **ALWAYS** implement proper error handling
+7. **ALWAYS** consider testing when developing features
+8. **ALWAYS** fetch latest documentation from provided URLs
+
+## Common Imports
+```typescript
+// Components
+import { Button, Input, Modal } from '@codebridger/lib-vue-components/elements';
+import { Modal } from '@codebridger/lib-vue-components/complex';
+
+// API
+import { authentication, dataProvider } from '@modular-rest/client';
+
+// Types
+import { DATABASE, COLLECTIONS } from '~/types/database.type';
+
+// Utils
+import { authUser, isLogin } from '~/utils/auth';
+```
+
+## Environment Variables
+```typescript
+const config = useRuntimeConfig();
+const apiUrl = config.public.BASE_URL_API;
+const isProduction = config.public.isProduction;
+``` 

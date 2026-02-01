@@ -8,3 +8,8 @@ node_modules
 dist
 .DS_Store
 .npmrc
+
+# Test files
+coverage
+playwright-report
+test-results
