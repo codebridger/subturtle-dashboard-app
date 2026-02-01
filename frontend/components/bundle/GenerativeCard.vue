@@ -20,51 +20,51 @@
     </NuxtLink>
 </template>
 <script setup lang="ts">
-    import { dataProvider } from '@modular-rest/client';
-    import { COLLECTIONS, DATABASE, type PhraseBundleType, type PhraseType } from '~/types/database.type';
-    import { Card, IconButton } from '@codebridger/lib-vue-components/elements.ts';
+import { dataProvider } from '@modular-rest/client';
+import { COLLECTIONS, DATABASE, type PhraseBundleType, type PhraseType } from '~/types/database.type';
+import { Card, IconButton } from '@codebridger/lib-vue-components/elements.ts';
 
-    const props = defineProps<{
-        bundle: PhraseBundleType;
-    }>();
+const props = defineProps<{
+    bundle: PhraseBundleType;
+}>();
 
-    const phraseList = ref<string[]>([]);
+const phraseList = ref<string[]>([]);
 
-    async function getWords() {
-        // get last 10 words
-        const phraseIds = props.bundle.phrases.slice(-10);
+async function getWords() {
+    // get last 10 words
+    const phraseIds = props.bundle.phrases.slice(-10);
 
-        if (phraseIds.length === 0) {
-            return;
-        }
-
-        const phrases = await dataProvider.findByIds<PhraseType>({
-            database: DATABASE.USER_CONTENT,
-            collection: COLLECTIONS.PHRASE,
-            ids: phraseIds,
-            accessQuery: {
-                refId: authUser.value?.id,
-            },
-        });
-
-        phraseList.value = phrases.map(({ phrase, translation }) => {
-            // choose between phrase and translation
-            return [phrase, translation][Math.floor(Math.random() * 2)];
-        });
+    if (phraseIds.length === 0) {
+        return;
     }
 
-    onMounted(async () => {
-        getWords();
+    const phrases = await dataProvider.findByIds<PhraseType>({
+        database: DATABASE.USER_CONTENT,
+        collection: COLLECTIONS.PHRASE,
+        ids: phraseIds,
+        accessQuery: {
+            refId: authUser.value?.id,
+        },
     });
 
-    function navigateToBundle() {
-        // navigate to the bundle page
-        navigateTo(`/bundles/${props.bundle._id}`);
-    }
+    phraseList.value = phrases.map(({ phrase, translation }) => {
+        // choose between phrase and translation
+        return [phrase, translation][Math.floor(Math.random() * 2)];
+    });
+}
+
+onMounted(async () => {
+    getWords();
+});
+
+function navigateToBundle() {
+    // navigate to the bundle page
+    navigateTo(`/bundles/${props.bundle._id}`);
+}
 </script>
 
 <style lang="css" scoped>
-    .no-padding {
-        padding: 0 !important;
-    }
+.no-padding {
+    padding: 0 !important;
+}
 </style>

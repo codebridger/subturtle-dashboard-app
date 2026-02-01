@@ -31,9 +31,9 @@
                         <div class="flex flex-wrap gap-3">
                             <StartLiveSessionFormModal v-model="isLiveSessionModalOpen"
                                 @start="handleStartLiveSession" />
-                            <Button :to="`#/practice/flashcards-${id}`" variant="soft" iconName="IconOpenBook"
+                            <Button @click="openReviewModal" variant="soft" iconName="IconOpenBook"
                                 :label="t('flashcard-tool.label')" />
-                            <!-- <Button disabled iconName="IconListCheck" :label="t('match-tool.label')" /> -->
+
                         </div>
                     </div>
 
@@ -111,13 +111,62 @@
             </section>
         </div>
     </div>
+
+    <!-- Review Selection Modal -->
+    <Modal v-model="isReviewModalOpen" :title="t('review.select_phrases')" size="lg">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Select phrases to review</h3>
+                <div class="flex gap-2">
+                    <Button size="sm" variant="soft" @click="selectAllPhrases">Select All</Button>
+                    <Button size="sm" variant="soft" @click="deselectAllPhrases">Deselect All</Button>
+                </div>
+            </div>
+
+            <div class="max-h-[60vh] overflow-y-auto space-y-2 border rounded-lg p-2 bg-gray-50/50 dark:bg-gray-800/20">
+                <div v-if="loadingAllPhrases" class="flex justify-center p-8">
+                    <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent">
+                    </div>
+                </div>
+
+                <div v-else-if="allBundlePhrases.length === 0"
+                    class="flex flex-col items-center justify-center p-8 text-gray-500">
+                    <div class="text-2xl mb-2">📭</div>
+                    <p class="text-sm">No phrases found in this bundle.</p>
+                </div>
+
+                <div v-else v-for="phrase in allBundlePhrases" :key="phrase._id"
+                    class="group flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-primary/30 dark:hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer"
+                    @click="togglePhraseSelection(phrase._id)">
+                    <div class="relative flex items-center justify-center">
+                        <input type="checkbox" :checked="selectedPhraseIds.includes(phrase._id)"
+                            class="peer h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary transition-colors cursor-pointer" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div
+                            class="font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-primary transition-colors">
+                            {{ phrase.phrase }}</div>
+                        <div class="text-sm text-gray-500 truncate">{{ phrase.translation }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <Button variant="soft" @click="isReviewModalOpen = false">Cancel</Button>
+                <Button color="primary" @click="startReview" :disabled="selectedPhraseIds.length === 0">
+                    Start Review ({{ selectedPhraseIds.length }})
+                </Button>
+            </div>
+        </div>
+    </Modal>
 </template>
 
 <script setup lang="ts">
 import { Button } from '@codebridger/lib-vue-components/elements.ts';
-import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
+import { Pagination, Modal } from '@codebridger/lib-vue-components/complex.ts';
 import Breadcrumb from '~/components/common/Breadcrumb.vue';
 import { useBundleStore } from '@/stores/bundle';
+import { useLeitnerStore } from '@/stores/leitner';
 import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { useProfileStore } from '~/stores/profile';
@@ -136,11 +185,18 @@ definePageMeta({
 });
 
 const bundleStore = useBundleStore();
+const leitnerStore = useLeitnerStore();
 const route = useRoute();
 const id = ref(route.params.id?.toString() || '');
 const isBundleDetailLoading = ref(false);
 const isPhraseListLoading = ref(false);
 const isLiveSessionModalOpen = ref(false);
+
+// Review Modal State
+const isReviewModalOpen = ref(false);
+const selectedPhraseIds = ref<string[]>([]);
+const allBundlePhrases = ref<any[]>([]);
+const loadingAllPhrases = ref(false);
 
 onMounted(() => {
     if (id.value) {
@@ -182,4 +238,85 @@ function handleFreemiumAddPhrase() {
     // User is not at limit yet, so add the phrase
     bundleStore.addEmptyTemporarilyPhrase();
 }
+
+async function openReviewModal() {
+    isReviewModalOpen.value = true;
+    loadingAllPhrases.value = true;
+
+    // Fetch all phrases for the bundle (not just paginated) for selection
+    // Note: bundleStore.fetchPhrases updates store state. 
+    // If we want ALL phrases, we might need a separate call or handle pagination manually.
+    // For now, assuming bundle items are reasonable count, or we use store's logic.
+    // Ideally backend supports "getAll" or we iterate. 
+    // Given current store logic, let's use what we have or add a helper.
+    // If we just need IDs for this modal, maybe we can fetch IDs?
+
+    // Current workaround: Fetch all (assuming small bundle) or just use current page + option to fetch more?
+    // User requirement: "All option".
+    // We should probably fetch all phrases for this bundle.
+    // Since bundleStore.fetchPhrases sets pagination, maybe we can fetch with big limit?
+    // Or add a specialized store action.
+    // Let's assume for now we can fetch with page 1 and large limit using the store's underlying logic, 
+    // OR just use existing store items if fully loaded.
+
+    // Let's implement a quick fetch for *all* phrases just for this modal.
+    try {
+        if (!bundleStore.bundleDetail) {
+            console.error("Bundle detail not loaded");
+            return;
+        }
+
+        const phraseIds = bundleStore.bundleDetail.phrases;
+
+        if (phraseIds.length === 0) {
+            allBundlePhrases.value = [];
+            selectedPhraseIds.value = [];
+            return;
+        }
+
+        // Fetch details for all phrases using dataProvider
+        const { dataProvider } = await import('@modular-rest/client');
+        const { COLLECTIONS, DATABASE } = await import('~/types/database.type');
+
+        const phrases = await dataProvider.findByIds<any>({
+            database: DATABASE.USER_CONTENT,
+            collection: COLLECTIONS.PHRASE,
+            ids: phraseIds,
+            accessQuery: {
+                refId: profileStore.userDetail?._id || profileStore.userDetail?.refId, // robust access
+            },
+        });
+
+        allBundlePhrases.value = phrases;
+        selectedPhraseIds.value = allBundlePhrases.value.map(p => p._id);
+
+    } catch (e) {
+        console.error("Failed to load bundle phrases for review:", e);
+    } finally {
+        loadingAllPhrases.value = false;
+    }
+}
+
+function selectAllPhrases() {
+    selectedPhraseIds.value = allBundlePhrases.value.map(p => p._id);
+}
+
+function deselectAllPhrases() {
+    selectedPhraseIds.value = [];
+}
+
+function togglePhraseSelection(phraseId: string) {
+    if (selectedPhraseIds.value.includes(phraseId)) {
+        selectedPhraseIds.value = selectedPhraseIds.value.filter(id => id !== phraseId);
+    } else {
+        selectedPhraseIds.value.push(phraseId);
+    }
+}
+
+function startReview() {
+    leitnerStore.setPendingBundleReview(selectedPhraseIds.value);
+    router.push('/practice/bundle-review');
+    isReviewModalOpen.value = false;
+}
+
 </script>

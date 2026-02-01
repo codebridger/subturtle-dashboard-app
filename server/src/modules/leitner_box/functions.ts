@@ -130,6 +130,20 @@ const getPhraseManagementInfo = defineFunction({
 	},
 });
 
+const getCustomReviewSession = defineFunction({
+	name: "get-custom-review-session",
+	permissionTypes: ["user_access"],
+	callback: async (context) => {
+		const { phraseIds, userId } = context;
+		if (!userId) throw new Error("Unauthorized");
+		if (!Array.isArray(phraseIds)) throw new Error("phraseIds must be an array");
+
+		await LeitnerService.ensureInitialized(userId);
+
+		return LeitnerService.getCustomReviewItems(userId, phraseIds as string[]);
+	},
+});
+
 module.exports.functions = [
 	getReviewSession,
 	submitReview,
@@ -140,4 +154,5 @@ module.exports.functions = [
 	addPhraseToBox,
 	removePhraseFromBox,
 	getPhraseManagementInfo,
+	getCustomReviewSession,
 ];
