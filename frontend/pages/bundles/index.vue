@@ -1,57 +1,104 @@
 <template>
-    <div class="p-4">
-        <!-- Left section -->
-        <div v-if="!isEmptyState" class="mb-4 flex items-center justify-between gap-4">
-            <div>
-                <Input
-                    iconName="IconSearch"
-                    v-model="filter"
-                    :placeholder="t('bundle.filter_bundles')"
-                    disabled
-                    :error="!!error"
-                    :error-message="error || ''"
-                />
-            </div>
+    <div class="relative min-h-screen">
+        <!-- Decorative Background Elements -->
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none"
+        ></div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] pointer-events-none"
+        ></div>
 
-            <!-- Right section -->
-            <div>
-                <BundleAddNew />
-            </div>
-        </div>
+        <!-- Standard Container -->
+        <div class="container relative mx-auto px-6 py-16 max-w-7xl">
+            <!-- Standard Header Block -->
+            <div class="mb-14 flex flex-col md:flex-row justify-between gap-6">
+                <div class="flex flex-col gap-3">
+                    <!-- Overline Label -->
+                    <div class="flex items-center gap-2">
+                        <div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">
+                            {{ t('bundle.collection_label', 'LIBRARY') }}
+                        </span>
+                    </div>
 
-        <!-- Empty State -->
-        <div v-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center">
-            <div class="flex max-w-xl flex-col items-center justify-center py-12 text-center">
-                <img
-                    class="mx-auto h-48 w-auto dark:hidden"
-                    src="/assets/images/illustrations/placeholders/flat/placeholder-search-3.svg"
-                    alt="No bundles available"
-                />
-                <img
-                    class="mx-auto hidden h-48 w-auto dark:block"
-                    src="/assets/images/illustrations/placeholders/flat/placeholder-search-3-dark.svg"
-                    alt="No bundles available"
-                />
-                <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('bundle.no-bundles') }}</h3>
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {{ t('bundle.no-bundles-description') }}
-                </p>
-                <div class="mt-6">
-                    <BundleAddNew />
+                    <!-- Main Title - often with gradient -->
+                    <h1
+                        class="text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400"
+                    >
+                        {{ t('bundle.list_title', 'Your bundles') }}
+                    </h1>
+
+                    <!-- Subtitle -->
+                    <p class="text-lg text-gray-500 dark:text-gray-400 font-medium max-w-md">
+                        {{ t('bundle.list_subtitle', 'Manage and practice your language collections.') }}
+                    </p>
+                </div>
+
+                <!-- Right-side Actions/Status (Filter + Add) -->
+                <div class="flex flex-col items-end gap-4 md:flex-row md:items-end">
+                    <div class="w-full md:w-64">
+                        <Input
+                            iconName="IconSearch"
+                            v-model="filter"
+                            :placeholder="t('bundle.filter_bundles')"
+                            :error="!!error"
+                            :error-message="error || ''"
+                            class="bg-white/50 backdrop-blur-sm"
+                        />
+                    </div>
+                    <div>
+                        <BundleAddNew />
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Grid section -->
-        <section v-else class="tablet:grid-cols-2 grid w-full grid-cols-1 gap-4 lg:grid-cols-3">
-            <template v-for="bundle of bundleList">
-                <BundleGenerativeCard :bundle="bundle" />
-            </template>
-        </section>
+            <!-- Empty State -->
+            <div v-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center py-20">
+                <div
+                    class="relative flex max-w-xl flex-col items-center justify-center rounded-3xl border border-white/20 bg-white/40 p-12 text-center shadow-xl backdrop-blur-md dark:bg-gray-800/40"
+                >
+                    <!-- Decorative blob for empty state -->
+                    <div
+                        class="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 blur-2xl"
+                    ></div>
 
-        <!-- Pagination -->
-        <div v-if="pagination && !isEmptyState" class="mt-6">
-            <Pagination v-model="controller.pagination.page" :totalPages="controller.pagination.pages" @change-page="controller.fetchPage($event)" />
+                    <img
+                        class="mx-auto h-48 w-auto dark:hidden"
+                        src="/assets/images/illustrations/placeholders/flat/placeholder-search-3.svg"
+                        alt="No bundles available"
+                    />
+                    <img
+                        class="mx-auto hidden h-48 w-auto dark:block"
+                        src="/assets/images/illustrations/placeholders/flat/placeholder-search-3-dark.svg"
+                        alt="No bundles available"
+                    />
+                    <h3 class="mt-6 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                        {{ t('bundle.no-bundles') }}
+                    </h3>
+                    <p class="mt-3 text-base text-gray-500 dark:text-gray-400">
+                        {{ t('bundle.no-bundles-description') }}
+                    </p>
+                    <div class="mt-8">
+                        <BundleAddNew />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid section -->
+            <section v-else class="grid w-full grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <template v-for="bundle of bundleList" :key="bundle._id">
+                    <BundleGenerativeCard :bundle="bundle" />
+                </template>
+            </section>
+
+            <!-- Pagination -->
+            <div v-if="pagination && !isEmptyState" class="mt-12 flex justify-center">
+                <Pagination
+                    v-model="controller.pagination.page"
+                    :totalPages="controller.pagination.pages"
+                    @change-page="controller.fetchPage($event)"
+                />
+            </div>
         </div>
     </div>
 </template>
