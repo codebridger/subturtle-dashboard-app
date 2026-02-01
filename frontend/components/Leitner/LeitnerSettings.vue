@@ -4,7 +4,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card
                 class="p-4 bg-gradient-to-br from-primary-light to-white dark:from-primary-dark-light dark:to-gray-800 border-none shadow-sm overflow-hidden relative">
-                <div class="relative z-10">
+                <div class="relative">
                     <p class="text-xs font-bold text-primary uppercase tracking-wider">Total Progress</p>
                     <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ stats?.totalItems || 0 }}</h3>
                     <p class="text-xs text-gray-500">Collected phrases</p>
@@ -16,7 +16,7 @@
 
             <Card
                 class="p-4 bg-gradient-to-br from-success-light to-white dark:from-success-dark-light dark:to-gray-800 border-none shadow-sm overflow-hidden relative">
-                <div class="relative z-10">
+                <div class="relative">
                     <p class="text-xs font-bold text-success uppercase tracking-wider">Next Session</p>
                     <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.reviewHour }}:00</h3>
                     <p class="text-xs text-gray-500">{{ localSettings.reviewInterval === 1 ? 'Daily' : 'Every ' +
@@ -29,7 +29,7 @@
 
             <Card
                 class="p-4 bg-gradient-to-br from-warning-light to-white dark:from-warning-dark-light dark:to-gray-800 border-none shadow-sm overflow-hidden relative">
-                <div class="relative z-10">
+                <div class="relative">
                     <p class="text-xs font-bold text-warning uppercase tracking-wider">Boxes Active</p>
                     <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.totalBoxes }}</h3>
                     <p class="text-xs text-gray-500">Step progression</p>
@@ -41,7 +41,7 @@
         </div>
 
         <!-- Main Configuration Card -->
-        <Card class="rounded-2xl border border-gray-100 shadow-sm dark:border-gray-700 relative z-20">
+        <Card class="rounded-2xl border border-gray-100 shadow-sm dark:border-gray-700 relative">
             <!-- <div class="h-1.5 bg-gradient-to-r from-primary via-secondary to-primary-light"></div> -->
             <div class="flex flex-col gap-6 p-8">
                 <div class="flex items-center gap-4">
@@ -113,7 +113,7 @@
                     </div>
 
                     <!-- Input: Review Interval Group -->
-                    <div class="flex items-center justify-between group relative z-50">
+                    <div class="flex items-center justify-between group relative flex-wrap">
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-2 mb-0.5">
                                 <div class="flex items-center justify-center p-0.5">
@@ -148,7 +148,7 @@
                         </div>
 
                         <!-- Box Circle -->
-                        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 bg-white shadow-lg transition-all z-10 my-0"
+                        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 bg-white shadow-lg transition-all my-0"
                             :class="[
                                 index === 0 ? 'border-primary text-primary dark:border-primary-400 dark:text-primary-400 ring-4 ring-primary/5' : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 dark:bg-gray-800',
                                 getItemCount(index) > 0 ? 'bg-primary/5 border-primary/40' : ''
@@ -242,7 +242,7 @@
 
         <!-- Float Action Footer -->
         <div
-            class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-2xl flex items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/70 p-4 shadow-2xl backdrop-blur-xl dark:border-gray-700/30 dark:bg-gray-900/70">
+            class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl flex items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/70 p-4 shadow-2xl backdrop-blur-xl dark:border-gray-700/30 dark:bg-gray-900/70">
             <div class="flex items-center gap-4 pl-2">
                 <div v-if="settingsDirty" class="flex h-2 w-2 rounded-full bg-warning animate-pulse"></div>
                 <div v-else class="flex h-2 w-2 rounded-full bg-success"></div>

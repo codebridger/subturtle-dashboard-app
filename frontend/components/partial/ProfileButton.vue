@@ -23,27 +23,21 @@
                     </div>
                 </li>
                 <li class="cursor-pointer">
-                    <a
-                        class="dark:hover:text-white"
-                        @click="
-                            close();
-                            goToProfileSettings();
-                        "
-                    >
+                    <a class="dark:hover:text-white" @click="
+                        close();
+                    goToProfileSettings();
+                    ">
                         <Icon name="IconUser" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                         {{ t('profile.profile') }}
                     </a>
                 </li>
                 <li class="cursor-pointer">
-                    <a
-                        class="dark:hover:text-white"
-                        @click="
-                            close();
-                            goToLeitnerSettings();
-                        "
-                    >
+                    <a class="dark:hover:text-white" @click="
+                        close();
+                    goToLeitnerSettings();
+                    ">
                         <Icon name="IconSettings" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                        Leitner Preferences
+                        Review Preferences
                     </a>
                 </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">
@@ -77,34 +71,34 @@
 </template>
 
 <script lang="ts" setup>
-    import { useProfileStore } from '@/stores/profile';
-    import { Dropdown, IconButton, Icon, Button } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import { useProfileStore } from '@/stores/profile';
+import { Dropdown, IconButton, Icon, Button } from '@codebridger/lib-vue-components/elements.ts';
+import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 
-    const router = useRouter();
-    const { t } = useI18n();
+const router = useRouter();
+const { t } = useI18n();
 
-    const profileStore = useProfileStore();
+const profileStore = useProfileStore();
 
-    const profilePicture = computed(() => {
-        return profileStore.profilePicture || '/assets/images/user.png';
-    });
+const profilePicture = computed(() => {
+    return profileStore.profilePicture || '/assets/images/user.png';
+});
 
-    function logout() {
-        profileStore.logout();
-        router.push('/auth/login');
-    }
+function logout() {
+    profileStore.logout();
+    router.push('/auth/login');
+}
 
-    function confirmSignOut(toggleModal: (state: boolean) => void) {
-        toggleModal(false);
-        logout();
-    }
+function confirmSignOut(toggleModal: (state: boolean) => void) {
+    toggleModal(false);
+    logout();
+}
 
-    function goToProfileSettings() {
-        router.push('/settings/profile');
-    }
+function goToProfileSettings() {
+    router.push('/settings/profile');
+}
 
-    function goToLeitnerSettings() {
-        router.push('/settings/preferences');
-    }
+function goToLeitnerSettings() {
+    router.push('/settings/preferences');
+}
 </script>
