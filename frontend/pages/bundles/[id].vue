@@ -10,12 +10,10 @@
 
         <!-- Standard Container -->
         <div class="container relative mx-auto px-6 py-12 max-w-7xl">
-            <!-- Back Button -->
+            <!-- Breadcrumbs -->
             <div class="mb-8">
-                <Button to="/#/bundles" variant="text" iconName="IconArrowLeft" icon-pos="left"
-                    class="!px-0 text-gray-500 hover:text-gray-900 dark:hover:text-white">
-                    {{ t('common.back', 'Back to Bundles') }}
-                </Button>
+                <Breadcrumb
+                    :items="[{ label: t('bundle.list_title', 'Your bundles'), to: '/bundles' }, { label: bundleStore.bundleDetail?.title || '...' }]" />
             </div>
 
             <!-- Bundle Info Card -->
@@ -118,6 +116,7 @@
 <script setup lang="ts">
 import { Button } from '@codebridger/lib-vue-components/elements.ts';
 import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
+import Breadcrumb from '~/components/common/Breadcrumb.vue';
 import { useBundleStore } from '@/stores/bundle';
 import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';

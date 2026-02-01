@@ -31,6 +31,8 @@ import { Modal } from '@codebridger/lib-vue-components/complex.ts';
 - **Card**: The building block for content.
 - **Button**: Use for actions.
 - **Icon**: Wrapper for Iconify icons. PREFERRED SET: `iconify solar--*-bold-duotone` or `*-bold`.
+- **PageHeader**: Standard top-of-page layout with title, subtitle, and actions.
+- **Breadcrumb**: Navigation hierarchy component.
 
 ## 3. Layout Patterns
 
@@ -52,30 +54,15 @@ Pages normally live within a `DashboardShell` (via `default` layout). Content sh
         <div class="container relative mx-auto px-6 py-16 max-w-7xl">
             
             <!-- Standard Header Block -->
-            <div class="mb-14 flex flex-col md:flex-row justify-between gap-6">
-                <div class="flex flex-col gap-3">
-                    <!-- Overline Label -->
-                    <div class="flex items-center gap-2">
-                        <div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">
-                            Section Label
-                        </span>
-                    </div>
-                    
-                    <!-- Main Title - often with gradient -->
-                    <h1 class="text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
-                        Page Title
-                    </h1>
-                    
-                    <!-- Subtitle -->
-                    <p class="text-lg text-gray-500 dark:text-gray-400 font-medium max-w-md">
-                        Descriptive text goes here.
-                    </p>
-                </div>
-                
-                <!-- Optional Right-side Actions/Status -->
-                <div class="hidden md:flex flex-col items-end gap-2">...</div>
-            </div>
+            <PageHeader
+                overline="Section Label"
+                title="Page Title"
+                subtitle="Descriptive text goes here."
+            >
+                <template #actions>
+                    <!-- Optional Right-side Actions/Status -->
+                </template>
+            </PageHeader>
 
             <!-- Content Grid -->
             <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
