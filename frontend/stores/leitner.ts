@@ -10,6 +10,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 	const reviewSessionItems = ref<LeitnerItemType[]>([]);
 	const customReviewSessionItems = ref<LeitnerItemType[]>([]);
 	const pendingBundleReviewIds = ref<string[]>([]);
+	const stats = ref<any>(null);
 
 	// Actions
 
@@ -104,6 +105,18 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		pendingBundleReviewIds.value = phraseIds;
 	}
 
+	async function fetchStats() {
+		try {
+			const res = await functionProvider.run({
+				name: 'get-stats',
+				args: { userId: authUser.value?.id }
+			});
+			stats.value = res;
+		} catch (error) {
+			console.error('Failed to fetch stats:', error);
+		}
+	}
+
 	return {
 		boardActivities,
 		reviewSessionItems,
@@ -114,6 +127,8 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		fetchReviewSession,
 		fetchCustomReviewSession,
 		submitReview,
-		setPendingBundleReview
+		setPendingBundleReview,
+		stats,
+		fetchStats
 	};
 });

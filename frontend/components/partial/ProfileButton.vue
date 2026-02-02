@@ -37,7 +37,7 @@
                     goToLeitnerSettings();
                     ">
                         <Icon name="IconSettings" class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                        Review Preferences
+                        {{ t('smart_review.settings') }}
                     </a>
                 </li>
                 <li class="cursor-pointer border-t border-white-light dark:border-white-light/10">

@@ -43,11 +43,10 @@
 							<Icon name="iconify solar--close-circle-bold-duotone"
 								class="h-5 w-5 transition-transform group-hover:rotate-12" />
 						</template>
-						<span class="text-sm font-bold tracking-wide">Forgot</span>
+						<span class="text-sm font-bold tracking-wide">{{ $t('smart_review.forgot') }}</span>
 					</Button>
-					<div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Press
-						<span class="rounded bg-gray-100 px-2 py-0.5 font-mono text-gray-500 shadow-sm">←</span>
-						or 1
+					<div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+						{{ $t('smart_review.press_key_or_key', { key1: '←', key2: '1' }) }}
 					</div>
 				</div>
 
@@ -58,18 +57,15 @@
 							<Icon name="iconify solar--check-circle-bold-duotone"
 								class="h-5 w-5 transition-transform group-hover:-rotate-12" />
 						</template>
-						<span class="text-sm font-bold tracking-wide">Learned</span>
+						<span class="text-sm font-bold tracking-wide">{{ $t('smart_review.learned') }}</span>
 					</Button>
-					<div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Press
-						<span class="rounded bg-gray-100 px-2 py-0.5 font-mono text-gray-500 shadow-sm">→</span>
-						or 2
+					<div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+						{{ $t('smart_review.press_key_or_key', { key1: '→', key2: '2' }) }}
 					</div>
 				</div>
 			</section>
 			<div class="mt-4 flex items-center gap-2 text-[11px] font-medium text-gray-400">
-				Press
-				<span class="rounded bg-gray-100 px-2 py-0.5 font-mono text-gray-500 shadow-sm">Space</span>
-				<span>to flip the card</span>
+				{{ $t('smart_review.press_space_to_flip') }}
 			</div>
 		</div>
 	</MaterialPracticeToolScaffold>

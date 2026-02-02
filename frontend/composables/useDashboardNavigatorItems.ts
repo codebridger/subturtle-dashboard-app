@@ -18,7 +18,7 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
             title: t('practice.title'),
             children: [
                 {
-                    title: t('review-preferences'),
+                    title: t('smart_review.settings'),
                     icon: 'IconSettings',
                     to: '/settings/preferences',
                 },
