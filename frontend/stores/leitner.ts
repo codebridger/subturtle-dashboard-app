@@ -5,8 +5,12 @@ import { analytic } from '~/plugins/mixpanel';
 
 export const useLeitnerStore = defineStore('leitner', () => {
 	// State
+	// State
 	const boardActivities = ref<BoardActivityType[]>([]);
 	const reviewSessionItems = ref<LeitnerItemType[]>([]);
+	const customReviewSessionItems = ref<LeitnerItemType[]>([]);
+	const pendingBundleReviewIds = ref<string[]>([]);
+	const stats = ref<any>(null);
 
 	// Actions
 
@@ -66,6 +70,21 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		}
 	}
 
+	async function fetchCustomReviewSession(phraseIds: string[]) {
+		try {
+			const items = await functionProvider.run({
+				name: 'get-custom-review-session',
+				args: { phraseIds, userId: authUser.value?.id }
+			}) as LeitnerItemType[];
+
+			customReviewSessionItems.value = items || [];
+			return items;
+		} catch (error) {
+			console.error('Failed to fetch custom review session:', error);
+			return [];
+		}
+	}
+
 	async function submitReview(phraseId: string, isCorrect: boolean) {
 		try {
 			await functionProvider.run({
@@ -82,12 +101,34 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		}
 	}
 
+	function setPendingBundleReview(phraseIds: string[]) {
+		pendingBundleReviewIds.value = phraseIds;
+	}
+
+	async function fetchStats() {
+		try {
+			const res = await functionProvider.run({
+				name: 'get-stats',
+				args: { userId: authUser.value?.id }
+			});
+			stats.value = res;
+		} catch (error) {
+			console.error('Failed to fetch stats:', error);
+		}
+	}
+
 	return {
 		boardActivities,
 		reviewSessionItems,
+		customReviewSessionItems,
+		pendingBundleReviewIds,
 		fetchBoard,
 		consumeActivity,
 		fetchReviewSession,
-		submitReview
+		fetchCustomReviewSession,
+		submitReview,
+		setPendingBundleReview,
+		stats,
+		fetchStats
 	};
 });

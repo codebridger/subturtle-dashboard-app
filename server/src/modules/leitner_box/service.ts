@@ -117,6 +117,38 @@ export class LeitnerService {
     }).filter((item: any) => item.phrase);
   }
 
+  static async getCustomReviewItems(userId: string, phraseIds: string[]) {
+    const system = await this.getSystem(userId);
+    const items = system?.items || [];
+    const now = new Date();
+
+    const selectedItems: LeitnerItem[] = phraseIds.map((id) => {
+      const existing = items.find((i: LeitnerItem) => i.phraseId.toString() === id.toString());
+      if (existing) return existing;
+
+      return {
+        phraseId: id,
+        boxLevel: 1,
+        nextReviewDate: now,
+        lastAttemptDate: new Date(0),
+        consecutiveIncorrect: 0,
+      } as unknown as LeitnerItem;
+    });
+
+    const phraseCollection = await getCollection(DATABASE, PHRASE_COLLECTION);
+    const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
+
+    return selectedItems
+      .map((item: LeitnerItem) => {
+        const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+        return {
+          ...item,
+          phrase,
+        };
+      })
+      .filter((item: any) => item.phrase);
+  }
+
   static async getDueCount(userId: string): Promise<number> {
     const system = await this.getSystem(userId);
     if (!system) return 0;

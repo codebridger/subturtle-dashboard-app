@@ -193,7 +193,7 @@ function close() {
 </script>
 
 <template>
-	<Modal :modelValue="modelValue" title="Select Phrase" @close="close" size="xl">
+	<Modal :modelValue="modelValue" :title="$t('smart_review.select_phrase')" @close="close" size="xl">
 		<template #trigger="{ toggleModal }">
 			<p></p>
 		</template>
@@ -201,28 +201,30 @@ function close() {
 			<div class="flex flex-col gap-4">
 				<!-- Box Selector -->
 				<div class="flex flex-wrap gap-2 border-b border-gray-100 pb-4 dark:border-gray-700">
-					<span class="flex items-center text-sm font-semibold text-gray-500 mr-2">Target Box:</span>
+					<span class="flex items-center text-sm font-semibold text-gray-500 mr-2">{{
+						$t('smart_review.target_level') }}:</span>
 					<button v-for="b in totalBoxes" :key="b" @click="activeBox = b" :class="[
 						'px-4 py-1.5 rounded-full text-xs font-bold transition-all border',
 						activeBox === b
 							? 'bg-primary border-primary text-white shadow-md ring-2 ring-primary/20'
 							: 'bg-white border-gray-200 text-gray-600 hover:border-primary-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'
 					]">
-						Box {{ b }}
+						{{ $t('smart_review.level_number', { number: b }) }}
 					</button>
 				</div>
 
 				<!-- Search & Filters -->
 				<div class="flex flex-col gap-4 sm:flex-row sm:items-center">
 					<div class="flex-1">
-						<Input v-model="search" iconName="IconSearch" placeholder="Search phrases..." class="w-full" />
+						<Input v-model="search" iconName="IconSearch"
+							:placeholder="$t('smart_review.search_phrases_placeholder')" class="w-full" />
 					</div>
 
 					<div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700 transition-all"
 						:class="{ 'border-primary/50 dark:border-primary/50': showOnlyInBox }">
 						<select v-model="selectedBundleId"
 							class="rounded-md border-0 bg-transparent text-sm focus:ring-0 dark:text-white cursor-pointer min-w-[140px]">
-							<option value="">All Bundles</option>
+							<option value="">{{ $t('smart_review.all_bundles') }}</option>
 							<option v-for="bundle in bundles" :key="bundle._id" :value="bundle._id">
 								{{ bundle.title }}
 							</option>
@@ -232,7 +234,8 @@ function close() {
 
 						<div class="flex items-center px-2 py-1 rounded-md transition-all"
 							:class="{ 'bg-primary-light dark:bg-primary-dark-light shadow-sm': showOnlyInBox }">
-							<Toggle v-model="showOnlyInBox" :label="`Box ${activeBox}:`" />
+							<Toggle v-model="showOnlyInBox"
+								:label="$t('smart_review.level_number', { number: activeBox }) + ':'" />
 						</div>
 					</div>
 				</div>
@@ -241,10 +244,10 @@ function close() {
 				<div
 					class="phrase-list-container h-[450px] overflow-y-auto rounded-lg border border-gray-100 dark:border-gray-700 shadow-inner">
 					<div v-if="loading" class="flex h-64 items-center justify-center">
-						<span class="text-gray-500">Loading...</span>
+						<span class="text-gray-500">{{ $t('smart_review.loading') }}</span>
 					</div>
 					<div v-else-if="phrases.length === 0" class="flex h-64 items-center justify-center">
-						<span class="text-gray-500">No phrases found.</span>
+						<span class="text-gray-500">{{ $t('smart_review.no_phrases_found') }}</span>
 					</div>
 					<div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
 						<div v-for="phrase in phrases" :key="phrase._id"
@@ -257,15 +260,15 @@ function close() {
 								<template v-if="phraseToBoxMap[phrase._id]">
 									<Button v-if="phraseToBoxMap[phrase._id] !== activeBox" size="sm" variant="outline"
 										@click="addPhrase(phrase._id)">
-										Move to Box {{ activeBox }}
+										{{ $t('smart_review.move_to_level', { number: activeBox }) }}
 									</Button>
 									<Button v-if="phraseToBoxMap[phrase._id] === activeBox" size="sm" variant="danger"
 										@click="removePhrase(phrase._id)">
-										Remove from Box {{ activeBox }}
+										{{ $t('smart_review.remove_from_level', { number: activeBox }) }}
 									</Button>
 								</template>
 								<Button v-else size="sm" @click="addPhrase(phrase._id)">
-									Add to Box {{ activeBox }}
+									{{ $t('smart_review.add_to_level', { number: activeBox }) }}
 								</Button>
 							</div>
 						</div>
@@ -274,12 +277,18 @@ function close() {
 
 				<!-- Pagination -->
 				<div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-					<span class="text-sm text-gray-500">Total: {{ totalPhrases }} phrases</span>
+					<span class="text-sm text-gray-500">{{ $t('smart_review.total_phrases', { count: totalPhrases })
+						}}</span>
 					<div class="flex gap-2">
-						<Button size="sm" variant="secondary" :disabled="page <= 1" @click="page--">Previous</Button>
-						<span class="flex items-center px-4 py-1 text-sm font-medium">Page {{ page }}</span>
-						<Button size="sm" variant="secondary" :disabled="phrases.length < limit"
-							@click="page++">Next</Button>
+						<Button size="sm" variant="secondary" :disabled="page <= 1" @click="page--">{{
+							$t('smart_review.previous')
+							}}</Button>
+						<span class="flex items-center px-4 py-1 text-sm font-medium">{{ $t('smart_review.page', {
+							page:
+								page })
+							}}</span>
+						<Button size="sm" variant="secondary" :disabled="phrases.length < limit" @click="page++">{{
+							$t('smart_review.next') }}</Button>
 					</div>
 				</div>
 			</div>

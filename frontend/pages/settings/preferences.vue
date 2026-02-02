@@ -3,7 +3,7 @@
     <div class="flex flex-col gap-8">
       <Card class="w-full rounded-lg border border-gray-100 shadow-sm">
         <div class="flex flex-col gap-6 p-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Leitner System Preferences</h2>
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ t('smart_review.title') }}</h2>
 
           <div v-if="loading" class="flex justify-center p-8">
             <span class="text-gray-500">Loading settings...</span>
@@ -22,6 +22,9 @@ import LeitnerSettings from '~/components/Leitner/LeitnerSettings.vue';
 import { functionProvider } from "@modular-rest/client";
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 definePageMeta({
   layout: 'default',

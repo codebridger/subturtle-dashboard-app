@@ -18,6 +18,11 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
             title: t('practice.title'),
             children: [
                 {
+                    title: t('smart_review.settings'),
+                    icon: 'IconSettings',
+                    to: '/settings/preferences',
+                },
+                {
                     title: t('activities.title'),
                     icon: 'iconify solar--rocket-2-bold-duotone',
                     to: '/board',
