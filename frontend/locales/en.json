@@ -266,7 +266,7 @@
         "level_retention_desc": "Level {number} of knowledge retention",
         "interval": "Interval",
         "days": "days",
-        "quota": "Quota",
+        "quota": "Cards Per Session",
         "items": "items",
         "manage": "Manage",
         "unsaved_changes": "Unsaved changes",
