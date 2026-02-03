@@ -1,5 +1,5 @@
 import { LeitnerItem } from "./db";
-import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION } from "../../config";
+import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
@@ -51,7 +51,13 @@ export class LeitnerService {
       this.syncScheduledJob(userId).catch(e => console.error(`[LeitnerService] Async job sync failed for ${userId}:`, e));
     }
 
-    return settings;
+    const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
+    const profile = await profileCol.findOne({ refId: userId }) as any;
+
+    return {
+      ...settings,
+      timeZone: profile?.timeZone
+    };
   }
 
   static async ensureInitialized(userId: string) {
@@ -462,6 +468,10 @@ export class LeitnerService {
     // Cron: 0 minute, reviewHour hour, every X days, *, *
     const cron = `0 ${reviewHour} */${reviewInterval} * *`;
 
+    const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
+    const profile = await profileCol.findOne({ refId: userId }) as any;
+    const timeZone = profile?.timeZone;
+
     await ScheduleService.createJob(
       `leitner-review-${userId}`,
       'leitner-review-job',
@@ -469,7 +479,8 @@ export class LeitnerService {
         cronExpression: cron,
         args: { userId },
         jobType: 'recurrent',
-        catchUp: true
+        catchUp: true,
+        timeZone
       }
     );
 

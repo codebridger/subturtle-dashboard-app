@@ -22,7 +22,8 @@
                         $t('smart_review.next_session') }}</p>
                     <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.reviewHour }}:00</h3>
                     <p class="text-xs text-gray-500">{{ localSettings.reviewInterval === 1 ? $t('smart_review.daily') :
-                        $t('smart_review.every_days_reminder', { days: localSettings.reviewInterval }) }}</p>
+                        $t('smart_review.every_days_reminder', { days: localSettings.reviewInterval }) }} ({{
+                            profileStore.userDetail?.timeZone || 'UTC' }})</p>
                 </div>
                 <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
                     <Icon name="IconClock" class="!w-24 !h-24 text-success" />
