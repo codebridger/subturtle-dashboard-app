@@ -15,6 +15,7 @@ const profileCollection = defineCollection({
       gPicture: String,
       name: String,
       refId: String,
+      timeZone: String,
       images: [schemas.file],
     },
     { timestamps: true }

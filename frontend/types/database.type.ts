@@ -24,6 +24,7 @@ export interface ProfileType {
     refId: string;
     name: string;
     gPicture: string;
+    timeZone?: string;
     images: FileDocument[];
 }
 

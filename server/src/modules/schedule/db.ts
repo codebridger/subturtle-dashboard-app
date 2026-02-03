@@ -12,6 +12,7 @@ interface ScheduleJobSchema {
   lastRun?: Date;
   state: "scheduled" | "queued" | "executing" | "executed" | "failed";
   catchUp?: boolean;
+  timeZone?: string;
 }
 
 const scheduleJobSchema = new Schema<ScheduleJobSchema>(
@@ -38,6 +39,7 @@ const scheduleJobSchema = new Schema<ScheduleJobSchema>(
       default: "scheduled",
     },
     catchUp: { type: Boolean, default: false },
+    timeZone: { type: String },
   },
   { timestamps: true }
 );
