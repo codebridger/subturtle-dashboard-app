@@ -186,7 +186,10 @@
         "reset-password": "Reset Password",
         "uploading": "Uploading...",
         "profile-updated": "Profile updated successfully",
-        "profile-update-failed": "Failed to update profile"
+        "profile-update-failed": "Failed to update profile",
+        "timezone": "Timezone",
+        "select_timezone": "Select Timezone",
+        "timezone_desc": "Select your local timezone so reviews appear at the correct time."
     },
     "billing": {
         "billing": "Billing",

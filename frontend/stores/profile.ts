@@ -89,8 +89,12 @@ export const useProfileStore = defineStore('profile', () => {
             .catch((error) => null);
     }
 
-    function updateProfile(profileData: { name?: string; profileImage?: File; preferences?: Record<string, boolean> }) {
-        if (!profileData.name) {
+    function updateProfile(profileData: { name?: string; profileImage?: File; preferences?: Record<string, boolean>; timeZone?: string }) {
+        const updatePayload: any = {};
+        if (profileData.name) updatePayload.name = profileData.name;
+        if (profileData.timeZone) updatePayload.timeZone = profileData.timeZone;
+
+        if (Object.keys(updatePayload).length === 0) {
             return Promise.resolve(userDetail.value);
         }
 
@@ -101,12 +105,13 @@ export const useProfileStore = defineStore('profile', () => {
                 query: {
                     refId: authentication.user?.id,
                 },
-                update: {
-                    name: profileData.name,
-                },
+                update: updatePayload,
             })
             .then((res) => {
-                userDetail.value!.name = profileData.name || '';
+                if (userDetail.value) {
+                    if (profileData.name) userDetail.value.name = profileData.name;
+                    if (profileData.timeZone) userDetail.value.timeZone = profileData.timeZone;
+                }
                 return res;
             });
     }
