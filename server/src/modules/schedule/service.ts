@@ -202,7 +202,7 @@ export class ScheduleService {
 
       if (job.jobType === "recurrent" && shouldCatchUp && job.cronExpression) {
         try {
-          const interval = parser.parseExpression(job.cronExpression);
+          const interval = parser.parseExpression(job.cronExpression, job.timeZone ? { tz: job.timeZone } : undefined);
           const lastOccurrence = interval.prev().toDate();
           const lastRun = job.lastRun ? new Date(job.lastRun) : new Date(job.createdAt);
 

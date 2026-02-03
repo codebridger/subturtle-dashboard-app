@@ -2,6 +2,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals
 import { ScheduleService } from "../service";
 import schedule from "node-schedule";
 import { getCollection } from "@modular-rest/server";
+import parser from "cron-parser";
 
 // Mock modular-rest/server
 jest.mock("@modular-rest/server", () => ({
@@ -9,6 +10,15 @@ jest.mock("@modular-rest/server", () => ({
 	Schema: class { },
 	defineCollection: jest.fn(),
 	Permission: class { },
+}));
+
+// Mock cron-parser
+jest.mock("cron-parser", () => ({
+	parseExpression: jest.fn(() => ({
+		prev: () => ({
+			toDate: () => new Date(Date.now() - 1000) // Default to 1 second ago for tests
+		})
+	}))
 }));
 
 // Mock node-schedule
@@ -95,6 +105,22 @@ describe("ScheduleService", () => {
 				expect.objectContaining({ $set: expect.not.objectContaining({ status: "active" }) })
 			);
 			expect(schedule.scheduleJob).toHaveBeenCalled();
+		});
+
+		it("should save timezone to database", async () => {
+			mockCollection.findOne.mockResolvedValue(null);
+			const options = {
+				cronExpression: "* * * * *",
+				functionId: "test-fn",
+				timeZone: "Asia/Tokyo"
+			};
+
+			await ScheduleService.createJob("tz-create-job", "test-fn", options);
+
+			expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({
+				name: "tz-create-job",
+				timeZone: "Asia/Tokyo"
+			}));
 		});
 	});
 
@@ -349,6 +375,70 @@ describe("ScheduleService", () => {
 				expectedTime: expect.any(Date),
 				executedTime: expect.any(Date)
 			}));
+		});
+
+		it("should use timezone when calculating past occurrences", async () => {
+			const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+			const mockJobs = [
+				{
+					name: "catchup-tz-job",
+					cronExpression: "0 9 */1 * *",
+					functionId: "fn",
+					jobType: "recurrent",
+					catchUp: true,
+					lastRun: pastDate,
+					createdAt: pastDate,
+					timeZone: "America/New_York"
+				}
+			];
+			mockCollection.find.mockResolvedValue(mockJobs);
+			mockCollection.findOneAndUpdate.mockResolvedValue(null);
+
+			await ScheduleService.init();
+
+			expect(parser.parseExpression).toHaveBeenCalledWith(
+				"0 9 */1 * *",
+				expect.objectContaining({ tz: "America/New_York" })
+			);
+		});
+	});
+
+	describe("TimeZone Support", () => {
+		it("should schedule job with timezone if provided", async () => {
+			const jobData = {
+				name: "tz-job",
+				functionId: "fn",
+				cronExpression: "0 0 12 * * *",
+				timeZone: "America/New_York",
+				state: "scheduled",
+				jobType: "recurrent",
+			};
+
+			await ScheduleService.scheduleJobInternal(jobData);
+
+			expect(schedule.scheduleJob).toHaveBeenCalledWith(
+				"tz-job",
+				{ rule: "0 0 12 * * *", tz: "America/New_York" },
+				expect.any(Function)
+			);
+		});
+
+		it("should schedule normal cron string if no timezone provided", async () => {
+			const jobData = {
+				name: "no-tz-job",
+				functionId: "fn",
+				cronExpression: "0 0 12 * * *",
+				state: "scheduled",
+				jobType: "recurrent",
+			};
+
+			await ScheduleService.scheduleJobInternal(jobData);
+
+			expect(schedule.scheduleJob).toHaveBeenCalledWith(
+				"no-tz-job",
+				"0 0 12 * * *",
+				expect.any(Function)
+			);
 		});
 	});
 });
