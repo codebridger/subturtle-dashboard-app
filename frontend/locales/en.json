@@ -263,6 +263,8 @@
         "session_frequency_desc": "Session frequency and time",
         "each": "Each",
         "day_at": "day at",
+        "based_on_local_time": "Time is based on your local time",
+        "setup_timezone": "Check TimeZone",
         "cards": "Cards",
         "entrance": "Entrance",
         "mature": "Mature",
