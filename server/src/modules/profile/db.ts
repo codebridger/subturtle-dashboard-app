@@ -7,6 +7,8 @@ import {
 
 import { DATABASE, PROFILE_COLLECTION } from "../../config";
 
+import triggers from "./triggers";
+
 const profileCollection = defineCollection({
   database: DATABASE,
   collection: PROFILE_COLLECTION,
@@ -29,6 +31,7 @@ const profileCollection = defineCollection({
       ownerIdField: "refId",
     }),
   ],
+  triggers: triggers,
 });
 
 module.exports = [profileCollection];

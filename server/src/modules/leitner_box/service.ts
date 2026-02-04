@@ -486,6 +486,11 @@ export class LeitnerService {
 
     this.syncedUsers.add(userId.toString());
   }
+
+  static async resyncSchedule(userId: string) {
+    this.syncedUsers.delete(userId.toString());
+    await this.syncScheduledJob(userId);
+  }
 }
 
 // Register global schedule job

@@ -70,7 +70,7 @@ export class ScheduleService {
     if (existing) {
       await collection.updateOne(
         { name },
-        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp } }
+        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp, timeZone } }
       );
       this.cancelJob(name);
     } else {
