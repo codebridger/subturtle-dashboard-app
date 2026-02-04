@@ -52,12 +52,7 @@
                         <div class="mb-6">
                             <label class="mb-2 block text-sm font-bold text-gray-700 dark:text-gray-300">{{
                                 t('profile.timezone') }}</label>
-                            <select v-model="timeZone"
-                                class="form-select w-full rounded-lg border-gray-200 bg-white px-4 py-2 text-sm focus:border-primary focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                :disabled="isSubmitting">
-                                <option value="" disabled>{{ t('profile.select_timezone') }}</option>
-                                <option v-for="tz in availableTimeZones" :key="tz" :value="tz">{{ tz }}</option>
-                            </select>
+                            <TimezonePicker v-model="timeZone" :disabled="isSubmitting" />
                             <p class="mt-1 text-xs text-gray-500">{{ t('profile.timezone_desc') }}</p>
                         </div>
 
@@ -85,6 +80,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useProfileStore } from '~/stores/profile';
 import { Card, Input, Button, CheckboxInput } from '@codebridger/lib-vue-components/elements.ts';
+import TimezonePicker from '~/components/common/TimezonePicker.vue';
 import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
 
 const profileStore = useProfileStore();

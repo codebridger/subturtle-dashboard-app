@@ -189,7 +189,8 @@
         "profile-update-failed": "Failed to update profile",
         "timezone": "Timezone",
         "select_timezone": "Select Timezone",
-        "timezone_desc": "Select your local timezone so reviews appear at the correct time."
+        "timezone_desc": "Select your local timezone so reviews appear at the correct time.",
+        "current_timezone": "Current Timezone"
     },
     "billing": {
         "billing": "Billing",
@@ -207,6 +208,7 @@
     "ai-coaching": "AI Coaching",
     "or": "or",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",

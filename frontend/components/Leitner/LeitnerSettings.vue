@@ -112,7 +112,7 @@
                                     $t('smart_review.global_daily_limit') }}</label>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('smart_review.max_phrases_desc')
-                                }}</p>
+                            }}</p>
                         </div>
                         <div class="relative">
                             <input v-model.number="localSettings.dailyLimit" type="number" min="1"
@@ -135,10 +135,10 @@
                                 <br />
                                 <span class="text-[10px] opacity-75">
                                     {{ $t('smart_review.based_on_local_time') }}
-                                    (<NuxtLink to="/settings/profile"
+                                    <NuxtLink to="/settings/profile"
                                         class="underline hover:text-primary transition-colors">
                                         {{ $t('smart_review.setup_timezone') }}
-                                    </NuxtLink>)
+                                    </NuxtLink>
                                 </span>
                             </p>
                         </div>
