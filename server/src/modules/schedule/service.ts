@@ -38,6 +38,7 @@ export class ScheduleService {
       executionType?: "Immediate" | "normal";
       jobType?: "recurrent" | "once";
       catchUp?: boolean;
+      timeZone?: string;
     }
   ) {
     const {
@@ -46,7 +47,8 @@ export class ScheduleService {
       args = {},
       executionType = "normal",
       jobType = "recurrent",
-      catchUp = false
+      catchUp = false,
+      timeZone
     } = options;
 
     const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
@@ -62,12 +64,13 @@ export class ScheduleService {
       jobType,
       state: "scheduled" as const,
       catchUp,
+      timeZone,
     };
 
     if (existing) {
       await collection.updateOne(
         { name },
-        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp } }
+        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp, timeZone } }
       );
       this.cancelJob(name);
     } else {
@@ -98,7 +101,7 @@ export class ScheduleService {
       schedule.scheduledJobs[jobData.name].cancel();
     }
 
-    const scheduleParam = jobData.jobType === "once" ? jobData.runAt : jobData.cronExpression;
+    const scheduleParam = jobData.jobType === "once" ? jobData.runAt : (jobData.timeZone ? { rule: jobData.cronExpression, tz: jobData.timeZone } : jobData.cronExpression);
     if (!scheduleParam) {
       console.warn(`[ScheduleService] No schedule parameter for job: ${jobData.name}`);
       return;
@@ -199,7 +202,7 @@ export class ScheduleService {
 
       if (job.jobType === "recurrent" && shouldCatchUp && job.cronExpression) {
         try {
-          const interval = parser.parseExpression(job.cronExpression);
+          const interval = parser.parseExpression(job.cronExpression, job.timeZone ? { tz: job.timeZone } : undefined);
           const lastOccurrence = interval.prev().toDate();
           const lastRun = job.lastRun ? new Date(job.lastRun) : new Date(job.createdAt);
 

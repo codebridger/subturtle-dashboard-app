@@ -22,7 +22,8 @@
                         $t('smart_review.next_session') }}</p>
                     <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ localSettings.reviewHour }}:00</h3>
                     <p class="text-xs text-gray-500">{{ localSettings.reviewInterval === 1 ? $t('smart_review.daily') :
-                        $t('smart_review.every_days_reminder', { days: localSettings.reviewInterval }) }}</p>
+                        $t('smart_review.every_days_reminder', { days: localSettings.reviewInterval }) }} ({{
+                            profileStore.userDetail?.timeZone || 'UTC' }})</p>
                 </div>
                 <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
                     <Icon name="IconClock" class="!w-24 !h-24 text-success" />
@@ -129,8 +130,17 @@
                                 <label class="font-bold text-gray-800 dark:text-gray-200 leading-none">{{
                                     $t('smart_review.review_interval') }}</label>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">{{
-                                $t('smart_review.session_frequency_desc') }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $t('smart_review.session_frequency_desc') }}
+                                <br />
+                                <span class="text-[10px] opacity-75">
+                                    {{ $t('smart_review.based_on_local_time') }}
+                                    <NuxtLink to="/settings/profile"
+                                        class="underline hover:text-primary transition-colors">
+                                        {{ $t('smart_review.setup_timezone') }}
+                                    </NuxtLink>
+                                </span>
+                            </p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-gray-400 uppercase">{{ $t('smart_review.each') }}</span>

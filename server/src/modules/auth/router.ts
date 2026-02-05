@@ -38,8 +38,13 @@ auth.get("/google", async (ctx) => {
     scope: SCOPE,
     // Pass through the redirect parameter as state to preserve it through OAuth flow
     state: ctx.query.redirect
-      ? JSON.stringify({ redirect: ctx.query.redirect })
-      : undefined,
+      ? JSON.stringify({
+        redirect: ctx.query.redirect,
+        timezone: ctx.query.timezone
+      })
+      : JSON.stringify({
+        timezone: ctx.query.timezone
+      }),
   });
 
   ctx.response.redirect(url);
@@ -79,6 +84,16 @@ auth.get("/google/code-login", async (ctx) => {
       redirectUrl = state.redirect;
     } catch (error) {
       // Invalid state, continue without redirect
+    }
+  }
+
+  let timeZone: string | null = null;
+  if (ctx.query.state) {
+    try {
+      const state = JSON.parse(ctx.query.state as string);
+      timeZone = state.timezone;
+    } catch (error) {
+      // ignore
     }
   }
 
@@ -124,6 +139,7 @@ auth.get("/google/code-login", async (ctx) => {
       refId: userId as string,
       gPicture: picture as string,
       name: name as string,
+      timeZone: timeZone || undefined,
     },
     false
   );
@@ -185,17 +201,17 @@ auth.get("/google/access-token-login", async (ctx) => {
 
   // Initialize Leitner System
   if (registeredUser || (await userManager.getUserByIdentity(googleEmail, "email").catch(() => null))) {
-      // We need the userId. If registeredUser was null but we just registered, fetch ID?
-      // userManager.registerUser returns userId. 
-      // Re-fetching user to get ID if we didn't have it (though we just registered it).
-      const user = await userManager.getUserByIdentity(googleEmail, "email");
-      if (user) {
-          try {
-            await LeitnerService.ensureInitialized(user.id);
-          } catch (e) {
-              console.error("Failed to initialize Leitner System on token login", e);
-          }
+    // We need the userId. If registeredUser was null but we just registered, fetch ID?
+    // userManager.registerUser returns userId. 
+    // Re-fetching user to get ID if we didn't have it (though we just registered it).
+    const user = await userManager.getUserByIdentity(googleEmail, "email");
+    if (user) {
+      try {
+        await LeitnerService.ensureInitialized(user.id);
+      } catch (e) {
+        console.error("Failed to initialize Leitner System on token login", e);
       }
+    }
   }
 
   ctx.body = reply.create("s", { token });

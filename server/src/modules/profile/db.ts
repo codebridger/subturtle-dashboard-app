@@ -7,6 +7,8 @@ import {
 
 import { DATABASE, PROFILE_COLLECTION } from "../../config";
 
+import triggers from "./triggers";
+
 const profileCollection = defineCollection({
   database: DATABASE,
   collection: PROFILE_COLLECTION,
@@ -15,6 +17,7 @@ const profileCollection = defineCollection({
       gPicture: String,
       name: String,
       refId: String,
+      timeZone: String,
       images: [schemas.file],
     },
     { timestamps: true }
@@ -28,6 +31,7 @@ const profileCollection = defineCollection({
       ownerIdField: "refId",
     }),
   ],
+  triggers: triggers,
 });
 
 module.exports = [profileCollection];
