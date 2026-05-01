@@ -71,6 +71,10 @@ const app = createRest({
 
       // Check if the origin is in our allowed list
       for (const origin of allowedOrigins) {
+        if (origin === "*") {
+          return requestOrigin;
+        }
+
         if (requestOrigin.startsWith(origin)) {
           return requestOrigin;
         }
