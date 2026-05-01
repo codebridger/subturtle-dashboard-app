@@ -245,7 +245,7 @@ import type {
 There is pinia store for global configuration. see full documentation here
 
 ```
-import { useAppStore } from "pilotui/store.ts";
+import { useAppStore } from "pilotui/store";
 
 const appStore = useAppStore();
 appStore.setTheme("dark");
@@ -265,7 +265,7 @@ Import and use the `useAppStore` in your components to access and modify the glo
 ##### Importing the Store
 
 ```
-import { useAppStore } from 'pilotui/store.ts';
+import { useAppStore } from 'pilotui/store';
 ```
 
 ##### Accessing State
@@ -1723,7 +1723,7 @@ To use icons listed in this page you need to import the `icon` component and pro
 </template>
 
 <script lang="ts" setup>
-import { Icon } from 'pilotui/elements.ts'
+import { Icon } from 'pilotui/elements'
 </script>
 ```
 
@@ -2083,7 +2083,7 @@ The `toast.ts` file provides utility functions for displaying toast notification
 To show a basic toast message, use the `showToast` function:
 
 ```
-import { showToast, toastSuccess, toastError, toastWarning, toastInfo } from 'pilotui/toast.ts';
+import { showToast, toastSuccess, toastError, toastWarning, toastInfo } from 'pilotui/toast';
 
 showToast({ message: 'This is a basic toast message', variant: 'success' });
 

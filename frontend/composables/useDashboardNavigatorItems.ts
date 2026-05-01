@@ -1,4 +1,4 @@
-import type { SidebarGroupType } from 'pilotui/types.ts';
+import type { SidebarGroupType } from 'pilotui/types';
 
 export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
     const { t } = useI18n();

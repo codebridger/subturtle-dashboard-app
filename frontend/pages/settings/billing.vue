@@ -30,13 +30,16 @@
                             </ul>
                         </div>
                         <div class="flex flex-col gap-4">
-                            <span class="text-md font-medium text-gray-700"> {{ t('billing.next-billing-date') }}: {{ new Date().toLocaleDateString() }} </span>
+                            <span class="text-md font-medium text-gray-700"> {{ t('billing.next-billing-date') }}: {{
+                                new Date().toLocaleDateString() }} </span>
 
-                            <Button color="primary" size="md" @click="renewPlan" :label="t('billing.renew-now')" class="w-full" />
+                            <Button color="primary" size="md" @click="renewPlan" :label="t('billing.renew-now')"
+                                class="w-full" />
                         </div>
                     </div>
                     <div class="mt-8 flex items-center gap-2">
-                        <div class="flex w-[140px] items-center gap-2 rounded-full bg-gray-600 p-1.5 text-sm text-white">
+                        <div
+                            class="flex w-[140px] items-center gap-2 rounded-full bg-gray-600 p-1.5 text-sm text-white">
                             <Icon name="IconClock" class="h-4 w-4" />
                             <span>{{ t('billing.days-left') }}: 10</span>
                         </div>
@@ -52,36 +55,35 @@
                         <table class="min-w-full table-auto">
                             <thead>
                                 <tr class="border-b border-gray-200">
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{ t('billing.invoice-number') }}</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{ t('billing.date') }}</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{ t('billing.amount') }}</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{ t('billing.status') }}</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{
+                                        t('billing.invoice-number') }}</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{
+                                        t('billing.date') }}</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{
+                                        t('billing.amount') }}</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">{{
+                                        t('billing.status') }}</th>
                                     <th class="px-4 py-3 text-right text-sm font-medium text-gray-600"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="item in invoiceItems" :key="item.id" class="border-b border-gray-100 hover:bg-gray-50">
+                                <tr v-for="item in invoiceItems" :key="item.id"
+                                    class="border-b border-gray-100 hover:bg-gray-50">
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900">#{{ item.invoice }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ item.date }}</td>
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900">${{ item.amount }}</td>
                                     <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
-                                            :class="{
-                                                'bg-green-100 text-green-800': item.status === 'Paid',
-                                                'bg-red-100 text-red-800': item.status === 'Failed',
-                                            }"
-                                        >
+                                        <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" :class="{
+                                            'bg-green-100 text-green-800': item.status === 'Paid',
+                                            'bg-red-100 text-red-800': item.status === 'Failed',
+                                        }">
                                             {{ item.status }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-right">
-                                        <IconButton
-                                            icon="IconArrowDown"
-                                            size="sm"
+                                        <IconButton icon="IconArrowDown" size="sm"
                                             class="text-indigo-600 hover:text-indigo-800"
-                                            @click="downloadInvoice(item.id)"
-                                        />
+                                            @click="downloadInvoice(item.id)" />
                                     </td>
                                 </tr>
                             </tbody>
@@ -93,62 +95,62 @@
     </div>
 </template>
 <script lang="ts" setup>
-    import { Card, Button, Progress, Icon, IconButton } from 'pilotui/elements.ts';
-    import { ref } from 'vue';
-    const { t } = useI18n();
+import { Card, Button, Progress, Icon, IconButton } from 'pilotui/elements';
+import { ref } from 'vue';
+const { t } = useI18n();
 
-    definePageMeta({
-        layout: 'default',
-        title: () => t('billing.billing'),
-        // @ts-ignore
-        middleware: ['auth'],
-    });
+definePageMeta({
+    layout: 'default',
+    title: () => t('billing.billing'),
+    // @ts-ignore
+    middleware: ['auth'],
+});
 
-    const search = ref('');
+const search = ref('');
 
-    const invoiceItems = ref([
-        {
-            id: 1,
-            invoice: '081451',
-            date: '15 Dec 2020',
-            amount: '2275.45',
-            status: 'Paid',
-        },
-        {
-            id: 2,
-            invoice: '081452',
-            date: '20 Dec 2020',
-            amount: '1044.00',
-            status: 'Paid',
-        },
-        {
-            id: 3,
-            invoice: '081681',
-            date: '27 Dec 2020',
-            amount: '20.00',
-            status: 'Failed',
-        },
-        {
-            id: 4,
-            invoice: '082693',
-            date: '31 Dec 2020',
-            amount: '344.00',
-            status: 'Paid',
-        },
-        {
-            id: 5,
-            invoice: '084743',
-            date: '03 Jan 2021',
-            amount: '405.15',
-            status: 'Paid',
-        },
-    ]);
+const invoiceItems = ref([
+    {
+        id: 1,
+        invoice: '081451',
+        date: '15 Dec 2020',
+        amount: '2275.45',
+        status: 'Paid',
+    },
+    {
+        id: 2,
+        invoice: '081452',
+        date: '20 Dec 2020',
+        amount: '1044.00',
+        status: 'Paid',
+    },
+    {
+        id: 3,
+        invoice: '081681',
+        date: '27 Dec 2020',
+        amount: '20.00',
+        status: 'Failed',
+    },
+    {
+        id: 4,
+        invoice: '082693',
+        date: '31 Dec 2020',
+        amount: '344.00',
+        status: 'Paid',
+    },
+    {
+        id: 5,
+        invoice: '084743',
+        date: '03 Jan 2021',
+        amount: '405.15',
+        status: 'Paid',
+    },
+]);
 
-    const downloadInvoice = (id: number) => {
-        console.log(id);
-    };
+const downloadInvoice = (id: number) => {
+    console.log(id);
+};
 
-    const renewPlan = () => {
-        console.log('Renewing plan');
-    };
+const renewPlan = () => {
+    console.log('Renewing plan');
+};
 </script>

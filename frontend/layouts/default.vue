@@ -15,7 +15,8 @@
             </template>
 
             <template #sidebar-menu>
-                <SidebarMenu title="Subturtle" brand-logo="/assets/images/logo.svg" :items="menuItems" @item-click="onMenuItemClicked" />
+                <SidebarMenu title="Subturtle" brand-logo="/assets/images/logo.svg" :items="menuItems"
+                    @item-click="onMenuItemClicked" />
             </template>
 
             <template #content>
@@ -30,15 +31,15 @@
 </template>
 
 <script setup lang="ts">
-    import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from 'pilotui/shell.ts';
-    import type { SidebarItemType, HorizontalMenuItemType } from 'pilotui/types.ts';
+import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from 'pilotui/shell';
+import type { SidebarItemType, HorizontalMenuItemType } from 'pilotui/types';
 
-    const menuItems = useDashboardNavigatorItems();
-    const router = useRouter();
+const menuItems = useDashboardNavigatorItems();
+const router = useRouter();
 
-    function onMenuItemClicked(item: SidebarItemType | HorizontalMenuItemType) {
-        if (item?.to) {
-            router.push(item.to);
-        }
+function onMenuItemClicked(item: SidebarItemType | HorizontalMenuItemType) {
+    if (item?.to) {
+        router.push(item.to);
     }
+}
 </script>

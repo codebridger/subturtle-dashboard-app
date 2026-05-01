@@ -23,8 +23,8 @@ All standard UI elements must come from the internal component library.
 
 ```typescript
 // Import path
-import { Card, Button, Icon } from 'pilotui/elements.ts';
-import { Modal } from 'pilotui/complex.ts';
+import { Card, Button, Icon } from 'pilotui/elements';
+import { Modal } from 'pilotui/complex';
 ```
 
 ### Key Components

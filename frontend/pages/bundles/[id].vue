@@ -162,8 +162,8 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from 'pilotui/elements.ts';
-import { Pagination, Modal } from 'pilotui/complex.ts';
+import { Button } from 'pilotui/elements';
+import { Pagination, Modal } from 'pilotui/complex';
 import Breadcrumb from '~/components/common/Breadcrumb.vue';
 import { useBundleStore } from '@/stores/bundle';
 import { useLeitnerStore } from '@/stores/leitner';

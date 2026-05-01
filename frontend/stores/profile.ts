@@ -1,5 +1,5 @@
 import { authentication, dataProvider, functionProvider } from '@modular-rest/client';
-import { toastError } from 'pilotui/toast.ts';
+import { toastError } from 'pilotui/toast';
 import { defineStore } from 'pinia';
 
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';

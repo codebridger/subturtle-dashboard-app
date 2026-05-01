@@ -187,7 +187,7 @@
 import { useLeitnerStore } from '~/stores/leitner';
 import { type BoardActivityType } from '~/types/database.type';
 import { storeToRefs } from 'pinia';
-import { Card, Button, Icon } from 'pilotui/elements.ts';
+import { Card, Button, Icon } from 'pilotui/elements';
 
 const { t } = useI18n();
 const router = useRouter();

@@ -11,11 +11,9 @@
                 <div class="relative grow ltr:-mr-3.5 ltr:pr-3.5 rtl:-ml-3.5 rtl:pl-3.5">
                     <div class="space-y-1">
                         <NuxtLink to="/settings/profile">
-                            <button
-                                type="button"
+                            <button type="button"
                                 class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
-                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'profile' }"
-                            >
+                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'profile' }">
                                 <div class="flex items-center">
                                     <Icon name="IconUser" class="shrink-0" />
                                     <div class="ltr:ml-3 rtl:mr-3">{{ t('profile.profile') }}</div>
@@ -24,11 +22,9 @@
                         </NuxtLink>
 
                         <NuxtLink to="/settings/subscription">
-                            <button
-                                type="button"
+                            <button type="button"
                                 class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
-                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'subscription' }"
-                            >
+                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'subscription' }">
                                 <div class="flex items-center">
                                     <Icon name="IconCreditCard" class="shrink-0" />
                                     <div class="ltr:ml-3 rtl:mr-3">{{ t('subscription.title') }}</div>
@@ -37,11 +33,9 @@
                         </NuxtLink>
 
                         <NuxtLink to="/settings/billing">
-                            <button
-                                type="button"
+                            <button type="button"
                                 class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
-                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'billing' }"
-                            >
+                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'billing' }">
                                 <div class="flex items-center">
                                     <Icon name="IconClipboardText" class="shrink-0" />
                                     <div class="ltr:ml-3 rtl:mr-3">{{ t('billing.billing') }}</div>
@@ -56,15 +50,15 @@
 </template>
 
 <script lang="ts" setup>
-    import { Icon } from 'pilotui/elements.ts';
-    const { t } = useI18n();
+import { Icon } from 'pilotui/elements';
+const { t } = useI18n();
 
-    defineProps({
-        activeTab: {
-            type: String,
-            required: true,
-        },
-    });
+defineProps({
+    activeTab: {
+        type: String,
+        required: true,
+    },
+});
 
-    defineEmits(['update:activeTab']);
+defineEmits(['update:activeTab']);
 </script>
