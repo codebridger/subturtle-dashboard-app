@@ -4,8 +4,8 @@ import { functionProvider, dataProvider } from '@modular-rest/client';
 import { DATABASE, COLLECTIONS } from '~/types/database.type';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
-import { Button, Input } from '@codebridger/lib-vue-components/elements.ts';
-import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import { Button, Input } from 'pilotui/elements.ts';
+import { Modal } from 'pilotui/complex.ts';
 import Toggle from '~/components/material/Toggle.vue';
 
 const props = defineProps<{

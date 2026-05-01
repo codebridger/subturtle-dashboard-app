@@ -39,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
-    import { Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Modal } from 'pilotui/complex.ts';
+    import { Button } from 'pilotui/elements.ts';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import StartLiveSessionForm from './StartLiveSessionForm.vue';
     import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';

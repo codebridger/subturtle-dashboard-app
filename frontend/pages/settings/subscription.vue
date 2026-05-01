@@ -197,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { Card, Button, Progress, Icon } from '@codebridger/lib-vue-components/elements.ts';
+import { Card, Button, Progress, Icon } from 'pilotui/elements.ts';
 import PageHeader from '~/components/common/PageHeader.vue';
 
 import { ref } from 'vue';

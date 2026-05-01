@@ -87,8 +87,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, IconButton, TextArea, Button } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+    import { Card, IconButton, TextArea, Button } from 'pilotui/elements.ts';
+    import { Modal } from 'pilotui/complex.ts';
     import { useForm } from 'vee-validate';
     import { useBundleStore } from '~/stores/bundle';
     import * as yup from 'yup';

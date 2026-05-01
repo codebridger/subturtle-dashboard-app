@@ -9,7 +9,7 @@ Nuxt 3 frontend app for Subturtle Dashboard (language learning platform). Uses V
 
 ## Key Technologies
 - **Framework**: Nuxt 3 with Vue 3 Composition API
-- **UI Library**: `@codebridger/lib-vue-components` - ALWAYS fetch docs from: https://codebridger.github.io/lib-vue-components/llm.md
+- **UI Library**: `pilotui` - ALWAYS fetch docs from: https://codebridger.github.io/lib-vue-components/llm.md
 - **Backend Client**: `@modular-rest/client` - ALWAYS fetch docs from:
   - https://modular-rest.github.io/modular-rest/js-client/install.html
   - https://modular-rest.github.io/modular-rest/js-client/authentication.html
@@ -36,14 +36,14 @@ middleware/     # Route middleware
 ### Component Structure
 ```vue
 <template>
-  <!-- Use @codebridger/lib-vue-components -->
+  <!-- Use pilotui -->
   <Button color="primary" @click="handleClick">{{ label }}</Button>
   <Input v-model="value" :error="hasError" />
 </template>
 
 <script setup lang="ts">
 // 1. Imports
-import { Button, Input } from '@codebridger/lib-vue-components/elements';
+import { Button, Input } from 'pilotui/elements';
 
 // 2. Props/Emits
 interface Props { title: string; }
@@ -130,7 +130,7 @@ const { t } = useI18n();
 - Follow existing test patterns in the project
 
 ## Critical Rules
-1. **ALWAYS** use `@codebridger/lib-vue-components` for UI elements
+1. **ALWAYS** use `pilotui` for UI elements
 2. **ALWAYS** use `@modular-rest/client` for API calls
 3. **NEVER** use axios - use `node-fetch` instead
 4. **ALWAYS** use TypeScript for type safety
@@ -142,8 +142,8 @@ const { t } = useI18n();
 ## Common Imports
 ```typescript
 // Components
-import { Button, Input, Modal } from '@codebridger/lib-vue-components/elements';
-import { Modal } from '@codebridger/lib-vue-components/complex';
+import { Button, Input, Modal } from 'pilotui/elements';
+import { Modal } from 'pilotui/complex';
 
 // API
 import { authentication, dataProvider } from '@modular-rest/client';

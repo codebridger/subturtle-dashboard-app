@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
+import { Button, Icon } from 'pilotui/elements.ts';
 import { type PhraseType, type LeitnerItemType } from '~/types/database.type';
 
 const props = defineProps<{

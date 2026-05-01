@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Icon } from 'pilotui/elements.ts';
     import { ref, computed, watch } from 'vue';
     import { useLiveSessionStore } from '~/stores/liveSession';
 

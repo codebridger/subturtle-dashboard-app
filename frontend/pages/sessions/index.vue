@@ -105,8 +105,8 @@
 </template>
 
 <script setup lang="ts">
-import { Icon, Button } from '@codebridger/lib-vue-components/elements.ts';
-import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
+import { Icon, Button } from 'pilotui/elements.ts';
+import { Pagination } from 'pilotui/complex.ts';
 import PageHeader from '~/components/common/PageHeader.vue';
 import { dataProvider } from '@modular-rest/client';
 import type { PaginationType } from '@modular-rest/client/dist/types/types';

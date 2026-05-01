@@ -109,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button, Icon } from 'pilotui/elements.ts';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useLiveSessionStore } from '~/stores/liveSession';

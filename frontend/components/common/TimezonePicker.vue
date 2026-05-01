@@ -74,8 +74,8 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
-import { Modal } from '@codebridger/lib-vue-components/complex.ts';
-import { Input, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
+import { Modal } from 'pilotui/complex.ts';
+import { Input, Button, Icon } from 'pilotui/elements.ts';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{

@@ -4,7 +4,7 @@
     import { authentication } from '@modular-rest/client';
     import { useRoute, useRouter } from 'vue-router';
     import { useProfileStore } from '~/stores/profile';
-    import { toastError } from '@codebridger/lib-vue-components/toast.ts';
+    import { toastError } from 'pilotui/toast.ts';
 
     const route = useRoute();
     const router = useRouter();

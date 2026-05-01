@@ -93,7 +93,7 @@
     </div>
 </template>
 <script lang="ts" setup>
-    import { Card, Button, Progress, Icon, IconButton } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button, Progress, Icon, IconButton } from 'pilotui/elements.ts';
     import { ref } from 'vue';
     const { t } = useI18n();
 

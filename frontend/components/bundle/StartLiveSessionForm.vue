@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Input } from '@codebridger/lib-vue-components/elements.ts';
+    import { Input } from 'pilotui/elements.ts';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
     const { t } = useI18n();

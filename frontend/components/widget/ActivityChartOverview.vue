@@ -6,7 +6,7 @@
 <script setup lang="ts">
   import { functionProvider } from '@modular-rest/client';
   import { COLLECTIONS, DATABASE } from '~/types/database.type';
-  import { Card } from '@codebridger/lib-vue-components/elements.ts';
+  import { Card } from 'pilotui/elements.ts';
 
   const props = defineProps<{
     title: string;

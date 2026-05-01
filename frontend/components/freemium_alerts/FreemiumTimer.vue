@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Icon } from 'pilotui/elements.ts';
     import { useLiveSessionStore } from '~/stores/liveSession';
 
     const props = withDefaults(

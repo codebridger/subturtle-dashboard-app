@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Icon } from 'pilotui/elements.ts';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE } from '~/types/database.type';
     import type { LiveSessionRecordType } from '~/types/live-session.type';

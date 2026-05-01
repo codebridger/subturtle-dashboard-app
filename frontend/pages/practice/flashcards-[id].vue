@@ -85,7 +85,7 @@
 
 <script setup lang="ts">
     import { dataProvider, functionProvider } from '@modular-rest/client';
-    import { IconButton, Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { IconButton, Button, Icon } from 'pilotui/elements.ts';
     import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
     import { useProfileStore } from '~/stores/profile';
     import { storeToRefs } from 'pinia';

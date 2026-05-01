@@ -72,8 +72,8 @@
 
 <script lang="ts" setup>
 import { useProfileStore } from '@/stores/profile';
-import { Dropdown, IconButton, Icon, Button } from '@codebridger/lib-vue-components/elements.ts';
-import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import { Dropdown, IconButton, Icon, Button } from 'pilotui/elements.ts';
+import { Modal } from 'pilotui/complex.ts';
 
 const router = useRouter();
 const { t } = useI18n();

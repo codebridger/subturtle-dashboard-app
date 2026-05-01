@@ -91,8 +91,8 @@
 </template>
 
 <script setup lang="ts">
-    import { IconButton, Card, Input, Dropdown, Button } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+    import { IconButton, Card, Input, Dropdown, Button } from 'pilotui/elements.ts';
+    import { Modal } from 'pilotui/complex.ts';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { Field, Form as VeeForm } from 'vee-validate';
     import * as yup from 'yup';

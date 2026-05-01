@@ -9,8 +9,8 @@
 </template>
 
 <script lang="ts" setup>
-    import { useAppStore } from '@codebridger/lib-vue-components/store.ts';
-    import { IconButton } from '@codebridger/lib-vue-components/elements.ts';
+    import { useAppStore } from 'pilotui/store.ts';
+    import { IconButton } from 'pilotui/elements.ts';
 
     const store = useAppStore();
 </script>

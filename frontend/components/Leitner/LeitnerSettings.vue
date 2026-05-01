@@ -358,9 +358,9 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
-import { Modal } from '@codebridger/lib-vue-components/complex.ts';
-import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
+import { Button, Card, Icon } from 'pilotui/elements.ts';
+import { Modal } from 'pilotui/complex.ts';
+import { toastSuccess, toastError } from 'pilotui/toast.ts';
 import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
 import Toggle from '~/components/material/Toggle.vue';
 import HourSelector from '~/components/material/HourSelector.vue';

@@ -56,7 +56,7 @@
 </template>
 
 <script lang="ts" setup>
-    import { Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Icon } from 'pilotui/elements.ts';
     const { t } = useI18n();
 
     defineProps({

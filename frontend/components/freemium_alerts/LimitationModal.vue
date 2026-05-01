@@ -49,8 +49,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Icon } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+    import { Button, Icon } from 'pilotui/elements.ts';
+    import { Modal } from 'pilotui/complex.ts';
     import { analytic } from '~/plugins/mixpanel';
 
     const router = useRouter();

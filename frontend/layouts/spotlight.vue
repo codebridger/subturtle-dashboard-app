@@ -61,7 +61,7 @@
 </template>
 <script setup lang="ts">
     import { ref, onMounted } from 'vue';
-    import { useAppStore } from '@codebridger/lib-vue-components/store.ts';
+    import { useAppStore } from 'pilotui/store.ts';
     const store = useAppStore();
     const showTopButton = ref(false);
 

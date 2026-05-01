@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Card } from '@codebridger/lib-vue-components/elements.ts';
+    import { Button, Card } from 'pilotui/elements.ts';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';

@@ -35,8 +35,8 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Input, TextArea } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+    import { Button, Input, TextArea } from 'pilotui/elements.ts';
+    import { Modal } from 'pilotui/complex.ts';
     import { dataProvider } from '@modular-rest/client';
     import { useForm } from 'vee-validate';
     import * as yup from 'yup';

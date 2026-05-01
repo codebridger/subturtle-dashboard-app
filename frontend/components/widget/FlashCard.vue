@@ -166,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { Card } from '@codebridger/lib-vue-components/elements.ts';
+import { Card } from 'pilotui/elements.ts';
 import type { LinguisticData } from '~/types/database.type';
 
 // Define the props interface for better type safety

@@ -50,8 +50,8 @@
 
 <script setup lang="ts">
     import { ref, onMounted } from 'vue';
-    import { App } from '@codebridger/lib-vue-components/shell.ts';
-    import { useAppStore } from '@codebridger/lib-vue-components/store.ts';
+    import { App } from 'pilotui/shell.ts';
+    import { useAppStore } from 'pilotui/store.ts';
     const store = useAppStore();
     const showTopButton = ref(false);
 

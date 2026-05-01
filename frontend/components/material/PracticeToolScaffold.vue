@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
+    import { Card, Button } from 'pilotui/elements.ts';
 
     const windowHeight = ref(window.innerHeight);
 

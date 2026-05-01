@@ -30,8 +30,8 @@
 </template>
 
 <script setup lang="ts">
-    import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from '@codebridger/lib-vue-components/shell.ts';
-    import type { SidebarItemType, HorizontalMenuItemType } from '@codebridger/lib-vue-components/types.ts';
+    import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from 'pilotui/shell.ts';
+    import type { SidebarItemType, HorizontalMenuItemType } from 'pilotui/types.ts';
 
     const menuItems = useDashboardNavigatorItems();
     const router = useRouter();

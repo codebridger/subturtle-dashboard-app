@@ -11,7 +11,7 @@
 <script setup lang="ts">
   import '~/assets/css/apexcharts.css';
   import { useIntersectionObserver } from '@vueuse/core';
-  import { Card } from '@codebridger/lib-vue-components/elements.ts';
+  import { Card } from 'pilotui/elements.ts';
 
   const props = defineProps<{
     type: string;

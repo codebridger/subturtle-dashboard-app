@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-    import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
+    import { Button, Card, Icon } from 'pilotui/elements.ts';
     import { useProfileStore } from '~/stores/profile';
 
     const profileStore = useProfileStore();
