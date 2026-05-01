@@ -57,7 +57,7 @@
 // import { useAppStore } from '@/stores/index';
 import { useRouter, useRoute } from 'vue-router';
 import { computed, onMounted } from 'vue';
-import { Button } from '@codebridger/lib-vue-components/elements.ts';
+import { Button } from 'pilotui/elements';
 import { authentication } from '@modular-rest/client';
 
 const { t } = useI18n();

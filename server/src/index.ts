@@ -43,6 +43,9 @@ const app = createRest({
     origin(ctx: any) {
       const requestOrigin = ctx.get("Origin") as string;
       const allowedOrigins = [
+        // All
+        "*",
+
         //dev
         "http://localhost:3000",
 
@@ -68,6 +71,10 @@ const app = createRest({
 
       // Check if the origin is in our allowed list
       for (const origin of allowedOrigins) {
+        if (origin === "*") {
+          return requestOrigin;
+        }
+
         if (requestOrigin.startsWith(origin)) {
           return requestOrigin;
         }

@@ -104,7 +104,7 @@
                                     <span
                                         class="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-bold uppercase text-gray-700">
                                         {{ phraseType === 'linguistic' ? props.languageInfo?.target || 'TRG' :
-                                        props.translationLanguage || 'LANG' }}
+                                            props.translationLanguage || 'LANG' }}
                                     </span>
                                 </div>
                             </div>
@@ -166,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { Card } from '@codebridger/lib-vue-components/elements.ts';
+import { Card } from 'pilotui/elements';
 import type { LinguisticData } from '~/types/database.type';
 
 // Define the props interface for better type safety

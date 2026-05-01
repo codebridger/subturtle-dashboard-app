@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Card } from '@codebridger/lib-vue-components/elements.ts';
+import { Card } from 'pilotui/elements';
 import LeitnerSettings from '~/components/Leitner/LeitnerSettings.vue';
 import { functionProvider } from "@modular-rest/client";
 import { useProfileStore } from '~/stores/profile';

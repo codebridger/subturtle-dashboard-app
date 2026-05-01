@@ -79,9 +79,9 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue';
 import { useProfileStore } from '~/stores/profile';
-import { Card, Input, Button, CheckboxInput } from '@codebridger/lib-vue-components/elements.ts';
+import { Card, Input, Button, CheckboxInput } from 'pilotui';
 import TimezonePicker from '~/components/common/TimezonePicker.vue';
-import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
+import { toastSuccess, toastError } from 'pilotui/toast';
 
 const profileStore = useProfileStore();
 const { t } = useI18n();

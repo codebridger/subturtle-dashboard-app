@@ -2,30 +2,18 @@
     <VeeForm :validation-schema="schema" @submit="onSubmit" v-slot="{ handleSubmit }">
         <Card class="flex items-start justify-between p-5 shadow-none">
             <div class="flex-1">
-                <Field v-if="isEditMode" name="title" :model-value="props.bundleDetail.title" v-slot="{ field, errors }">
-                    <Input
-                        :label="t('title')"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="!!error"
-                        :error-message="error || ''"
-                        :disabled="isSubmitting"
-                        type="text"
-                        v-bind="field"
-                    />
+                <Field v-if="isEditMode" name="title" :model-value="props.bundleDetail.title"
+                    v-slot="{ field, errors }">
+                    <Input :label="t('title')" placeholder="" :model-value="field.value" :error="!!error"
+                        :error-message="error || ''" :disabled="isSubmitting" type="text" v-bind="field" />
                 </Field>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white" v-else>{{ bundleDetail.title }}</h2>
                 <p class="mt-2 text-gray-600 dark:text-gray-300">{{ bundleDetail.desc }}</p>
             </div>
 
             <div class="flex flex-1 justify-end">
-                <Button
-                    v-if="isSubmitting || isEditMode"
-                    type="primary"
-                    :loading="isSubmitting"
-                    @click="handleSubmit(onSubmit)"
-                    :label="t('bundle.detail_card.submit')"
-                />
+                <Button v-if="isSubmitting || isEditMode" type="primary" :loading="isSubmitting"
+                    @click="handleSubmit(onSubmit)" :label="t('bundle.detail_card.submit')" />
 
                 <Dropdown v-else>
                     <template #trigger>
@@ -35,16 +23,14 @@
                     <template #body="{ close }">
                         <ul class="w-[200px] !py-0 font-semibold text-dark dark:text-white-dark">
                             <li class="cursor-pointer">
-                                <a
-                                    class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    @click="
-                                        isEditMode = true;
-                                        close();
-                                    "
-                                >
+                                <a class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" @click="
+                                    isEditMode = true;
+                                close();
+                                ">
                                     <div>
                                         <div class="font-semibold">{{ t('edit') }}</div>
-                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description') }}</div>
+                                        <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('title_description')
+                                        }}</div>
                                     </div>
                                 </a>
                             </li>
@@ -53,16 +39,15 @@
                                 <!-- Delete Confirmation Modal -->
                                 <Modal :title="t('bundle.detail_card.confirm_deletion')">
                                     <template #trigger="{ toggleModal }">
-                                        <a
-                                            class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        <a class="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                                             @click="
                                                 toggleModal(true);
-                                                close();
-                                            "
-                                        >
+                                            close();
+                                            ">
                                             <div>
                                                 <div class="font-semibold">{{ t('remove') }}</div>
-                                                <div class="text-sm text-gray-400 dark:text-gray-300">{{ t('bundle_pharase') }}</div>
+                                                <div class="text-sm text-gray-400 dark:text-gray-300">{{
+                                                    t('bundle_pharase') }}</div>
                                             </div>
                                         </a>
                                     </template>
@@ -77,7 +62,8 @@
                                         <!-- Footer -->
                                         <div class="flex justify-end space-x-2">
                                             <Button @click="toggleModal(false)" :label="t('cancel')" />
-                                            <Button color="danger" @click="confirmRemoveBundle(toggleModal)" :label="t('remove')" />
+                                            <Button color="danger" @click="confirmRemoveBundle(toggleModal)"
+                                                :label="t('remove')" />
                                         </div>
                                     </template>
                                 </Modal>
@@ -91,69 +77,67 @@
 </template>
 
 <script setup lang="ts">
-    import { IconButton, Card, Input, Dropdown, Button } from '@codebridger/lib-vue-components/elements.ts';
-    import { Modal } from '@codebridger/lib-vue-components/complex.ts';
-    import { functionProvider, dataProvider } from '@modular-rest/client';
-    import { Field, Form as VeeForm } from 'vee-validate';
-    import * as yup from 'yup';
-    import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
-    import { analytic } from '~/plugins/mixpanel';
-    import { useBundleStore } from '~/stores/bundle';
+import { IconButton, Card, Input, Dropdown, Button, Modal } from 'pilotui';
 
-    const { t } = useI18n();
+import { Field, Form as VeeForm } from 'vee-validate';
+import * as yup from 'yup';
+import { type PhraseBundleType } from '~/types/database.type';
+import { useBundleStore } from '~/stores/bundle';
 
-    const router = useRouter();
+const { t } = useI18n();
 
-    const error = ref<string | null>(null);
+const router = useRouter();
 
-    const props = defineProps({
-        bundleDetail: {
-            type: Object as PropType<PhraseBundleType>,
-            required: true,
-        },
-    });
+const error = ref<string | null>(null);
 
-    const bundleStore = useBundleStore();
+const props = defineProps({
+    bundleDetail: {
+        type: Object as PropType<PhraseBundleType>,
+        required: true,
+    },
+});
 
-    const isSubmitting = ref(false);
-    const isEditMode = ref(false);
-    const schema = yup.object({
-        title: yup.string().required(t('bundle.detail_card.title_required')),
-    });
+const bundleStore = useBundleStore();
 
-    function onSubmit(values: any) {
-        if (isSubmitting.value) {
-            return;
-        }
+const isSubmitting = ref(false);
+const isEditMode = ref(false);
+const schema = yup.object({
+    title: yup.string().required(t('bundle.detail_card.title_required')),
+});
 
-        isSubmitting.value = true;
-        isEditMode.value = false;
+function onSubmit(values: any) {
+    if (isSubmitting.value) {
+        return;
+    }
 
-        bundleStore
-            .updateBundleDetail(props.bundleDetail._id, {
-                title: values.title,
-            })
-            .finally(() => {
-                isSubmitting.value = false;
+    isSubmitting.value = true;
+    isEditMode.value = false;
+
+    bundleStore
+        .updateBundleDetail(props.bundleDetail._id, {
+            title: values.title,
+        })
+        .finally(() => {
+            isSubmitting.value = false;
+        });
+}
+
+function confirmRemoveBundle(toggleModal: (state: boolean) => void) {
+    toggleModal(false);
+    onRemove();
+}
+
+function onRemove() {
+    bundleStore
+        .removeBundle(props.bundleDetail._id)
+        .then(() => {
+            router.push('/bundles');
+        })
+        .catch((error) => {
+            toastError({
+                title: 'Error',
+                message: error.error,
             });
-    }
-
-    function confirmRemoveBundle(toggleModal: (state: boolean) => void) {
-        toggleModal(false);
-        onRemove();
-    }
-
-    function onRemove() {
-        bundleStore
-            .removeBundle(props.bundleDetail._id)
-            .then(() => {
-                router.push('/bundles');
-            })
-            .catch((error) => {
-                toastError({
-                    title: 'Error',
-                    message: error.error,
-                });
-            });
-    }
+        });
+}
 </script>

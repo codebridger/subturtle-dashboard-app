@@ -20,7 +20,7 @@ export default defineNuxtConfig({
 
     vite: {
         ssr: {
-            noExternal: ['@codebridger/lib-vue-components'],
+            noExternal: ['pilotui'],
         },
     },
 
@@ -50,7 +50,7 @@ export default defineNuxtConfig({
         },
     },
 
-    css: ['@codebridger/lib-vue-components/style.css', '~/assets/css/app.css'],
+    css: ['pilotui/style.css', '~/assets/css/app.css'],
 
     postcss: {
         plugins: {

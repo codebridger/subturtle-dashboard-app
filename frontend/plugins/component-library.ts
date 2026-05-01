@@ -1,8 +1,8 @@
 // @ts-ignore
-import { defineNuxtPlugin as init } from '@codebridger/lib-vue-components/nuxt';
+import { defineNuxtPlugin as init } from 'pilotui/nuxt';
 
 export default defineNuxtPlugin({
-  name: '@codebridger/lib-vue-components',
+  name: 'pilotui',
   enforce: 'post',
   async setup(nuxtApp) {
     return init(nuxtApp, {

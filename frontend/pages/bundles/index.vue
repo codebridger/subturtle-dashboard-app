@@ -69,8 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { Input } from '@codebridger/lib-vue-components/elements.ts';
-import { Pagination } from '@codebridger/lib-vue-components/complex.ts';
+import { Input, Pagination } from 'pilotui';
 import PageHeader from '~/components/common/PageHeader.vue';
 import { dataProvider } from '@modular-rest/client';
 import type { PaginationType } from '@modular-rest/client/dist/types/types';

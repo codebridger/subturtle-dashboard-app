@@ -4,8 +4,7 @@ import { functionProvider, dataProvider } from '@modular-rest/client';
 import { DATABASE, COLLECTIONS } from '~/types/database.type';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
-import { Button, Input } from '@codebridger/lib-vue-components/elements.ts';
-import { Modal } from '@codebridger/lib-vue-components/complex.ts';
+import { Button, Input, Modal } from 'pilotui';
 import Toggle from '~/components/material/Toggle.vue';
 
 const props = defineProps<{
@@ -278,15 +277,16 @@ function close() {
 				<!-- Pagination -->
 				<div class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
 					<span class="text-sm text-gray-500">{{ $t('smart_review.total_phrases', { count: totalPhrases })
-						}}</span>
+					}}</span>
 					<div class="flex gap-2">
 						<Button size="sm" variant="secondary" :disabled="page <= 1" @click="page--">{{
 							$t('smart_review.previous')
-							}}</Button>
+						}}</Button>
 						<span class="flex items-center px-4 py-1 text-sm font-medium">{{ $t('smart_review.page', {
 							page:
-								page })
-							}}</span>
+								page
+						})
+						}}</span>
 						<Button size="sm" variant="secondary" :disabled="phrases.length < limit" @click="page++">{{
 							$t('smart_review.next') }}</Button>
 					</div>

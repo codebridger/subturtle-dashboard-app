@@ -1,52 +1,98 @@
-# Lib Vue Components Documentation
+# PilotUI - LLM Documentation
 
-Generated on: 2025-11-16T14:05:12.514Z
+> Generated on: 4/11/2026, 2:42:59 PM
+
+## 🤖 LLM Instructions
+This document is optimized for Large Language Models. It contains the complete documentation for **PilotUI**, a Vue 3 component library.
+
+### How to use this doc:
+- **Component Search**: Use the Table of Contents below to find specific components.
+- **Code Examples**: All component examples are provided in fenced code blocks with language identifiers.
+- **Prop Tables**: Component properties, events, and slots are documented in Markdown tables.
+- **Implementation**: When asked to implement a UI, refer to the available components and their usage patterns described here.
 
 ---
 
+## 📋 Table of Contents
+
+### Getting Started
+- [Installation](#getting-started-installation)
+
+### Getting Started How To
+- [Use](#getting-started-how-to-use)
+
+### Getting Started Global
+- [Configuration](#getting-started-global-configuration)
+
+### Shell
+- [Approot](#shell-approot)
+- [Dashboardshell](#shell-dashboardshell)
+- [Horizontalmenu](#shell-horizontalmenu)
+- [Sidebarmenu](#shell-sidebarmenu)
+
+### Icons Alternative Icon
+- [Packs](#icons-alternative-icon-packs)
+
+### Icons Icon
+- [Gallery](#icons-icon-gallery)
+
+### Utilities
+- [Toast](#utilities-toast)
+
+### Complex
+- [Modal](#complex-modal)
+- [Pagination](#complex-pagination)
+
+### Elements
+- [Avatar](#elements-avatar)
+- [Avatargroup](#elements-avatargroup)
+- [Button](#elements-button)
+- [Card](#elements-card)
+- [Dropdown](#elements-dropdown)
+- [Iconbutton](#elements-iconbutton)
+- [Progress](#elements-progress)
+- [Tabs](#elements-tabs)
+- [Tooltip](#elements-tooltip)
+
+### Form
+- [Checkboxinput](#form-checkboxinput)
+- [Fileinputbutton](#form-fileinputbutton)
+- [Fileinputcombo](#form-fileinputcombo)
+- [Input](#form-input)
+- [Inputgroup](#form-inputgroup)
+- [Select](#form-select)
+- [Switchball](#form-switchball)
+- [Textarea](#form-textarea)
+
+---
+
+<a id="getting-started-installation"></a>
 ## Getting Started / Installation
+
+**Source URL**: http://localhost:6006/?path=/docs/getting-started-installation--docs
 
 ### Installation Guide
 
 #### Prerequisites
 
 -   A working Vue 3 or Nuxt 3 project
--   GitHub account with package access
 -   Node.js and npm/yarn installed
 
 #### Setup Steps
 
-##### 1\. GitHub Authentication
-
-1.  Create a GitHub personal access token:
-    
-    -   Go to GitHub Settings → Developer Settings → Personal Access Tokens
-    -   Generate a new token with `read:packages` permission
-    -   Copy the generated token
-    -   For detailed instructions, watch this guide
-2.  Create an `.npmrc` file in your project root:
-    
-    ```
-    @codebridger:registry=https://npm.pkg.github.com
-    //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
-    ```
-    
-    Replace `YOUR_GITHUB_TOKEN` with the token you created.
-    
-
-##### 2\. Package Installation
+##### 1\. Package Installation
 
 Install the package using npm or yarn:
 
 ```
 # Using npm
-npm install @codebridger/lib-vue-components
+npm install pilotui
 
 # Using yarn
-yarn add @codebridger/lib-vue-components
+yarn add pilotui
 
 # install from dev branch
-yarn add @codebridger/lib-vue-components@dev
+yarn add pilotui@dev
 ```
 
 ##### 3\. Integration
@@ -55,8 +101,8 @@ yarn add @codebridger/lib-vue-components@dev
 
 ```
 // Import components and Styles
-import vueComponents from "@codebridger/lib-vue-components";
-import '@codebridger/lib-vue-components/style.css';
+import vueComponents from "pilotui";
+import 'pilotui/style.css';
 
 // Configuration options
 const options = {
@@ -78,10 +124,10 @@ vueApp.use(vueComponents, options);
 1.  Create a plugin file `plugins/component-library.client.ts`:
 
 ```
-import { defineNuxtPlugin as init } from '@codebridger/lib-vue-components/nuxt';
+import { defineNuxtPlugin as init } from 'pilotui/nuxt';
 
 export default defineNuxtPlugin({
-  name: '@codebridger/lib-vue-components',
+  name: 'pilotui',
   enforce: 'pre',
   async setup(nuxtApp) {
     const options = {
@@ -102,12 +148,12 @@ export default defineNuxtPlugin({
 export default defineNuxtConfig({
   // Ensure components are transpiled during build
   build: {
-    transpile: ['@codebridger/lib-vue-components'],
+    transpile: ['pilotui'],
   },
 
   css: [
     // ... other CSS files
-    '@codebridger/lib-vue-components/style.css',
+    'pilotui/style.css',
   ],
   
   // ... other Nuxt config
@@ -138,7 +184,10 @@ After installation, you can start using the components in your application. Chec
 
 ---
 
+<a id="getting-started-how-to-use"></a>
 ## Getting Started How To / Use
+
+**Source URL**: http://localhost:6006/?path=/docs/getting-started-how-to-use--docs
 
 ### Component library
 
@@ -162,7 +211,7 @@ All components should be wrapped with the main ancestor component called `AppRoo
 
 ```
 // All Components
-Import { Button, Input, App } form '@codebridger/lib-vue-components'
+Import { Button, Input, App } form 'pilotui'
 
 // Or Import by category:
 
@@ -173,22 +222,22 @@ import {
   ThemeCustomizer,
   SidebarMenu,
   HorizontalMenu,
-} from "@codebridger/lib-vue-components/shell";
+} from "pilotui/shell";
 
 // Element components
-import { Button } from "@codebridger/lib-vue-components/elements";
+import { Button } from "pilotui/elements";
 
 // Form components
-import { Input } from "@codebridger/lib-vue-components/form";
+import { Input } from "pilotui/form";
 
 // Complex components
-import { Modal } from "@codebridger/lib-vue-components/complex";
+import { Modal } from "pilotui/complex";
 
 // Type imports
 import type {
   SidebarItemType,
   HorizontalMenuItemType,
-} from "@codebridger/lib-vue-components/types";
+} from "pilotui/types";
 ```
 
 #### Global Configuration
@@ -196,7 +245,7 @@ import type {
 There is pinia store for global configuration. see full documentation here
 
 ```
-import { useAppStore } from "@codebridger/lib-vue-components/store.ts";
+import { useAppStore } from "pilotui/store";
 
 const appStore = useAppStore();
 appStore.setTheme("dark");
@@ -204,7 +253,10 @@ appStore.setTheme("dark");
 
 ---
 
+<a id="getting-started-global-configuration"></a>
 ## Getting Started Global / Configuration
+
+**Source URL**: http://localhost:6006/?path=/docs/getting-started-global-configuration--docs
 
 #### Using `useAppStore`
 
@@ -213,7 +265,7 @@ Import and use the `useAppStore` in your components to access and modify the glo
 ##### Importing the Store
 
 ```
-import { useAppStore } from '@codebridger/lib-vue-components/store.ts';
+import { useAppStore } from 'pilotui/store';
 ```
 
 ##### Accessing State
@@ -323,7 +375,10 @@ function toggleSidebar() {
 
 ---
 
+<a id="shell-approot"></a>
 ## Shell / Approot
+
+**Source URL**: http://localhost:6006/?path=/docs/shell-approot--docs
 
 ### AppRoot
 
@@ -355,7 +410,10 @@ Use as the root wrapper for app pages/stories. Combine with DashboardShell for f
 
 ---
 
+<a id="shell-dashboardshell"></a>
 ## Shell / Dashboardshell
+
+**Source URL**: http://localhost:6006/?path=/docs/shell-dashboardshell--docs
 
 ### DashboardShell
 
@@ -425,7 +483,10 @@ Wrap application pages to provide consistent navigation and scaffolding. Fill sl
 
 ---
 
+<a id="shell-horizontalmenu"></a>
 ## Shell / Horizontalmenu
+
+**Source URL**: http://localhost:6006/?path=/docs/shell-horizontalmenu--docs
 
 ### HorizontalMenu
 
@@ -974,7 +1035,10 @@ const items = [
 
 ---
 
+<a id="shell-sidebarmenu"></a>
 ## Shell / Sidebarmenu
+
+**Source URL**: http://localhost:6006/?path=/docs/shell-sidebarmenu--docs
 
 ### SidebarMenu
 
@@ -1579,7 +1643,10 @@ const items = [
 
 ---
 
+<a id="icons-alternative-icon-packs"></a>
 ## Icons Alternative Icon / Packs
+
+**Source URL**: http://localhost:6006/?path=/docs/icons-alternative-icon-packs--docs
 
 ### Alternative Icon Packs
 
@@ -1600,7 +1667,7 @@ Add the official plugin and any icon sets you want to use as development depende
 
 ###### 2\. **Configure Tailwind to use the Iconify plugin:**
 
-Open your tailwind.config.js and import the plugin. Then add it to the plugins array, specifying which icon sets (by their prefix) to include if using the static selectors. For example:
+Open your tailwind.config.js and import the plugin. Then add it to the plugins array. For example:
 
 ```
 // tailwind.config.js
@@ -1627,21 +1694,24 @@ After setup, you can use Iconify icons in your Vue components just like using an
 
 ```
 <template>
-  <!-- Using the 'home' icon from Material Design Icons (mdi-light set) -->
-  <span class="icon-[mdi-light--home] text-gray-600 w-6 h-6"></span>
-  <icon name="icon-[mdi-light--home]" />
-  <Button iconName="icon-[mdi-light--home]" />
-  <IconButton iconName="icon-[mdi-light--home]" />
+  <!-- Using the 'hand-stop' icon from Tabler Icons (tabler set) -->
+  <span class="iconify tabler--hand-stop text-gray-600 w-6 h-6"></span>
+  <Icon name="iconify tabler--hand-stop" />
+  <Button iconName="iconify tabler--hand-stop" />
+  <IconButton iconName="iconify tabler--hand-stop" />
 </template>
 ```
 
-In the snippet above, the icon-\[mdi-light--home\] class inserts the mdi-light:home icon as an inline SVG. We also apply Tailwind utility classes for color and size. In this example, text-gray-600 sets the icon color (monotone icons inherit the text color), and w-6 h-6 gives it a fixed width and height. You can swap out the prefix and icon name to use any icon from Iconify’s library (just make sure you’ve installed the corresponding icon set).
+In the snippet above, the iconify tabler--hand-stop class inserts the tabler:hand-stop icon. We also apply Tailwind utility classes for color and size. In this example, text-gray-600 sets the icon color (monotone icons inherit the text color), and w-6 h-6 gives it a fixed width and height. You can swap out the prefix and icon name to use any icon from Iconify’s library (just make sure you’ve installed the corresponding icon set).
 
 For more details on using Iconify with Tailwind (and other setup options like additional icon sets or dynamic mode), refer to the official Iconify Tailwind CSS documentation.
 
 ---
 
+<a id="icons-icon-gallery"></a>
 ## Icons Icon / Gallery
+
+**Source URL**: http://localhost:6006/?path=/docs/icons-icon-gallery--docs
 
 ### Icon Gallery
 
@@ -1653,7 +1723,7 @@ To use icons listed in this page you need to import the `icon` component and pro
 </template>
 
 <script lang="ts" setup>
-import { Icon } from '@codebridger/lib-vue-components/elements.ts'
+import { Icon } from 'pilotui/elements'
 </script>
 ```
 
@@ -1999,7 +2069,10 @@ IconStar
 
 ---
 
+<a id="utilities-toast"></a>
 ## Utilities / Toast
+
+**Source URL**: http://localhost:6006/?path=/docs/utilities-toast--docs
 
 ### Toast Utility Functions
 
@@ -2010,7 +2083,7 @@ The `toast.ts` file provides utility functions for displaying toast notification
 To show a basic toast message, use the `showToast` function:
 
 ```
-import { showToast, toastSuccess, toastError, toastWarning, toastInfo } from '@codebridger/lib-vue-components/toast.ts';
+import { showToast, toastSuccess, toastError, toastWarning, toastInfo } from 'pilotui/toast';
 
 showToast({ message: 'This is a basic toast message', variant: 'success' });
 
@@ -2057,7 +2130,10 @@ toastInfo('This is an info toast message');
 
 ---
 
+<a id="complex-modal"></a>
 ## Complex / Modal
+
+**Source URL**: http://localhost:6006/?path=/docs/complex-modal--docs
 
 ### Modal
 
@@ -2552,7 +2628,10 @@ Use for tasks that require focused attention. Keep content concise; avoid nestin
 
 ---
 
+<a id="complex-pagination"></a>
 ## Complex / Pagination
+
+**Source URL**: http://localhost:6006/?path=/docs/complex-pagination--docs
 
 ### Pagination
 
@@ -2645,7 +2724,10 @@ Current Page: 1
 
 ---
 
+<a id="elements-avatar"></a>
 ## Elements / Avatar
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-avatar--docs
 
 ### Avatar
 
@@ -2843,7 +2925,10 @@ Use in lists, headers, and cards. Combine with AvatarGroup to show multiple part
 
 ---
 
+<a id="elements-avatargroup"></a>
 ## Elements / Avatargroup
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-avatargroup--docs
 
 ### AvatarGroup
 
@@ -3195,7 +3280,10 @@ Avatar group with RTL (Right-to-Left) layout support enabled.
 
 ---
 
+<a id="elements-button"></a>
 ## Elements / Button
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-button--docs
 
 ### Button
 
@@ -3561,7 +3649,10 @@ Chip clicks: 0
 
 ---
 
+<a id="elements-card"></a>
 ## Elements / Card
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-card--docs
 
 ### Card
 
@@ -3997,7 +4088,10 @@ Option 1Option 2
 
 ---
 
+<a id="elements-dropdown"></a>
 ## Elements / Dropdown
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-dropdown--docs
 
 ### Dropdown
 
@@ -4631,7 +4725,10 @@ Use for menus, quick filters, and small forms. Keep actions concise and avoid de
 
 ---
 
+<a id="elements-iconbutton"></a>
 ## Elements / Iconbutton
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-iconbutton--docs
 
 ### IconButton
 
@@ -4990,7 +5087,10 @@ Badge mode with labels in different colors - perfect for status indicators and t
 
 ---
 
+<a id="elements-progress"></a>
 ## Elements / Progress
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-progress--docs
 
 ### Progress
 
@@ -5286,7 +5386,10 @@ The component includes several interactive features:
 
 ---
 
+<a id="elements-tabs"></a>
 ## Elements / Tabs
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-tabs--docs
 
 ### Tabs
 
@@ -5959,7 +6062,10 @@ This content won't be accessible because the tab is disabled.
 
 ---
 
+<a id="elements-tooltip"></a>
 ## Elements / Tooltip
+
+**Source URL**: http://localhost:6006/?path=/docs/elements-tooltip--docs
 
 ### Tooltip
 
@@ -6057,7 +6163,10 @@ This is a much longer tooltip message that demonstrates how the tooltip handles 
 
 ---
 
+<a id="form-checkboxinput"></a>
 ## Form / Checkboxinput
+
+**Source URL**: http://localhost:6006/?path=/docs/form-checkboxinput--docs
 
 ### CheckboxInput
 
@@ -6699,7 +6808,10 @@ Selected: None
 
 ---
 
+<a id="form-fileinputbutton"></a>
 ## Form / Fileinputbutton
+
+**Source URL**: http://localhost:6006/?path=/docs/form-fileinputbutton--docs
 
 ### FileInputButton
 
@@ -6747,7 +6859,7 @@ Upload File
 | errorMessage | Error message to displaystring | "" |  |
 | id | string | "" |  |
 | capture | Capture method for file input (e.g., "user" or "environment")"user""environment"boolean | - |  |
-| size | Size attribute for the file inputnumber | 0 |  |
+| size | Size attribute for the file inputnumber | - |  |
 | events |  |
 | blur | Emitted when the input loses focusFocusEvent | - | - |
 | focus | Emitted when the input gains focusFocusEvent | - | - |
@@ -6849,7 +6961,10 @@ Take Photo
 
 ---
 
+<a id="form-fileinputcombo"></a>
 ## Form / Fileinputcombo
+
+**Source URL**: http://localhost:6006/?path=/docs/form-fileinputcombo--docs
 
 ### FileInputCombo
 
@@ -6875,7 +6990,7 @@ In this Storybook demo, the file upload process is simulated with progress updat
 
 ```
 <script setup>
-import { FileInputCombo } from "@codebridger/lib-vue-components/elements";
+import { FileInputCombo } from "pilotui/elements";
 import { ref } from "vue";
 
 // Get a reference to the component
@@ -7441,7 +7556,10 @@ Demonstrates error toast notifications
 
 ---
 
+<a id="form-input"></a>
 ## Form / Input
+
+**Source URL**: http://localhost:6006/?path=/docs/form-input--docs
 
 ### Input
 
@@ -7858,7 +7976,10 @@ Icon Positioning Demo
 
 ---
 
+<a id="form-inputgroup"></a>
 ## Form / Inputgroup
+
+**Source URL**: http://localhost:6006/?path=/docs/form-inputgroup--docs
 
 ### InputGroup
 
@@ -8128,7 +8249,10 @@ Username
 
 ---
 
+<a id="form-select"></a>
 ## Form / Select
+
+**Source URL**: http://localhost:6006/?path=/docs/form-select--docs
 
 ### Select
 
@@ -9227,7 +9351,10 @@ const options = ["Red","Green","Blue","Yellow","Purple","Orange"];
 
 ---
 
+<a id="form-switchball"></a>
 ## Form / Switchball
+
+**Source URL**: http://localhost:6006/?path=/docs/form-switchball--docs
 
 ### SwitchBall
 
@@ -9433,7 +9560,10 @@ Custom Icon Switch
 
 ---
 
+<a id="form-textarea"></a>
 ## Form / Textarea
+
+**Source URL**: http://localhost:6006/?path=/docs/form-textarea--docs
 
 ### TextArea
 
@@ -9765,4 +9895,3 @@ Icon Positioning Demo
 ```
 
 ---
-

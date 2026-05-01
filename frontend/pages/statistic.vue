@@ -55,7 +55,7 @@
 import { dataProvider, functionProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
 import { FN, type UserStatisticType } from '~/types/function.type';
-import { Card, IconButton } from '@codebridger/lib-vue-components/elements.ts';
+import { Card, IconButton } from 'pilotui/elements';
 import PageHeader from '~/components/common/PageHeader.vue';
 
 const { t } = useI18n();

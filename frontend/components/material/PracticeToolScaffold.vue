@@ -32,37 +32,37 @@
 </template>
 
 <script setup lang="ts">
-    import { Card, Button } from '@codebridger/lib-vue-components/elements.ts';
+import { Card, Button } from 'pilotui/elements';
 
-    const windowHeight = ref(window.innerHeight);
+const windowHeight = ref(window.innerHeight);
 
-    onMounted(() => {
-        window.addEventListener('resize', getWindowHeight);
-    });
+onMounted(() => {
+    window.addEventListener('resize', getWindowHeight);
+});
 
-    onUnmounted(() => {
-        window.removeEventListener('resize', getWindowHeight);
-    });
+onUnmounted(() => {
+    window.removeEventListener('resize', getWindowHeight);
+});
 
-    function getWindowHeight() {
-        windowHeight.value = window.innerHeight;
-    }
+function getWindowHeight() {
+    windowHeight.value = window.innerHeight;
+}
 
-    const props = defineProps<{
-        title: string;
-        activePhrase: number;
-        totalPhrases: number;
-        bundleId: string;
-        bodyClass?: string;
-        isLoading?: boolean;
-        errorMode?: boolean;
-    }>();
+const props = defineProps<{
+    title: string;
+    activePhrase: number;
+    totalPhrases: number;
+    bundleId: string;
+    bodyClass?: string;
+    isLoading?: boolean;
+    errorMode?: boolean;
+}>();
 
-    const emit = defineEmits<{
-        'end-session': [];
-    }>();
+const emit = defineEmits<{
+    'end-session': [];
+}>();
 
-    function endSession() {
-        emit('end-session');
-    }
+function endSession() {
+    emit('end-session');
+}
 </script>

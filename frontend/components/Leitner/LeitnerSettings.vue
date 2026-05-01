@@ -112,7 +112,7 @@
                                     $t('smart_review.global_daily_limit') }}</label>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('smart_review.max_phrases_desc')
-                            }}</p>
+                                }}</p>
                         </div>
                         <div class="relative">
                             <input v-model.number="localSettings.dailyLimit" type="number" min="1"
@@ -358,9 +358,9 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import { Button, Card, Icon } from '@codebridger/lib-vue-components/elements.ts';
-import { Modal } from '@codebridger/lib-vue-components/complex.ts';
-import { toastSuccess, toastError } from '@codebridger/lib-vue-components/toast.ts';
+import { Button, Card, Icon } from 'pilotui/elements';
+import { Modal } from 'pilotui/complex';
+import { toastSuccess, toastError } from 'pilotui/toast';
 import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
 import Toggle from '~/components/material/Toggle.vue';
 import HourSelector from '~/components/material/HourSelector.vue';

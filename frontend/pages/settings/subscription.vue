@@ -91,7 +91,7 @@
                                         </tr>
                                         <tr class="border-b border-gray-200">
                                             <td class="px-4 py-2 text-sm text-gray-700">{{ t('subscription.available')
-                                            }}</td>
+                                                }}</td>
                                             <td class="px-4 py-2 text-sm text-gray-700">{{
                                                 activeSubscriptionData.available_credit }}</td>
                                             <td class="px-4 py-2 text-sm text-gray-700">${{
@@ -197,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { Card, Button, Progress, Icon } from '@codebridger/lib-vue-components/elements.ts';
+import { Card, Button, Progress, Icon } from 'pilotui/elements';
 import PageHeader from '~/components/common/PageHeader.vue';
 
 import { ref } from 'vue';
