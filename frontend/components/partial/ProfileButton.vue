@@ -57,15 +57,19 @@
         <!-- Rendered outside the Dropdown so its <ul @click="close()"> doesn't
              unmount the modal before it has a chance to display. -->
         <Modal v-model="showSignOutModal" :title="t('confirm-sign-out')">
+            <template #trigger>
+                <div class="hidden" />
+            </template>
+
             <template #default>
                 <div class="flex flex-col space-y-2 p-4">
                     <p>{{ t('confirm-sign-out-message') }}</p>
                 </div>
             </template>
 
-            <template #footer>
+            <template #footer="{ toggleModal }">
                 <div class="flex justify-end space-x-2">
-                    <Button @click="showSignOutModal = false">{{ t('cancel') }}</Button>
+                    <Button @click="toggleModal(false)">{{ t('cancel') }}</Button>
                     <Button color="danger" @click="confirmSignOut">{{ t('sign-out') }}</Button>
                 </div>
             </template>
