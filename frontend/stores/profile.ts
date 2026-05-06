@@ -84,9 +84,32 @@ export const useProfileStore = defineStore('profile', () => {
         return authentication
             .loginWithLastSession()
             .then(() => {
-                return bootstrap();
+                // Only fetch protected user data when this is a real user session.
+                // Anonymous tokens may legitimately be in localStorage (other tabs,
+                // login screen priming) — don't logout/clear them, just skip bootstrap.
+                if (authentication.user?.type !== 'user') {
+                    return null;
+                }
+                const userToken = authentication.getToken;
+                return bootstrap()
+                    .then(() => {
+                        // Defense-in-depth: re-save the user token after bootstrap.
+                        // External actors (chrome extension content scripts, other
+                        // tabs mid-anonymous flow) can overwrite localStorage.token
+                        // between saveSession and bootstrap completion.
+                        if (userToken && authentication.user?.type === 'user') {
+                            localStorage.setItem('token', userToken);
+                        }
+                    })
+                    .catch((error) => {
+                        const message = (error?.error || error?.message || '').toString().toLowerCase();
+                        if (message.includes('user not found') || message.includes('authentication')) {
+                            authentication.logout();
+                        }
+                        throw error;
+                    });
             })
-            .catch((error) => null);
+            .catch(() => null);
     }
 
     function updateProfile(profileData: { name?: string; profileImage?: File; preferences?: Record<string, boolean>; timeZone?: string }) {
