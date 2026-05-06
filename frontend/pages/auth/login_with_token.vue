@@ -21,6 +21,14 @@ onMounted(() => {
             .loginWithToken(token, true)
             .then(profileStore.bootstrap)
             .then(() => {
+                // Defense-in-depth: re-save the user token after bootstrap.
+                // External actors (chrome extension content scripts, other tabs
+                // mid-anonymous flow) can overwrite localStorage.token between
+                // saveSession and bootstrap completion. Re-asserting the user
+                // token here ensures a reload won't read a stale anonymous token.
+                if (token) {
+                    localStorage.setItem('token', token);
+                }
                 // Check for redirect URL in query parameter first, then in sessionStorage
                 const redirectUrl = (route.query.redirect as string) || sessionStorage.getItem('auth_redirect_url');
 

@@ -99,7 +99,19 @@ onMounted(() => {
         sessionStorage.setItem('auth_redirect_url', redirectUrl);
     }
 
-    authentication.loginAsAnonymous();
+    // If a real user session is already active, don't show the login screen
+    // and don't clobber the in-memory user token with an anonymous one.
+    if (authentication.isLogin) {
+        router.replace(redirectUrl || '/');
+        return;
+    }
+
+    // Only prime an anonymous token when no token is loaded yet — keeps
+    // anonymous-allowed routes usable from the login page without
+    // overwriting an existing authenticated session.
+    if (!authentication.getToken) {
+        authentication.loginAsAnonymous();
+    }
 });
 
 function triggerGoogleLoginProcess() {
