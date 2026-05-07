@@ -1,6 +1,7 @@
 import { CostCalculationResult } from "../subscription/calculator";
 
 export type SessionType = "bundle-practice";
+export type LiveSessionProvider = "openai" | "gemini";
 export type LiveSessionMetadataType =
   | LivePracticeSessionSetupType
   | Record<string, any>;
@@ -8,11 +9,12 @@ export type LiveSessionMetadataType =
 export interface LiveSessionRecordType {
   _id: string;
   type: SessionType;
-  session: LiveSessionType;
+  provider?: LiveSessionProvider;
+  session: LiveSessionType | GeminiLiveSessionType;
   refId: string;
   createdAt: Date;
   updatedAt: Date;
-  usage: TokenUsageType;
+  usage: TokenUsageType | GeminiTokenUsageType;
   cost: CostCalculationResult;
   dialogs: ConversationDialogType[];
   metadata: LiveSessionMetadataType;
@@ -82,4 +84,36 @@ export interface LivePracticeSessionSetupType {
   fromPhrase?: number;
   toPhrase?: number;
   totalPhrases?: number;
+}
+
+export interface GeminiLiveSessionType {
+  model: string;
+  voice: string;
+  instructions: string;
+  modalities: string[];
+  expires_at: number;
+  client_secret: {
+    value: string;
+    expires_at: number;
+  };
+}
+
+export interface GeminiTokenUsageType {
+  total_tokens: number;
+  prompt_tokens: number;
+  response_tokens: number;
+  prompt_tokens_details: {
+    text_tokens: number;
+    audio_tokens: number;
+    image_tokens: number;
+  };
+  response_tokens_details: {
+    text_tokens: number;
+    audio_tokens: number;
+  };
+  cached_tokens: number;
+  cached_tokens_details: {
+    text_tokens: number;
+    audio_tokens: number;
+  };
 }

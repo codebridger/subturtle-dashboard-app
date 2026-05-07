@@ -229,8 +229,7 @@ function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
     // convert sessionData to base64
     const sessionDataBase64 = btoa(JSON.stringify(sessionData));
 
-    // Uerl should not be include # at the beginning
-    const url = `/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`;
+    const url = `/practice/live-session-gemini/${id.value}?sessionData=${sessionDataBase64}`;
     router.push(url);
 }
 

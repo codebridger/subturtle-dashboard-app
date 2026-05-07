@@ -1,7 +1,10 @@
 import { defineCollection, Permission, Schema } from "@modular-rest/server";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import type { LiveSessionRecordType } from "./types";
-import { extractCostCalculationInput } from "./utils";
+import {
+  extractCostCalculationInput,
+  extractGeminiCostCalculationInput,
+} from "./utils";
 import {
   calculatorService,
   CalculatorService,
@@ -10,6 +13,7 @@ import {
 const liveSessionSchema = new Schema<LiveSessionRecordType>(
   {
     type: { type: String, required: true },
+    provider: { type: String },
     refId: { type: String, required: true },
     session: { type: Object, required: true },
     usage: { type: Object },
@@ -22,7 +26,10 @@ const liveSessionSchema = new Schema<LiveSessionRecordType>(
 liveSessionSchema.virtual("cost").get(function (this: any) {
   if (!this.usage) return {};
 
-  const expenses = extractCostCalculationInput(this.usage);
+  const expenses =
+    this.provider === "gemini"
+      ? extractGeminiCostCalculationInput(this.usage)
+      : extractCostCalculationInput(this.usage);
   return calculatorService.calculateCosts(expenses);
 });
 

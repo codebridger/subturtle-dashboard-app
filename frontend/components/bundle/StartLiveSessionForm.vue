@@ -99,7 +99,8 @@ const emit = defineEmits<{
     ];
 }>();
 
-const aiCharacters = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
+// Gemini Live API prebuilt voices.
+const aiCharacters = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
 
 const formData = computed({
     get: () => props.modelValue,

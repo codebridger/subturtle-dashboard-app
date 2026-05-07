@@ -98,7 +98,7 @@ const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
 
 const formData = reactive({
     bundleId: '',
-    aiCharacter: 'alloy',
+    aiCharacter: 'Kore',
     selectionMode: 'selection' as 'selection' | 'random',
     fromPhrase: '1',
     toPhrase: '10',
@@ -137,8 +137,7 @@ function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
     // convert sessionData to base64
     const sessionDataBase64 = btoa(JSON.stringify(sessionData));
 
-    // URL should not include # at the beginning
-    const url = `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`;
+    const url = `/practice/live-session-gemini/${formData.bundleId}?sessionData=${sessionDataBase64}`;
     router.push(url);
 }
 

@@ -1,14 +1,20 @@
 import { defineFunction, getCollection } from "@modular-rest/server";
 import {
   ConversationDialogType,
+  GeminiLiveSessionType,
+  GeminiTokenUsageType,
   LiveSessionMetadataType,
+  LiveSessionProvider,
   LiveSessionRecordType,
   LiveSessionType,
   SessionType,
   TokenUsageType,
 } from "./types";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
-import { extractCostCalculationInput } from "./utils";
+import {
+  extractCostCalculationInput,
+  extractGeminiCostCalculationInput,
+} from "./utils";
 import {
   checkCreditAllocation,
   recordUsage,
@@ -16,7 +22,12 @@ import {
   getOrCreateFreemiumAllocation,
   updateFreemiumAllocation,
 } from "../subscription/service";
-import { LIVE_SESSION_MODEL, LIVE_SESSION_TRANSCRIPTION_MODEL } from "./config";
+import {
+  GEMINI_LIVE_SESSION_MODEL,
+  LIVE_SESSION_MODEL,
+  LIVE_SESSION_TRANSCRIPTION_MODEL,
+} from "./config";
+import { GoogleGenAI, Modality } from "@google/genai";
 const fetch = require("node-fetch");
 interface PracticeSetup {
   userId: string;
@@ -135,17 +146,19 @@ const createLiveSession = defineFunction({
   permissionTypes: ["user_access"],
   callback: async function (context: {
     userId: String;
-    session: LiveSessionType;
+    session: LiveSessionType | GeminiLiveSessionType;
     type: SessionType;
+    provider?: LiveSessionProvider;
     metadata?: LiveSessionMetadataType;
   }) {
-    const { userId, session, type, metadata } = context;
+    const { userId, session, type, provider, metadata } = context;
     const collection = getCollection(DATABASE, LIVE_SESSION_COLLECTION);
 
     try {
       const recordedSession = await collection.create({
         refId: userId,
         type,
+        provider,
         session,
         metadata,
       });
@@ -163,13 +176,14 @@ const updateLiveSession = defineFunction({
   callback: async function (context: {
     userId: string;
     sessionId: string;
+    provider?: LiveSessionProvider;
     update: {
-      partialUsage: TokenUsageType;
-      totalUsage?: TokenUsageType;
+      partialUsage?: TokenUsageType | GeminiTokenUsageType;
+      totalUsage?: TokenUsageType | GeminiTokenUsageType;
       dialogs?: ConversationDialogType[];
     };
   }) {
-    const { userId, sessionId, update } = context;
+    const { userId, sessionId, provider, update } = context;
     const collection = getCollection<LiveSessionRecordType>(
       DATABASE,
       LIVE_SESSION_COLLECTION
@@ -192,13 +206,19 @@ const updateLiveSession = defineFunction({
 
       // Handle partial usage update
       if (update.partialUsage) {
-        // Report total usage to subscription service
-        const costs = extractCostCalculationInput(update.partialUsage);
+        const isGemini = provider === "gemini";
+        const costs = isGemini
+          ? extractGeminiCostCalculationInput(
+              update.partialUsage as GeminiTokenUsageType
+            )
+          : extractCostCalculationInput(
+              update.partialUsage as TokenUsageType
+            );
         await recordUsage({
           userId,
           serviceType: "live_session",
           costInputs: costs,
-          modelUsed: LIVE_SESSION_MODEL,
+          modelUsed: isGemini ? GEMINI_LIVE_SESSION_MODEL : LIVE_SESSION_MODEL,
         });
       }
 
@@ -245,8 +265,137 @@ const updateLiveSession = defineFunction({
   },
 });
 
+interface GeminiPracticeSetup {
+  userId: string;
+  instructions: string;
+  voice?: string;
+  tools?: any[];
+  // When true, this token request is for resuming an existing session and
+  // should NOT consume a freemium-session slot.
+  isResume?: boolean;
+}
+
+const GEMINI_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min — token expiry
+const GEMINI_NEW_SESSION_TTL_MS = 60 * 1000; // 1 min — must connect within this
+
+const requestGeminiEphemeralToken = defineFunction({
+  name: "request-gemini-live-session-ephemeral-token",
+  permissionTypes: ["user_access"],
+  callback: async function (
+    setup: GeminiPracticeSetup
+  ): Promise<GeminiLiveSessionType> {
+    const { userId, instructions, voice, tools, isResume } = setup;
+
+    const { allowedToProceed } = await checkCreditAllocation({
+      userId,
+      minCredits: 500000,
+    });
+
+    if (!allowedToProceed) {
+      throw new Error(
+        "User does not have enough credit or does not have an active subscription"
+      );
+    }
+
+    const isOnFreemium = await isUserOnFreemium(userId);
+    if (isOnFreemium && !isResume) {
+      const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
+
+      if (
+        freemiumAllocation.allowed_lived_sessions_used >=
+        freemiumAllocation.allowed_lived_sessions
+      ) {
+        throw new Error(
+          "User has reached the maximum number of allowed lived sessions"
+        );
+      }
+
+      await updateFreemiumAllocation({
+        userId,
+        increment: {
+          allowed_lived_sessions_used: 1,
+        },
+      });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured on the server");
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: { apiVersion: "v1alpha" },
+      });
+
+      const now = Date.now();
+      const voiceName = voice || "Kore";
+
+      const liveConfig: any = {
+        responseModalities: [Modality.AUDIO],
+        systemInstruction: { parts: [{ text: instructions }] },
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName },
+          },
+        },
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
+        sessionResumption: {},
+        contextWindowCompression: { slidingWindow: {} },
+      };
+
+      if (tools && tools.length > 0) {
+        liveConfig.tools = [{ functionDeclarations: tools }];
+      }
+
+      const token = await ai.authTokens.create({
+        config: {
+          uses: 1,
+          expireTime: new Date(now + GEMINI_TOKEN_TTL_MS).toISOString(),
+          newSessionExpireTime: new Date(
+            now + GEMINI_NEW_SESSION_TTL_MS
+          ).toISOString(),
+          liveConnectConstraints: {
+            model: GEMINI_LIVE_SESSION_MODEL,
+            config: liveConfig,
+          },
+        } as any,
+      });
+
+      const tokenValue = (token as any).name as string;
+      if (!tokenValue) {
+        throw new Error("Gemini did not return an ephemeral token name");
+      }
+
+      const expiresAtSec = Math.floor((now + GEMINI_TOKEN_TTL_MS) / 1000);
+
+      const session: GeminiLiveSessionType = {
+        model: GEMINI_LIVE_SESSION_MODEL,
+        voice: voiceName,
+        instructions,
+        modalities: ["AUDIO"],
+        expires_at: expiresAtSec,
+        client_secret: {
+          value: tokenValue,
+          expires_at: expiresAtSec,
+        },
+      };
+
+      return session;
+    } catch (error) {
+      console.error("Failed to create Gemini live session", error);
+      throw new Error(
+        "Failed to create Gemini live session: " +
+          (error as Error)?.message || String(error)
+      );
+    }
+  },
+});
+
 module.exports.functions = [
   requestEphemeralToken,
+  requestGeminiEphemeralToken,
   createLiveSession,
   updateLiveSession,
 ];

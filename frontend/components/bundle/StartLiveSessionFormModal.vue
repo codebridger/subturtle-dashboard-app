@@ -60,7 +60,7 @@ const emit = defineEmits<{
 const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
 
 const formData = reactive({
-    aiCharacter: 'alloy',
+    aiCharacter: 'Kore',
     selectionMode: 'selection' as 'selection' | 'random',
     fromPhrase: '1',
     toPhrase: '10',
