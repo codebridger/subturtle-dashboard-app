@@ -270,14 +270,30 @@ interface GeminiPracticeSetup {
   instructions: string;
   voice?: string;
   tools?: any[];
-  // When true, this token request is for resuming an existing session and
-  // should NOT consume a freemium-session slot.
+  /**
+   * When true, this is a reconnect leg (e.g. after `goAway` or the 15-minute
+   * audio-session cap) and the request must NOT consume another freemium
+   * session slot.
+   */
   isResume?: boolean;
 }
 
-const GEMINI_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min — token expiry
-const GEMINI_NEW_SESSION_TTL_MS = 60 * 1000; // 1 min — must connect within this
+// Tokens stay valid for 30 minutes; the constrained connection has its own
+// 15-minute audio cap and we always issue a fresh token before then.
+const GEMINI_TOKEN_TTL_MS = 30 * 60 * 1000;
+// The client must open the WebSocket within this window after issuance.
+const GEMINI_NEW_SESSION_TTL_MS = 60 * 1000;
 
+/**
+ * Issue a single-use ephemeral token for a Gemini Live session.
+ *
+ * The token is constrained at issuance time
+ * (`liveConnectConstraints`) so the model, response modalities, system
+ * instruction, voice, transcription, resumption, and sliding-window
+ * compression are all locked server-side. The browser uses the returned token
+ * with `@google/genai`'s `ai.live.connect` against the v1alpha
+ * `BidiGenerateContentConstrained` endpoint.
+ */
 const requestGeminiEphemeralToken = defineFunction({
   name: "request-gemini-live-session-ephemeral-token",
   permissionTypes: ["user_access"],
@@ -385,10 +401,8 @@ const requestGeminiEphemeralToken = defineFunction({
       return session;
     } catch (error) {
       console.error("Failed to create Gemini live session", error);
-      throw new Error(
-        "Failed to create Gemini live session: " +
-          (error as Error)?.message || String(error)
-      );
+      const detail = (error as Error)?.message ?? String(error);
+      throw new Error(`Failed to create Gemini live session: ${detail}`);
     }
   },
 });

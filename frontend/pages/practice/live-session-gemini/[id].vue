@@ -212,7 +212,9 @@ function fetchFlashcard() {
 }
 
 function createLiveSession() {
-    const phrases = (selectedPhrases.value.map((p, i) => i + 1 + '. ' + p.phrase) || []).join('\n');
+    const phrases = selectedPhrases.value
+        .map((p, i) => `${i + 1}. ${p.phrase}`)
+        .join('\n');
 
     liveSessionStore
         .createLiveSession({
@@ -221,18 +223,19 @@ function createLiveSession() {
                 voice: sessionDataParsed.aiCharacter || 'Kore',
             },
             metadata: sessionDataParsed,
-            tools: tools,
+            tools,
             audioRef: null,
             onUpdate: handleSessionEvent,
         })
-        .then((_res) => {
+        .then(() => {
             analytic.track('live-session_started', { provider: 'gemini' });
             triggerTheConversation();
-            return useProfileStore().fetchSubscription();
+            // Refresh the freemium counter so the session-quota UI reflects
+            // the slot we just consumed.
+            return profileStore.fetchSubscription();
         })
         .catch((error) => {
             analytic.track('live-session_failed', { provider: 'gemini' });
-
             errorMode.value = true;
             errorMessage.value = error?.error || error?.message || 'Failed to start live session';
         });
@@ -308,14 +311,10 @@ function handleUpgrade() {
 function selectPhrase(index: number) {
     phraseIndex.value = index;
 
-    if (liveSessionStore.isSessionActive) {
-        const phrase = selectedPhrases.value[index].phrase;
-        try {
-            const message = `The user selected a different vocabulary: "${phrase}". Let's start practicing on it.`;
-            liveSessionStore.sendMessage(message);
-        } catch (error) {
-            console.error('Failed to inform AI about vocabulary selection:', error);
-        }
-    }
+    if (!liveSessionStore.isSessionActive) return;
+    const phrase = selectedPhrases.value[index].phrase;
+    liveSessionStore.sendMessage(
+        `The user selected a different vocabulary: "${phrase}". Let's start practicing on it.`
+    );
 }
 </script>

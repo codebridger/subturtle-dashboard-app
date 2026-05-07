@@ -1,3 +1,27 @@
+/**
+ * Gemini Live API Pinia store.
+ *
+ * Mirrors the public surface of `~/stores/liveSession.ts` (the OpenAI Realtime
+ * store) so the practice page can swap providers with minimal change. The
+ * underlying transport differs significantly:
+ *
+ *   • Connection: WebSocket via `@google/genai` SDK (`ai.live.connect`),
+ *     authenticated with a server-issued ephemeral token (v1alpha API).
+ *   • Mic capture: `AudioWorklet` ("pcm16-downsampler") resamples the device
+ *     stream to 16kHz Int16 PCM and posts ~20ms chunks back to the main
+ *     thread, which base64-encodes and sends them as `realtimeInput.audio`.
+ *   • Playback: incoming 24kHz PCM frames are scheduled as
+ *     `AudioBufferSourceNode`s with a running `nextStartTime` so chunks play
+ *     gaplessly. On `serverContent.interrupted`, queued sources are stopped.
+ *   • Session continuity: the model's audio-only sessions cap at 15 minutes,
+ *     so we transparently swap connections by issuing a fresh token and
+ *     reconnecting with the latest `sessionResumption.handle`.
+ *
+ * Server-side: the matching function `request-gemini-live-session-ephemeral-token`
+ * locks the `liveConnectConstraints` (model, response modalities, system
+ * instruction, voice, transcription, resumption, sliding-window compression)
+ * at token issuance.
+ */
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { GoogleGenAI, Modality } from '@google/genai';
@@ -28,16 +52,22 @@ interface CreateOptions {
     metadata?: LiveSessionMetadataType;
     tools: { [key: string]: { handler: (args: any) => any; definition: any } };
     onUpdate?: (data: any) => void;
-    // audioRef is accepted for API compatibility with the OpenAI store; the
-    // Gemini implementation plays through AudioContext and does not need an
-    // <audio> element.
+    /**
+     * Accepted for parity with the OpenAI store. The Gemini implementation
+     * plays through `AudioContext`, so an `<audio>` element is not used.
+     */
     audioRef: HTMLAudioElement | null;
 }
 
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
-const RESUME_PRE_EMPTIVE_MS = 14 * 60 * 1000; // 14 minutes; cap is 15
+// Audio-only Gemini sessions cap at 15 minutes; resume one minute before that
+// so the user never sees a gap.
+const RESUME_PRE_EMPTIVE_MS = 14 * 60 * 1000;
 const PLAYBACK_LEAD_SEC = 0.02;
+const SETUP_COMPLETE_TIMEOUT_MS = 10_000;
+const DEFAULT_MODEL = 'gemini-3.1-flash-live-preview';
+const DEFAULT_VOICE = 'Kore';
 
 export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => {
     // ----- Reactive state (mirrors OpenAI store's public surface) -----
@@ -50,7 +80,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     const metadata = ref<LiveSessionMetadataType | null>(null);
     const connState = ref<ConnState>('idle');
 
-    // ----- Module-scoped non-reactive (connection + audio plumbing) -----
+    // ----- Module-scoped, non-reactive (connection + audio plumbing) -----
     let session: Session | null = null;
     let inputAudioContext: AudioContext | null = null;
     let outputAudioContext: AudioContext | null = null;
@@ -68,10 +98,11 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     let sessionTools: CreateOptions['tools'] | null = null;
     let onUpdateCallback: ((data: any) => void) | null = null;
     let currentInstructions = '';
-    let currentVoice = 'Kore';
+    let currentVoice = DEFAULT_VOICE;
 
-    // Per-turn dialog accumulation. Gemini delivers transcripts as
-    // incremental text chunks; we synthesize stable ids per turn.
+    // Per-turn dialog accumulation. Gemini delivers transcripts as incremental
+    // text chunks; we synthesize stable ids per turn so chunks merge into one
+    // dialog row instead of producing a row per chunk.
     let currentUserDialogId: string | null = null;
     let currentAiDialogId: string | null = null;
     let turnCounter = 0;
@@ -83,6 +114,11 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     // ----- Public actions -----
 
+    /**
+     * Issue an ephemeral token, persist a session record, set up the audio
+     * pipeline, and open the live WebSocket. Resolves once the server has
+     * acknowledged setup; only then is it safe to send messages.
+     */
     async function createLiveSession(options: CreateOptions) {
         const { sessionDetails, tools, onUpdate, metadata: meta } = options;
 
@@ -90,12 +126,11 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         onUpdateCallback = onUpdate || null;
         metadata.value = meta || null;
         currentInstructions = sessionDetails.instructions;
-        currentVoice = sessionDetails.voice || 'Kore';
+        currentVoice = sessionDetails.voice || DEFAULT_VOICE;
 
         try {
             connState.value = 'connecting';
 
-            // Issue ephemeral token + persist a session record on the server.
             const sessionMeta = await functionProvider.run<GeminiLiveSessionType>({
                 name: 'request-gemini-live-session-ephemeral-token',
                 args: {
@@ -108,25 +143,28 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             liveSession.value = sessionMeta;
             await createLiveSessionRecordOnServer();
 
-            // Set up audio capture / playback before opening the socket so we
-            // can attach the worklet immediately when ready.
+            // Set up the mic + playback pipelines before opening the socket so
+            // we can stream the moment setup completes.
             await setupAudio();
+            await connectLive(sessionMeta.client_secret.value);
 
-            // Open the live WebSocket via the official SDK.
-            await connectLive(sessionMeta.client_secret.value, undefined);
-
-            // Mic starts muted, matching the OpenAI flow.
+            // Mic starts muted; matches the OpenAI flow so the user explicitly
+            // chooses to start speaking.
             toggleMicrophone(false);
 
             sessionStarted.value = true;
             return { success: true, session: sessionMeta };
         } catch (error) {
             console.error('Failed to create Gemini live session:', error);
-            await endLiveSession();
+            endLiveSession();
             throw error;
         }
     }
 
+    /**
+     * Tear down the WebSocket, audio graph, microphone tracks, and timers.
+     * Safe to call multiple times.
+     */
     function endLiveSession() {
         if (resumeTimeoutId) {
             clearTimeout(resumeTimeoutId);
@@ -136,8 +174,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         if (session) {
             try {
                 session.close();
-            } catch (e) {
-                // ignore
+            } catch {
+                /* already closed */
             }
             session = null;
         }
@@ -148,13 +186,13 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             try {
                 workletNode.port.onmessage = null;
                 workletNode.disconnect();
-            } catch (e) {}
+            } catch {}
             workletNode = null;
         }
         if (micSourceNode) {
             try {
                 micSourceNode.disconnect();
-            } catch (e) {}
+            } catch {}
             micSourceNode = null;
         }
         if (microphoneTrack) {
@@ -181,42 +219,43 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         return { success: true };
     }
 
+    /**
+     * Send a free-form text turn to the model. Audio-output models respond to
+     * `realtimeInput.text` with an immediate audio turn; `sendClientContent`
+     * does not reliably trigger a response in audio-only mode.
+     */
     function sendMessage(message: string) {
-        if (!session) {
-            throw new Error('No active Gemini session');
-        }
+        if (!session) throw new Error('No active Gemini session');
         try {
-            console.log('[gemini-live] sending message via realtimeInput.text', message.slice(0, 80));
             session.sendRealtimeInput({ text: message } as any);
         } catch (error) {
             console.error('Failed to send Gemini message:', error);
         }
     }
 
+    /**
+     * Nudge the model to start speaking — same wire format as `sendMessage`,
+     * kept as a separate name to match the OpenAI store's API.
+     */
     function triggerConversation(message: string) {
-        if (!session) {
-            console.warn('[gemini-live] triggerConversation: no session yet');
-            throw new Error('No active Gemini session');
-        }
+        if (!session) throw new Error('No active Gemini session');
         try {
-            console.log('[gemini-live] sending trigger via realtimeInput.text', message.slice(0, 80));
-            // For audio-output models (like gemini-*-flash-live-preview) the
-            // realtimeInput path triggers an immediate model turn. sendClientContent
-            // sometimes only prefills context without producing a response when the
-            // model is in audio-only mode, so prefer realtimeInput for nudges.
             session.sendRealtimeInput({ text: message } as any);
         } catch (error) {
             console.error('Failed to trigger Gemini conversation:', error);
         }
     }
 
+    /**
+     * Toggle the microphone on/off. Pass `active=true` to force-unmute,
+     * `active=false` to force-mute, or omit to flip the current state.
+     */
     function toggleMicrophone(active?: boolean) {
+        if (!microphoneTrack) return isMicrophoneMuted.value;
         if (active !== undefined) {
-            if (microphoneTrack) {
-                isMicrophoneMuted.value = !active;
-                microphoneTrack.enabled = active;
-            }
-        } else if (microphoneTrack) {
+            isMicrophoneMuted.value = !active;
+            microphoneTrack.enabled = active;
+        } else {
             isMicrophoneMuted.value = !isMicrophoneMuted.value;
             microphoneTrack.enabled = !isMicrophoneMuted.value;
         }
@@ -229,7 +268,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         currentAiDialogId = null;
     }
 
-    // ----- Internals: audio -----
+    // ----- Internals: audio pipeline -----
 
     async function setupAudio() {
         // Output context — receives 24kHz PCM frames and schedules them for playback.
@@ -238,7 +277,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         await outputAudioContext.resume();
         nextStartTime = outputAudioContext.currentTime;
 
-        // Input context — captures mic and downsamples to 16kHz Int16 in the worklet.
+        // Input context — captures mic and downsamples to 16kHz Int16 in the
+        // worklet running on the audio thread.
         inputAudioContext = new (window.AudioContext ||
             (window as any).webkitAudioContext)();
         await inputAudioContext.resume();
@@ -259,22 +299,16 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         workletNode.port.onmessage = handleWorkletMessage;
         micSourceNode.connect(workletNode);
 
-        // The browser only schedules an AudioWorkletProcessor's `process()`
-        // when its output is connected to a sink. Route the worklet through a
-        // muted GainNode to the destination so the processor actually runs,
-        // without producing any audible output.
+        // The browser only schedules an `AudioWorkletProcessor.process()` call
+        // when the node's output has a downstream sink. The worklet does not
+        // write any audio to its output, so we route it through a
+        // gain-zero node to the destination — silent, but enough to keep the
+        // processor scheduled.
         const silentGain = inputAudioContext.createGain();
         silentGain.gain.value = 0;
         workletNode.connect(silentGain).connect(inputAudioContext.destination);
-
-        console.log('[gemini-live] mic pipeline ready', {
-            inputCtxState: inputAudioContext.state,
-            inputSampleRate: inputAudioContext.sampleRate,
-            trackEnabled: microphoneTrack?.enabled,
-        });
     }
 
-    let micChunkCounter = 0;
     function handleWorkletMessage(e: MessageEvent) {
         if (!session) return;
         if (isMicrophoneMuted.value) return;
@@ -283,19 +317,13 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         const int16: Int16Array = e.data;
         if (!int16 || int16.length === 0) return;
 
-        const base64 = int16ToBase64(int16);
         try {
             session.sendRealtimeInput({
-                audio: { data: base64, mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}` },
+                audio: {
+                    data: int16ToBase64(int16),
+                    mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`,
+                },
             });
-            micChunkCounter += 1;
-            // Log first chunk and then once per second (~50 chunks at 20ms cadence).
-            if (micChunkCounter === 1 || micChunkCounter % 50 === 0) {
-                console.log('[gemini-live] mic chunks sent', {
-                    count: micChunkCounter,
-                    bytes: int16.byteLength,
-                });
-            }
             if (connState.value === 'ready') connState.value = 'recording';
         } catch (err) {
             console.warn('Failed to send mic chunk', err);
@@ -304,15 +332,15 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     function playAudioChunk(base64: string) {
         if (!outputAudioContext) return;
-        // Browsers may suspend the AudioContext if it was created outside a
-        // direct user gesture; lazily resume each time so playback works.
+        // Browsers may suspend the AudioContext if the user gesture chain was
+        // broken by intervening async hops. Resume lazily on each chunk.
         if (outputAudioContext.state === 'suspended') {
             outputAudioContext.resume().catch(() => {});
         }
         const bytes = base64ToBytes(base64);
         if (bytes.length < 2) return;
 
-        // Interpret raw bytes as little-endian Int16.
+        // Raw bytes → little-endian Int16 → normalized Float32.
         const int16 = new Int16Array(
             bytes.buffer,
             bytes.byteOffset,
@@ -329,6 +357,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         source.buffer = buffer;
         source.connect(ctx.destination);
 
+        // Clamp `nextStartTime` forward when the queue has fallen behind so we
+        // don't fire a backlog of sources at currentTime simultaneously.
         const startAt = Math.max(ctx.currentTime + PLAYBACK_LEAD_SEC, nextStartTime);
         source.start(startAt);
         nextStartTime = startAt + buffer.duration;
@@ -341,7 +371,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             try {
                 s.stop();
                 s.disconnect();
-            } catch (e) {}
+            } catch {}
         }
         pendingSources.clear();
         if (outputAudioContext) {
@@ -378,33 +408,24 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             }
         }
 
-        const modelName =
-            liveSession.value?.model || 'gemini-3.1-flash-live-preview';
-        console.log('[gemini-live] connecting', { model: modelName, hasResumeHandle: !!resumeHandle });
-
-        // The SDK's connect promise resolves as soon as the socket opens —
+        // The SDK's `connect` promise resolves as soon as the socket opens —
         // BEFORE the server's `setupComplete` arrives. Any client message sent
-        // in that window is silently dropped. We wait on a separate promise
-        // resolved by the inbound `setupComplete` handler before declaring
-        // ready.
-        let resolveSetupComplete: () => void;
-        let rejectSetupComplete: (err: unknown) => void;
+        // in that window is silently dropped, so we wait on a separate promise
+        // resolved by the inbound `setupComplete` handler.
+        let resolveSetupComplete!: () => void;
+        let rejectSetupComplete!: (err: unknown) => void;
         const setupCompletePromise = new Promise<void>((res, rej) => {
             resolveSetupComplete = res;
             rejectSetupComplete = rej;
         });
 
         const newSession = await ai.live.connect({
-            model: modelName,
+            model: liveSession.value?.model || DEFAULT_MODEL,
             config: liveConfig,
             callbacks: {
-                onopen: () => {
-                    console.log('[gemini-live] WS opened');
-                },
+                onopen: () => {},
                 onmessage: (msg: LiveServerMessage) => {
-                    if ((msg as any).setupComplete) {
-                        resolveSetupComplete();
-                    }
+                    if ((msg as any).setupComplete) resolveSetupComplete();
                     try {
                         onLiveMessage(msg);
                     } catch (err) {
@@ -416,8 +437,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     rejectSetupComplete?.(e);
                     onUpdateCallback?.({ type: 'error', error: e });
                 },
-                onclose: (e: any) => {
-                    console.log('[gemini-live] WS closed', e);
+                onclose: (_e: any) => {
                     rejectSetupComplete?.(new Error('WebSocket closed before setup'));
                     if (connState.value !== 'resuming') {
                         connState.value = 'closed';
@@ -429,20 +449,18 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
         session = newSession;
 
-        const timeoutMs = 10000;
         await Promise.race([
             setupCompletePromise,
             new Promise<void>((_, reject) =>
                 setTimeout(
                     () => reject(new Error('setupComplete timed out')),
-                    timeoutMs
+                    SETUP_COMPLETE_TIMEOUT_MS
                 )
             ),
         ]);
 
         connState.value = 'ready';
         armResumeTimer();
-        console.log('[gemini-live] session ready');
     }
 
     function armResumeTimer() {
@@ -454,13 +472,19 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         }, RESUME_PRE_EMPTIVE_MS);
     }
 
+    /**
+     * Issue a fresh ephemeral token and reconnect using the most recent
+     * `sessionResumption.handle`, swapping the live `Session` reference once
+     * the new socket is ready. Audio queued from the old socket drains
+     * naturally because already-scheduled `AudioBufferSourceNode`s keep
+     * playing.
+     */
     async function requestResume(reason: 'goAway' | 'preemptive') {
         if (isResuming) return;
         if (!sessionStarted.value) return;
         if (!lastResumptionHandle) {
-            // No handle yet — just close gracefully.
             console.warn(
-                `Resume requested (${reason}) but no resumption handle is available; ending session.`
+                `[gemini-live] resume requested (${reason}) but no resumption handle is available; ending session.`
             );
             onUpdateCallback?.({ type: 'session-resume-failed', reason });
             endLiveSession();
@@ -473,8 +497,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         onUpdateCallback?.({ type: 'session-resuming', reason });
 
         try {
-            // New ephemeral token for the next leg. `isResume: true` tells the
-            // server not to consume another freemium session slot.
+            // `isResume: true` tells the server not to consume another
+            // freemium session slot for this leg.
             const sessionMeta = await functionProvider.run<GeminiLiveSessionType>({
                 name: 'request-gemini-live-session-ephemeral-token',
                 args: {
@@ -487,13 +511,13 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             });
             liveSession.value = sessionMeta;
 
-            // Close the old session AFTER we have a token, before opening the new
-            // socket, so we don't double-bill any frames.
+            // Close the old session AFTER we have a token but BEFORE opening
+            // the new socket so we don't double-bill any frames.
             const old = session;
             session = null;
             try {
                 old?.close();
-            } catch (e) {}
+            } catch {}
 
             await connectLive(sessionMeta.client_secret.value, lastResumptionHandle);
             isResuming = false;
@@ -510,57 +534,26 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     // ----- Internals: message dispatch -----
 
     function onLiveMessage(msg: LiveServerMessage) {
-        // Notify the practice page of every event for any custom handling.
+        // Surface every event to the practice page so it can handle UI
+        // concerns (toasts, analytics) without re-implementing the SDK.
         onUpdateCallback?.(msg);
 
         const m: any = msg;
-
-        // Diagnostic: dump the top-level shape of every inbound message so we
-        // can see what the SDK is actually emitting.
-        try {
-            const keys = Object.keys(m).filter((k) => m[k] !== undefined);
-            console.log('[gemini-live] <-', keys.join(','), m);
-        } catch (e) {
-            console.log('[gemini-live] <- (dump failed)', e);
-        }
-
-        if (m.setupComplete) {
-            console.log('[gemini-live] setupComplete', m.setupComplete);
-        }
 
         if (m.serverContent) {
             const sc = m.serverContent;
 
             if (sc.modelTurn?.parts) {
-                let audioParts = 0;
-                let textParts = 0;
                 for (const part of sc.modelTurn.parts) {
-                    if (part?.inlineData?.data) {
-                        audioParts += 1;
-                        playAudioChunk(part.inlineData.data);
-                    }
-                    if (part?.text) {
-                        textParts += 1;
-                        appendDialog(part.text, 'ai');
-                    }
-                }
-                if (audioParts || textParts) {
-                    console.log('[gemini-live] modelTurn parts', { audioParts, textParts });
+                    if (part?.inlineData?.data) playAudioChunk(part.inlineData.data);
+                    if (part?.text) appendDialog(part.text, 'ai');
                 }
             }
-            if (sc.outputTranscription?.text) {
-                appendDialog(sc.outputTranscription.text, 'ai');
-            }
-            if (sc.inputTranscription?.text) {
-                appendDialog(sc.inputTranscription.text, 'user');
-            }
-            if (sc.interrupted) {
-                console.log('[gemini-live] interrupted');
-                dropPlayback();
-            }
+            if (sc.outputTranscription?.text) appendDialog(sc.outputTranscription.text, 'ai');
+            if (sc.inputTranscription?.text) appendDialog(sc.inputTranscription.text, 'user');
+            if (sc.interrupted) dropPlayback();
             if (sc.turnComplete || sc.generationComplete) {
-                console.log('[gemini-live]', sc.turnComplete ? 'turnComplete' : 'generationComplete');
-                // Finalize current turn so the next chunk starts a new dialog row.
+                // Finalize the current turn so the next chunk starts a new dialog row.
                 currentUserDialogId = null;
                 currentAiDialogId = null;
                 turnCounter += 1;
@@ -568,14 +561,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             }
         }
 
-        if (m.toolCall?.functionCalls) {
-            console.log('[gemini-live] toolCall', m.toolCall.functionCalls);
-            handleToolCalls(m.toolCall.functionCalls);
-        }
+        if (m.toolCall?.functionCalls) handleToolCalls(m.toolCall.functionCalls);
 
         if (m.usageMetadata) {
-            const partial = mapGeminiUsage(m.usageMetadata);
-            updateTokenUsageWithPartialData(partial);
+            updateTokenUsageWithPartialData(mapGeminiUsage(m.usageMetadata));
         }
 
         if (m.sessionResumptionUpdate?.newHandle) {
@@ -583,7 +572,6 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         }
 
         if (m.goAway) {
-            console.log('[gemini-live] goAway', m.goAway);
             connState.value = 'goingAway';
             onUpdateCallback?.({ type: 'goAway', timeLeft: m.goAway.timeLeft });
             requestResume('goAway').catch((err) =>
@@ -594,11 +582,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     function handleToolCalls(functionCalls: any[]) {
         if (!session || !sessionTools) return;
-        const responses: any[] = [];
-        for (const call of functionCalls) {
+        const responses = functionCalls.map((call) => {
             const name = call.name as string;
             const args = call.args || {};
-            const tool = sessionTools[name];
+            const tool = sessionTools![name];
             let result: any;
             if (!tool) {
                 result = { success: false, message: `Function ${name} not found` };
@@ -610,12 +597,9 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     result = { success: false, message: String(err) };
                 }
             }
-            responses.push({
-                id: call.id,
-                name,
-                response: { output: result },
-            });
-        }
+            return { id: call.id, name, response: { output: result } };
+        });
+
         try {
             session.sendToolResponse({ functionResponses: responses });
         } catch (err) {
@@ -627,7 +611,6 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     function appendDialog(text: string, speaker: 'user' | 'ai') {
         if (!text) return;
-        const idKey = speaker === 'user' ? 'currentUserDialogId' : 'currentAiDialogId';
         let dialogId = speaker === 'user' ? currentUserDialogId : currentAiDialogId;
 
         if (!dialogId) {
@@ -635,13 +618,14 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             if (speaker === 'user') currentUserDialogId = dialogId;
             else currentAiDialogId = dialogId;
             conversationDialogs.value.push({ id: dialogId, content: text, speaker });
+            return;
+        }
+
+        const idx = conversationDialogs.value.findIndex((d) => d.id === dialogId);
+        if (idx === -1) {
+            conversationDialogs.value.push({ id: dialogId, content: text, speaker });
         } else {
-            const idx = conversationDialogs.value.findIndex((d) => d.id === dialogId);
-            if (idx === -1) {
-                conversationDialogs.value.push({ id: dialogId, content: text, speaker });
-            } else {
-                conversationDialogs.value[idx].content += text;
-            }
+            conversationDialogs.value[idx].content += text;
         }
     }
 
@@ -677,28 +661,34 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         };
     }
 
+    /**
+     * Translate Gemini's `usageMetadata` into our backend-shared
+     * `GeminiTokenUsageType` so cost calculation can run uniformly server-side.
+     */
     function mapGeminiUsage(usageMetadata: any): GeminiTokenUsageType {
-        const prompt = usageMetadata.promptTokenCount || 0;
-        const response =
+        const out = emptyUsage();
+        out.prompt_tokens = usageMetadata.promptTokenCount || 0;
+        out.response_tokens =
             usageMetadata.responseTokenCount || usageMetadata.candidatesTokenCount || 0;
-        const total =
-            usageMetadata.totalTokenCount ||
-            prompt + response + (usageMetadata.cachedContentTokenCount || 0);
-
-        const out: GeminiTokenUsageType = emptyUsage();
-        out.prompt_tokens = prompt;
-        out.response_tokens = response;
-        out.total_tokens = total;
         out.cached_tokens = usageMetadata.cachedContentTokenCount || 0;
+        out.total_tokens =
+            usageMetadata.totalTokenCount ||
+            out.prompt_tokens + out.response_tokens + out.cached_tokens;
 
-        const promptDetails = usageMetadata.promptTokensDetails || [];
-        for (const d of promptDetails) {
+        for (const d of usageMetadata.promptTokensDetails || []) {
             const c = d.tokenCount || 0;
-            const mod = String(d.modality || '').toUpperCase();
-            if (mod === 'TEXT') out.prompt_tokens_details.text_tokens += c;
-            else if (mod === 'AUDIO') out.prompt_tokens_details.audio_tokens += c;
-            else if (mod === 'IMAGE' || mod === 'VIDEO')
-                out.prompt_tokens_details.image_tokens += c;
+            switch (String(d.modality || '').toUpperCase()) {
+                case 'TEXT':
+                    out.prompt_tokens_details.text_tokens += c;
+                    break;
+                case 'AUDIO':
+                    out.prompt_tokens_details.audio_tokens += c;
+                    break;
+                case 'IMAGE':
+                case 'VIDEO':
+                    out.prompt_tokens_details.image_tokens += c;
+                    break;
+            }
         }
         const responseDetails =
             usageMetadata.responseTokensDetails ||
@@ -706,18 +696,26 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             [];
         for (const d of responseDetails) {
             const c = d.tokenCount || 0;
-            const mod = String(d.modality || '').toUpperCase();
-            if (mod === 'TEXT') out.response_tokens_details.text_tokens += c;
-            else if (mod === 'AUDIO') out.response_tokens_details.audio_tokens += c;
+            switch (String(d.modality || '').toUpperCase()) {
+                case 'TEXT':
+                    out.response_tokens_details.text_tokens += c;
+                    break;
+                case 'AUDIO':
+                    out.response_tokens_details.audio_tokens += c;
+                    break;
+            }
         }
-        const cachedDetails = usageMetadata.cachedContentTokensDetails || [];
-        for (const d of cachedDetails) {
+        for (const d of usageMetadata.cachedContentTokensDetails || []) {
             const c = d.tokenCount || 0;
-            const mod = String(d.modality || '').toUpperCase();
-            if (mod === 'TEXT') out.cached_tokens_details.text_tokens += c;
-            else if (mod === 'AUDIO') out.cached_tokens_details.audio_tokens += c;
+            switch (String(d.modality || '').toUpperCase()) {
+                case 'TEXT':
+                    out.cached_tokens_details.text_tokens += c;
+                    break;
+                case 'AUDIO':
+                    out.cached_tokens_details.audio_tokens += c;
+                    break;
+            }
         }
-
         return out;
     }
 
@@ -773,6 +771,14 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     // ----- Internals: utilities -----
 
+    /**
+     * Convert OpenAI-shaped tool definitions
+     *   `{ type: 'function', name, description, parameters }`
+     * into Gemini's `functionDeclarations` shape
+     *   `{ name, description, parameters }`.
+     * The practice page passes the OpenAI shape unchanged so it can stay
+     * provider-agnostic.
+     */
     function convertToolsForGemini(tools: CreateOptions['tools']) {
         return Object.values(tools).map((t) => ({
             name: t.definition.name,
@@ -784,6 +790,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     function int16ToBase64(int16: Int16Array): string {
         const bytes = new Uint8Array(int16.buffer, int16.byteOffset, int16.byteLength);
         let binary = '';
+        // Chunked to stay below `String.fromCharCode.apply` argument limits.
         const chunk = 0x8000;
         for (let i = 0; i < bytes.length; i += chunk) {
             const slice = bytes.subarray(i, Math.min(i + chunk, bytes.length));

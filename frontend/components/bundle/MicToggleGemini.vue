@@ -26,6 +26,11 @@
 </template>
 
 <script setup lang="ts">
+// Mic mute/unmute toggle bound to the Gemini live-session store. Identical UI
+// and behaviour to `MicToggle.vue`, but that one talks to the OpenAI store —
+// a single shared component would mute/unmute the wrong store on the Gemini
+// practice page. Once the OpenAI flow is removed, both files can collapse
+// into one again.
 import { Icon } from 'pilotui/elements';
 import { ref, computed, watch } from 'vue';
 import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';

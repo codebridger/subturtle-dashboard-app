@@ -1,83 +1,83 @@
-// AudioWorkletProcessor that:
-//   1. Resamples mono Float32 input from the device sample rate (typically
-//      44.1 kHz or 48 kHz) down to 16 kHz using linear interpolation.
-//   2. Converts Float32 samples to clamped little-endian Int16 PCM.
-//   3. Posts ~20 ms chunks (320 samples at 16 kHz) back to the main thread
-//      as transferable Int16Array buffers.
+// AudioWorkletProcessor for the Gemini Live API mic pipeline.
 //
-// The Gemini Live API accepts `audio/pcm;rate=16000` chunks of 20-100 ms;
-// 20 ms (320 samples) keeps end-to-end latency low.
+// Per-call this processor:
+//   1. Resamples mono Float32 input from the device's native sample rate
+//      (typically 44.1 kHz or 48 kHz) down to 16 kHz, using linear
+//      interpolation. Linear is sufficient quality for speech-to-text and
+//      avoids the cost of a polyphase FIR filter on the audio thread.
+//   2. Converts each Float32 sample to clamped little-endian Int16 PCM.
+//   3. Posts ~20 ms chunks (FRAME_SAMPLES at 16 kHz) back to the main thread
+//      as transferable Int16Array buffers. The main thread base64-encodes and
+//      sends them as `realtimeInput.audio` with mimeType "audio/pcm;rate=16000".
+//
+// 20 ms chunks keep end-to-end latency low; the Gemini Live API accepts
+// 20–100 ms.
 
 const TARGET_SAMPLE_RATE = 16000;
-const FRAME_SAMPLES = 320; // 20ms at 16kHz
+const FRAME_SAMPLES = 320; // 20 ms at 16 kHz.
 
 class Pcm16Downsampler extends AudioWorkletProcessor {
     constructor() {
         super();
-        // Cumulative read position in the source stream, expressed in source samples.
-        this._readIndex = 0;
-        // Cumulative number of source samples we've received so far.
-        this._sourceWritten = 0;
-        // Ring of recent source samples we still need for interpolation.
-        // We only ever need the latest two source samples, so a small buffer suffices.
-        this._lastSample = 0;
-        this._haveLastSample = false;
-        // Output accumulator: pushes Int16 samples until we have a full FRAME_SAMPLES, then flushes.
-        this._outBuffer = new Int16Array(FRAME_SAMPLES);
-        this._outWritten = 0;
+        // Read position in the source stream, in fractional source samples.
+        // Advances by `ratio` for every output sample emitted.
+        this.readIndex = 0;
+        // Total number of source samples we've received so far.
+        this.sourceWritten = 0;
+        // Most recent source sample, kept for linear interpolation between
+        // process() calls.
+        this.lastSample = 0;
+        this.haveLastSample = false;
+        // Fixed-size accumulator: when full we transfer it to the main thread
+        // and allocate a fresh one. Allocation per chunk avoids copies.
+        this.outBuffer = new Int16Array(FRAME_SAMPLES);
+        this.outWritten = 0;
 
-        this._ratio = sampleRate / TARGET_SAMPLE_RATE;
+        this.ratio = sampleRate / TARGET_SAMPLE_RATE;
     }
 
     process(inputs) {
-        const input = inputs[0];
-        if (!input || input.length === 0) return true;
-        const channel = input[0];
+        const channel = inputs[0]?.[0];
         if (!channel || channel.length === 0) return true;
 
-        // Process every incoming render quantum (typically 128 frames).
         for (let i = 0; i < channel.length; i++) {
-            const currentAbs = this._sourceWritten + i;
+            const currentAbs = this.sourceWritten + i;
 
-            // Emit as many output samples as fit between the previous source sample
-            // and the current one.
-            while (this._readIndex <= currentAbs) {
-                const frac = this._readIndex - (currentAbs - 1);
-                let sample;
-                if (frac <= 0 || !this._haveLastSample) {
-                    // Not enough history yet: just use the current sample.
-                    sample = channel[i];
-                } else {
-                    // Linear interpolate between previous and current.
-                    sample = this._lastSample * (1 - frac) + channel[i] * frac;
-                }
+            // Emit every output sample whose interpolation point falls between
+            // the previous and current source samples.
+            while (this.readIndex <= currentAbs) {
+                const frac = this.readIndex - (currentAbs - 1);
+                const sample =
+                    frac <= 0 || !this.haveLastSample
+                        ? channel[i]
+                        : this.lastSample * (1 - frac) + channel[i] * frac;
 
-                // Clamp + scale to Int16.
-                let s16;
-                if (sample >= 1) s16 = 32767;
-                else if (sample <= -1) s16 = -32768;
-                else s16 = Math.round(sample < 0 ? sample * 0x8000 : sample * 0x7fff);
+                this.outBuffer[this.outWritten++] = floatToInt16(sample);
 
-                this._outBuffer[this._outWritten++] = s16;
-
-                if (this._outWritten === FRAME_SAMPLES) {
-                    // Transfer the buffer to the main thread (no copy).
-                    const out = this._outBuffer;
-                    this._outBuffer = new Int16Array(FRAME_SAMPLES);
-                    this._outWritten = 0;
+                if (this.outWritten === FRAME_SAMPLES) {
+                    // Transfer ownership of the buffer (no copy).
+                    const out = this.outBuffer;
+                    this.outBuffer = new Int16Array(FRAME_SAMPLES);
+                    this.outWritten = 0;
                     this.port.postMessage(out, [out.buffer]);
                 }
 
-                this._readIndex += this._ratio;
+                this.readIndex += this.ratio;
             }
 
-            this._lastSample = channel[i];
-            this._haveLastSample = true;
+            this.lastSample = channel[i];
+            this.haveLastSample = true;
         }
 
-        this._sourceWritten += channel.length;
+        this.sourceWritten += channel.length;
         return true;
     }
+}
+
+function floatToInt16(sample) {
+    if (sample >= 1) return 32767;
+    if (sample <= -1) return -32768;
+    return Math.round(sample < 0 ? sample * 0x8000 : sample * 0x7fff);
 }
 
 registerProcessor('pcm16-downsampler', Pcm16Downsampler);
