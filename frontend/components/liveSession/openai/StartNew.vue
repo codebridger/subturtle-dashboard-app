@@ -14,7 +14,7 @@
             </select>
         </Card>
         <Card class="space-y-4 !p-0 shadow-none" :class="{ 'cursor-not-allowed opacity-50': !formData.bundleId }">
-            <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="GEMINI_VOICES" ref="formRef"
+            <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="OPENAI_VOICES" ref="formRef"
                 @start="handleStartLiveSession" />
 
             <!-- Freemium: Show freemium limit card -->
@@ -42,7 +42,8 @@
 </template>
 
 <script setup lang="ts">
-// Standalone "start a new session" entry point bound to the Gemini practice page.
+// Standalone "start a new session" entry point bound to the OpenAI Realtime
+// practice page. Mirrors the Gemini variant in `../gemini/StartNew.vue`.
 import { Button, Card } from 'pilotui/elements';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { dataProvider } from '@modular-rest/client';
@@ -52,7 +53,7 @@ import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModa
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import { useProfileStore } from '~/stores/profile';
 
-const GEMINI_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
+const OPENAI_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
 
 const router = useRouter();
 const { t } = useI18n();
@@ -93,7 +94,7 @@ const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
 
 const formData = reactive({
     bundleId: '',
-    aiCharacter: 'Kore',
+    aiCharacter: 'alloy',
     selectionMode: 'selection' as 'selection' | 'random',
     fromPhrase: '1',
     toPhrase: '10',
@@ -128,7 +129,7 @@ function startSession() {
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
     const sessionDataBase64 = btoa(JSON.stringify(sessionData));
     router.push(
-        `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`
+        `/practice/live-session-openai/${formData.bundleId}?sessionData=${sessionDataBase64}`
     );
 }
 

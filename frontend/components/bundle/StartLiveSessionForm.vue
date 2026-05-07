@@ -77,10 +77,10 @@ import { Input } from 'pilotui';
 
 const { t } = useI18n();
 
-// Gemini Live API prebuilt voices, used as the default if the parent doesn't
-// pass `voiceOptions`. The OpenAI flow passes its own list (`alloy`, `ash`, …).
-const DEFAULT_VOICE_OPTIONS = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
-
+// Default voice list (Gemini Live API prebuilt voices). Inlined here rather
+// than pulled from a `const` because `withDefaults` is hoisted by the Vue
+// compiler and can't reference local script-setup variables. The OpenAI
+// `StartNew` variant passes its own list via the `voiceOptions` prop.
 const props = withDefaults(
     defineProps<{
         modelValue: {
@@ -92,7 +92,18 @@ const props = withDefaults(
         };
         voiceOptions?: string[];
     }>(),
-    { voiceOptions: () => DEFAULT_VOICE_OPTIONS }
+    {
+        voiceOptions: () => [
+            'Kore',
+            'Puck',
+            'Charon',
+            'Fenrir',
+            'Aoede',
+            'Leda',
+            'Orus',
+            'Zephyr',
+        ],
+    }
 );
 
 const emit = defineEmits<{
