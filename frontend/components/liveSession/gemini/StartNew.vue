@@ -42,8 +42,7 @@
 </template>
 
 <script setup lang="ts">
-// Standalone "start a new session" entry point bound to the Gemini practice
-// page. Mirrors the OpenAI variant in `../openai/StartNew.vue`.
+// Standalone "start a new session" entry point bound to the Gemini practice page.
 import { Button, Card } from 'pilotui/elements';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { dataProvider } from '@modular-rest/client';

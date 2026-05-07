@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import { Card, Icon } from 'pilotui/elements';
-import { useLiveSessionStore } from '~/stores/liveSession';
+import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 
 const props = withDefaults(
     defineProps<{
@@ -167,8 +167,7 @@ function handleTimerExpired() {
     // Auto-mute mic if enabled
     if (props.autoMuteMic) {
         try {
-            // Try to access live session store
-            const liveSessionStore = useLiveSessionStore();
+            const liveSessionStore = useLiveSessionGeminiStore();
             if (liveSessionStore.getMicrophoneMuted === false) {
                 liveSessionStore.toggleMicrophone();
             }

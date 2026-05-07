@@ -1,9 +1,5 @@
 /**
- * Gemini Live API Pinia store.
- *
- * Mirrors the public surface of `~/stores/liveSession.ts` (the OpenAI Realtime
- * store) so the practice page can swap providers with minimal change. The
- * underlying transport differs significantly:
+ * Gemini Live API Pinia store — the only live-session store on the frontend.
  *
  *   • Connection: WebSocket via `@google/genai` SDK (`ai.live.connect`),
  *     authenticated with a server-issued ephemeral token (v1alpha API).
@@ -21,6 +17,10 @@
  * locks the `liveConnectConstraints` (model, response modalities, system
  * instruction, voice, transcription, resumption, sliding-window compression)
  * at token issuance.
+ *
+ * The OpenAI Realtime backend module still lives under
+ * `server/src/modules/live_session/openai/` so historical session records
+ * keep pricing correctly, but no frontend code reaches it anymore.
  */
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
@@ -53,8 +53,8 @@ interface CreateOptions {
     tools: { [key: string]: { handler: (args: any) => any; definition: any } };
     onUpdate?: (data: any) => void;
     /**
-     * Accepted for parity with the OpenAI store. The Gemini implementation
-     * plays through `AudioContext`, so an `<audio>` element is not used.
+     * Accepted for legacy callers. Gemini playback runs through
+     * `AudioContext`, so no `<audio>` element is needed.
      */
     audioRef: HTMLAudioElement | null;
 }
@@ -70,7 +70,7 @@ const DEFAULT_MODEL = 'gemini-3.1-flash-live-preview';
 const DEFAULT_VOICE = 'Kore';
 
 export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => {
-    // ----- Reactive state (mirrors OpenAI store's public surface) -----
+    // ----- Reactive state -----
     const id = ref<string | null>(null);
     const liveSession = ref<GeminiLiveSessionType | null>(null);
     const sessionStarted = ref(false);
@@ -107,7 +107,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     let currentAiDialogId: string | null = null;
     let turnCounter = 0;
 
-    // ----- Getters (compatible with OpenAI store) -----
+    // ----- Getters -----
     const isSessionActive = computed(() => sessionStarted.value);
     const getConversationDialogs = computed(() => conversationDialogs.value);
     const getMicrophoneMuted = computed(() => isMicrophoneMuted.value);
@@ -148,8 +148,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             await setupAudio();
             await connectLive(sessionMeta.client_secret.value);
 
-            // Mic starts muted; matches the OpenAI flow so the user explicitly
-            // chooses to start speaking.
+            // Mic starts muted so the user explicitly chooses to start speaking.
             toggleMicrophone(false);
 
             sessionStarted.value = true;
@@ -234,8 +233,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     }
 
     /**
-     * Nudge the model to start speaking — same wire format as `sendMessage`,
-     * kept as a separate name to match the OpenAI store's API.
+     * Nudge the model to start speaking. Same wire format as `sendMessage`;
+     * kept as a separate verb so callers can express intent.
      */
     function triggerConversation(message: string) {
         if (!session) throw new Error('No active Gemini session');
@@ -772,12 +771,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     // ----- Internals: utilities -----
 
     /**
-     * Convert OpenAI-shaped tool definitions
+     * Translate the practice page's tool definitions
      *   `{ type: 'function', name, description, parameters }`
      * into Gemini's `functionDeclarations` shape
      *   `{ name, description, parameters }`.
-     * The practice page passes the OpenAI shape unchanged so it can stay
-     * provider-agnostic.
      */
     function convertToolsForGemini(tools: CreateOptions['tools']) {
         return Object.values(tools).map((t) => ({
