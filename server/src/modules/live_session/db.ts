@@ -1,10 +1,8 @@
 import { defineCollection, Permission, Schema } from "@modular-rest/server";
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import type { LiveSessionRecordType } from "./types";
-import {
-  extractCostCalculationInput,
-  extractGeminiCostCalculationInput,
-} from "./utils";
+import { extractCostCalculationInput } from "./openai/utils";
+import { extractGeminiCostCalculationInput } from "./gemini/utils";
 import {
   calculatorService,
   CalculatorService,

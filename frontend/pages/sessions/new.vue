@@ -13,7 +13,9 @@
                 :breadcrumbs="[{ label: t('live-session.your-sessions'), to: '/sessions' }, { label: t('live-session.start-new-session') }]" />
 
             <section>
-                <LiveSessionStartNew />
+                <!-- Default to the Gemini flow. To use the OpenAI Realtime
+                     flow instead, render <LiveSessionOpenaiStartNew />. -->
+                <LiveSessionGeminiStartNew />
             </section>
         </div>
     </div>

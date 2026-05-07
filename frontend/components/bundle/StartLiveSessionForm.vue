@@ -77,15 +77,23 @@ import { Input } from 'pilotui';
 
 const { t } = useI18n();
 
-const props = defineProps<{
-    modelValue: {
-        aiCharacter: string;
-        selectionMode: 'selection' | 'random';
-        fromPhrase: string;
-        toPhrase: string;
-        totalPhrases: string;
-    };
-}>();
+// Gemini Live API prebuilt voices, used as the default if the parent doesn't
+// pass `voiceOptions`. The OpenAI flow passes its own list (`alloy`, `ash`, …).
+const DEFAULT_VOICE_OPTIONS = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
+
+const props = withDefaults(
+    defineProps<{
+        modelValue: {
+            aiCharacter: string;
+            selectionMode: 'selection' | 'random';
+            fromPhrase: string;
+            toPhrase: string;
+            totalPhrases: string;
+        };
+        voiceOptions?: string[];
+    }>(),
+    { voiceOptions: () => DEFAULT_VOICE_OPTIONS }
+);
 
 const emit = defineEmits<{
     'update:modelValue': [
@@ -99,8 +107,7 @@ const emit = defineEmits<{
     ];
 }>();
 
-// Gemini Live API prebuilt voices.
-const aiCharacters = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
+const aiCharacters = computed(() => props.voiceOptions);
 
 const formData = computed({
     get: () => props.modelValue,

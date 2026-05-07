@@ -1,4 +1,18 @@
+/**
+ * Shared live-session types plus barrel re-exports of provider-specific
+ * types from `./openai/types` and `./gemini/types`. Frontend code only needs
+ * to import from this file (via `~/types/live-session.type`) to get the
+ * full type surface.
+ */
 import { CostCalculationResult } from "../subscription/calculator";
+import type { LiveSessionType, TokenUsageType } from "./openai/types";
+import type {
+  GeminiLiveSessionType,
+  GeminiTokenUsageType,
+} from "./gemini/types";
+
+export type { LiveSessionType, TokenUsageType, TurnDetectionType, ClientSecretType } from "./openai/types";
+export type { GeminiLiveSessionType, GeminiTokenUsageType } from "./gemini/types";
 
 export type SessionType = "bundle-practice";
 export type LiveSessionProvider = "openai" | "gemini";
@@ -20,62 +34,10 @@ export interface LiveSessionRecordType {
   metadata: LiveSessionMetadataType;
 }
 
-export interface LiveSessionType {
-  id: string;
-  object: string;
-  model: string;
-  expires_at: number;
-  modalities: string[];
-  instructions: string;
-  voice: string;
-  turn_detection: TurnDetectionType;
-  input_audio_format: string;
-  output_audio_format: string;
-  input_audio_transcription: any;
-  tool_choice: string;
-  temperature: number;
-  max_response_output_tokens: string;
-  client_secret: ClientSecretType;
-  tools: any[];
-}
-
-export interface TurnDetectionType {
-  type: string;
-  threshold: number;
-  prefix_padding_ms: number;
-  silence_duration_ms: number;
-  create_response: boolean;
-  interrupt_response: boolean;
-}
-
-export interface ClientSecretType {
-  value: string;
-  expires_at: number;
-}
-
 export interface ConversationDialogType {
   id: string;
   content: string;
   speaker: "user" | "ai";
-}
-
-export interface TokenUsageType {
-  total_tokens: number;
-  input_tokens: number;
-  output_tokens: number;
-  input_token_details: {
-    cached_tokens: number;
-    text_tokens: number;
-    audio_tokens: number;
-    cached_tokens_details: {
-      text_tokens: number;
-      audio_tokens: number;
-    };
-  };
-  output_token_details: {
-    text_tokens: number;
-    audio_tokens: number;
-  };
 }
 
 export interface LivePracticeSessionSetupType {
@@ -84,36 +46,4 @@ export interface LivePracticeSessionSetupType {
   fromPhrase?: number;
   toPhrase?: number;
   totalPhrases?: number;
-}
-
-export interface GeminiLiveSessionType {
-  model: string;
-  voice: string;
-  instructions: string;
-  modalities: string[];
-  expires_at: number;
-  client_secret: {
-    value: string;
-    expires_at: number;
-  };
-}
-
-export interface GeminiTokenUsageType {
-  total_tokens: number;
-  prompt_tokens: number;
-  response_tokens: number;
-  prompt_tokens_details: {
-    text_tokens: number;
-    audio_tokens: number;
-    image_tokens: number;
-  };
-  response_tokens_details: {
-    text_tokens: number;
-    audio_tokens: number;
-  };
-  cached_tokens: number;
-  cached_tokens_details: {
-    text_tokens: number;
-    audio_tokens: number;
-  };
 }
