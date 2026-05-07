@@ -4,15 +4,15 @@ import Decimal from "decimal.js-light";
 
 Decimal.set({ precision: 100, rounding: Decimal.ROUND_HALF_UP });
 
-// Per past calculations OpenAI's billed cost can drift ~5% above the published
-// per-token rates; flip this to a non-zero percentage to add a buffer.
+// Markup applied on top of the published per-million rates. Set this when a
+// reconciliation against actual OpenAI billing shows a consistent delta —
+// historically the live-session product has billed ~5.1% above the
+// published per-token rates. 0 means "use the published rates as-is".
 const unknownCostPercentage = 0;
 
 function calculatePrice(cost: number) {
-  const unknownCost = new Decimal(cost)
-    .dividedBy(100)
-    .mul(unknownCostPercentage);
-  return new Decimal(cost).add(unknownCost).toNumber();
+  const markup = new Decimal(cost).dividedBy(100).mul(unknownCostPercentage);
+  return new Decimal(cost).add(markup).toNumber();
 }
 
 // OpenAI Realtime pricing (per million tokens, USD).

@@ -4,19 +4,30 @@ import Decimal from "decimal.js-light";
 
 Decimal.set({ precision: 100, rounding: Decimal.ROUND_HALF_UP });
 
+// Markup applied on top of the published per-million rates. Set this when a
+// reconciliation against actual Gemini billing shows a consistent delta
+// (the OpenAI side has the same hook for the same reason). 0 means "use the
+// published rates as-is".
+const unknownCostPercentage = 0;
+
+function calculatePrice(cost: number) {
+  const markup = new Decimal(cost).dividedBy(100).mul(unknownCostPercentage);
+  return new Decimal(cost).add(markup).toNumber();
+}
+
 // Gemini Live API pricing (paid tier, per million tokens, USD).
 // Cached-token discount is not yet documented; charge cached tokens at the
 // same rate as their non-cached counterparts and revisit if Google publishes
 // a discount.
 const gemini_prices_per_m = {
   prompt: {
-    text: 0.75,
-    audio: 3.0,
-    image: 1.0,
+    text: calculatePrice(0.75),
+    audio: calculatePrice(3.0),
+    image: calculatePrice(1.0),
   },
   response: {
-    text: 4.5,
-    audio: 12.0,
+    text: calculatePrice(4.5),
+    audio: calculatePrice(12.0),
   },
 };
 
