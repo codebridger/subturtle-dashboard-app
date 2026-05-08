@@ -3,22 +3,22 @@
         <div class="toggle-switch" :class="{ 'right-active': !isToggleMode }">
             <!-- Left side: tap to mute/unmute -->
             <div class="toggle-side left" :class="{ active: isToggleMode }" @click="handleLeftClick"
-                title="Tap to mute or unmute the microphone.">
+                :title="t('live-practice.mic-toggle.tap-tooltip')">
                 <template v-if="isToggleMode">
                     <Icon
                         :name="isMuted ? 'iconify clarity--microphone-mute-line' : 'iconify solar--microphone-line-duotone'"
                         class="mic-icon" :class="{ muted: isMuted, unmuted: !isMuted }" />
                 </template>
-                <span v-else class="side-text">Tap to talk</span>
+                <span v-else class="side-text">{{ t('live-practice.mic-toggle.tap-label') }}</span>
             </div>
 
             <!-- Right side: always unmuted (hands-free) -->
             <div class="toggle-side right" :class="{ active: !isToggleMode }" @click="handleRightClick"
-                title="Hands-free: keep the microphone open for the whole session.">
+                :title="t('live-practice.mic-toggle.hands-free-tooltip')">
                 <template v-if="!isToggleMode">
                     <Icon name="iconify solar--microphone-line-duotone" class="mic-icon unmuted" />
                 </template>
-                <span v-else class="side-text">Hands-free</span>
+                <span v-else class="side-text">{{ t('live-practice.mic-toggle.hands-free-label') }}</span>
             </div>
 
             <!-- Sliding indicator -->
@@ -33,6 +33,7 @@ import { Icon } from 'pilotui/elements';
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 
+const { t } = useI18n();
 const liveSessionStore = useLiveSessionGeminiStore();
 
 const isToggleMode = ref(true);

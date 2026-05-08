@@ -14,11 +14,17 @@
             <section class="relative w-full shrink-0 px-3 pt-3 md:px-6">
                 <button type="button" @click="hideTranslations = !hideTranslations"
                     class="absolute right-3 top-3 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] text-gray-500 transition-colors hover:bg-gray-100 dark:text-white-light/60 dark:hover:bg-white/5 md:right-6"
-                    :title="hideTranslations ? 'Show translations' : 'Hide translations (self-test mode)'">
+                    :title="hideTranslations
+                        ? t('live-practice.translations.show-tooltip')
+                        : t('live-practice.translations.hide-tooltip')">
                     <Icon
                         :name="hideTranslations ? 'iconify solar--eye-closed-bold-duotone' : 'iconify solar--eye-bold-duotone'"
                         class="text-base" />
-                    <span class="hidden sm:inline">{{ hideTranslations ? 'Show' : 'Hide' }} translations</span>
+                    <span class="hidden sm:inline">{{
+                        hideTranslations
+                            ? t('live-practice.translations.show')
+                            : t('live-practice.translations.hide')
+                    }}</span>
                 </button>
                 <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)"
@@ -64,13 +70,14 @@
                     class="flex flex-1 flex-col items-center justify-center text-center">
                     <Icon name="IconChatDot" class="mb-3 text-3xl text-primary/40" />
                     <p v-if="!activePhrase" class="text-sm text-gray-600 dark:text-white-light/70">
-                        Click on any vocabulary card to start practicing
+                        {{ t('live-practice.click-to-start') }}
                     </p>
                     <p v-else class="text-sm text-gray-700 dark:text-white-light">
-                        Currently practicing: <strong>{{ activePhrase.phrase }}</strong>
+                        {{ t('live-practice.currently-practicing') }}
+                        <strong>{{ activePhrase.phrase }}</strong>
                     </p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-white-light/50">
-                        Your conversation will appear here.
+                        {{ t('live-practice.transcript-empty-hint') }}
                     </p>
                 </div>
 
@@ -82,7 +89,10 @@
                             : 'self-end bg-primary/10 text-primary-dark dark:bg-primary/20 dark:text-white-light'
                     ]">
                         <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">
-                            {{ dialog.speaker === 'ai' ? 'Coach' : 'You' }}
+                            {{ dialog.speaker === 'ai'
+                                ? t('live-practice.speaker-coach')
+                                : t('live-practice.speaker-you')
+                            }}
                         </p>
                         <p class="whitespace-pre-wrap">{{ dialog.content }}</p>
                     </div>
@@ -100,7 +110,8 @@
                     ]" />
                     <span>{{ statusLabel }}</span>
                     <div v-if="!liveSessionStore.isMicrophoneMuted && !isAiSpeaking"
-                        class="ml-1 flex h-3 items-end gap-[2px]" aria-label="Microphone input level">
+                        class="ml-1 flex h-3 items-end gap-[2px]"
+                        :aria-label="t('live-practice.mic-level-aria')">
                         <span v-for="(threshold, i) in micLevelThresholds" :key="i" :class="[
                             'block w-[3px] rounded-sm transition-colors duration-75',
                             liveSessionStore.micLevel >= threshold
@@ -132,13 +143,14 @@
     </MaterialPracticeToolScaffold>
 
     <!-- End-of-session recap -->
-    <Modal title="Practice complete" size="md" :modelValue="showRecapModal" @close="dismissRecap">
+    <Modal :title="t('live-practice.recap.title')" size="md" :modelValue="showRecapModal" @close="dismissRecap">
         <template #default>
             <div class="space-y-4 p-2">
                 <p class="text-center text-sm text-gray-600 dark:text-white-light/70">
-                    You practiced
-                    <strong class="text-primary">{{ practicedCount }}</strong>
-                    of {{ totalPhrases }} phrase{{ totalPhrases === 1 ? '' : 's' }} this session.
+                    {{ t('live-practice.recap.summary', {
+                        practiced: practicedCount,
+                        total: totalPhrases,
+                    }) }}
                 </p>
                 <ul class="flex flex-col gap-2">
                     <li v-for="phrase in selectedPhrases" :key="phrase._id" :class="[
@@ -163,7 +175,7 @@
         </template>
         <template #footer>
             <div class="flex justify-end">
-                <Button color="primary" label="Back to bundle" @click="dismissRecap" />
+                <Button color="primary" :label="t('live-practice.recap.back-to-bundle')" @click="dismissRecap" />
             </div>
         </template>
     </Modal>
@@ -287,17 +299,17 @@ onUnmounted(() => {
 
 const statusLabel = computed(() => {
     const state = liveSessionStore.connState;
-    if (state === 'resuming') return 'Reconnecting…';
-    if (state === 'goingAway') return 'Renewing connection…';
-    if (state === 'connecting' || state === 'setup-pending') return 'Connecting…';
-    if (state === 'closed' || state === 'idle') return 'Disconnected';
-    if (isAiSpeaking.value) return 'Coach is speaking…';
+    if (state === 'resuming') return t('live-practice.status.reconnecting');
+    if (state === 'goingAway') return t('live-practice.status.renewing');
+    if (state === 'connecting' || state === 'setup-pending') return t('live-practice.status.connecting');
+    if (state === 'closed' || state === 'idle') return t('live-practice.status.disconnected');
+    if (isAiSpeaking.value) return t('live-practice.status.coach-speaking');
     if (liveSessionStore.isMicrophoneMuted) {
         return isCoarsePointer.value
-            ? 'Tap the mic to speak'
-            : 'Tap the mic or press space to speak';
+            ? t('live-practice.status.tap-to-speak')
+            : t('live-practice.status.tap-or-space-to-speak');
     }
-    return 'Listening — go ahead';
+    return t('live-practice.status.listening');
 });
 
 const statusDotColor = computed(() => {
@@ -351,7 +363,7 @@ const instructions = `
 onMounted(async () => {
     if (!sessionDataParsed) {
         errorMode.value = true;
-        errorMessage.value = 'No session data found';
+        errorMessage.value = t('live-practice.toast.no-session-data');
         return;
     }
 
@@ -392,7 +404,7 @@ function fetchFlashcard() {
             bundle.value = res;
         })
         .catch(() => {
-            toastError({ title: 'Failed to fetch flashcard' });
+            toastError({ title: t('live-practice.toast.fetch-failed') });
         });
 }
 
@@ -422,7 +434,8 @@ function createLiveSession() {
         .catch((error) => {
             analytic.track('live-session_failed', { provider: 'gemini' });
             errorMode.value = true;
-            errorMessage.value = error?.error || error?.message || 'Failed to start live session';
+            errorMessage.value =
+                error?.error || error?.message || t('live-practice.toast.start-failed');
         });
 }
 
@@ -448,11 +461,14 @@ function dismissRecap() {
 
 function handleSessionEvent(eventData: any) {
     if (eventData?.type === 'session-resuming') {
-        toastSuccess({ title: 'Reconnecting…', message: 'Renewing the session token.' });
+        toastSuccess({
+            title: t('live-practice.toast.reconnecting-title'),
+            message: t('live-practice.toast.reconnecting-message'),
+        });
     } else if (eventData?.type === 'session-resumed') {
-        toastSuccess({ title: 'Reconnected' });
+        toastSuccess({ title: t('live-practice.toast.reconnected-title') });
     } else if (eventData?.type === 'session-resume-failed') {
-        toastError({ title: 'Could not reconnect, ending session.' });
+        toastError({ title: t('live-practice.toast.reconnect-failed') });
     }
 }
 
