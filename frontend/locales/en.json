@@ -81,6 +81,13 @@
         "cancel": "Cancel",
         "going-live": "Starting a live session",
         "ai-character": "AI Character",
+        "native-language": "Your native language",
+        "native-language-hint": "The coach will explain instructions and feedback in this language; English is used for the practice itself.",
+        "native-language-auto": "Auto (detect from my speech)",
+        "text-input-placeholder": "Type a message…",
+        "send-text": "Send",
+        "type-instead": "Type instead",
+        "use-mic": "Use mic",
         "selection": "Selection",
         "random": "Random",
         "from-phrase": "From Phrase",
@@ -91,7 +98,51 @@
         "from-less-than-to-error": "From phrase must be less than or equal to To phrase",
         "total-phrases-required": "Total phrases is required",
         "back-to-dashboard": "Back to Dashboard",
-        "oops-something-went-wrong": "Oops, something went wrong"
+        "oops-something-went-wrong": "Oops, something went wrong",
+        "click-to-start": "Click on any vocabulary card to start practicing",
+        "currently-practicing": "Currently practicing:",
+        "transcript-empty-hint": "Your conversation will appear here.",
+        "speaker-coach": "Coach",
+        "speaker-you": "You",
+        "mic-level-aria": "Microphone input level",
+        "status": {
+            "reconnecting": "Reconnecting…",
+            "renewing": "Renewing connection…",
+            "connecting": "Connecting…",
+            "disconnected": "Disconnected",
+            "coach-speaking": "Coach is speaking…",
+            "tap-to-speak": "Tap the mic to speak",
+            "tap-or-space-to-speak": "Tap the mic or press space to speak",
+            "listening": "Listening — go ahead"
+        },
+        "translations": {
+            "show": "Show translations",
+            "hide": "Hide translations",
+            "show-short": "Show",
+            "hide-short": "Hide",
+            "show-tooltip": "Show translations",
+            "hide-tooltip": "Hide translations (self-test mode)"
+        },
+        "recap": {
+            "title": "Practice complete",
+            "summary": "You practiced {practiced} of {total} phrases this session.",
+            "back-to-bundle": "Back to bundle"
+        },
+        "toast": {
+            "reconnecting-title": "Reconnecting…",
+            "reconnecting-message": "Renewing the session token.",
+            "reconnected-title": "Reconnected",
+            "reconnect-failed": "Could not reconnect, ending session.",
+            "fetch-failed": "Failed to fetch flashcard",
+            "no-session-data": "No session data found",
+            "start-failed": "Failed to start live session"
+        },
+        "mic-toggle": {
+            "tap-tooltip": "Tap to mute or unmute the microphone.",
+            "tap-label": "Tap to talk",
+            "hands-free-tooltip": "Hands-free: keep the microphone open for the whole session.",
+            "hands-free-label": "Hands-free"
+        }
     },
     "subscription": {
         "title": "Subscription",

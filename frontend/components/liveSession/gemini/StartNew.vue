@@ -14,7 +14,8 @@
             </select>
         </Card>
         <Card class="space-y-4 !p-0 shadow-none" :class="{ 'cursor-not-allowed opacity-50': !formData.bundleId }">
-            <StartLiveSessionForm class="m-4" v-model="formData" ref="formRef" @start="handleStartLiveSession" />
+            <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="GEMINI_VOICES" ref="formRef"
+                @start="handleStartLiveSession" />
 
             <!-- Freemium: Show freemium limit card -->
             <div v-if="profileStore.isFreemium">
@@ -41,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+// Standalone "start a new session" entry point bound to the Gemini practice page.
 import { Button, Card } from 'pilotui/elements';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { dataProvider } from '@modular-rest/client';
@@ -49,6 +51,8 @@ import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import { useProfileStore } from '~/stores/profile';
+
+const GEMINI_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
 
 const router = useRouter();
 const { t } = useI18n();
@@ -63,16 +67,9 @@ const controller = dataProvider.list<PhraseBundleType>(
         collection: COLLECTIONS.PHRASE_BUNDLE,
         query: {
             refId: authUser.value?.id,
-            title: {
-                $regex: filter.value,
-                $options: 'i',
-            },
+            title: { $regex: filter.value, $options: 'i' },
         },
-        options: {
-            sort: {
-                _id: -1,
-            },
-        },
+        options: { sort: { _id: -1 } },
     },
     {
         limit: 50,
@@ -85,9 +82,7 @@ const controller = dataProvider.list<PhraseBundleType>(
 
 onMounted(async () => {
     try {
-        // update pagination
         await controller.updatePagination();
-        // fetch first page
         await controller.fetchPage(1);
     } catch (error) {
         console.error(error);
@@ -98,21 +93,19 @@ const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
 
 const formData = reactive({
     bundleId: '',
-    aiCharacter: 'alloy',
+    aiCharacter: 'Kore',
     selectionMode: 'selection' as 'selection' | 'random',
     fromPhrase: '1',
     toPhrase: '10',
     totalPhrases: '10',
+    nativeLanguage: 'auto',
 });
 
 const isFormValid = computed(() => {
     if (!formRef.value) return false;
-
-    if (formData.selectionMode === 'selection') {
-        return !formRef.value.selectionError;
-    } else {
-        return !formRef.value.randomError;
-    }
+    return formData.selectionMode === 'selection'
+        ? !formRef.value.selectionError
+        : !formRef.value.randomError;
 });
 
 function startSession() {
@@ -121,6 +114,7 @@ function startSession() {
     const sessionData: LivePracticeSessionSetupType = {
         aiCharacter: formData.aiCharacter,
         selectionMode: formData.selectionMode,
+        nativeLanguage: formData.nativeLanguage,
     };
 
     if (formData.selectionMode === 'selection') {
@@ -134,16 +128,13 @@ function startSession() {
 }
 
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-    // convert sessionData to base64
     const sessionDataBase64 = btoa(JSON.stringify(sessionData));
-
-    // URL should not include # at the beginning
-    const url = `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`;
-    router.push(url);
+    router.push(
+        `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`
+    );
 }
 
 function handleConfirmUpgrade() {
-    // Redirect to subscription page
     router.push('/settings/subscription');
 }
 </script>

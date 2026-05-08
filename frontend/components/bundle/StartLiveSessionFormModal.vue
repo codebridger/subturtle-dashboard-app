@@ -60,11 +60,12 @@ const emit = defineEmits<{
 const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
 
 const formData = reactive({
-    aiCharacter: 'alloy',
+    aiCharacter: 'Kore',
     selectionMode: 'selection' as 'selection' | 'random',
     fromPhrase: '1',
     toPhrase: '10',
     totalPhrases: '10',
+    nativeLanguage: 'auto',
 });
 
 const isFormValid = computed(() => {
@@ -83,6 +84,7 @@ function startSession() {
     const sessionData = {
         aiCharacter: formData.aiCharacter,
         selectionMode: formData.selectionMode,
+        nativeLanguage: formData.nativeLanguage,
     };
 
     if (formData.selectionMode === 'selection') {

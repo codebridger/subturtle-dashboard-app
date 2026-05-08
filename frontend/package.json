@@ -48,6 +48,7 @@
         "vue-tsc": "^0.40.4"
     },
     "dependencies": {
+        "@google/genai": "^1.52.0",
         "@modular-rest/client": "^1.14.0",
         "@pinia/nuxt": "^0.4.6",
         "apexcharts": "^4.4.0",

@@ -1,22 +1,24 @@
 <template>
     <div class="toggle-container">
         <div class="toggle-switch" :class="{ 'right-active': !isToggleMode }">
-            <!-- Left side (Toggle Mute/Unmute) -->
-            <div class="toggle-side left" :class="{ active: isToggleMode }" @click="handleLeftClick">
+            <!-- Left side: tap to mute/unmute -->
+            <div class="toggle-side left" :class="{ active: isToggleMode }" @click="handleLeftClick"
+                :title="t('live-practice.mic-toggle.tap-tooltip')">
                 <template v-if="isToggleMode">
                     <Icon
                         :name="isMuted ? 'iconify clarity--microphone-mute-line' : 'iconify solar--microphone-line-duotone'"
                         class="mic-icon" :class="{ muted: isMuted, unmuted: !isMuted }" />
                 </template>
-                <span v-else class="side-text">Toggle Mode</span>
+                <span v-else class="side-text">{{ t('live-practice.mic-toggle.tap-label') }}</span>
             </div>
 
-            <!-- Right side (Always Unmute) -->
-            <div class="toggle-side right" :class="{ active: !isToggleMode }" @click="handleRightClick">
+            <!-- Right side: always unmuted (hands-free) -->
+            <div class="toggle-side right" :class="{ active: !isToggleMode }" @click="handleRightClick"
+                :title="t('live-practice.mic-toggle.hands-free-tooltip')">
                 <template v-if="!isToggleMode">
                     <Icon name="iconify solar--microphone-line-duotone" class="mic-icon unmuted" />
                 </template>
-                <span v-else class="side-text">Always On</span>
+                <span v-else class="side-text">{{ t('live-practice.mic-toggle.hands-free-label') }}</span>
             </div>
 
             <!-- Sliding indicator -->
@@ -26,25 +28,23 @@
 </template>
 
 <script setup lang="ts">
+// Mic mute/unmute toggle bound to the Gemini live-session store.
 import { Icon } from 'pilotui/elements';
-import { ref, computed, watch } from 'vue';
-import { useLiveSessionStore } from '~/stores/liveSessionOpenai';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 
-const liveSessionStore = useLiveSessionStore();
+const { t } = useI18n();
+const liveSessionStore = useLiveSessionGeminiStore();
 
-// State
-const isToggleMode = ref(true); // true for left side (toggle mute), false for right side (always unmute)
+const isToggleMode = ref(true);
 
-// Computed
 const isMuted = computed(() => liveSessionStore.getMicrophoneMuted);
 
-// Methods
 function switchToToggleMode() {
     if (!isToggleMode.value) {
         isToggleMode.value = true;
-        // Always start in muted state when switching to toggle mode
         if (!isMuted.value) {
-            liveSessionStore.toggleMicrophone();
+            liveSessionStore.toggleMicrophone(false);
         }
     }
 }
@@ -53,35 +53,55 @@ function switchToAlwaysOn() {
     if (isToggleMode.value) {
         isToggleMode.value = false;
         if (isMuted.value) {
-            liveSessionStore.toggleMicrophone(); // Ensure unmuted in always-on mode
+            liveSessionStore.toggleMicrophone(true);
         }
     }
 }
 
 function handleLeftClick() {
     if (isToggleMode.value) {
-        // In toggle mode, handle mute/unmute
         liveSessionStore.toggleMicrophone();
     } else {
-        // Switch to toggle mode
         switchToToggleMode();
     }
 }
 
 function handleRightClick() {
     if (!isToggleMode.value) {
-        // Already in always-on mode, do nothing
         return;
     } else {
-        // Switch to always-on mode
         switchToAlwaysOn();
     }
 }
 
-// Watch for mode changes to ensure proper state
+// Global spacebar shortcut: toggles the mic from anywhere on the page while
+// we're in tap-to-toggle mode. Skipped if the user is typing in an input or
+// already in hands-free, so we don't fight unrelated keyboard interactions.
+function isEditableTarget(target: EventTarget | null) {
+    if (!(target instanceof HTMLElement)) return false;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+}
+
+function onSpaceKeyDown(event: KeyboardEvent) {
+    if (event.code !== 'Space') return;
+    if (event.repeat) return;
+    if (!isToggleMode.value) return;
+    if (isEditableTarget(event.target)) return;
+    event.preventDefault();
+    liveSessionStore.toggleMicrophone();
+}
+
+onMounted(() => {
+    window.addEventListener('keydown', onSpaceKeyDown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', onSpaceKeyDown);
+});
+
 watch(isToggleMode, (newValue) => {
     if (!newValue && isMuted.value) {
-        // If switched to always-on mode and muted, unmute
         liveSessionStore.toggleMicrophone();
     }
 });
@@ -93,7 +113,6 @@ watch(
             isToggleMode.value = true;
         }
     },
-    // it should be only once
     { immediate: true, deep: true, once: true }
 );
 </script>
@@ -160,7 +179,6 @@ watch(
     white-space: nowrap;
 }
 
-/* Hover effects */
 .toggle-switch:hover .slider {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
