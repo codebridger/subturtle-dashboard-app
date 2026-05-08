@@ -86,6 +86,8 @@
         "native-language-auto": "Auto (detect from my speech)",
         "text-input-placeholder": "Type a message…",
         "send-text": "Send",
+        "type-instead": "Type instead",
+        "use-mic": "Use mic",
         "selection": "Selection",
         "random": "Random",
         "from-phrase": "From Phrase",

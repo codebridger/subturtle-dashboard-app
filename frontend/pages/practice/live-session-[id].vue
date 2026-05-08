@@ -11,24 +11,22 @@
                 @warning="handleTimerWarning" />
 
             <!-- Compact phrase cards row -->
-            <section class="w-full shrink-0 px-3 pt-3 md:px-6">
-                <div class="mb-2 flex justify-end">
+            <section class="relative w-full shrink-0 px-3 pt-3 md:px-6">
+                <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <button type="button" @click="hideTranslations = !hideTranslations"
-                        class="flex items-center gap-1 rounded-full border border-gray-200 bg-white/80 px-2 py-1 text-[10px] text-gray-500 shadow-sm transition-colors hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:text-white-light/60 dark:hover:bg-white/10"
+                        class="order-last flex items-center gap-1 self-center rounded-full border border-gray-200 bg-white/80 px-2 py-1 text-[10px] text-gray-500 shadow-sm transition-colors hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:text-white-light/60 dark:hover:bg-white/10"
                         :title="hideTranslations
                             ? t('live-practice.translations.show-tooltip')
                             : t('live-practice.translations.hide-tooltip')">
                         <Icon
                             :name="hideTranslations ? 'iconify solar--eye-closed-bold-duotone' : 'iconify solar--eye-bold-duotone'"
                             class="text-base" />
-                        <span class="hidden sm:inline">{{
+                        <span class="hidden md:inline">{{
                             hideTranslations
-                                ? t('live-practice.translations.show')
-                                : t('live-practice.translations.hide')
+                                ? t('live-practice.translations.show-short')
+                                : t('live-practice.translations.hide-short')
                         }}</span>
                     </button>
-                </div>
-                <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)"
                         class="w-[160px] cursor-pointer md:w-[200px]"
                         :title="hideTranslations ? '' : phrase.translation">
@@ -107,7 +105,8 @@
             <!-- Mic + status -->
             <section
                 class="flex w-full shrink-0 flex-col items-center justify-center gap-2 px-4 pb-4 pt-2 md:gap-3 md:pb-6">
-                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-white-light/70">
+                <div v-if="showStatusIndicator"
+                    class="flex items-center gap-2 text-xs text-gray-600 dark:text-white-light/70">
                     <span :class="[
                         'inline-block h-2 w-2 rounded-full',
                         statusDotColor,
@@ -125,17 +124,38 @@
                     </div>
                 </div>
 
-                <BundleMicToggleGemini />
+                <!-- Voice mode: mic toggle (default) -->
+                <template v-if="!isTextMode">
+                    <BundleMicToggleGemini />
+                    <button type="button" @click="enterTextMode"
+                        class="flex items-center gap-1 text-[11px] text-gray-500 transition-colors hover:text-primary dark:text-white-light/60 dark:hover:text-primary">
+                        <Icon name="iconify solar--keyboard-linear" class="text-sm" />
+                        <span>{{ t('live-practice.type-instead') }}</span>
+                    </button>
+                </template>
 
-                <!-- Text input fallback alongside the mic toggle -->
-                <form class="flex w-full max-w-2xl items-center gap-2" @submit.prevent="sendTextMessage">
-                    <input v-model="textInput" type="text" :placeholder="t('live-practice.text-input-placeholder')"
-                        :disabled="!liveSessionStore.isSessionActive"
-                        class="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white-light" />
-                    <button type="submit" :disabled="!textInput.trim() || !liveSessionStore.isSessionActive"
-                        class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                        :title="t('live-practice.send-text')">
-                        <Icon name="iconify solar--arrow-right-linear" class="text-base" />
+                <!-- Text mode: opt-in composer (single-line, grows on focus) -->
+                <form v-else class="flex w-[320px] max-w-full flex-col gap-2"
+                    @submit.prevent="sendTextMessage">
+                    <div class="flex items-end gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-all focus-within:border-primary focus-within:ring-1 focus-within:ring-primary dark:border-white/10 dark:bg-white/5"
+                        :class="isTextFocused || textInput ? 'rounded-2xl' : 'rounded-full'">
+                        <textarea ref="textareaRef" v-model="textInput"
+                            :placeholder="t('live-practice.text-input-placeholder')"
+                            :disabled="!liveSessionStore.isSessionActive"
+                            :rows="isTextFocused || textInput ? 3 : 1"
+                            @focus="isTextFocused = true" @blur="isTextFocused = false"
+                            @keydown.enter.exact.prevent="sendTextMessage"
+                            class="flex-1 resize-none bg-transparent text-sm leading-tight text-gray-800 outline-none disabled:opacity-50 dark:text-white-light" />
+                        <button type="submit" :disabled="!textInput.trim() || !liveSessionStore.isSessionActive"
+                            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                            :title="t('live-practice.send-text')">
+                            <Icon name="iconify solar--arrow-right-linear" class="text-sm" />
+                        </button>
+                    </div>
+                    <button type="button" @click="exitTextMode"
+                        class="flex items-center justify-center gap-1 text-[11px] text-gray-500 transition-colors hover:text-primary dark:text-white-light/60 dark:hover:text-primary">
+                        <Icon name="iconify solar--microphone-line-duotone" class="text-sm" />
+                        <span>{{ t('live-practice.use-mic') }}</span>
                     </button>
                 </form>
 
@@ -252,6 +272,11 @@ const showTimerExpiredModal = ref(false);
 const showRecapModal = ref(false);
 const hideTranslations = ref(false);
 const textInput = ref('');
+// Text-mode is opt-in. Hidden by default so the mic stays the primary CTA.
+// On focus the field grows from a single line into a multi-line composer.
+const isTextMode = ref(false);
+const isTextFocused = ref(false);
+const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
 const timerConfig = {
     duration: 5 * 60,
@@ -341,6 +366,18 @@ const statusDotColor = computed(() => {
 const isPulsing = computed(() => {
     if (isAiSpeaking.value) return true;
     return ['resuming', 'goingAway', 'connecting', 'setup-pending'].includes(
+        liveSessionStore.connState
+    );
+});
+
+// In voice mode the indicator is always informative. In text mode the
+// "tap the mic" / "listening" labels are misleading, so we only surface the
+// indicator when something genuinely noteworthy is happening (the coach is
+// speaking or the connection is in a transient state).
+const showStatusIndicator = computed(() => {
+    if (!isTextMode.value) return true;
+    if (isAiSpeaking.value) return true;
+    return ['resuming', 'goingAway', 'connecting', 'setup-pending', 'closed'].includes(
         liveSessionStore.connState
     );
 });
@@ -658,6 +695,21 @@ function sendTextMessage() {
     const message = textInput.value.trim();
     if (!message || !liveSessionStore.isSessionActive) return;
     liveSessionStore.sendMessage(message);
+    textInput.value = '';
+}
+
+function enterTextMode() {
+    isTextMode.value = true;
+    // Mute the mic so we don't keep streaming audio while the user is typing.
+    if (!liveSessionStore.isMicrophoneMuted) {
+        liveSessionStore.toggleMicrophone(false);
+    }
+    nextTick(() => textareaRef.value?.focus());
+}
+
+function exitTextMode() {
+    isTextMode.value = false;
+    isTextFocused.value = false;
     textInput.value = '';
 }
 </script>
