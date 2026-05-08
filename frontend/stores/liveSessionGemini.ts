@@ -1,5 +1,5 @@
 /**
- * Gemini Live API Pinia store — the only live-session store on the frontend.
+ * Gemini Live API Pinia store for live practice sessions
  *
  *   • Connection: WebSocket via `@google/genai` SDK (`ai.live.connect`),
  *     authenticated with a server-issued ephemeral token (v1alpha API).
@@ -25,7 +25,16 @@
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { GoogleGenAI, Modality } from '@google/genai';
-import type { LiveServerMessage, Session } from '@google/genai';
+import type {
+    LiveServerMessage,
+    Session,
+    Content,
+    LiveConnectConfig,
+    LiveServerContent,
+    FunctionCall,
+    UsageMetadata,
+    Transcription,
+} from '@google/genai';
 import type {
     ConversationDialogType,
     GeminiLiveSessionType,
@@ -185,13 +194,13 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             try {
                 workletNode.port.onmessage = null;
                 workletNode.disconnect();
-            } catch {}
+            } catch { }
             workletNode = null;
         }
         if (micSourceNode) {
             try {
                 micSourceNode.disconnect();
-            } catch {}
+            } catch { }
             micSourceNode = null;
         }
         if (microphoneTrack) {
@@ -203,11 +212,11 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             microphoneStream = null;
         }
         if (inputAudioContext) {
-            inputAudioContext.close().catch(() => {});
+            inputAudioContext.close().catch(() => { });
             inputAudioContext = null;
         }
         if (outputAudioContext) {
-            outputAudioContext.close().catch(() => {});
+            outputAudioContext.close().catch(() => { });
             outputAudioContext = null;
         }
 
@@ -226,6 +235,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     function sendMessage(message: string) {
         if (!session) throw new Error('No active Gemini session');
         try {
+            // Capture the message locally so it appears in the dialog history
+            appendDialog(message, 'user');
             session.sendRealtimeInput({ text: message } as any);
         } catch (error) {
             console.error('Failed to send Gemini message:', error);
@@ -334,7 +345,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         // Browsers may suspend the AudioContext if the user gesture chain was
         // broken by intervening async hops. Resume lazily on each chunk.
         if (outputAudioContext.state === 'suspended') {
-            outputAudioContext.resume().catch(() => {});
+            outputAudioContext.resume().catch(() => { });
         }
         const bytes = base64ToBytes(base64);
         if (bytes.length < 2) return;
@@ -370,7 +381,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             try {
                 s.stop();
                 s.disconnect();
-            } catch {}
+            } catch { }
         }
         pendingSources.clear();
         if (outputAudioContext) {
@@ -388,7 +399,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             httpOptions: { apiVersion: 'v1alpha' },
         } as any);
 
-        const liveConfig: any = {
+        const liveConfig: LiveConnectConfig = {
             responseModalities: [Modality.AUDIO],
             systemInstruction: { parts: [{ text: currentInstructions }] },
             speechConfig: {
@@ -422,7 +433,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             model: liveSession.value?.model || DEFAULT_MODEL,
             config: liveConfig,
             callbacks: {
-                onopen: () => {},
+                onopen: () => { },
                 onmessage: (msg: LiveServerMessage) => {
                     if ((msg as any).setupComplete) resolveSetupComplete();
                     try {
@@ -516,7 +527,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             session = null;
             try {
                 old?.close();
-            } catch {}
+            } catch { }
 
             await connectLive(sessionMeta.client_secret.value, lastResumptionHandle);
             isResuming = false;
@@ -537,49 +548,62 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         // concerns (toasts, analytics) without re-implementing the SDK.
         onUpdateCallback?.(msg);
 
-        const m: any = msg;
-
-        if (m.serverContent) {
-            const sc = m.serverContent;
-
+        const sc = msg.serverContent;
+        if (sc) {
             if (sc.modelTurn?.parts) {
                 for (const part of sc.modelTurn.parts) {
                     if (part?.inlineData?.data) playAudioChunk(part.inlineData.data);
                     if (part?.text) appendDialog(part.text, 'ai');
                 }
             }
-            if (sc.outputTranscription?.text) appendDialog(sc.outputTranscription.text, 'ai');
-            if (sc.inputTranscription?.text) appendDialog(sc.inputTranscription.text, 'user');
-            if (sc.interrupted) dropPlayback();
+            if (sc.outputTranscription?.text) {
+                appendDialog(sc.outputTranscription.text, 'ai');
+            }
+            if (sc.outputTranscription?.finished) {
+                if (currentAiDialogId) flushDialogToServer([currentAiDialogId]);
+            }
+            if (sc.inputTranscription?.text) {
+                appendDialog(sc.inputTranscription.text, 'user');
+            }
+            if (sc.inputTranscription?.finished) {
+                if (currentUserDialogId) flushDialogToServer([currentUserDialogId]);
+            }
+            if (sc.interrupted) {
+                const turnIds = [currentUserDialogId, currentAiDialogId].filter(Boolean) as string[];
+                flushDialogToServer(turnIds);
+                dropPlayback();
+            }
             if (sc.turnComplete || sc.generationComplete) {
                 // Finalize the current turn so the next chunk starts a new dialog row.
+                const turnIds = [currentUserDialogId, currentAiDialogId].filter(Boolean) as string[];
+                flushDialogToServer(turnIds);
+
                 currentUserDialogId = null;
                 currentAiDialogId = null;
                 turnCounter += 1;
-                flushDialogToServer();
             }
         }
 
-        if (m.toolCall?.functionCalls) handleToolCalls(m.toolCall.functionCalls);
+        if (msg.toolCall?.functionCalls) handleToolCalls(msg.toolCall.functionCalls);
 
-        if (m.usageMetadata) {
-            updateTokenUsageWithPartialData(mapGeminiUsage(m.usageMetadata));
+        if (msg.usageMetadata) {
+            updateTokenUsageWithPartialData(mapGeminiUsage(msg.usageMetadata));
         }
 
-        if (m.sessionResumptionUpdate?.newHandle) {
-            lastResumptionHandle = m.sessionResumptionUpdate.newHandle;
+        if (msg.sessionResumptionUpdate?.newHandle) {
+            lastResumptionHandle = msg.sessionResumptionUpdate.newHandle;
         }
 
-        if (m.goAway) {
+        if (msg.goAway) {
             connState.value = 'goingAway';
-            onUpdateCallback?.({ type: 'goAway', timeLeft: m.goAway.timeLeft });
+            onUpdateCallback?.({ type: 'goAway', timeLeft: msg.goAway.timeLeft });
             requestResume('goAway').catch((err) =>
                 console.error('Resume on goAway failed', err)
             );
         }
     }
 
-    function handleToolCalls(functionCalls: any[]) {
+    function handleToolCalls(functionCalls: FunctionCall[]) {
         if (!session || !sessionTools) return;
         const responses = functionCalls.map((call) => {
             const name = call.name as string;
@@ -628,11 +652,23 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         }
     }
 
-    function flushDialogToServer() {
+    function flushDialogToServer(specificIds?: string[]) {
         if (!id.value) return;
-        const total = conversationDialogs.value.length;
-        if (total === 0) return;
-        const lastDialog = conversationDialogs.value[total - 1];
+
+        let dialogsToFlush: ConversationDialogType[] = [];
+
+        if (specificIds && specificIds.length > 0) {
+            // Flush only the dialogs matching the IDs (e.g. from the current turn)
+            dialogsToFlush = conversationDialogs.value.filter(d => specificIds.includes(d.id));
+        } else {
+            // Fallback: flush everything that hasn't been flushed or just the last one if uncertain
+            const total = conversationDialogs.value.length;
+            if (total === 0) return;
+            dialogsToFlush = [conversationDialogs.value[total - 1]];
+        }
+
+        if (dialogsToFlush.length === 0) return;
+
         functionProvider
             .run({
                 name: 'update-live-session-record',
@@ -640,7 +676,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     sessionId: id.value,
                     userId: authUser.value?.id,
                     provider: 'gemini',
-                    update: { totalUsage: tokenUsage.value, dialogs: [lastDialog] },
+                    update: { totalUsage: tokenUsage.value, dialogs: dialogsToFlush },
                 },
             })
             .catch((err) => console.warn('Failed to flush dialog', err));
@@ -664,11 +700,13 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
      * Translate Gemini's `usageMetadata` into our backend-shared
      * `GeminiTokenUsageType` so cost calculation can run uniformly server-side.
      */
-    function mapGeminiUsage(usageMetadata: any): GeminiTokenUsageType {
+    function mapGeminiUsage(usageMetadata: UsageMetadata): GeminiTokenUsageType {
         const out = emptyUsage();
+        const m = usageMetadata as any;
+
         out.prompt_tokens = usageMetadata.promptTokenCount || 0;
         out.response_tokens =
-            usageMetadata.responseTokenCount || usageMetadata.candidatesTokenCount || 0;
+            usageMetadata.responseTokenCount || m.candidatesTokenCount || 0;
         out.cached_tokens = usageMetadata.cachedContentTokenCount || 0;
         out.total_tokens =
             usageMetadata.totalTokenCount ||
@@ -689,10 +727,9 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     break;
             }
         }
+
         const responseDetails =
-            usageMetadata.responseTokensDetails ||
-            usageMetadata.candidatesTokensDetails ||
-            [];
+            usageMetadata.responseTokensDetails || m.candidatesTokensDetails || [];
         for (const d of responseDetails) {
             const c = d.tokenCount || 0;
             switch (String(d.modality || '').toUpperCase()) {
@@ -704,7 +741,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     break;
             }
         }
-        for (const d of usageMetadata.cachedContentTokensDetails || []) {
+
+        for (const d of usageMetadata.cacheTokensDetails || m.cachedContentTokensDetails || []) {
             const c = d.tokenCount || 0;
             switch (String(d.modality || '').toUpperCase()) {
                 case 'TEXT':
