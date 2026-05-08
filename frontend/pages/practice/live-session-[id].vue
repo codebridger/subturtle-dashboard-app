@@ -306,6 +306,19 @@ const visibleDialogs = computed(() =>
 const isAiSpeaking = ref(false);
 let aiSilenceTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Mark the active phrase as practiced only when the user actually produces
+// content for it — a speech-transcription chunk or a typed message — never
+// merely on activation. Card clicks / activate_phrase tool calls now only
+// switch which card is highlighted; "practiced" requires real user input.
+watch(
+    () => visibleDialogs.value.filter((d) => d.speaker === 'user').length,
+    (newCount, oldCount) => {
+        if (newCount > (oldCount ?? 0) && activePhrase.value) {
+            practicedPhraseIds.value.add(activePhrase.value._id);
+        }
+    }
+);
+
 watch(
     () => visibleDialogs.value.map((d) => `${d.id}:${d.content.length}`).join('|'),
     () => {
@@ -485,7 +498,6 @@ const tools = {
 
             phraseIndex.value = idx;
             const phrase = list[idx];
-            practicedPhraseIds.value.add(phrase._id);
             return {
                 success: true,
                 index: idx + 1,
@@ -685,8 +697,10 @@ function selectPhrase(index: number) {
 
     if (!liveSessionStore.isSessionActive) return;
     const phrase = selectedPhrases.value[index];
-    practicedPhraseIds.value.add(phrase._id);
-    liveSessionStore.sendMessage(
+    // Use triggerConversation (not sendMessage) so this system-style nudge
+    // doesn't show up in the chat as a fake "user" message — and so it can't
+    // be misinterpreted as the user practicing the phrase.
+    liveSessionStore.triggerConversation(
         `The user selected a different vocabulary: "${phrase.phrase}". Let's start practicing on it.`
     );
 }
