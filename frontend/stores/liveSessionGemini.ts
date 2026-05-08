@@ -135,6 +135,15 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     async function createLiveSession(options: CreateOptions) {
         const { sessionDetails, tools, onUpdate, metadata: meta } = options;
 
+        // Wipe any leftover state from a previous session so the new transcript
+        // starts blank. The store survives page navigations, so without this,
+        // dialogs/usage/resumption-handle from the prior session bleed in.
+        clearConversationDialogs();
+        tokenUsage.value = null;
+        id.value = null;
+        lastResumptionHandle = null;
+        turnCounter = 0;
+
         sessionTools = tools;
         onUpdateCallback = onUpdate || null;
         metadata.value = meta || null;

@@ -45,14 +45,17 @@
                             },
                         ]">
                             <div class="flex items-baseline justify-center gap-2">
-                                <span class="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
-                                <h2 class="truncate text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}</h2>
+                                <span class="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1
+                                    }}</span>
+                                <h2 class="truncate text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}
+                                </h2>
                             </div>
                             <p class="truncate text-[11px] text-gray-500 dark:text-white-light/60 sm:!text-sm md:!text-base"
                                 :class="{ 'tracking-widest': hideTranslations }">
                                 {{ hideTranslations ? '••••••' : phrase.translation }}
                             </p>
-                            <span v-if="practicedPhraseIds.has(phrase._id) && (!activePhrase || activePhrase._id !== phrase._id)"
+                            <span
+                                v-if="practicedPhraseIds.has(phrase._id) && (!activePhrase || activePhrase._id !== phrase._id)"
                                 class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white">
                                 <Icon name="IconCheck" class="text-[10px]" />
                             </span>
@@ -112,8 +115,7 @@
                     ]" />
                     <span>{{ statusLabel }}</span>
                     <div v-if="!liveSessionStore.isMicrophoneMuted && !isAiSpeaking"
-                        class="ml-1 flex h-3 items-end gap-[2px]"
-                        :aria-label="t('live-practice.mic-level-aria')">
+                        class="ml-1 flex h-3 items-end gap-[2px]" :aria-label="t('live-practice.mic-level-aria')">
                         <span v-for="(threshold, i) in micLevelThresholds" :key="i" :class="[
                             'block w-[3px] rounded-sm transition-colors duration-75',
                             liveSessionStore.micLevel >= threshold
@@ -137,8 +139,7 @@
                     </button>
                 </form>
 
-                <div v-if="isDev"
-                    class="flex items-center justify-center gap-2 text-[8px] opacity-50">
+                <div v-if="isDev" class="flex items-center justify-center gap-2 text-[8px] opacity-50">
                     <span class="font-bold">GEMINI</span>
                     <span>IN {{ liveSessionStore.tokenUsage?.prompt_tokens || 0 }}</span>
                     <span>CACHED {{ liveSessionStore.tokenUsage?.cached_tokens || 0 }}</span>
@@ -479,6 +480,28 @@ const tools = {
     },
 };
 
+// Auto-language resolution: when the user picked "auto", prefer the language
+// the bundle's translations are written in (single shared `translation_language`
+// across the selected phrases). Otherwise fall back to a directive that lets
+// the model pick up the user's language from their first message, with English
+// as the safe default.
+function resolveNativeLanguage(): string {
+    const raw = sessionDataParsed.nativeLanguage;
+    if (raw && raw !== 'auto') return raw;
+
+    const langs = new Set(
+        selectedPhrases.value
+            .map((p) => (p.translation_language || '').trim())
+            .filter((l) => l && l.toLowerCase() !== 'unknown')
+    );
+    if (langs.size === 1) {
+        const detected = [...langs][0];
+        return `${detected} (auto-detected from the bundle's translation language)`;
+    }
+
+    return "English by default; if the user speaks another language in their first message, switch to that language and stick with it for the rest of the session";
+}
+
 function fetchFlashcard() {
     return dataProvider
         .findOne<PopulatedPhraseBundleType>({
@@ -501,14 +524,10 @@ function fetchFlashcard() {
 
 function createLiveSession() {
     const phrases = selectedPhrases.value
-        .map((p, i) => `${i + 1}. ${p.phrase}`)
+        .map((p, i) => `${i + 1}. ${p.phrase}: ${p.translation}`)
         .join('\n');
 
-    const rawLang = sessionDataParsed.nativeLanguage;
-    const nativeLanguage =
-        !rawLang || rawLang === 'auto'
-            ? "the language the user speaks first (auto-detect from their first message and stick with it for the rest of the session)"
-            : rawLang;
+    const nativeLanguage = resolveNativeLanguage();
     const finalInstructions = instructions
         .replace(/\[nativeLanguage\]/g, nativeLanguage)
         .replace('[phrases]', phrases);
