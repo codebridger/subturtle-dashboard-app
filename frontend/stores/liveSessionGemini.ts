@@ -85,6 +85,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
     const sessionStarted = ref(false);
     const conversationDialogs = ref<ConversationDialogType[]>([]);
     const isMicrophoneMuted = ref(false);
+    // RMS amplitude of the most recent mic chunk, normalized to 0..1. Used by
+    // the UI to show a live input-level meter; clamped to 0 while muted so a
+    // disabled mic never appears active.
+    const micLevel = ref(0);
     const tokenUsage = ref<GeminiTokenUsageType | null>(null);
     const metadata = ref<LiveSessionMetadataType | null>(null);
     const connState = ref<ConnState>('idle');
@@ -223,6 +227,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         sessionStarted.value = false;
         liveSession.value = null;
         isMicrophoneMuted.value = false;
+        micLevel.value = 0;
         connState.value = 'closed';
         return { success: true };
     }
@@ -269,6 +274,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             isMicrophoneMuted.value = !isMicrophoneMuted.value;
             microphoneTrack.enabled = !isMicrophoneMuted.value;
         }
+        if (isMicrophoneMuted.value) micLevel.value = 0;
         return isMicrophoneMuted.value;
     }
 
@@ -321,11 +327,25 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     function handleWorkletMessage(e: MessageEvent) {
         if (!session) return;
-        if (isMicrophoneMuted.value) return;
-        if (connState.value !== 'ready' && connState.value !== 'recording') return;
 
         const int16: Int16Array = e.data;
         if (!int16 || int16.length === 0) return;
+
+        // Update the live input level on every chunk so the UI meter reacts in
+        // real time. Computed from the same Int16 buffer we forward to Gemini.
+        if (isMicrophoneMuted.value) {
+            micLevel.value = 0;
+        } else {
+            let sumSq = 0;
+            for (let i = 0; i < int16.length; i++) {
+                const sample = int16[i] / 32768;
+                sumSq += sample * sample;
+            }
+            micLevel.value = Math.sqrt(sumSq / int16.length);
+        }
+
+        if (isMicrophoneMuted.value) return;
+        if (connState.value !== 'ready' && connState.value !== 'recording') return;
 
         try {
             session.sendRealtimeInput({
@@ -858,6 +878,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         sessionStarted,
         conversationDialogs,
         isMicrophoneMuted,
+        micLevel,
         tokenUsage,
         connState,
 

@@ -11,10 +11,19 @@
                 @warning="handleTimerWarning" />
 
             <!-- Compact phrase cards row -->
-            <section class="w-full shrink-0 px-3 pt-3 md:px-6">
+            <section class="relative w-full shrink-0 px-3 pt-3 md:px-6">
+                <button type="button" @click="hideTranslations = !hideTranslations"
+                    class="absolute right-3 top-3 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] text-gray-500 transition-colors hover:bg-gray-100 dark:text-white-light/60 dark:hover:bg-white/5 md:right-6"
+                    :title="hideTranslations ? 'Show translations' : 'Hide translations (self-test mode)'">
+                    <Icon
+                        :name="hideTranslations ? 'iconify solar--eye-closed-bold-duotone' : 'iconify solar--eye-bold-duotone'"
+                        class="text-base" />
+                    <span class="hidden sm:inline">{{ hideTranslations ? 'Show' : 'Hide' }} translations</span>
+                </button>
                 <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)"
-                        class="w-[160px] cursor-pointer md:w-[200px]" :title="phrase.translation">
+                        class="w-[160px] cursor-pointer md:w-[200px]"
+                        :title="hideTranslations ? '' : phrase.translation">
                         <Card :class="[
                             'relative rounded-lg text-center',
                             'transition-all duration-300 ease-in-out',
@@ -31,8 +40,9 @@
                                 <span class="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
                                 <h2 class="truncate text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}</h2>
                             </div>
-                            <p class="truncate text-[11px] text-gray-500 dark:text-white-light/60 sm:!text-sm md:!text-base">
-                                {{ phrase.translation }}
+                            <p class="truncate text-[11px] text-gray-500 dark:text-white-light/60 sm:!text-sm md:!text-base"
+                                :class="{ 'tracking-widest': hideTranslations }">
+                                {{ hideTranslations ? '••••••' : phrase.translation }}
                             </p>
                             <span v-if="practicedPhraseIds.has(phrase._id) && (!activePhrase || activePhrase._id !== phrase._id)"
                                 class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white">
@@ -89,6 +99,15 @@
                         isPulsing ? 'animate-pulse' : ''
                     ]" />
                     <span>{{ statusLabel }}</span>
+                    <div v-if="!liveSessionStore.isMicrophoneMuted && !isAiSpeaking"
+                        class="ml-1 flex h-3 items-end gap-[2px]" aria-label="Microphone input level">
+                        <span v-for="(threshold, i) in micLevelThresholds" :key="i" :class="[
+                            'block w-[3px] rounded-sm transition-colors duration-75',
+                            liveSessionStore.micLevel >= threshold
+                                ? 'bg-success'
+                                : 'bg-gray-300 dark:bg-white-light/20'
+                        ]" :style="{ height: `${(i + 1) * 20}%` }" />
+                    </div>
                 </div>
 
                 <BundleMicToggleGemini />
@@ -112,6 +131,43 @@
         </template>
     </MaterialPracticeToolScaffold>
 
+    <!-- End-of-session recap -->
+    <Modal title="Practice complete" size="md" :modelValue="showRecapModal" @close="dismissRecap">
+        <template #default>
+            <div class="space-y-4 p-2">
+                <p class="text-center text-sm text-gray-600 dark:text-white-light/70">
+                    You practiced
+                    <strong class="text-primary">{{ practicedCount }}</strong>
+                    of {{ totalPhrases }} phrase{{ totalPhrases === 1 ? '' : 's' }} this session.
+                </p>
+                <ul class="flex flex-col gap-2">
+                    <li v-for="phrase in selectedPhrases" :key="phrase._id" :class="[
+                        'flex items-center gap-3 rounded-lg p-2 text-sm',
+                        practicedPhraseIds.has(phrase._id)
+                            ? 'bg-success/10 text-gray-800 dark:text-white-light'
+                            : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-white-light/60'
+                    ]">
+                        <Icon :name="practicedPhraseIds.has(phrase._id)
+                            ? 'IconCheck'
+                            : 'iconify solar--close-circle-bold-duotone'" :class="[
+                                'shrink-0 text-lg',
+                                practicedPhraseIds.has(phrase._id) ? 'text-success' : 'text-gray-400'
+                            ]" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate font-bold">{{ phrase.phrase }}</p>
+                            <p class="truncate text-xs opacity-70">{{ phrase.translation }}</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </template>
+        <template #footer>
+            <div class="flex justify-end">
+                <Button color="primary" label="Back to bundle" @click="dismissRecap" />
+            </div>
+        </template>
+    </Modal>
+
     <!-- Timer Expired Modal -->
     <FreemiumLimitationModal v-model="showTimerExpiredModal" :modal-title="t('freemium.timer.time_expired')"
         :main-message="t('freemium.timer.session_limit_reached')"
@@ -123,6 +179,7 @@
 
 <script setup lang="ts">
 import { Card, Button, Icon } from 'pilotui/elements';
+import { Modal } from 'pilotui/complex';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
 import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
@@ -165,12 +222,24 @@ const totalPhrases = computed<number>(() => {
 const practicedCount = computed<number>(() => practicedPhraseIds.value.size);
 
 const showTimerExpiredModal = ref(false);
+const showRecapModal = ref(false);
+const hideTranslations = ref(false);
 
 const timerConfig = {
     duration: 5 * 60,
 };
 
 const isDev = import.meta.env.DEV;
+
+// RMS thresholds for the 5-segment input-level meter. Speech typically peaks
+// around 0.1–0.3 RMS; values below 0.02 are treated as silence.
+const micLevelThresholds = [0.02, 0.05, 0.1, 0.18, 0.3];
+
+// Touch devices have no spacebar, so the status hint adapts.
+const isCoarsePointer = ref(false);
+onMounted(() => {
+    isCoarsePointer.value = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+});
 
 // ---- Live transcript + status state ----
 const transcriptScroll = ref<HTMLElement | null>(null);
@@ -223,7 +292,11 @@ const statusLabel = computed(() => {
     if (state === 'connecting' || state === 'setup-pending') return 'Connecting…';
     if (state === 'closed' || state === 'idle') return 'Disconnected';
     if (isAiSpeaking.value) return 'Coach is speaking…';
-    if (liveSessionStore.isMicrophoneMuted) return 'Tap the mic to speak';
+    if (liveSessionStore.isMicrophoneMuted) {
+        return isCoarsePointer.value
+            ? 'Tap the mic to speak'
+            : 'Tap the mic or press space to speak';
+    }
     return 'Listening — go ahead';
 });
 
@@ -354,7 +427,22 @@ function createLiveSession() {
 }
 
 function endLiveSession() {
+    // Tear down the live connection immediately so we don't keep streaming
+    // (and billing) audio while the recap is on screen. Navigation is
+    // deferred until the user dismisses the recap.
     liveSessionStore.endLiveSession();
+
+    // Skip the recap when the freemium timer is forcing the exit (the timer
+    // modal is already up) or when the user bails before practicing anything.
+    if (practicedCount.value > 0 && !showTimerExpiredModal.value) {
+        showRecapModal.value = true;
+        return;
+    }
+    router.push(`/bundles/${id}`);
+}
+
+function dismissRecap() {
+    showRecapModal.value = false;
     router.push(`/bundles/${id}`);
 }
 
