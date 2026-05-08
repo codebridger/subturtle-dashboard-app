@@ -160,3 +160,5 @@ export const requestGeminiEphemeralToken = defineFunction({
     }
   },
 });
+
+module.exports.functions = [];

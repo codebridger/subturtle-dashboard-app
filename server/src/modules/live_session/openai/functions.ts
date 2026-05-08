@@ -123,3 +123,5 @@ export const requestEphemeralToken = defineFunction({
     }
   },
 });
+
+module.exports.functions = [];
