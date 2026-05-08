@@ -1,64 +1,100 @@
 <template>
-    <MaterialPracticeToolScaffold :title="bundle?.title || 'Flashcards'" :activePhrase="phraseIndex + 1"
-        :totalPhrases="totalPhrases" :bundleId="id.toString()" :body-class="'flex flex-col items-center justify-start'"
+    <MaterialPracticeToolScaffold :title="bundle?.title || 'Flashcards'" :activePhrase="practicedCount"
+        :totalPhrases="totalPhrases" :bundleId="id.toString()"
+        :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
         <template v-if="bundle">
             <!-- Freemium Timer Section -->
-            <FreemiumTimer v-if="profileStore.isFreemium" :duration="timerConfig.duration"
+            <FreemiumTimer v-if="profileStore.isFreemium" class="shrink-0" :duration="timerConfig.duration"
                 :label="t('freemium.timer.remaining_time')" @expired="showTimerExpiredModal = true"
                 @warning="handleTimerWarning" />
 
-            <section
-                :class="['overflow-y-auto', 'flex w-full flex-1 flex-col items-center md:justify-center', 'sm:px-5 md:px-32 lg:px-52']">
-                <!-- Instruction text -->
-                <div class="mb-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                    <p v-if="!activePhrase">Click on any vocabulary card to start practicing</p>
-                    <p v-else>
-                        Currently practicing: <strong>{{ activePhrase.phrase }}</strong>
-                    </p>
-                </div>
-
-                <div :class="['flex flex-wrap items-start justify-center gap-2 lg:!items-center', 'p-4']">
-                    <!-- All phrases -->
+            <!-- Compact phrase cards row -->
+            <section class="w-full shrink-0 px-3 pt-3 md:px-6">
+                <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)"
                         class="cursor-pointer">
                         <Card :class="[
                             'relative rounded-lg text-center',
                             'transition-all duration-300 ease-in-out',
-                            'p-2 px-3 text-xs',
-                            'lg:!p-5 lg:!px-10',
-                            'md:!p-3 md:!px-5 md:text-xs',
+                            'p-2 px-3 text-xs md:!p-3 md:!px-5',
                             '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
                             'hover:scale-105 hover:shadow-lg',
                             {
-                                'opacity-60': !activePhrase || activePhrase._id !== phrase._id,
-                                '!border-4 !border-dashed !border-primary !opacity-100': activePhrase && activePhrase._id === phrase._id,
+                                'opacity-50 hover:opacity-90': !activePhrase || activePhrase._id !== phrase._id,
+                                '!border-2 !border-primary !opacity-100 ring-2 ring-primary/30 shadow-lg shadow-primary/20': activePhrase && activePhrase._id === phrase._id,
+                                'animate-card-pulse': activePhrase && activePhrase._id === phrase._id && isAiSpeaking,
                             },
                         ]">
-                            <h1 :class="['text-xs font-bold', 'sm:!text-base md:!text-lg lg:!text-2xl']">{{
-                                phrase.phrase }}</h1>
-                            <p
-                                :class="['text-xs', 'sm:!text-base md:!text-lg lg:!text-2xl', 'text-gray-500 dark:text-white-light']">
+                            <div class="flex items-baseline justify-center gap-2">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
+                                <h2 class="text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}</h2>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-white-light/60 sm:!text-sm md:!text-base">
                                 {{ phrase.translation }}
                             </p>
-                            <span
-                                class="absolute bottom-0 right-0 scale-75 rounded-xl bg-gray-100 px-2 text-xs text-gray-500">
-                                {{ index + 1 }} </span>
+                            <span v-if="practicedPhraseIds.has(phrase._id) && (!activePhrase || activePhrase._id !== phrase._id)"
+                                class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white">
+                                <Icon name="IconCheck" class="text-[10px]" />
+                            </span>
                             <span v-if="activePhrase && activePhrase._id === phrase._id"
-                                class="absolute right-0 top-0 scale-75 rounded-xl p-2 text-xs text-white">
-                                <Icon name="IconChatDot" class="text-primary" />
+                                class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white shadow">
+                                <Icon name="IconChatDot" class="text-[10px]" />
                             </span>
                         </Card>
                     </div>
                 </div>
             </section>
 
+            <!-- Live transcript -->
+            <section ref="transcriptScroll"
+                class="flex w-full min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 md:px-16 lg:px-32">
+                <div v-if="visibleDialogs.length === 0"
+                    class="flex flex-1 flex-col items-center justify-center text-center">
+                    <Icon name="IconChatDot" class="mb-3 text-3xl text-primary/40" />
+                    <p v-if="!activePhrase" class="text-sm text-gray-600 dark:text-white-light/70">
+                        Click on any vocabulary card to start practicing
+                    </p>
+                    <p v-else class="text-sm text-gray-700 dark:text-white-light">
+                        Currently practicing: <strong>{{ activePhrase.phrase }}</strong>
+                    </p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-white-light/50">
+                        Your conversation will appear here.
+                    </p>
+                </div>
+
+                <TransitionGroup v-else name="dialog" tag="div" class="flex w-full flex-col gap-3">
+                    <div v-for="dialog in visibleDialogs" :key="dialog.id" :class="[
+                        'max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed shadow-sm',
+                        dialog.speaker === 'ai'
+                            ? 'self-start bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-white-light'
+                            : 'self-end bg-primary/10 text-primary-dark dark:bg-primary/20 dark:text-white-light'
+                    ]">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">
+                            {{ dialog.speaker === 'ai' ? 'Coach' : 'You' }}
+                        </p>
+                        <p class="whitespace-pre-wrap">{{ dialog.content }}</p>
+                    </div>
+                </TransitionGroup>
+            </section>
+
+            <!-- Mic + status -->
             <section
-                :class="['h-[100px] md:!h-[150px] lg:!h-[200px]', 'items-start', 'flex w-full  flex-col items-center  justify-center gap-4']">
+                class="flex w-full shrink-0 flex-col items-center justify-center gap-2 px-4 pb-4 pt-2 md:gap-3 md:pb-6">
+                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-white-light/70">
+                    <span :class="[
+                        'inline-block h-2 w-2 rounded-full',
+                        statusDotColor,
+                        isPulsing ? 'animate-pulse' : ''
+                    ]" />
+                    <span>{{ statusLabel }}</span>
+                </div>
+
                 <BundleMicToggleGemini />
 
-                <div class="flex items-center justify-center gap-2 text-[8px] opacity-50">
+                <div v-if="isDev"
+                    class="flex items-center justify-center gap-2 text-[8px] opacity-50">
                     <span class="font-bold">GEMINI</span>
                     <span>IN {{ liveSessionStore.tokenUsage?.prompt_tokens || 0 }}</span>
                     <span>CACHED {{ liveSessionStore.tokenUsage?.cached_tokens || 0 }}</span>
@@ -118,6 +154,7 @@ const errorMessage = ref('');
 const bundle = ref<PopulatedPhraseBundleType | null>(null);
 const selectedPhrases = ref<PhraseType[]>([]);
 const phraseIndex = ref(-1);
+const practicedPhraseIds = ref<Set<string>>(new Set());
 const activePhrase = computed(() => {
     if (!bundle.value) return null;
     return selectedPhrases.value[phraseIndex.value];
@@ -125,12 +162,87 @@ const activePhrase = computed(() => {
 const totalPhrases = computed<number>(() => {
     return selectedPhrases.value.length || 0;
 });
+const practicedCount = computed<number>(() => practicedPhraseIds.value.size);
 
 const showTimerExpiredModal = ref(false);
 
 const timerConfig = {
     duration: 5 * 60,
 };
+
+const isDev = import.meta.env.DEV;
+
+// ---- Live transcript + status state ----
+const transcriptScroll = ref<HTMLElement | null>(null);
+
+const visibleDialogs = computed(() =>
+    liveSessionStore.conversationDialogs.filter((d) => d.content?.trim().length)
+);
+
+// AI is "speaking" while transcript chunks for the latest AI turn keep arriving;
+// we expire the flag a short moment after the last chunk so the indicator settles.
+const isAiSpeaking = ref(false);
+let aiSilenceTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(
+    () => visibleDialogs.value.map((d) => `${d.id}:${d.content.length}`).join('|'),
+    () => {
+        const last = visibleDialogs.value[visibleDialogs.value.length - 1];
+        if (last?.speaker === 'ai') {
+            isAiSpeaking.value = true;
+            if (aiSilenceTimer) clearTimeout(aiSilenceTimer);
+            aiSilenceTimer = setTimeout(() => {
+                isAiSpeaking.value = false;
+            }, 1500);
+        }
+        nextTick(() => {
+            const el = transcriptScroll.value;
+            if (el) el.scrollTop = el.scrollHeight;
+        });
+    }
+);
+
+// The blank layout expects body-level scroll, but this page owns the full
+// viewport and scrolls only the transcript section internally. Lock the body
+// while mounted so a stray pixel doesn't introduce a second scrollbar.
+onMounted(() => {
+    document.body.classList.add('overflow-hidden');
+    document.documentElement.classList.add('overflow-hidden');
+});
+
+onUnmounted(() => {
+    if (aiSilenceTimer) clearTimeout(aiSilenceTimer);
+    document.body.classList.remove('overflow-hidden');
+    document.documentElement.classList.remove('overflow-hidden');
+});
+
+const statusLabel = computed(() => {
+    const state = liveSessionStore.connState;
+    if (state === 'resuming') return 'Reconnecting…';
+    if (state === 'goingAway') return 'Renewing connection…';
+    if (state === 'connecting' || state === 'setup-pending') return 'Connecting…';
+    if (state === 'closed' || state === 'idle') return 'Disconnected';
+    if (isAiSpeaking.value) return 'Coach is speaking…';
+    if (liveSessionStore.isMicrophoneMuted) return 'Tap the mic to speak';
+    return 'Listening — go ahead';
+});
+
+const statusDotColor = computed(() => {
+    const state = liveSessionStore.connState;
+    if (state === 'resuming' || state === 'goingAway') return 'bg-yellow-400';
+    if (state === 'closed' || state === 'idle') return 'bg-gray-400';
+    if (state === 'connecting' || state === 'setup-pending') return 'bg-gray-400';
+    if (isAiSpeaking.value) return 'bg-primary';
+    if (liveSessionStore.isMicrophoneMuted) return 'bg-gray-400';
+    return 'bg-success';
+});
+
+const isPulsing = computed(() => {
+    if (isAiSpeaking.value) return true;
+    return ['resuming', 'goingAway', 'connecting', 'setup-pending'].includes(
+        liveSessionStore.connState
+    );
+});
 
 const instructions = `
     You are a friendly and engaging AI language English tutor.
@@ -312,9 +424,43 @@ function selectPhrase(index: number) {
     phraseIndex.value = index;
 
     if (!liveSessionStore.isSessionActive) return;
-    const phrase = selectedPhrases.value[index].phrase;
+    const phrase = selectedPhrases.value[index];
+    practicedPhraseIds.value.add(phrase._id);
     liveSessionStore.sendMessage(
-        `The user selected a different vocabulary: "${phrase}". Let's start practicing on it.`
+        `The user selected a different vocabulary: "${phrase.phrase}". Let's start practicing on it.`
     );
 }
 </script>
+
+<style scoped>
+.dialog-enter-active,
+.dialog-leave-active {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dialog-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.dialog-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+@keyframes card-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.35);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+    }
+}
+
+.animate-card-pulse {
+    animation: card-pulse 1.4s ease-in-out infinite;
+}
+</style>
