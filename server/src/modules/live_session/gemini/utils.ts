@@ -46,7 +46,7 @@ export function extractGeminiCostCalculationInput(usage: GeminiTokenUsageType) {
 
   const promptText = Math.max(
     0,
-    usage.prompt_tokens_details.text_tokens -
+    (usage.prompt_tokens_details.text_tokens + (usage.tool_use_tokens || 0)) -
       usage.cached_tokens_details.text_tokens
   );
   const promptAudio = Math.max(
@@ -54,7 +54,7 @@ export function extractGeminiCostCalculationInput(usage: GeminiTokenUsageType) {
     usage.prompt_tokens_details.audio_tokens -
       usage.cached_tokens_details.audio_tokens
   );
-  const promptImage = usage.prompt_tokens_details.image_tokens;
+  const promptImage = (usage.prompt_tokens_details.image_tokens || 0) + (usage.prompt_tokens_details.video_tokens || 0);
 
   expenses.push({
     label: "Input Text Tokens",
@@ -94,7 +94,7 @@ export function extractGeminiCostCalculationInput(usage: GeminiTokenUsageType) {
 
   expenses.push({
     label: "Output Text Tokens",
-    totalTokens: usage.response_tokens_details.text_tokens,
+    totalTokens: usage.response_tokens_details.text_tokens + (usage.thoughts_tokens || 0),
     usdCostPerMillion: gemini_prices_per_m.response.text,
   });
 

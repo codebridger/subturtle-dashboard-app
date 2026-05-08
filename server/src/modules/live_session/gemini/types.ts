@@ -19,10 +19,13 @@ export interface GeminiTokenUsageType {
   total_tokens: number;
   prompt_tokens: number;
   response_tokens: number;
+  tool_use_tokens: number;
+  thoughts_tokens: number;
   prompt_tokens_details: {
     text_tokens: number;
     audio_tokens: number;
     image_tokens: number;
+    video_tokens: number;
   };
   response_tokens_details: {
     text_tokens: number;

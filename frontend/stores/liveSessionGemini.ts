@@ -689,7 +689,9 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             total_tokens: 0,
             prompt_tokens: 0,
             response_tokens: 0,
-            prompt_tokens_details: { text_tokens: 0, audio_tokens: 0, image_tokens: 0 },
+            tool_use_tokens: 0,
+            thoughts_tokens: 0,
+            prompt_tokens_details: { text_tokens: 0, audio_tokens: 0, image_tokens: 0, video_tokens: 0 },
             response_tokens_details: { text_tokens: 0, audio_tokens: 0 },
             cached_tokens: 0,
             cached_tokens_details: { text_tokens: 0, audio_tokens: 0 },
@@ -708,6 +710,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         out.response_tokens =
             usageMetadata.responseTokenCount || m.candidatesTokenCount || 0;
         out.cached_tokens = usageMetadata.cachedContentTokenCount || 0;
+        out.tool_use_tokens = usageMetadata.toolUsePromptTokenCount || 0;
+        out.thoughts_tokens = usageMetadata.thoughtsTokenCount || 0;
         out.total_tokens =
             usageMetadata.totalTokenCount ||
             out.prompt_tokens + out.response_tokens + out.cached_tokens;
@@ -722,8 +726,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     out.prompt_tokens_details.audio_tokens += c;
                     break;
                 case 'IMAGE':
-                case 'VIDEO':
                     out.prompt_tokens_details.image_tokens += c;
+                    break;
+                case 'VIDEO':
+                    out.prompt_tokens_details.video_tokens += c;
                     break;
             }
         }
@@ -764,9 +770,14 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         t.prompt_tokens += partialUsage.prompt_tokens;
         t.response_tokens += partialUsage.response_tokens;
         t.cached_tokens += partialUsage.cached_tokens;
+        t.tool_use_tokens += partialUsage.tool_use_tokens || 0;
+        t.thoughts_tokens += partialUsage.thoughts_tokens || 0;
+        
         t.prompt_tokens_details.text_tokens += partialUsage.prompt_tokens_details.text_tokens;
         t.prompt_tokens_details.audio_tokens += partialUsage.prompt_tokens_details.audio_tokens;
         t.prompt_tokens_details.image_tokens += partialUsage.prompt_tokens_details.image_tokens;
+        t.prompt_tokens_details.video_tokens += partialUsage.prompt_tokens_details.video_tokens || 0;
+        
         t.response_tokens_details.text_tokens +=
             partialUsage.response_tokens_details.text_tokens;
         t.response_tokens_details.audio_tokens +=
