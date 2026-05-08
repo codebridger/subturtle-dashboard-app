@@ -99,6 +99,7 @@ const formData = reactive({
     fromPhrase: '1',
     toPhrase: '10',
     totalPhrases: '10',
+    nativeLanguage: 'auto',
 });
 
 const isFormValid = computed(() => {
@@ -114,6 +115,7 @@ function startSession() {
     const sessionData: LivePracticeSessionSetupType = {
         aiCharacter: formData.aiCharacter,
         selectionMode: formData.selectionMode,
+        nativeLanguage: formData.nativeLanguage,
     };
 
     if (formData.selectionMode === 'selection') {

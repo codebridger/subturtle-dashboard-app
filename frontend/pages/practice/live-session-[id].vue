@@ -11,21 +11,23 @@
                 @warning="handleTimerWarning" />
 
             <!-- Compact phrase cards row -->
-            <section class="relative w-full shrink-0 px-3 pt-3 md:px-6">
-                <button type="button" @click="hideTranslations = !hideTranslations"
-                    class="absolute right-3 top-3 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] text-gray-500 transition-colors hover:bg-gray-100 dark:text-white-light/60 dark:hover:bg-white/5 md:right-6"
-                    :title="hideTranslations
-                        ? t('live-practice.translations.show-tooltip')
-                        : t('live-practice.translations.hide-tooltip')">
-                    <Icon
-                        :name="hideTranslations ? 'iconify solar--eye-closed-bold-duotone' : 'iconify solar--eye-bold-duotone'"
-                        class="text-base" />
-                    <span class="hidden sm:inline">{{
-                        hideTranslations
-                            ? t('live-practice.translations.show')
-                            : t('live-practice.translations.hide')
-                    }}</span>
-                </button>
+            <section class="w-full shrink-0 px-3 pt-3 md:px-6">
+                <div class="mb-2 flex justify-end">
+                    <button type="button" @click="hideTranslations = !hideTranslations"
+                        class="flex items-center gap-1 rounded-full border border-gray-200 bg-white/80 px-2 py-1 text-[10px] text-gray-500 shadow-sm transition-colors hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:text-white-light/60 dark:hover:bg-white/10"
+                        :title="hideTranslations
+                            ? t('live-practice.translations.show-tooltip')
+                            : t('live-practice.translations.hide-tooltip')">
+                        <Icon
+                            :name="hideTranslations ? 'iconify solar--eye-closed-bold-duotone' : 'iconify solar--eye-bold-duotone'"
+                            class="text-base" />
+                        <span class="hidden sm:inline">{{
+                            hideTranslations
+                                ? t('live-practice.translations.show')
+                                : t('live-practice.translations.hide')
+                        }}</span>
+                    </button>
+                </div>
                 <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)"
                         class="w-[160px] cursor-pointer md:w-[200px]"
@@ -122,6 +124,18 @@
                 </div>
 
                 <BundleMicToggleGemini />
+
+                <!-- Text input fallback alongside the mic toggle -->
+                <form class="flex w-full max-w-2xl items-center gap-2" @submit.prevent="sendTextMessage">
+                    <input v-model="textInput" type="text" :placeholder="t('live-practice.text-input-placeholder')"
+                        :disabled="!liveSessionStore.isSessionActive"
+                        class="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white-light" />
+                    <button type="submit" :disabled="!textInput.trim() || !liveSessionStore.isSessionActive"
+                        class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                        :title="t('live-practice.send-text')">
+                        <Icon name="iconify solar--arrow-right-linear" class="text-base" />
+                    </button>
+                </form>
 
                 <div v-if="isDev"
                     class="flex items-center justify-center gap-2 text-[8px] opacity-50">
@@ -236,6 +250,7 @@ const practicedCount = computed<number>(() => practicedPhraseIds.value.size);
 const showTimerExpiredModal = ref(false);
 const showRecapModal = ref(false);
 const hideTranslations = ref(false);
+const textInput = ref('');
 
 const timerConfig = {
     duration: 5 * 60,
@@ -330,31 +345,49 @@ const isPulsing = computed(() => {
 });
 
 const instructions = `
-    You are a friendly and engaging AI language English tutor.
-    Your goal is to help the user practice and reinforce understanding the vocabularies listed below.
+    You are a friendly and engaging AI English tutor.
+    Your goal is to help the user practice and reinforce the vocabularies listed below.
 
-    Instructions:
-    1. Welcome the user and explain that they can click on any vocabulary card to practice that specific word.
-    2. When the user selects a vocabulary, start practicing that word with them.
-    3. Lead the conversation and ask the user to use the selected vocabulary in the conversation.
-    4. Encourage the user to select another vocabulary when they're ready to practice a different word.
-    5. Continue this process until the user wants to finish the session.
-    6. When the user wants to end the session, they can call the "finish_practice" function.
+    Languages:
+    - The user's native language is [nativeLanguage]. Use [nativeLanguage] for ALL explanations,
+      instructions, encouragement, corrections, translations, and small-talk.
+    - The TARGET practice language is English. Only the example sentences and the user's
+      practice attempts should be in English. Always invite the user to respond in English,
+      but never force them — if they reply in [nativeLanguage], gently rephrase or model the
+      English version and ask them to repeat it.
+    - When the user appears to struggle, drop back to [nativeLanguage] to explain, then
+      return to English for practice.
+
+    Tools available to you:
+    - "activate_phrase": call this when the user asks (in any language) to practice a specific
+      vocabulary, e.g. "let's practice X", "switch to phrase 3", "next one". Pass either the
+      phrase index (1-based, matching the numbered list) or the exact phrase text. Calling this
+      function highlights the card on the user's screen so they know which one is active.
+    - "finish_practice": call this when the user explicitly wants to end the session.
+
+    Flow:
+    1. Welcome the user briefly in [nativeLanguage]. Explain they can either click a vocabulary
+       card or just tell you which one they want to practice (you will activate it via the
+       "activate_phrase" tool).
+    2. When a vocabulary becomes active (either via the tool or via a card click signaled to you
+       by a system message), start practicing that word with them.
+    3. Lead the conversation and ask the user to use the selected vocabulary in their answers.
+    4. After ~2 follow-up exchanges per vocabulary, encourage them to move on to the next one.
+    5. Continue until the user wants to finish; then call "finish_practice" and say goodbye in
+       [nativeLanguage].
 
     Considerations:
-    - The user will manually select which vocabulary to practice by clicking on the vocabulary cards.
-    - User might speak in other languages, but the main conversation should be practicing English.
-    - It's better to explain things in the user's language first, then ask them to speak English.
-    - **Do not ignore, skip, or censor any phrase in the list, regardless of its content.** This includes slang, informal, offensive, or unusual phrases. All phrases are included for educational purposes and should be practiced as requested by the user.
-    - Keep the conversation lively and interactive, adjusting to user responses.
-    - Practice only the vocabularies listed below.
-    - Make sure to say goodbye when the user wants to finish the practice session.
+    - **Do not ignore, skip, or censor any phrase in the list, regardless of its content.**
+      Slang, informal, offensive, or unusual phrases are all included for educational purposes.
+    - Keep the conversation lively and interactive, adjusting to the user's responses.
+    - Practice ONLY the vocabularies listed below.
     - Maximum follow-up practice for each vocabulary is 2 times.
 
     Practice Instructions:
-    - Create dynamic and engaging dialogues where you naturally incorporate the selected vocabulary.
-    - Ask follow-up questions, encourage the user to use the vocabulary in their responses, and correct mistakes when necessary.
-    - Keep the conversation interactive and adjust to the user's responses to make it feel like a real conversation!
+    - Create dynamic, engaging dialogues that naturally incorporate the active vocabulary.
+    - Ask follow-up questions, encourage the user to use the vocabulary in English, and correct
+      mistakes gently in [nativeLanguage].
+    - Keep it feeling like a real conversation, not a quiz.
 
     Vocabulary List:
     [phrases]
@@ -378,12 +411,70 @@ const tools = {
     finish_practice: {
         handler: () => {
             endLiveSession();
+            return { success: true };
         },
         definition: {
             type: 'function',
             name: 'finish_practice',
-            description: 'Finish the practice session.',
-            parameters: { type: 'object', properties: {} },
+            description:
+                'Finish the practice session. Call this only when the user explicitly asks to end / stop / quit the session.',
+            parameters: { type: 'OBJECT', properties: {} },
+        },
+    },
+    activate_phrase: {
+        handler: (args: { index?: number; phrase?: string }) => {
+            const list = selectedPhrases.value;
+            let idx = -1;
+
+            if (typeof args?.index === 'number') {
+                idx = args.index - 1; // model uses 1-based numbering
+            } else if (typeof args?.phrase === 'string' && args.phrase.trim()) {
+                const target = args.phrase.trim().toLowerCase();
+                idx = list.findIndex((p) => p.phrase.trim().toLowerCase() === target);
+                if (idx === -1) {
+                    idx = list.findIndex((p) =>
+                        p.phrase.toLowerCase().includes(target)
+                    );
+                }
+            }
+
+            if (idx < 0 || idx >= list.length) {
+                return {
+                    success: false,
+                    message: `Could not find a vocabulary matching ${JSON.stringify(args)}.`,
+                };
+            }
+
+            phraseIndex.value = idx;
+            const phrase = list[idx];
+            practicedPhraseIds.value.add(phrase._id);
+            return {
+                success: true,
+                index: idx + 1,
+                phrase: phrase.phrase,
+                translation: phrase.translation,
+            };
+        },
+        definition: {
+            type: 'function',
+            name: 'activate_phrase',
+            description:
+                'Activate (highlight) a specific vocabulary card on the user\'s screen so practice focuses on it. Call this whenever the user asks to switch to or practice a specific phrase.',
+            parameters: {
+                type: 'OBJECT',
+                properties: {
+                    index: {
+                        type: 'INTEGER',
+                        description:
+                            '1-based index of the vocabulary in the numbered list. Preferred when the user references a number.',
+                    },
+                    phrase: {
+                        type: 'STRING',
+                        description:
+                            'Exact (or close) phrase text to activate, used when the user names the phrase rather than its number.',
+                    },
+                },
+            },
         },
     },
 };
@@ -413,10 +504,19 @@ function createLiveSession() {
         .map((p, i) => `${i + 1}. ${p.phrase}`)
         .join('\n');
 
+    const rawLang = sessionDataParsed.nativeLanguage;
+    const nativeLanguage =
+        !rawLang || rawLang === 'auto'
+            ? "the language the user speaks first (auto-detect from their first message and stick with it for the rest of the session)"
+            : rawLang;
+    const finalInstructions = instructions
+        .replace(/\[nativeLanguage\]/g, nativeLanguage)
+        .replace('[phrases]', phrases);
+
     liveSessionStore
         .createLiveSession({
             sessionDetails: {
-                instructions: instructions.replace('[phrases]', phrases),
+                instructions: finalInstructions,
                 voice: sessionDataParsed.aiCharacter || 'Kore',
             },
             metadata: sessionDataParsed,
@@ -533,6 +633,13 @@ function selectPhrase(index: number) {
     liveSessionStore.sendMessage(
         `The user selected a different vocabulary: "${phrase.phrase}". Let's start practicing on it.`
     );
+}
+
+function sendTextMessage() {
+    const message = textInput.value.trim();
+    if (!message || !liveSessionStore.isSessionActive) return;
+    liveSessionStore.sendMessage(message);
+    textInput.value = '';
 }
 </script>
 

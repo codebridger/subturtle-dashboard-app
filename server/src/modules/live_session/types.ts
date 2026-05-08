@@ -46,4 +46,6 @@ export interface LivePracticeSessionSetupType {
   fromPhrase?: number;
   toPhrase?: number;
   totalPhrases?: number;
+  /** Language the user wants explanations in (English name, e.g. "Spanish"). */
+  nativeLanguage?: string;
 }

@@ -13,6 +13,23 @@
             </select>
         </div>
 
+        <!-- Native Language Selection -->
+        <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('live-practice.native-language') }}
+            </label>
+            <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('live-practice.native-language-hint') }}
+            </p>
+            <select v-model="formData.nativeLanguage"
+                class="focus:border-primary-500 focus:ring-primary-500 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                <option value="auto">{{ t('live-practice.native-language-auto') }}</option>
+                <option v-for="lang in SUPPORTED_LANGUAGES" :key="lang.code" :value="lang.title">
+                    {{ lang.title }}
+                </option>
+            </select>
+        </div>
+
         <!-- Selection Tabs -->
         <div>
             <div class="mb-2 flex rounded-md bg-gray-100 p-1 dark:bg-gray-700">
@@ -74,6 +91,7 @@
 
 <script setup lang="ts">
 import { Input } from 'pilotui';
+import { SUPPORTED_LANGUAGES } from '~/utils/languages.static';
 
 const { t } = useI18n();
 
@@ -89,6 +107,7 @@ const props = withDefaults(
             fromPhrase: string;
             toPhrase: string;
             totalPhrases: string;
+            nativeLanguage: string;
         };
         voiceOptions?: string[];
     }>(),
@@ -114,6 +133,7 @@ const emit = defineEmits<{
             fromPhrase: string;
             toPhrase: string;
             totalPhrases: string;
+            nativeLanguage: string;
         }
     ];
 }>();
