@@ -14,11 +14,11 @@
             <section class="w-full shrink-0 px-3 pt-3 md:px-6">
                 <div class="flex flex-wrap items-stretch justify-center gap-2">
                     <div v-for="(phrase, index) in selectedPhrases" :key="phrase._id" @click="selectPhrase(index)"
-                        class="cursor-pointer">
+                        class="w-[160px] cursor-pointer md:w-[200px]" :title="phrase.translation">
                         <Card :class="[
                             'relative rounded-lg text-center',
                             'transition-all duration-300 ease-in-out',
-                            'p-2 px-3 text-xs md:!p-3 md:!px-5',
+                            'p-2 px-3 text-xs md:!p-3 md:!px-4',
                             '!dark:bg-transparent bg-transparent text-black dark:text-white-light',
                             'hover:scale-105 hover:shadow-lg',
                             {
@@ -28,10 +28,10 @@
                             },
                         ]">
                             <div class="flex items-baseline justify-center gap-2">
-                                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
-                                <h2 class="text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}</h2>
+                                <span class="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
+                                <h2 class="truncate text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}</h2>
                             </div>
-                            <p class="text-[11px] text-gray-500 dark:text-white-light/60 sm:!text-sm md:!text-base">
+                            <p class="truncate text-[11px] text-gray-500 dark:text-white-light/60 sm:!text-sm md:!text-base">
                                 {{ phrase.translation }}
                             </p>
                             <span v-if="practicedPhraseIds.has(phrase._id) && (!activePhrase || activePhrase._id !== phrase._id)"
