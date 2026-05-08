@@ -108,7 +108,7 @@
 import { Card, Button, Icon } from 'pilotui/elements';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
-import { useLiveSessionStore } from '~/stores/liveSession';
+import { useLiveSessionStore } from '~/stores/liveSessionOpenai';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
