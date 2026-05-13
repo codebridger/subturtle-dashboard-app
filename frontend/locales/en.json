@@ -364,5 +364,13 @@
         "activity_ready": "Ready to start",
         "start_activity": "Start Activity",
         "back_to_board": "Back to Board"
+    },
+    "extension": {
+        "nudge": {
+            "title": "Install the Subturtle extension",
+            "description": "Subturtle works while you watch. Install our Chrome extension to save phrases on YouTube, Netflix, and any text page.",
+            "cta": "Install for Chrome",
+            "dismiss": "Dismiss"
+        }
     }
 }

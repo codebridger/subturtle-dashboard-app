@@ -1,14 +1,12 @@
 <template>
     <div class="relative min-h-screen">
         <!-- Decorative Background Elements -->
-        <div
-            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
-        <div
-            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
+        <div class="pointer-events-none absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-[120px]"></div>
+        <div class="pointer-events-none absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-secondary/5 blur-[120px]"></div>
 
-        <div class="container relative mx-auto px-6 py-16 max-w-7xl">
+        <div class="container relative mx-auto max-w-7xl px-6 py-16">
+            <InstallExtensionBanner class="mb-6" />
+
             <PageHeader :title="t('statistic.your-statistic')" overline="ANALYTICS" />
 
             <section class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -52,62 +50,63 @@
 </template>
 
 <script setup lang="ts">
-import { dataProvider, functionProvider } from '@modular-rest/client';
-import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
-import { FN, type UserStatisticType } from '~/types/function.type';
-import { Card, IconButton } from 'pilotui/elements';
-import PageHeader from '~/components/common/PageHeader.vue';
+    import { dataProvider, functionProvider } from '@modular-rest/client';
+    import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
+    import { FN, type UserStatisticType } from '~/types/function.type';
+    import { Card, IconButton } from 'pilotui/elements';
+    import PageHeader from '~/components/common/PageHeader.vue';
+    import InstallExtensionBanner from '~/components/extension_nudge/InstallExtensionBanner.vue';
 
-const { t } = useI18n();
+    const { t } = useI18n();
 
-definePageMeta({
-    layout: 'default',
-    title: () => t('statistic.your-statistic'),
-    // @ts-ignore
-    middleware: ['auth'],
-});
+    definePageMeta({
+        layout: 'default',
+        title: () => t('statistic.your-statistic'),
+        // @ts-ignore
+        middleware: ['auth'],
+    });
 
-const recentBundles = ref<PhraseBundleType[]>([]);
-const statistics = ref<UserStatisticType>({
-    totalPhrases: 0,
-    totalBundles: 0,
-});
+    const recentBundles = ref<PhraseBundleType[]>([]);
+    const statistics = ref<UserStatisticType>({
+        totalPhrases: 0,
+        totalBundles: 0,
+    });
 
-function getRecentBundles() {
-    dataProvider
-        .find<PhraseBundleType>({
-            database: DATABASE.USER_CONTENT,
-            collection: COLLECTIONS.PHRASE_BUNDLE,
-            query: {
-                refId: authUser.value?.id,
-            },
-            options: {
-                limit: 3,
-                sort: {
-                    updatedAt: -1,
+    function getRecentBundles() {
+        dataProvider
+            .find<PhraseBundleType>({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE_BUNDLE,
+                query: {
+                    refId: authUser.value?.id,
                 },
-            },
-        })
-        .then((data) => {
-            recentBundles.value = data;
-        });
-}
+                options: {
+                    limit: 3,
+                    sort: {
+                        updatedAt: -1,
+                    },
+                },
+            })
+            .then((data) => {
+                recentBundles.value = data;
+            });
+    }
 
-function getUserStatistics() {
-    functionProvider
-        .run<UserStatisticType>({
-            name: FN.getUserStatistic,
-            args: {
-                userId: authUser.value?.id,
-            },
-        })
-        .then((data) => {
-            statistics.value = data;
-        });
-}
+    function getUserStatistics() {
+        functionProvider
+            .run<UserStatisticType>({
+                name: FN.getUserStatistic,
+                args: {
+                    userId: authUser.value?.id,
+                },
+            })
+            .then((data) => {
+                statistics.value = data;
+            });
+    }
 
-onMounted(() => {
-    getRecentBundles();
-    getUserStatistics();
-});
+    onMounted(() => {
+        getRecentBundles();
+        getUserStatistics();
+    });
 </script>
