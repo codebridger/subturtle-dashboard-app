@@ -10,7 +10,7 @@
                     <li>
                         <div class="flex items-center px-4 py-4">
                             <div class="flex-none">
-                                <img class="h-10 w-10 rounded-md object-cover" :src="profilePicture" />
+                                <img class="h-10 w-10 rounded-md object-cover" :src="profilePicture" @error="onAvatarLoadError" />
                             </div>
                             <div class="truncate ltr:pl-4 rtl:pr-4">
                                 <h4 class="text-base">
@@ -92,6 +92,13 @@ const showSignOutModal = ref(false);
 const profilePicture = computed(() => {
     return profileStore.profilePicture || '/assets/images/user.png';
 });
+
+function onAvatarLoadError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && img.src !== window.location.origin + '/assets/images/user.png') {
+        img.src = '/assets/images/user.png';
+    }
+}
 
 function confirmSignOut() {
     showSignOutModal.value = false;
