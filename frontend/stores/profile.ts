@@ -10,8 +10,97 @@ export const useProfileStore = defineStore('profile', () => {
 
     // profile
     const userDetail = ref<ProfileType>();
-    const profilePicture = computed(() => userDetail.value?.gPicture || '');
+    const profilePictureBase64 = ref<string>('');
+    const profilePicture = computed(() => profilePictureBase64.value || userDetail.value?.gPicture || '');
     const email = computed(() => authUser.value?.email);
+
+    const PICTURE_CACHE_PREFIX = 'profile_picture_b64:';
+    const PICTURE_FAIL_PREFIX = 'profile_picture_fail:';
+    const PICTURE_FAIL_TTL_MS = 24 * 60 * 60 * 1000;
+    const CACHE_RESIZE_PX = 96;
+    const CACHE_JPEG_QUALITY = 0.85;
+
+    type PictureCacheEntry = { url: string; dataUri: string };
+    type PictureFailEntry = { url: string; ts: number };
+
+    function pictureCacheKey(userId: string) {
+        return `${PICTURE_CACHE_PREFIX}${userId}`;
+    }
+
+    function pictureFailKey(userId: string) {
+        return `${PICTURE_FAIL_PREFIX}${userId}`;
+    }
+
+    function readCachedPicture(userId: string): PictureCacheEntry | null {
+        try {
+            const raw = localStorage.getItem(pictureCacheKey(userId));
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.url === 'string' && typeof parsed.dataUri === 'string') {
+                return parsed;
+            }
+        } catch {
+            // corrupt entry — fall through to null
+        }
+        return null;
+    }
+
+    function writeCachedPicture(userId: string, entry: PictureCacheEntry) {
+        try {
+            localStorage.setItem(pictureCacheKey(userId), JSON.stringify(entry));
+        } catch {
+            // QuotaExceededError — leave ref populated for the session, skip persistence
+        }
+    }
+
+    function isPictureMarkedFailed(userId: string, url: string): boolean {
+        try {
+            const raw = localStorage.getItem(pictureFailKey(userId));
+            if (!raw) return false;
+            const parsed = JSON.parse(raw) as PictureFailEntry;
+            if (parsed?.url !== url) return false;
+            if (Date.now() - parsed.ts > PICTURE_FAIL_TTL_MS) {
+                localStorage.removeItem(pictureFailKey(userId));
+                return false;
+            }
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    function markPictureFailed(userId: string, url: string) {
+        try {
+            localStorage.setItem(pictureFailKey(userId), JSON.stringify({ url, ts: Date.now() }));
+        } catch {
+            // ignore
+        }
+    }
+
+    async function downloadAndCachePicture(userId: string, url: string): Promise<void> {
+        const dataUri = await new Promise<string>((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = CACHE_RESIZE_PX;
+                    canvas.height = CACHE_RESIZE_PX;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return reject(new Error('Canvas 2D unavailable'));
+                    ctx.drawImage(img, 0, 0, CACHE_RESIZE_PX, CACHE_RESIZE_PX);
+                    resolve(canvas.toDataURL('image/jpeg', CACHE_JPEG_QUALITY));
+                } catch (e) {
+                    reject(e);
+                }
+            };
+            img.onerror = () => reject(new Error('Failed to load profile image'));
+            img.src = url;
+        });
+
+        profilePictureBase64.value = dataUri;
+        writeCachedPicture(userId, { url, dataUri });
+    }
 
     // subscription
     const isFreemium = ref(false);
@@ -48,6 +137,16 @@ export const useProfileStore = defineStore('profile', () => {
     }
 
     function logout() {
+        const userId = authUser.value?.id;
+        if (userId) {
+            try {
+                localStorage.removeItem(pictureCacheKey(userId));
+                localStorage.removeItem(pictureFailKey(userId));
+            } catch {
+                // ignore
+            }
+        }
+        profilePictureBase64.value = '';
         authentication.logout();
         userDetail.value = undefined;
     }
@@ -62,7 +161,41 @@ export const useProfileStore = defineStore('profile', () => {
                 },
             })
             .then((profile) => {
-                userDetail.value = profile;
+                const userId = authentication.user?.id;
+                const gPicture = profile?.gPicture;
+                const knownFailed = !!(userId && gPicture && isPictureMarkedFailed(userId, gPicture));
+
+                // If we already know this URL is broken, strip it before exposing the profile
+                // to Vue — that way ProfileButton never renders the doomed <img :src>.
+                userDetail.value = knownFailed ? { ...profile, gPicture: '' } : profile;
+
+                if (userId && gPicture && !knownFailed) {
+                    const cached = readCachedPicture(userId);
+                    if (cached && cached.url === gPicture) {
+                        profilePictureBase64.value = cached.dataUri;
+                    } else {
+                        // No cache or URL drifted — clear stale ref, fire-and-forget re-download.
+                        // UI falls back to gPicture URL until the encode completes.
+                        profilePictureBase64.value = '';
+                        downloadAndCachePicture(userId, gPicture).catch(() => {
+                            // The CORS image fetch failed — remember this URL is broken so we
+                            // don't keep retrying, and drop gPicture from local state so
+                            // renderers fall through to the placeholder.
+                            markPictureFailed(userId, gPicture);
+                            if (userDetail.value && userDetail.value.gPicture === gPicture) {
+                                userDetail.value = { ...userDetail.value, gPicture: '' };
+                            }
+                        });
+                    }
+                } else {
+                    // No gPicture (or we just stripped it) — drop any stale cached base64 so
+                    // ProfileButton falls through to its placeholder.
+                    profilePictureBase64.value = '';
+                    if (userId && !gPicture) {
+                        try { localStorage.removeItem(pictureCacheKey(userId)); } catch {}
+                    }
+                }
+
                 return profile;
             })
             .catch((error) => {

@@ -8,7 +8,7 @@
                     <!-- Avatar Section -->
                     <div class="mb-6">
                         <div class="group relative mx-auto h-24 w-24 md:h-32 md:w-32">
-                            <img :src="profilePhotoPreview" alt="Profile Photo"
+                            <img :src="profilePhotoPreview" alt="Profile Photo" @error="onAvatarLoadError"
                                 class="h-24 w-24 cursor-pointer rounded-full border border-gray-200 object-cover transition-opacity group-hover:opacity-80 md:h-32 md:w-32" />
                             <div
                                 class="absolute inset-0 flex items-center justify-center rounded-full bg-black bg-opacity-0 transition-all duration-200 group-hover:bg-opacity-30">
@@ -95,7 +95,7 @@ definePageMeta({
 
 const name = ref(profileStore.userDetail?.name || '');
 const email = ref(profileStore.email);
-const profilePicture = ref(profileStore.profilePicture);
+const profilePicture = computed(() => profileStore.profilePicture);
 const selectedFile = ref<File | null>(null);
 const filePreviewUrl = ref<string | null>(null);
 const options = [{ label: t('profile.receive-daily-practice-email-reminders'), value: 'dailyReminders' }];
@@ -144,6 +144,13 @@ const profilePhotoPreview = computed(() => {
     }
     return profilePicture.value || '/assets/images/user.png';
 });
+
+function onAvatarLoadError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && img.src !== window.location.origin + '/assets/images/user.png') {
+        img.src = '/assets/images/user.png';
+    }
+}
 
 const handleSubmit = async () => {
     try {

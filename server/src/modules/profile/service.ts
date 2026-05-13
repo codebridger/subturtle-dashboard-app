@@ -23,8 +23,24 @@ export const updateUserProfile = async (
 
 	if (rewrite) {
 		await profileCollection.updateOne({ refId }, { gPicture, name, timeZone });
-	} else if (timeZone && !(isExist as any).timeZone) {
-		// Only set timezone if it's not already set (ignore browser timezone on subsequent logins)
-		await profileCollection.updateOne({ refId }, { $set: { timeZone } });
+		return;
+	}
+
+	const existing = isExist as { timeZone?: string; gPicture?: string };
+	const updates: Record<string, string> = {};
+
+	// Always refresh gPicture when Google sends a new/different URL — covers both
+	// the never-set backfill and the user-changed-their-Google-avatar case.
+	if (gPicture && gPicture !== existing.gPicture) {
+		updates.gPicture = gPicture;
+	}
+
+	// Only set timezone if it's not already set (ignore browser timezone on subsequent logins)
+	if (timeZone && !existing.timeZone) {
+		updates.timeZone = timeZone;
+	}
+
+	if (Object.keys(updates).length > 0) {
+		await profileCollection.updateOne({ refId }, { $set: updates });
 	}
 }; 
