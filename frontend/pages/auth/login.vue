@@ -31,7 +31,7 @@
                             <h1 class="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">{{
                                 t('auth.signin') }}</h1>
                             <p class="text-base font-bold leading-normal text-white-dark">
-                                Use one of your social accounts to {{ t('auth.signin') }} / {{ t('auth.signup') }}.
+                                {{ t('auth.signin_subtitle') }}
                             </p>
                         </div>
                         <form class="space-y-5 dark:text-white" @submit.prevent="router.push('/')">
