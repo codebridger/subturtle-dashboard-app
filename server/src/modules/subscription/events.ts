@@ -7,6 +7,7 @@ export const subscriptionEvents = new EventEmitter();
 // Define event types
 export const EVENT_TYPES = {
   LOW_CREDITS: "low_credits",
+  SOFT_CAP_REACHED: "soft_cap_reached",
   SUBSCRIPTION_CHANGE: "subscription_change",
   USAGE_SPIKE: "usage_spike",
   SUBSCRIPTION_EXPIRED: "subscription_expired",
@@ -25,6 +26,23 @@ export function emitLowCreditsEvent(
   subscriptionEvents.emit(EVENT_TYPES.LOW_CREDITS, {
     userId,
     remainingCredits,
+    timestamp: new Date(),
+  });
+}
+
+/**
+ * Emit soft-cap reached event — the user has used at least SOFT_CAP_PERCENT of
+ * their AI budget for the current window, but is not yet fully exhausted.
+ * @param userId - The user ID
+ * @param usagePercentage - Percentage of the AI budget used (80-99)
+ */
+export function emitSoftCapEvent(
+  userId: string,
+  usagePercentage: number
+): void {
+  subscriptionEvents.emit(EVENT_TYPES.SOFT_CAP_REACHED, {
+    userId,
+    usagePercentage,
     timestamp: new Date(),
   });
 }

@@ -23,6 +23,7 @@ import {
   GEMINI_TOKEN_TTL_MS,
   GEMINI_NEW_SESSION_TTL_MS,
 } from "./config";
+import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
 import { GeminiLiveSessionType } from "./types";
 
 interface GeminiPracticeSetup {
@@ -56,14 +57,17 @@ export const requestGeminiEphemeralToken = defineFunction({
   ): Promise<GeminiLiveSessionType> {
     const { userId, instructions, voice, tools, isResume } = setup;
 
+    // AI features are the only thing the credit budget gates. `minCredits: 1`
+    // means this blocks only at true exhaustion (the 100% hard cap) — saves
+    // and Smart Review are never credit-gated and keep working.
     const { allowedToProceed } = await checkCreditAllocation({
       userId,
-      minCredits: 500000,
+      minCredits: 1,
     });
 
     if (!allowedToProceed) {
       throw new Error(
-        "User does not have enough credit or does not have an active subscription"
+        `${AI_CREDIT_EXHAUSTED_CODE}: AI features are paused — this month's AI budget is used up.`
       );
     }
 

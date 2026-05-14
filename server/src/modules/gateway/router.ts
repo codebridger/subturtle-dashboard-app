@@ -1,38 +1,47 @@
 import Router from "koa-router";
 import { handleWebhookEvent } from "./service";
 import Stripe from "stripe";
-import { PaymentProvider } from "./adapters";
+import { PaymentProvider, PaymentAdapterFactory } from "./adapters";
 
 const name = "gateway";
 const getway = new Router();
+
+// koa-body exposes the raw (unparsed) request body under this symbol when
+// `koaBodyOptions.includeUnparsed` is enabled (see server/src/index.ts).
+const UNPARSED_BODY = Symbol.for("unparsedBody");
 
 // Handle Stripe webhook events
 getway.post("/webhook/stripe", async (ctx: any) => {
   let event: Stripe.Event;
 
   try {
-    // // Buffer the raw body for Stripe signature verification
-    // const rawBody = await getRawBody(ctx.req, {
-    //   length: ctx.request.length,
-    //   limit: "1mb",
-    //   encoding: ctx.request.charset || "utf-8",
-    // });
-    // const signature = ctx.headers["stripe-signature"] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const signature = ctx.headers["stripe-signature"] as string | undefined;
 
-    // if (webhookSecret) {
-    //   event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    // } else {
-    //   event = JSON.parse(rawBody.toString());
-    //   console.warn(
-    //     "Webhook signature verification skipped - webhook secret not configured"
-    //   );
-    // }
+    if (webhookSecret && signature) {
+      // Stripe signature verification needs the exact raw request bytes.
+      const rawBody = ctx.request.body?.[UNPARSED_BODY];
+      if (!rawBody) {
+        throw new Error(
+          "Raw request body unavailable - cannot verify Stripe signature"
+        );
+      }
+      const stripe = PaymentAdapterFactory.getStripeAdapter().stripe;
+      event = stripe.webhooks.constructEvent(
+        rawBody,
+        signature,
+        webhookSecret
+      );
+    } else {
+      // No secret configured (local dev without `stripe listen`) - accept the
+      // already-parsed body unverified, but warn loudly.
+      console.warn(
+        "[gateway] STRIPE_WEBHOOK_SECRET not set - webhook signature verification skipped"
+      );
+      event = ctx.request.body as Stripe.Event;
+    }
 
-    // Process the event
-    const result = await handleWebhookEvent(
-      ctx.request.body,
-      PaymentProvider.STRIPE
-    );
+    const result = await handleWebhookEvent(event, PaymentProvider.STRIPE);
 
     if (result.success) {
       ctx.body = { received: true, message: result.message };

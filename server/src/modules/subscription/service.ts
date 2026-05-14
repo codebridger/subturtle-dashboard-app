@@ -10,17 +10,48 @@ import {
   FREEMIUM_DURATION_DAYS,
   FREEMIUM_DEFAULT_LIVED_SESSIONS,
 } from "../../config";
-import { LOW_CREDITS_THRESHOLD } from "./config";
+import { LOW_CREDITS_THRESHOLD, SOFT_CAP_PERCENT } from "./config";
 
 import {
   emitLowCreditsEvent,
+  emitSoftCapEvent,
   emitSubscriptionChangeEvent,
   emitSubscriptionExpiredEvent,
 } from "./events";
 import { Subscription, FreeCredit } from "./types";
+import { TierId, Cadence } from "./tiers";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
+import {
+  trackServerEvent,
+  SERVER_ANALYTICS_EVENTS,
+} from "../../utils/analytics";
+
+/**
+ * Compute derived credit values from the raw schema fields.
+ *
+ * The subscription / free_credit schemas define `available_credit` and
+ * `usage_percentage` as Mongoose virtuals, but those virtuals are NOT reliably
+ * present on the objects `getCollection().findOne()` returns here — only
+ * `.toObject({ virtuals: true })` exposes them. Always derive from the raw
+ * `total_credits` / `credits_used` fields for in-server credit math.
+ */
+function computeAvailableCredits(doc: {
+  total_credits?: number;
+  credits_used?: number;
+}): number {
+  return (doc.total_credits || 0) - (doc.credits_used || 0);
+}
+
+function computeUsagePercentage(doc: {
+  total_credits?: number;
+  credits_used?: number;
+}): number {
+  const total = doc.total_credits || 0;
+  if (total <= 0) return 0;
+  return Math.min(Math.round(((doc.credits_used || 0) / total) * 100), 100);
+}
 
 /**
  * Get or create freemium allocation for a user
@@ -148,9 +179,13 @@ export async function checkCreditAllocation(props: {
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
+  // Match the statuses getSubscription/isUserOnFreemium accept — anything not
+  // canceled/incomplete_expired counts as the user's subscription. An exact
+  // status:"active" filter here silently dropped trialing/past_due/paused
+  // subscriptions back to the freemium pool.
   const activeSubscription = (await subscriptionsCollection.findOne({
     user_id: Types.ObjectId(userId),
-    status: "active",
+    status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   })) as Subscription | null;
 
@@ -159,8 +194,8 @@ export async function checkCreditAllocation(props: {
   let isFreemium = false;
 
   if (activeSubscription) {
-    // User has active paid subscription
-    availableCredits = activeSubscription.available_credit || 0;
+    // User has an active paid subscription
+    availableCredits = computeAvailableCredits(activeSubscription);
     subscriptionEndsAt = activeSubscription.end_date;
   } else {
     // No active subscription, check freemium allocation
@@ -198,6 +233,11 @@ export async function addNewSubscriptionWithCredit(props: {
   startDateUnixTimestamp: number;
   endDateUnixTimestamp: number;
   paymentMetaData: any;
+  tier?: TierId;
+  subscriptionType?: Cadence;
+  priceId?: string;
+  status?: Subscription["status"];
+  trialEndUnixTimestamp?: number;
 }) {
   const {
     userId,
@@ -206,6 +246,11 @@ export async function addNewSubscriptionWithCredit(props: {
     startDateUnixTimestamp,
     endDateUnixTimestamp,
     paymentMetaData,
+    tier,
+    subscriptionType,
+    priceId,
+    status = "active",
+    trialEndUnixTimestamp,
   } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
@@ -214,13 +259,16 @@ export async function addNewSubscriptionWithCredit(props: {
 
   if ((startDateUnixTimestamp || endDateUnixTimestamp) && totalDays) {
     throw new Error(
-      "Cannot provide both startDateUnixTimestamp and endDateUnix Timestamp and totalDays"
+      "Cannot provide both startDateUnixTimestamp and endDateUnixTimestamp and totalDays"
     );
   }
 
-  // Deactivate all previous subscriptions for the user
+  // Deactivate any previous active/trialing subscriptions for the user
   await subscriptionsCollection.updateMany(
-    { user_id: Types.ObjectId(userId), status: "active" },
+    {
+      user_id: Types.ObjectId(userId),
+      status: { $in: ["active", "trialing"] },
+    },
     { $set: { status: "expired" } }
   );
 
@@ -236,14 +284,20 @@ export async function addNewSubscriptionWithCredit(props: {
     endDate = new Date(endDateUnixTimestamp * 1000); // Convert Unix timestamp to Date
   }
 
-  const newSubscription = {
+  const newSubscription: Partial<Subscription> = {
     user_id: Types.ObjectId(userId),
     start_date: startDate,
     end_date: endDate,
     total_credits: creditAmount,
     credits_used: 0,
-    status: "active",
+    status,
     payment_meta_data: paymentMetaData,
+    ...(tier && { tier }),
+    ...(subscriptionType && { subscription_type: subscriptionType }),
+    ...(priceId && { price_id: priceId }),
+    ...(trialEndUnixTimestamp && {
+      trial_end: new Date(trialEndUnixTimestamp * 1000),
+    }),
   };
 
   const createdSubscription = await subscriptionsCollection.create(
@@ -288,6 +342,11 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
   }
 
   try {
+    // Capture the pre-cancel status so the webhook can tell a trial cancel
+    // apart from a paid cancel (for the trial-canceled analytics event).
+    const existing = await subscriptionsCollection.findOne(filter);
+    const wasTrialing = existing?.status === "trialing";
+
     const updateResult = await subscriptionsCollection.updateOne(filter, {
       $set: {
         status,
@@ -301,11 +360,13 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
     return {
       success: true,
       message: "Subscription canceled successfully",
+      wasTrialing,
     };
   } catch (error: any) {
     return {
       success: false,
       message: error.message || "Failed to cancel subscription",
+      wasTrialing: false,
     };
   }
 }
@@ -313,9 +374,15 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
 export async function updateSubscriptionStatusByProviderAndSubscriptionId(props: {
   provider: PaymentProvider;
   subscriptionId: string;
-  status: Stripe.Subscription.Status;
+  status: Subscription["status"];
   startDateUnixTimestamp: number;
   endDateUnixTimestamp: number;
+  tier?: TierId;
+  subscriptionType?: Cadence;
+  priceId?: string;
+  creditAmount?: number;
+  trialEndUnixTimestamp?: number;
+  cancelAtPeriodEnd?: boolean;
 }) {
   const {
     provider,
@@ -323,6 +390,12 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     status,
     startDateUnixTimestamp,
     endDateUnixTimestamp,
+    tier,
+    subscriptionType,
+    priceId,
+    creditAmount,
+    trialEndUnixTimestamp,
+    cancelAtPeriodEnd,
   } = props;
 
   const subscriptionsCollection = getCollection<Subscription>(
@@ -330,9 +403,10 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     SUBSCRIPTION_COLLECTION
   );
 
+  // Match by provider + subscription id only. A trialing OR active subscription
+  // can receive an `updated` event — notably the trial->paid transition.
   const filter: any = {
     "payment_meta_data.provider": provider,
-    status: "active",
   };
 
   if (provider == PaymentProvider.STRIPE) {
@@ -341,46 +415,47 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
 
   const currentSubscription = await subscriptionsCollection.findOne(filter);
 
-  if (currentSubscription) {
-    const currentStartTimeUnixTimestamp =
-      currentSubscription.start_date.getTime() / 1000;
-    const currentEndTimeUnixTimestamp =
-      currentSubscription.end_date.getTime() / 1000;
-
-    let isSamePeriod = false;
-
-    if (startDateUnixTimestamp && endDateUnixTimestamp) {
-      isSamePeriod =
-        startDateUnixTimestamp === currentStartTimeUnixTimestamp &&
-        endDateUnixTimestamp === currentEndTimeUnixTimestamp;
-    }
-
-    if (isSamePeriod) {
-      await subscriptionsCollection.updateOne(filter, {
-        $set: {
-          status,
-        },
-      });
-    } else {
-      await subscriptionsCollection.updateOne(filter, {
-        $set: {
-          status,
-          start_date: new Date(startDateUnixTimestamp * 1000),
-          end_date: new Date(endDateUnixTimestamp * 1000),
-        },
-      });
-    }
-
-    return {
-      success: true,
-      message: "Subscription updated successfully",
-    };
-  } else {
+  if (!currentSubscription) {
     return {
       success: false,
       message: "Subscription not found",
     };
   }
+
+  const currentStart = currentSubscription.start_date.getTime() / 1000;
+  const currentEnd = currentSubscription.end_date.getTime() / 1000;
+  const isSamePeriod =
+    !!startDateUnixTimestamp &&
+    !!endDateUnixTimestamp &&
+    startDateUnixTimestamp === currentStart &&
+    endDateUnixTimestamp === currentEnd;
+
+  const update: any = { status };
+  if (tier) update.tier = tier;
+  if (subscriptionType) update.subscription_type = subscriptionType;
+  if (priceId) update.price_id = priceId;
+  update.cancel_at_period_end = !!cancelAtPeriodEnd;
+  update.trial_end = trialEndUnixTimestamp
+    ? new Date(trialEndUnixTimestamp * 1000)
+    : null;
+
+  if (!isSamePeriod) {
+    // Billing period rolled over (renewal, or trial -> first paid period):
+    // move the window and refill the credit budget for the new period.
+    update.start_date = new Date(startDateUnixTimestamp * 1000);
+    update.end_date = new Date(endDateUnixTimestamp * 1000);
+    if (creditAmount !== undefined) {
+      update.total_credits = creditAmount;
+      update.credits_used = 0;
+    }
+  }
+
+  await subscriptionsCollection.updateOne(filter, { $set: update });
+
+  return {
+    success: true,
+    message: "Subscription updated successfully",
+  };
 }
 
 /**
@@ -411,9 +486,13 @@ export async function recordUsage(props: {
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
+  // Match the statuses getSubscription/isUserOnFreemium accept — anything not
+  // canceled/incomplete_expired counts as the user's subscription. An exact
+  // status:"active" filter here silently dropped trialing/past_due/paused
+  // subscriptions back to the freemium pool.
   const activeSubscription = (await subscriptionsCollection.findOne({
     user_id: Types.ObjectId(userId),
-    status: "active",
+    status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   })) as Subscription | null;
 
@@ -454,6 +533,7 @@ export async function recordUsage(props: {
   const usageRecord = await usageCollection.create(newUsage);
 
   let remainingCredits = 0;
+  let usagePercentage = 0;
 
   if (isFreemium) {
     // Update freemium allocation's credits_used
@@ -476,10 +556,33 @@ export async function recordUsage(props: {
       end_date: { $gte: new Date() },
     })) as FreeCredit | null;
 
-    remainingCredits = updatedFreemiumAllocation
-      ? (updatedFreemiumAllocation.total_credits || 0) -
-        (updatedFreemiumAllocation.credits_used || 0)
-      : 0;
+    if (updatedFreemiumAllocation) {
+      remainingCredits = computeAvailableCredits(updatedFreemiumAllocation);
+      usagePercentage = computeUsagePercentage(updatedFreemiumAllocation);
+
+      // Starter AI budget just hit exhaustion — fire the one-shot server-truth
+      // analytics event and flag the doc so it fires at most once per window.
+      if (
+        remainingCredits <= 0 &&
+        !updatedFreemiumAllocation.ai_exhausted_flagged
+      ) {
+        const startDate = updatedFreemiumAllocation.start_date
+          ? new Date(updatedFreemiumAllocation.start_date)
+          : new Date();
+        const daysSinceAllocation = Math.floor(
+          (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        trackServerEvent(
+          SERVER_ANALYTICS_EVENTS.STARTER_AI_EXHAUSTED,
+          userId,
+          { daysSinceAllocation }
+        );
+        await freeCreditCollection.updateOne(
+          { _id: updatedFreemiumAllocation._id },
+          { $set: { ai_exhausted_flagged: true } }
+        );
+      }
+    }
   } else {
     // Update subscription's credits_used
     await subscriptionsCollection.updateOne(
@@ -492,18 +595,24 @@ export async function recordUsage(props: {
       _id: activeSubscription!._id,
     })) as Subscription | null;
 
-    remainingCredits = updatedSubscription
-      ? updatedSubscription.available_credit || 0
-      : 0;
+    if (updatedSubscription) {
+      remainingCredits = computeAvailableCredits(updatedSubscription);
+      usagePercentage = computeUsagePercentage(updatedSubscription);
+    }
   }
 
-  // Check if credits are low and emit event if needed
+  // Check if credits are low and emit events if needed
   if (remainingCredits < LOW_CREDITS_THRESHOLD) {
     emitLowCreditsEvent(userId, remainingCredits);
+  }
+  // Soft-cap: between SOFT_CAP_PERCENT and full exhaustion (hard cap at 100%).
+  if (usagePercentage >= SOFT_CAP_PERCENT && usagePercentage < 100) {
+    emitSoftCapEvent(userId, usagePercentage);
   }
 
   return {
     remainingCredits,
+    usagePercentage,
     usageId: usageRecord._id,
     status: availableCredits < creditAmount ? "overdraft" : "paid",
     costResult,
@@ -550,18 +659,36 @@ export async function getSubscription(userId: string) {
 
     jsonSubscription["label"] = label;
 
-    const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
-      subscription_id
-    );
+    try {
+      const subscriptionDetails = await stripeAdapter.getSubscriptionDetails(
+        subscription_id
+      );
 
-    const portalSession =
-      await stripeAdapter.stripe.billingPortal.sessions.create({
-        customer: subscriptionDetails.customer.toString(),
-        return_url: `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`,
-      });
+      const portalSession =
+        await stripeAdapter.stripe.billingPortal.sessions.create({
+          customer: subscriptionDetails.customer.toString(),
+          return_url: `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`,
+        });
 
-    jsonSubscription["status"] = subscriptionDetails.status;
-    jsonSubscription["portal_url"] = portalSession.url;
+      jsonSubscription["status"] = subscriptionDetails.status;
+      jsonSubscription["portal_url"] = portalSession.url;
+    } catch (error: any) {
+      // The Stripe customer/subscription is gone (e.g. deleted out-of-band).
+      // Our record is stale — mark it canceled and report no active
+      // subscription instead of failing the whole request.
+      if (error?.code === "resource_missing") {
+        console.warn(
+          `[subscription] Stripe object missing for ${subscription_id}; marking local subscription canceled`
+        );
+        await subscriptionsCollection.updateOne(
+          { _id: activeSubscription._id },
+          { $set: { status: "canceled" } }
+        );
+        return null;
+      }
+      throw error;
+    }
+
     delete jsonSubscription.payments;
   }
 

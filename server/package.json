@@ -11,7 +11,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:verbose": "jest --verbose",
-    "download:docs": "node scripts/download_docs.js"
+    "download:docs": "node scripts/download_docs.js",
+    "setup:stripe": "ts-node --transpile-only scripts/setup-stripe-pricing.ts"
   },
   "author": "Navid Shad <navidshad72@gmail.com>",
   "license": "MIT",
@@ -25,6 +26,7 @@
     "dotenv": "^16.4.5",
     "googleapis": "^129.0.0",
     "koa-router": "^13.0.1",
+    "mixpanel": "^0.22.0",
     "node-fetch": "2",
     "node-schedule": "^2.1.1",
     "stripe": "^18.0.0",
