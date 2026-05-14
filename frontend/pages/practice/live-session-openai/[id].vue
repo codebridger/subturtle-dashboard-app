@@ -102,6 +102,13 @@
         :primary-button-label="t('freemium.limitation.go_pro')"
         :secondary-button-label="t('freemium.timer.exit_session')" :auto-redirect-on-upgrade="false" prevent-close
         hide-close @upgrade="handleUpgrade" @secondary="endLiveSession" @close="handleTimerModalClose" />
+
+    <!-- AI budget exhausted modal (100% hard cap) -->
+    <FreemiumLimitationModal v-model="showAiCapModal" :modal-title="t('subscription.ai-cap.title')"
+        :main-message="t('subscription.ai-cap.message')" :sub-message="t('subscription.ai-cap.sub-message')"
+        icon-name="IconLock" :primary-button-label="t('subscription.ai-cap.primary')"
+        :secondary-button-label="t('subscription.ai-cap.secondary')" :auto-redirect-on-upgrade="false" prevent-close
+        hide-close @upgrade="handleUpgrade" @secondary="goToFreeTools" />
 </template>
 
 <script setup lang="ts">
@@ -114,6 +121,8 @@ import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 import { analytic } from '~/plugins/mixpanel';
+import { AI_CREDIT_EXHAUSTED_CODE } from '~/types/tiers';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 // Hard-coded kill switch: flip to `false` to re-enable the OpenAI Realtime
 // flow. While this is `true`, the template renders a notice instead of the
@@ -157,6 +166,7 @@ const totalPhrases = computed<number>(() => {
 
 // Timer modal state
 const showTimerExpiredModal = ref(false);
+const showAiCapModal = ref(false);
 
 // Timer configuration - can be customized per use case
 const timerConfig = {
@@ -300,9 +310,16 @@ function createLiveSession() {
         })
         .catch((error) => {
             analytic.track('live-session_failed');
-
+            const message = error?.error || error?.message || '';
+            // AI budget exhausted (the 100% hard cap) — surface the upgrade
+            // modal instead of the generic error screen.
+            if (message.includes(AI_CREDIT_EXHAUSTED_CODE)) {
+                analytic.track(ANALYTICS_EVENTS.CAP_HIT, { cap: 'ai_taste' });
+                showAiCapModal.value = true;
+                return;
+            }
             errorMode.value = true;
-            errorMessage.value = error?.error || error?.message || 'Failed to start live session';
+            errorMessage.value = message || 'Failed to start live session';
         });
 }
 
@@ -389,6 +406,12 @@ function handleTimerModalClose() {
 
 function handleUpgrade() {
     router.push('/settings/subscription');
+}
+
+function goToFreeTools() {
+    // "Show me free tools" — back to the bundle, where saving phrases and
+    // Smart Review (both free, never AI-gated) live.
+    router.push(`/bundles/${id}`);
 }
 
 function selectPhrase(index: number) {

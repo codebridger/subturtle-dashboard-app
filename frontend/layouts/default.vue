@@ -20,6 +20,7 @@
             </template>
 
             <template #content>
+                <UsageCapBanner />
                 <NuxtPage />
             </template>
         </DashboardShell>
@@ -33,6 +34,7 @@
 <script setup lang="ts">
 import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from 'pilotui/shell';
 import type { SidebarItemType, HorizontalMenuItemType } from 'pilotui/types';
+import UsageCapBanner from '~/components/freemium_alerts/UsageCapBanner.vue';
 
 const menuItems = useDashboardNavigatorItems();
 const router = useRouter();

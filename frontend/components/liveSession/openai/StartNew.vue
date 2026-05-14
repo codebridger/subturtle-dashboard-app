@@ -13,12 +13,12 @@
                 </option>
             </select>
         </Card>
-        <Card class="space-y-4 !p-0 shadow-none" :class="{ 'cursor-not-allowed opacity-50': !formData.bundleId }">
+        <Card class="!p-0 shadow-none" :class="{ 'cursor-not-allowed opacity-50': !formData.bundleId }">
             <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="OPENAI_VOICES" ref="formRef"
                 @start="handleStartLiveSession" />
 
             <!-- Freemium: Show freemium limit card -->
-            <div v-if="profileStore.isFreemium">
+            <div class="m-4" v-if="profileStore.isFreemium">
                 <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
                     :main-message="t('freemium.limitation.no_free_spots_left')"
                     :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
