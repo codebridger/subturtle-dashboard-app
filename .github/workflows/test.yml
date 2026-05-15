@@ -91,7 +91,21 @@ jobs:
           echo "@codebridger:registry=https://npm.pkg.github.com" > .npmrc
           echo "//npm.pkg.github.com/:_authToken=${GIGET_AUTH_TOKEN}" >> .npmrc
       - run: yarn install --frozen-lockfile
-      - run: yarn playwright install --with-deps
+      - name: Get Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Playwright browsers (chromium)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: yarn playwright install --with-deps chromium
+      - name: Install Playwright system deps only
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: yarn playwright install-deps chromium
       - name: Create .env for dev server
         run: echo "NUXT_PUBLIC_BASE_URL_API=http://localhost:8080" > .env
       - run: yarn test:e2e
