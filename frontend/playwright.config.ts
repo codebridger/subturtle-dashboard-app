@@ -4,7 +4,7 @@ export default defineConfig({
     testDir: './tests/e2e',
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
+    retries: process.env.CI ? 1 : 0,
     workers: process.env.CI ? 2 : undefined,
     reporter: 'html',
     use: {
@@ -24,7 +24,7 @@ export default defineConfig({
         },
     ],
     webServer: {
-        command: 'yarn dev',
+        command: process.env.CI ? 'yarn preview' : 'yarn dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
