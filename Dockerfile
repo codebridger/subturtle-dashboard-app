@@ -9,6 +9,10 @@ RUN yarn install
 
 COPY /frontend/ .
 
+# frontend/types/tiers.ts re-exports from ../../server/src/modules/subscription.
+# Copy just that module so the relative import resolves during `yarn generate`.
+COPY /server/src/modules/subscription /server/src/modules/subscription
+
 RUN yarn generate
 
 FROM node:22.17.1-alpine
