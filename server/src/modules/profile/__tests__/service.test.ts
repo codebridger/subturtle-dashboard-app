@@ -57,8 +57,8 @@ describe("ProfileService", () => {
 		});
 
 		it("should set timezone if user exists but has no timezone set (login flow)", async () => {
-			// simulate existing user with no timezone
-			mockCollection.findOne.mockResolvedValue({ refId });
+			// simulate existing user with no timezone but same gPicture (so gPicture refresh doesn't fire)
+			mockCollection.findOne.mockResolvedValue({ refId, gPicture });
 
 			await updateUserProfile({ refId, gPicture, name, timeZone: "New/Zone" }, false);
 
@@ -69,8 +69,8 @@ describe("ProfileService", () => {
 		});
 
 		it("should NOT update timezone if user already has one (login flow)", async () => {
-			// simulate valid existing timezone
-			mockCollection.findOne.mockResolvedValue({ refId, timeZone: "Existing/Zone" });
+			// simulate valid existing timezone and matching gPicture
+			mockCollection.findOne.mockResolvedValue({ refId, gPicture, timeZone: "Existing/Zone" });
 
 			await updateUserProfile({ refId, gPicture, name, timeZone: "New/Zone" }, false);
 
@@ -79,18 +79,37 @@ describe("ProfileService", () => {
 				{ refId },
 				{ $set: { timeZone: "New/Zone" } }
 			);
-			// It might call other updates if we had passed them differently, but based on current logic:
-			// if rewrite=false, it only checks 'else if (timeZone...)'.
-			// Since it has existing timezone, it enters NO block.
 			expect(mockCollection.updateOne).not.toHaveBeenCalled();
 		});
 
 		it("should not update timezone if none provided", async () => {
-			mockCollection.findOne.mockResolvedValue({ refId, timeZone: "Existing/Zone" });
+			mockCollection.findOne.mockResolvedValue({ refId, gPicture, timeZone: "Existing/Zone" });
 
 			await updateUserProfile({ refId, gPicture, name }, false);
 
 			expect(mockCollection.updateOne).not.toHaveBeenCalled();
+		});
+
+		it("should update gPicture on login when Google sends a different URL", async () => {
+			mockCollection.findOne.mockResolvedValue({ refId, gPicture: "old.jpg", timeZone: "Existing/Zone" });
+
+			await updateUserProfile({ refId, gPicture: "new.jpg", name }, false);
+
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ refId },
+				{ $set: { gPicture: "new.jpg" } }
+			);
+		});
+
+		it("should backfill gPicture on login when user has none", async () => {
+			mockCollection.findOne.mockResolvedValue({ refId, timeZone: "Existing/Zone" });
+
+			await updateUserProfile({ refId, gPicture, name }, false);
+
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ refId },
+				{ $set: { gPicture } }
+			);
 		});
 	});
 });
