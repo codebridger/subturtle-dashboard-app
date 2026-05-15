@@ -6,6 +6,7 @@ import {
 } from "./service";
 import { CheckoutSessionRequest } from "./types";
 import { PaymentProvider } from "./adapters";
+import { TierId, Cadence, Currency } from "../subscription/tiers";
 
 /**
  * Array of exported functions for the gateway module
@@ -13,20 +14,24 @@ import { PaymentProvider } from "./adapters";
  */
 
 interface CreatePaymentParams {
-  productId: string;
+  tierId: TierId;
+  cadence: Cadence;
+  currency: Currency;
   provider?: PaymentProvider;
   successUrl?: string;
   cancelUrl?: string;
   userId?: string;
 }
 
-// Create a payment session for a product
+// Create a payment session for a tier
 const createPaymentSession = defineFunction({
   name: "createPaymentSession",
   permissionTypes: ["user_access"],
   callback: async function (params: CreatePaymentParams) {
     const {
-      productId,
+      tierId,
+      cadence,
+      currency,
       provider = PaymentProvider.STRIPE,
       successUrl,
       cancelUrl,
@@ -38,7 +43,9 @@ const createPaymentSession = defineFunction({
     }
 
     const request: CheckoutSessionRequest = {
-      productId,
+      tierId,
+      cadence,
+      currency,
       provider,
       successUrl,
       cancelUrl,

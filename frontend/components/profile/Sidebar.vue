@@ -31,17 +31,6 @@
                                 </div>
                             </button>
                         </NuxtLink>
-
-                        <NuxtLink to="/settings/billing">
-                            <button type="button"
-                                class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
-                                :class="{ 'bg-gray-100 text-primary dark:bg-[#181F32] dark:text-primary': activeTab === 'billing' }">
-                                <div class="flex items-center">
-                                    <Icon name="IconClipboardText" class="shrink-0" />
-                                    <div class="ltr:ml-3 rtl:mr-3">{{ t('billing.billing') }}</div>
-                                </div>
-                            </button>
-                        </NuxtLink>
                     </div>
                 </div>
             </client-only>

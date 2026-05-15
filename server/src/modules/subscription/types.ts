@@ -1,20 +1,15 @@
 import { Types } from "mongoose";
 import { PaymentProvider } from "../gateway/adapters";
-
-export interface SubscriptionPlan {
-  name: string;
-  product_id: string;
-  price: string;
-  currency: string;
-  description?: string;
-  features: string[];
-  is_freemium: boolean;
-}
+import { TierId } from "./tiers";
 
 export interface Subscription {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
-  subscription_type: "monthly" | "quarterly" | "annual";
+  subscription_type?: "monthly" | "annual";
+  tier?: TierId;
+  price_id?: string;
+  trial_end?: Date;
+  cancel_at_period_end?: boolean;
   start_date: Date;
   end_date: Date;
   total_credits: number;
@@ -22,6 +17,7 @@ export interface Subscription {
   status:
     | "active"
     | "canceled"
+    | "expired"
     | "incomplete"
     | "incomplete_expired"
     | "past_due"
@@ -54,7 +50,9 @@ export interface FreeCredit {
   allowed_save_words_used: number;
   allowed_lived_sessions: number;
   allowed_lived_sessions_used: number;
+  ai_exhausted_flagged?: boolean;
   available_credit?: number;
+  usage_percentage?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -73,7 +71,7 @@ export interface Usage {
 }
 
 export interface PaymentDetails {
-  subscriptionType: "monthly" | "quarterly" | "annual";
+  subscriptionType: "monthly" | "annual";
   paymentMethod?: string;
   transactionId?: string;
   currency?: string;

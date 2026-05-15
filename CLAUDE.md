@@ -132,6 +132,7 @@ Modules are discovered dynamically by the modular-rest framework. Entry point: [
 - **Mongo spans multiple databases** (`user_content`, `subturtle_leitner`, `subturtle_board`, `cms`). Always check [server/src/config.ts](server/src/config.ts) before adding a collection.
 - **Live-session audio formats are fixed**: mic input is 16 kHz Int16 PCM via an AudioWorklet (`pcm16-downsampler`); server audio comes back at 24 kHz and is queued as gapless `AudioBufferSourceNode`s. Don't change rates without updating the worklet.
 - **Yarn only** — both workspaces ship `yarn.lock`. Mixing `npm install` will desync the lockfile.
+- **pilotui `<Button :to="url">` renders a disabled-looking link** — in link mode it emits `<a disabled="false">`, and the `.btn[disabled]` rule fades it (`opacity: 0.6`, `cursor: not-allowed`). For button-styled links, use `@click` with programmatic navigation instead of `:to`.
 
 ## Testing
 

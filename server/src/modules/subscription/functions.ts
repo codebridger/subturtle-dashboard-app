@@ -1,10 +1,13 @@
-import { defineFunction } from "@modular-rest/server";
-
-import { SubscriptionPlan } from "./types";
+import {
+  defineFunction,
+  getCollection,
+  userManager,
+} from "@modular-rest/server";
+import { Types } from "mongoose";
 
 import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
-import { paymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
-import { StripeAdapter } from "../gateway/adapters/stripe.adapter";
+import { TIERS, PublicTierPlan } from "./tiers";
+import { DATABASE, FLUENT_WAITLIST_COLLECTION } from "../../config";
 
 /**
  * Get subscription details for a user
@@ -26,9 +29,11 @@ const getSubscriptionDetails = defineFunction({
         const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
         return {
           ...freemiumAllocation,
+          tier: "starter",
           is_freemium: true,
         };
       } else {
+        // Paid subscriptions carry `tier` on the document (post-Council-002).
         return {
           ...subscription,
           is_freemium: false,
@@ -45,99 +50,19 @@ const getSubscriptionDetails = defineFunction({
 const getSubscriptionPlans = defineFunction({
   name: "getSubscriptionPlans",
   permissionTypes: ["anonymous_access"],
-  callback: async (_params) => {
-    const plans: SubscriptionPlan[] = [
-      {
-        name: "Freemium Plan",
-        price: "0",
-        currency: "$",
-        description: "Great for casual learners",
-        features: [
-          "Translate captions in real time",
-          "Save up to 30 words or phrases",
-          "Review vocabulary on your dashboard",
-          "Flashcards (limited to 10/month)",
-          "Al Coach (up to 3 sessions/month)",
-        ],
-        product_id: "freemium",
-        is_freemium: true,
-      },
-      // {
-      //   name: "premium",
-      //   price: "7.60",
-      //   currency: "£",
-      //   description: "Ideal for focused learners",
-      //   features: [
-      //     "Unlimited saves & bundle creation",
-      //     "Unlimited flashcard reviews",
-      //     "Unlimited Al speaking practice",
-      //     "Weekly progress insights",
-      //     "Early access to new platforms & features",
-      //   ],
-      //   product_id: "prod_S4nM68SkuYEHxm",
-      //   is_freemium: false,
-      // },
-      // {
-      //   name: "pro",
-      //   price: "10",
-      //   currency: "£",
-      //   description: "Built for power users and perfectionists",
-      //   features: [
-      //     "Priority support and feedback response",
-      //     "Custom Al coach tuning based on learning goals",
-      //     "Progress export and personalized learning reports",
-      //     "Early access to grammar insights & learning tools",
-      //   ],
-      //   product_id: "pro",
-      //   is_freemium: false,
-      // },
-    ];
-
-    const getCurrency = (currency: string) => {
-      switch (currency) {
-        case "usd":
-          return "$";
-        case "gbp":
-          return "£";
-        default:
-          return currency;
-      }
-    };
-
-    // Ensure payment adapter is initialized before using it
-    try {
-      await paymentAdapterFactory.initialize();
-    } catch (error) {
-      console.warn("Failed to initialize payment adapter:", error);
-      // Return only freemium plan if adapter initialization fails
-      return plans;
-    }
-
-    const adapter = paymentAdapterFactory.getAdapter(
-      PaymentProvider.STRIPE
-    ) as StripeAdapter;
-    const products = await adapter.stripe.products.list();
-
-    for (const product of products.data) {
-      const prices = await adapter.stripe.prices.list({
-        product: product.id,
-      });
-
-      const p1 = prices.data[0];
-
-      plans.push({
-        name: product.name,
-        description: product.description || "",
-        price: ((p1.unit_amount || 0) / 100).toString() || "0",
-        currency: getCurrency(p1.currency),
-        product_id: product.id,
-        features:
-          product.marketing_features.map((feature) => feature.name || "") || [],
-        is_freemium: false,
-      });
-    }
-
-    return plans;
+  callback: async (_params): Promise<PublicTierPlan[]> => {
+    // Registry-driven — no live Stripe product listing. Dark tiers (Fluent)
+    // are included so the pricing page can render them as "Coming soon".
+    return Object.values(TIERS).map((tier) => ({
+      id: tier.id,
+      status: tier.status,
+      name: tier.userFacingName,
+      tagline: tier.tagline,
+      isPaid: tier.isPaid,
+      featureLabels: tier.featureLabels,
+      aiBudgetLabel: tier.aiBudgetLabel,
+      pricing: tier.amount,
+    }));
   },
 });
 
@@ -163,8 +88,41 @@ const getFreemiumAllowance = defineFunction({
   },
 });
 
+/**
+ * Add the current user to the Fluent waitlist — latent-demand capture while
+ * the Fluent tier ships "dark". Idempotent: upserted by user_id.
+ */
+const notifyFluentWaitlist = defineFunction({
+  name: "notifyFluentWaitlist",
+  permissionTypes: ["user_access"],
+  callback: async (params) => {
+    const { userId } = params;
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
+    const user = await userManager.getUserById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const waitlistCollection = getCollection(
+      DATABASE,
+      FLUENT_WAITLIST_COLLECTION
+    );
+    await waitlistCollection.updateOne(
+      { user_id: Types.ObjectId(userId) },
+      { $set: { user_id: Types.ObjectId(userId), email: user.email } },
+      { upsert: true }
+    );
+
+    return { success: true };
+  },
+});
+
 module.exports.functions = [
   getSubscriptionDetails,
   getSubscriptionPlans,
   getFreemiumAllowance,
+  notifyFluentWaitlist,
 ];

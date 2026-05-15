@@ -108,6 +108,15 @@ export const useProfileStore = defineStore('profile', () => {
     const activeSubscription = ref<SubscriptionType | null>(null);
     const freemiumAllocation = ref<FreemiumAllocationType | null>(null);
 
+    // Percentage of the AI budget used in the current window (0-100). Drives the
+    // soft-cap banner; works for both the Starter allocation and paid subscriptions.
+    const usagePercentage = computed(() => {
+        if (isFreemium.value) return freemiumAllocation.value?.usage_percentage ?? 0;
+        return activeSubscription.value?.usage_percentage ?? 0;
+    });
+    // AI features are paused once the budget is fully used (the 100% hard cap).
+    const isAiPaused = computed(() => usagePercentage.value >= 100);
+
     function fetchSubscription() {
         isSubscriptionFetching.value = true;
 
@@ -283,6 +292,8 @@ export const useProfileStore = defineStore('profile', () => {
         isSubscriptionFetching,
         isFreemium,
         freemiumAllocation,
+        usagePercentage,
+        isAiPaused,
         fetchSubscription,
 
         logout,

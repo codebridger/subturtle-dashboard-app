@@ -62,11 +62,6 @@ export const useDashboardNavigatorItems = (): Array<SidebarGroupType> => {
                     icon: 'IconCreditCard',
                     to: '/settings/subscription',
                 },
-                // {
-                //     title: t('billing.billing'),
-                //     icon: 'IconClipboardText',
-                //     to: '/settings/billing',
-                // },
             ],
         },
     ] as Array<SidebarGroupType>;

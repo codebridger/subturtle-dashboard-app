@@ -18,6 +18,7 @@ import {
   updateFreemiumAllocation,
 } from "../../subscription/service";
 import { LIVE_SESSION_MODEL } from "./config";
+import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
 const fetch = require("node-fetch");
 
 interface PracticeSetup {
@@ -60,14 +61,17 @@ export const requestEphemeralToken = defineFunction({
       }
     }
 
+    // AI features are the only thing the credit budget gates. `minCredits: 1`
+    // means this blocks only at true exhaustion (the 100% hard cap) — saves
+    // and Smart Review are never credit-gated and keep working.
     const { allowedToProceed } = await checkCreditAllocation({
       userId: setup.userId,
-      minCredits: 500000,
+      minCredits: 1,
     });
 
     if (!allowedToProceed) {
       throw new Error(
-        "User does not have enough credit or does not have an active subscription"
+        `${AI_CREDIT_EXHAUSTED_CODE}: AI features are paused — this month's AI budget is used up.`
       );
     }
 

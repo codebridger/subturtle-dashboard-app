@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { TierId, Cadence, Currency } from "../../subscription/tiers";
 
 /**
  * Supported payment providers
@@ -9,11 +10,15 @@ export enum PaymentProvider {
 }
 
 /**
- * Common request interface for creating a checkout session
+ * Common request interface for creating a checkout session.
+ * The caller passes tier + cadence + currency; the adapter resolves the Stripe
+ * price ID from the tier registry, so the frontend never holds raw price IDs.
  */
 export interface CreateCheckoutRequest {
   userId: string;
-  productId: string;
+  tierId: TierId;
+  cadence: Cadence;
+  currency: Currency;
   successUrl?: string;
   cancelUrl?: string;
 }

@@ -73,9 +73,9 @@ const props = withDefaults(
         // Default values - plain strings, translations handled by parent
         modalTitle: 'Upgrade Required',
         mainMessage: 'No free spots left',
-        subMessage: 'Upgrade to Pro to access unlimited features.',
+        subMessage: 'Upgrade to Learner to access unlimited features.',
         iconName: 'IconLock',
-        primaryButtonLabel: 'Go Pro!',
+        primaryButtonLabel: 'Upgrade to Learner',
         primaryButtonIcon: 'IconCrown',
         secondaryButtonLabel: 'Continue with limits',
         showSecondaryButton: true,

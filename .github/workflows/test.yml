@@ -106,8 +106,9 @@ jobs:
       - name: Install Playwright system deps only
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: yarn playwright install-deps chromium
-      - name: Create .env for dev server
+      - name: Create .env for build
         run: echo "NUXT_PUBLIC_BASE_URL_API=http://localhost:8080" > .env
+      - run: yarn build
       - run: yarn test:e2e
         env:
           CI: 'true'
