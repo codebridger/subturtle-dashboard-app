@@ -20,6 +20,11 @@ export const ChunkSchema = z.object({
       "other",
     ])
     .describe("Kind of reusable language pattern."),
+  definition: z
+    .string()
+    .describe(
+      "A short, self-contained explanation of THIS chunk's meaning and how it is used, written in the target language (1-2 sentences)."
+    ),
   transliteration: z
     .string()
     .describe(
