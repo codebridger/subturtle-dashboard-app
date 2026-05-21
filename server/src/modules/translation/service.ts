@@ -9,6 +9,7 @@ import {
   LanguageLearningDataSchema,
   TranslationAdviceSchema,
 } from "./schema";
+import { TRANSLATION_MODELS } from "../../utils/openrouter-models";
 
 /**
  * Get a simple translation of a phrase with context
@@ -37,13 +38,7 @@ export async function getSimpleTranslation({
 
   try {
     const response = await openRouter.createChatCompletion({
-      models: [
-        // Accepted models
-        "google/gemini-2.5-flash-lite", // 1.05M context, $0.10/M input, $0.40/M output
-        "google/gemini-2.5-flash", // 1m context, $0.15/M input, $0.60/M output
-        "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
-        // "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
-      ],
+      models: TRANSLATION_MODELS,
       messages: [
         {
           role: "system",
@@ -109,13 +104,7 @@ export async function getDetailedTranslation({
     const result =
       await openRouter.createStructuredOutputWithZod<DetailedPhraseDataType>({
         options: {
-          models: [
-            // Accepted models
-            "google/gemini-2.5-flash-lite", // 1.05M context, $0.10/M input, $0.40/M output
-            "google/gemini-2.5-flash", // 1m context, $0.15/M input, $0.60/M output
-            "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
-            // "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
-          ],
+          models: TRANSLATION_MODELS,
           messages: [
             {
               role: "system",
@@ -183,11 +172,7 @@ export async function getTranslationAdvice({
     const result =
       await openRouter.createStructuredOutputWithZod<TranslationAdviceType>({
         options: {
-          models: [
-            "google/gemini-2.5-flash-lite",
-            "google/gemini-2.5-flash",
-            "google/gemini-flash-1.5-8b",
-          ],
+          models: TRANSLATION_MODELS,
           messages: [
             { role: "system", content: systemPrompt },
             ...historyMessages,
