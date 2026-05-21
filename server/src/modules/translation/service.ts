@@ -107,7 +107,10 @@ export async function getDetailedTranslation({
             },
           ],
           temperature: 0,
-          max_tokens: 700,
+          // Richer schema now includes per-chunk definition + transliteration
+          // (token-heavy in target languages like Persian); 700 truncated the
+          // JSON ("unterminated string"), so allow more headroom.
+          max_tokens: 2000,
         },
         zodSchema: LanguageLearningDataSchema, // Pass the Zod schema directly
         schemaName: "language_learning_data",
@@ -170,7 +173,7 @@ export async function getTranslationAdvice({
             { role: "user", content: message },
           ],
           temperature: 0,
-          max_tokens: 400,
+          max_tokens: 800,
         },
         zodSchema: TranslationAdviceSchema,
         schemaName: "translation_advice",

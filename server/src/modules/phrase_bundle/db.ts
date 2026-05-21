@@ -73,6 +73,20 @@ interface PhraseBundleSchema {
   phrases: string[];
 }
 
+// Sub-schema for a confirmed chunk. The field literally named `type` collides
+// with Mongoose's reserved type key, so each field uses the verbose `{ type }`
+// descriptor form (and _id is disabled since chunks are plain value objects).
+const chunkSchema = new Schema(
+  {
+    text: { type: String },
+    type: { type: String },
+    definition: { type: String },
+    transliteration: { type: String },
+    confidence: { type: Number },
+  },
+  { _id: false }
+);
+
 const phraseSchema = new Schema<PhraseSchema>(
   {
     phrase: { type: String },
@@ -92,15 +106,7 @@ const phraseSchema = new Schema<PhraseSchema>(
     },
     linguistic_data: Schema.Types.Mixed,
     chunks: {
-      type: [
-        {
-          text: String,
-          type: String,
-          definition: String,
-          transliteration: String,
-          confidence: Number,
-        },
-      ],
+      type: [chunkSchema],
       default: [],
     },
     sourceUrl: String,

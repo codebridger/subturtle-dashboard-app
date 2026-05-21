@@ -168,12 +168,13 @@ const createPhrase = defineFunction({
       throw new Error("One or more bundles not found or access denied");
     }
 
-    // Check if phrase already exists (considering type)
+    // Check if phrase already exists. Match by phrase + type (+ owner) only:
+    // the translation can vary between AI calls, so including it would create
+    // duplicate phrase docs for the same saved text.
     const existingPhrase = await phraseCollection.findOne({
       refId: refId,
       phrase: phrase.trim(),
-      translation: translation.trim(),
-      type: type, // Include type in the search
+      type: type,
     });
 
     let phraseId: string;
@@ -376,10 +377,26 @@ const getBundleSuggestionForPage = defineFunction({
         strict: true,
       });
 
-      return {
-        matchedBundle: null,
-        suggestedName: result.bundle_name?.trim() || null,
-      };
+      const name = result.bundle_name?.trim();
+      if (!name) return { matchedBundle: null, suggestedName: null };
+
+      // If a bundle with this exact name already exists, return it as a match
+      // so the client preselects it instead of trying to re-create it.
+      const existingByName = await phraseBundleCollection.findOne({
+        refId,
+        title: name,
+      });
+      if (existingByName) {
+        return {
+          matchedBundle: {
+            _id: String(existingByName._id),
+            title: existingByName.title,
+          },
+          suggestedName: null,
+        };
+      }
+
+      return { matchedBundle: null, suggestedName: name };
     } catch (error: unknown) {
       console.error("Bundle suggestion error:", error);
       // Naming is best-effort; never block the save flow.
