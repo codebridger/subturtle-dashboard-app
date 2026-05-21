@@ -7,6 +7,7 @@ import {
 
 // Import the PhraseSchema type from the database module
 import { PhraseSchema } from "./db";
+import { normaliseSourceUrl } from "../translation/url-normalise";
 
 interface RemoveBundleParams {
   _id: string;
@@ -145,6 +146,8 @@ const createPhrase = defineFunction({
     direction,
     language_info,
     linguistic_data,
+    chunks,
+    sourceUrl,
   }: CreatePhraseParams): Promise<any> => {
     const phraseBundleCollection = getCollection<any>(
       DATABASE,
@@ -192,6 +195,8 @@ const createPhrase = defineFunction({
         if (direction) newPhraseDoc.direction = direction;
         if (language_info) newPhraseDoc.language_info = language_info;
         if (linguistic_data) newPhraseDoc.linguistic_data = linguistic_data;
+        if (chunks && chunks.length) newPhraseDoc.chunks = chunks;
+        if (sourceUrl) newPhraseDoc.sourceUrl = normaliseSourceUrl(sourceUrl);
       }
 
       // Insert new phrase

@@ -9,18 +9,16 @@ import { phraseBundleTriggers } from "./triggers";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
 
-export type Example = {
-  /** Example sentence showing the text in use */
-  source: string;
-  /** Translation of the example sentence */
-  target: string;
-};
-
-export type RelatedExpression = {
-  /** Related word or expression */
-  source: string;
-  /** Translation of the related expression */
-  target: string;
+/** A reusable language pattern the user confirmed inside their selection. */
+export type Chunk = {
+  /** The exact reusable pattern as it appears in the selection */
+  text: string;
+  /** Kind of pattern (collocation, phrasal_verb, idiom, discourse_marker, other) */
+  type: string;
+  /** Pronunciation of the chunk written in the target language alphabet */
+  transliteration?: string;
+  /** Model confidence that this is a useful learnable chunk (0-1) */
+  confidence: number;
 };
 
 export type LinguisticData = {
@@ -30,25 +28,12 @@ export type LinguisticData = {
   type: string;
   /** Clear explanation of meaning, contextualized to usage */
   definition: string;
-  /** Information about how and when to use this text */
-  // usage_notes: string;
-  /** Phonetic guidance (especially for non-Latin script languages) */
+  /** Phonetic guidance written in the target language alphabet */
   phonetic: {
-    ipa: string;
     transliteration: string;
   };
   /** Indication of formality level */
   formality_level: "formal" | "neutral" | "informal";
-  /** When the literal meaning differs significantly from idiomatic usage */
-  // literal_translation: string;
-  /** Cultural context important for proper understanding */
-  // cultural_notes: string;
-  /** Additional grammatical information when relevant */
-  // grammar_notes: string;
-  /** Example sentences showing the text in use, with translations */
-  examples: Example[];
-  /** Similar or connected expressions with translations */
-  related_expressions: RelatedExpression[];
 };
 
 export interface PhraseSchema {
@@ -72,6 +57,10 @@ export interface PhraseSchema {
     target: string;
   };
   linguistic_data?: LinguisticData;
+  /** Confirmed reusable patterns inside the selection. Source of truth for Pool + L3+ fill-in. */
+  chunks?: Chunk[];
+  /** Normalised URL of the page the phrase was saved from. */
+  sourceUrl?: string;
 }
 
 interface PhraseBundleSchema {
@@ -100,6 +89,18 @@ const phraseSchema = new Schema<PhraseSchema>(
       target: String,
     },
     linguistic_data: Schema.Types.Mixed,
+    chunks: {
+      type: [
+        {
+          text: String,
+          type: String,
+          transliteration: String,
+          confidence: Number,
+        },
+      ],
+      default: [],
+    },
+    sourceUrl: String,
   },
   { timestamps: true }
 );
