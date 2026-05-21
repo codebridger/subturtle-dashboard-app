@@ -72,8 +72,6 @@ export async function getDetailedTranslation({
   context,
   sourceLanguage = "en",
   targetLanguage,
-  pageTitle,
-  pageUrl,
 }: TranslateWithContextParams): Promise<DetailedPhraseDataType> {
   // Create prompt for OpenRouter
   const systemPrompt = `
@@ -85,19 +83,12 @@ export async function getDetailedTranslation({
 
   Chunks: inside the user's selection ("phrase"), find the reusable language patterns worth learning (collocations, phrasal verbs, idioms, discourse markers).
   Rules: at most one chunk per 5-8 words of the selection, hard ceiling of 2 chunks. Each chunk's "text" must appear verbatim inside the selection. For each chunk, also provide: "transliteration" (how to pronounce that chunk, source language, in the ${targetLanguage} alphabet) and "definition" (a short, self-contained explanation of that chunk's meaning and usage, 1-2 sentences, in ${targetLanguage}).
-  Return an empty "chunks" array when the selection is under ~5 words, or when the selection is written in a different language than the target learning language.
-  ${
-    pageTitle
-      ? `Bundle name: also produce "suggested_bundle_name" - a short, clean name derived from the page title that generalises across multiple episodes/chapters/articles from the same source (e.g. "Stranger Things S2E5 — Netflix" -> "Stranger Things S2").`
-      : `Do not set "suggested_bundle_name".`
-  }`;
+  Return an empty "chunks" array when the selection is under ~5 words, or when the selection is written in a different language than the target learning language.`;
 
   const userPrompt = `
   Translate from ${sourceLanguage} to ${targetLanguage}:
   Phrase: "${phrase}"
-  Accuracy context: "${context}"${
-    pageTitle ? `\n  Page title: "${pageTitle}"` : ""
-  }${pageUrl ? `\n  Page URL: "${pageUrl}"` : ""}`;
+  Accuracy context: "${context}"`;
 
   try {
     // Use the Zod schema directly with the OpenRouter service

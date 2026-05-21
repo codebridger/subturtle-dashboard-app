@@ -15,8 +15,6 @@ export interface TranslateWithContextParams {
   sourceLanguage?: string;
   targetLanguage?: string;
   translationType?: "simple" | "detailed";
-  pageTitle?: string;
-  pageUrl?: string;
 }
 
 export interface TranslationAdviceMessage {

@@ -22,8 +22,6 @@ const translateWithContext = defineFunction({
       translationType = "simple",
       sourceLanguage = "",
       targetLanguage = "",
-      pageTitle,
-      pageUrl,
     } = params;
 
     // normalize the source language
@@ -38,8 +36,6 @@ const translateWithContext = defineFunction({
           context,
           sourceLanguage,
           targetLanguage,
-          pageTitle,
-          pageUrl,
         });
       }
 

@@ -8,6 +8,9 @@ import {
 // Import the PhraseSchema type from the database module
 import { PhraseSchema } from "./db";
 import { normaliseSourceUrl } from "../translation/url-normalise";
+import { openRouter } from "../../utils/openrouter";
+import { TRANSLATION_MODELS } from "../../utils/openrouter-models";
+import { z } from "zod";
 
 interface RemoveBundleParams {
   _id: string;
@@ -283,9 +286,112 @@ const updatePhrase = defineFunction({
   },
 });
 
+interface BundleSuggestionParams {
+  refId: string;
+  pageTitle?: string;
+  pageUrl?: string;
+}
+
+const BundleNameSchema = z.object({
+  bundle_name: z
+    .string()
+    .describe(
+      "A short, clean bundle name derived from the page title, generalised so multiple episodes/chapters/articles from the same source group together (e.g. 'Stranger Things S2E5 — Netflix' -> 'Stranger Things S2')."
+    ),
+});
+
+/**
+ * Suggest which bundle the save modal should default to for a given page+user.
+ * Called once per page (first time the word detail opens) for logged-in users.
+ *
+ * - If the user already saved a phrase from this page (matched by normalised
+ *   source URL), returns that bundle and no AI call is made.
+ * - Otherwise asks the model for a short bundle name derived from the title.
+ */
+const getBundleSuggestionForPage = defineFunction({
+  name: "getBundleSuggestionForPage",
+  permissionTypes: ["user_access"],
+  callback: async ({
+    refId,
+    pageTitle,
+    pageUrl,
+  }: BundleSuggestionParams): Promise<{
+    matchedBundle: { _id: string; title: string } | null;
+    suggestedName: string | null;
+  }> => {
+    const phraseCollection = getCollection<any>(DATABASE, PHRASE_COLLECTION);
+    const phraseBundleCollection = getCollection<any>(
+      DATABASE,
+      BUNDLE_COLLECTION
+    );
+
+    // 1. Existing bundle from this same page (matched by normalised URL).
+    const sourceUrl = normaliseSourceUrl(pageUrl || "");
+    if (sourceUrl) {
+      const phrases = await phraseCollection.find(
+        { refId, sourceUrl },
+        { _id: 1 }
+      );
+      const phraseIds = (phrases || []).map((p: any) => p._id);
+
+      if (phraseIds.length) {
+        const bundle = await phraseBundleCollection.findOne(
+          { refId, phrases: { $in: phraseIds } },
+          {},
+          { sort: { _id: -1 } }
+        );
+        if (bundle) {
+          return {
+            matchedBundle: { _id: String(bundle._id), title: bundle.title },
+            suggestedName: null,
+          };
+        }
+      }
+    }
+
+    // 2. No existing bundle: ask the model for a short, generalised name.
+    if (!pageTitle || !pageTitle.trim()) {
+      return { matchedBundle: null, suggestedName: null };
+    }
+
+    try {
+      const result = await openRouter.createStructuredOutputWithZod<{
+        bundle_name: string;
+      }>({
+        options: {
+          models: TRANSLATION_MODELS,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You name vocabulary bundles. Given a web page title, produce a short, clean bundle name that generalises across multiple episodes/chapters/articles from the same source. Drop site suffixes, episode numbers and noise.",
+            },
+            { role: "user", content: `Page title: "${pageTitle}"` },
+          ],
+          temperature: 0,
+          max_tokens: 60,
+        },
+        zodSchema: BundleNameSchema,
+        schemaName: "bundle_name",
+        strict: true,
+      });
+
+      return {
+        matchedBundle: null,
+        suggestedName: result.bundle_name?.trim() || null,
+      };
+    } catch (error: unknown) {
+      console.error("Bundle suggestion error:", error);
+      // Naming is best-effort; never block the save flow.
+      return { matchedBundle: null, suggestedName: null };
+    }
+  },
+});
+
 module.exports.functions = [
   removeBundle,
   removePhrase,
   createPhrase,
   updatePhrase,
+  getBundleSuggestionForPage,
 ];
