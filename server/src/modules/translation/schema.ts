@@ -96,12 +96,6 @@ export const LanguageLearningDataSchema = z.object({
   linguistic_data: LinguisticDataSchema.describe(
     "Linguistic analysis data in target language"
   ),
-  suggested_bundle_name: z
-    .string()
-    .optional()
-    .describe(
-      "A short, clean bundle name derived from the page title, generalised so multiple episodes/chapters/articles from the same source group together (e.g. 'Stranger Things S2E5 — Netflix' -> 'Stranger Things S2'). Only set when a page title is provided."
-    ),
 });
 
 // Type inference from Zod schemas
