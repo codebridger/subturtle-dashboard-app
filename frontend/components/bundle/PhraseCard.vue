@@ -51,8 +51,8 @@
             </div>
 
             <div class="flex-1">
-                <TextArea type="text" :label="isLinguisticPhrase ? t('definition') : t('translation')"
-                    :placeholder="isLinguisticPhrase ? t('bundle.phrase_card.definition_placeholder') : t('bundle.phrase_card.translation_placeholder')"
+                <TextArea type="text" :label="t('translation')"
+                    :placeholder="t('bundle.phrase_card.translation_placeholder')"
                     v-model="translation" :error="!!error" :error-message="error || ''"
                     :loading="!!props.newPhrase && isSubmitting" :disabled="isLinguisticPhrase" />
             </div>
@@ -97,11 +97,10 @@ const isLinguisticPhrase = computed(() => {
     return props.phrase?.type === 'linguistic';
 });
 
-// Computed property for translation/definition value
+// Computed property for the translation value.
+// Show the same translation the user saw in the extension (translation.phrase),
+// not linguistic_data.definition (a whole-phrase explanation never shown on save).
 const translationValue = computed(() => {
-    if (isLinguisticPhrase.value) {
-        return props.phrase?.linguistic_data?.definition || '';
-    }
     return props.phrase?.translation || '';
 });
 

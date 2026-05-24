@@ -6,14 +6,16 @@
                 <!-- ========== NORMAL TYPE FLASHCARD ========== -->
                 <WidgetFlashCard v-if="phrase && isNormalType" :key="`normal-${phraseIndex}`" :phrase-type="'normal'"
                     :front="phrase.phrase" :back="phrase.translation" :context="phrase.context"
-                    :translation-language="phrase.translation_language" />
+                    :translation-language="phrase.translation_language" :leitner-level="cardLevel"
+                    :confirmed-chunk="cardChunk" :source-sentence="cardSentence" />
 
                 <!-- ========== LINGUISTIC TYPE FLASHCARD ========== -->
                 <WidgetFlashCard v-else-if="phrase && isLinguisticType" :key="`linguistic-${phraseIndex}`"
                     :phrase-type="'linguistic'" :front="phrase.phrase"
-                    :back="phrase.linguistic_data?.definition || phrase.phrase" :context="phrase.context"
+                    :back="phrase.translation || phrase.phrase" :context="phrase.context"
                     :direction="phrase.direction" :language-info="phrase.language_info"
-                    :linguistic-data="phrase.linguistic_data" />
+                    :linguistic-data="phrase.linguistic_data" :chunks="phrase.chunks" :leitner-level="cardLevel"
+                    :confirmed-chunk="cardChunk" :source-sentence="cardSentence" />
 
                 <!-- ========== FALLBACK FOR UNKNOWN TYPE ========== -->
                 <WidgetFlashCard v-else-if="phrase" :key="`fallback-${phraseIndex}`" :front="phrase.phrase"
@@ -94,6 +96,11 @@ const isNextAvailable = computed(() => {
     return phraseIndex.value < totalPhrases.value - 1;
 });
 
+// L3+ fill-in cloze data, carried on the enriched phrase in Leitner mode (undefined otherwise → recognition card).
+const cardLevel = computed<number | undefined>(() => (phrase.value as any)?._leitnerLevel);
+const cardChunk = computed<string | null>(() => (phrase.value as any)?._confirmedChunk ?? null);
+const cardSentence = computed<string | null>(() => (phrase.value as any)?._sourceSentence ?? null);
+
 // ========== PHRASE TYPE DETECTION LOGIC ==========
 /**
  * Determines if the current phrase is of "normal" type
@@ -136,8 +143,14 @@ function fetchFlashcard() {
                 bundle.value = { title: 'Daily Review', phrases: [], refId: authUser.value?.id } as any;
                 return;
             }
-            // Map items to phrases
-            const phrases = res.items.map((i: any) => i.phrase);
+            // Map items to phrases, carrying through the Leitner level + confirmed chunk
+            // so the L3+ fill-in cloze can render (falls back to phrase fields until the RPC exposes them).
+            const phrases = res.items.map((i: any) => ({
+                ...i.phrase,
+                _leitnerLevel: i.boxLevel,
+                _confirmedChunk: i.confirmed_chunk ?? i.phrase?.chunks?.[0]?.text ?? null,
+                _sourceSentence: i.source_sentence ?? i.phrase?.context ?? null,
+            }));
             bundle.value = {
                 _id: res._id,
                 title: 'Daily Review',

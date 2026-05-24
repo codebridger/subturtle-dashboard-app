@@ -13,21 +13,25 @@
 		</div>
 
 		<div v-else class="flex h-full w-full flex-col items-center p-5 md:px-16 md:py-14">
+			<!-- Fixed height (viewport units) so the card never resizes when flipping between
+			     front/back; long content scrolls inside the card instead of growing the page. -->
 			<div
-				:class="['w-full flex-1 transition-all duration-300 ease-in-out', 'md:max-h-[80%] md:max-w-[80%]', 'lg:max-h-[65%] lg:max-w-[65%]']">
+				:class="['h-[58vh] w-full transition-all duration-300 ease-in-out', 'md:max-w-[80%]', 'lg:max-w-[65%]']">
 				<!-- Use WidgetFlashCard based on phrase type -->
 				<Transition name="fade-slide" mode="out-in">
 					<WidgetFlashCard v-if="currentPhrase && currentPhrase.type === 'normal'"
 						:key="`normal-${currentIndex}`" ref="flashCardRef" :phrase-type="'normal'"
 						:front="currentPhrase.phrase" :back="currentPhrase.translation" :context="currentPhrase.context"
-						:translation-language="currentPhrase.translation_language" />
+						:translation-language="currentPhrase.translation_language" :chunks="currentPhrase.chunks"
+						:leitner-level="cardLevel" :confirmed-chunk="cardChunk" :source-sentence="cardSentence" />
 
 					<WidgetFlashCard v-else-if="currentPhrase && currentPhrase.type === 'linguistic'"
 						:key="`linguistic-${currentIndex}`" ref="flashCardRef" :phrase-type="'linguistic'"
-						:front="currentPhrase.phrase"
-						:back="currentPhrase.linguistic_data?.definition || currentPhrase.phrase"
+						:front="currentPhrase.phrase" :back="currentPhrase.translation || currentPhrase.phrase"
 						:context="currentPhrase.context" :direction="currentPhrase.direction"
-						:language-info="currentPhrase.language_info" :linguistic-data="currentPhrase.linguistic_data" />
+						:language-info="currentPhrase.language_info" :linguistic-data="currentPhrase.linguistic_data"
+						:chunks="currentPhrase.chunks" :leitner-level="cardLevel" :confirmed-chunk="cardChunk"
+						:source-sentence="cardSentence" />
 
 					<WidgetFlashCard v-else-if="currentPhrase" :key="`fallback-${currentIndex}`" ref="flashCardRef"
 						:front="currentPhrase.phrase" :back="currentPhrase.translation || 'No translation'" />
@@ -93,6 +97,25 @@ const currentItem = computed(() => props.items[currentIndex.value]);
 const currentPhrase = computed(() => currentItem.value?.phrase as PhraseType);
 const totalItems = computed(() => props.items.length);
 
+// L3+ fill-in cloze inputs (level from the Leitner item, chunk + sentence from the phrase).
+// get-review-session returns raw Mongoose docs, so schema fields like boxLevel sit under `_doc`
+// rather than at the top level — read both so the level is found either way.
+const cardLevel = computed<number | undefined>(() => {
+	const item = currentItem.value as any;
+	return item?.boxLevel ?? item?._doc?.boxLevel;
+});
+const cardSentence = computed<string | null>(() => currentPhrase.value?.context ?? null);
+// Prefer the first confirmed chunk that actually appears in the source sentence. Chunk text and the
+// stored context can differ slightly (hyphenation, spacing), so blindly taking chunks[0] would drop to
+// recognition even when another chunk is a clean match. Falls back to chunks[0], then null.
+const cardChunk = computed<string | null>(() => {
+	const chunks = currentPhrase.value?.chunks || [];
+	if (!chunks.length) return null;
+	const sentence = (cardSentence.value || '').toLowerCase();
+	const matched = sentence ? chunks.find((c) => c.text && sentence.includes(c.text.toLowerCase())) : undefined;
+	return (matched || chunks[0])?.text ?? null;
+});
+
 onMounted(() => {
 	window.addEventListener('keydown', handleKeyDown);
 });
@@ -103,6 +126,12 @@ onUnmounted(() => {
 
 function handleKeyDown(event: KeyboardEvent) {
 	if (props.loading || props.items.length === 0) return;
+
+	// Don't hijack typing: while the cloze answer input (or any field) is focused, let keys through.
+	const target = event.target as HTMLElement | null;
+	if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+		return;
+	}
 
 	switch (event.code) {
 		case 'Space':
