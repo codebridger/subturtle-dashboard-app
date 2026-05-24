@@ -3,23 +3,7 @@
         :totalPhrases="totalPhrases" :bundleId="id.toString()" @end-session="endFlashcardSession">
         <div :class="['flex h-full w-full flex-col items-center p-5', 'md:px-16 md:py-14']">
             <div :class="['w-full flex-1 ', 'md:max-h-[80%] md:max-w-[80%]', 'lg:max-h-[65%] lg:max-w-[65%]']">
-                <!-- ========== NORMAL TYPE FLASHCARD ========== -->
-                <WidgetFlashCard v-if="phrase && isNormalType" :key="`normal-${phraseIndex}`" :phrase-type="'normal'"
-                    :front="phrase.phrase" :back="phrase.translation" :context="phrase.context"
-                    :translation-language="phrase.translation_language" :leitner-level="cardLevel"
-                    :confirmed-chunk="cardChunk" :source-sentence="cardSentence" />
-
-                <!-- ========== LINGUISTIC TYPE FLASHCARD ========== -->
-                <WidgetFlashCard v-else-if="phrase && isLinguisticType" :key="`linguistic-${phraseIndex}`"
-                    :phrase-type="'linguistic'" :front="phrase.phrase"
-                    :back="phrase.translation || phrase.phrase" :context="phrase.context"
-                    :direction="phrase.direction" :language-info="phrase.language_info"
-                    :linguistic-data="phrase.linguistic_data" :chunks="phrase.chunks" :leitner-level="cardLevel"
-                    :confirmed-chunk="cardChunk" :source-sentence="cardSentence" />
-
-                <!-- ========== FALLBACK FOR UNKNOWN TYPE ========== -->
-                <WidgetFlashCard v-else-if="phrase" :key="`fallback-${phraseIndex}`" :front="phrase.phrase"
-                    :back="phrase.translation || 'No translation available'" />
+                <WidgetFlashCard v-if="phrase" :key="phraseIndex" :phrase="phrase" :leitner-level="cardLevel" />
             </div>
 
             <selection class="my-6 flex max-h-[65%] w-full max-w-[65%] items-center justify-between">
@@ -96,27 +80,9 @@ const isNextAvailable = computed(() => {
     return phraseIndex.value < totalPhrases.value - 1;
 });
 
-// L3+ fill-in cloze data, carried on the enriched phrase in Leitner mode (undefined otherwise → recognition card).
+// Leitner level drives the L3+ cloze; carried on the enriched phrase in Leitner mode
+// (undefined otherwise → recognition card). FlashCard derives everything else from the phrase.
 const cardLevel = computed<number | undefined>(() => (phrase.value as any)?._leitnerLevel);
-const cardChunk = computed<string | null>(() => (phrase.value as any)?._confirmedChunk ?? null);
-const cardSentence = computed<string | null>(() => (phrase.value as any)?._sourceSentence ?? null);
-
-// ========== PHRASE TYPE DETECTION LOGIC ==========
-/**
- * Determines if the current phrase is of "normal" type
- * Normal type phrases have: phrase, translation, translation_language
- */
-const isNormalType = computed(() => {
-    return phrase.value?.type === 'normal';
-});
-
-/**
- * Determines if the current phrase is of "linguistic" type
- * Linguistic type phrases have: phrase, context, direction, language_info, linguistic_data
- */
-const isLinguisticType = computed(() => {
-    return phrase.value?.type === 'linguistic';
-});
 
 onMounted(() => {
     fetchFlashcard();
@@ -143,13 +109,10 @@ function fetchFlashcard() {
                 bundle.value = { title: 'Daily Review', phrases: [], refId: authUser.value?.id } as any;
                 return;
             }
-            // Map items to phrases, carrying through the Leitner level + confirmed chunk
-            // so the L3+ fill-in cloze can render (falls back to phrase fields until the RPC exposes them).
+            // Map items to phrases, carrying the Leitner level through so the L3+ cloze can render.
             const phrases = res.items.map((i: any) => ({
                 ...i.phrase,
-                _leitnerLevel: i.boxLevel,
-                _confirmedChunk: i.confirmed_chunk ?? i.phrase?.chunks?.[0]?.text ?? null,
-                _sourceSentence: i.source_sentence ?? i.phrase?.context ?? null,
+                _leitnerLevel: i.boxLevel ?? i._doc?.boxLevel,
             }));
             bundle.value = {
                 _id: res._id,
