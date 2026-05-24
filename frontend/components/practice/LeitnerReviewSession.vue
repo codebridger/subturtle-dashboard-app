@@ -13,24 +13,13 @@
 		</div>
 
 		<div v-else class="flex h-full w-full flex-col items-center p-5 md:px-16 md:py-14">
+			<!-- Fixed height (viewport units) so the card never resizes when flipping between
+			     front/back; long content scrolls inside the card instead of growing the page. -->
 			<div
-				:class="['w-full flex-1 transition-all duration-300 ease-in-out', 'md:max-h-[80%] md:max-w-[80%]', 'lg:max-h-[65%] lg:max-w-[65%]']">
-				<!-- Use WidgetFlashCard based on phrase type -->
+				:class="['h-[58vh] w-full transition-all duration-300 ease-in-out', 'md:max-w-[80%]', 'lg:max-w-[65%]']">
 				<Transition name="fade-slide" mode="out-in">
-					<WidgetFlashCard v-if="currentPhrase && currentPhrase.type === 'normal'"
-						:key="`normal-${currentIndex}`" ref="flashCardRef" :phrase-type="'normal'"
-						:front="currentPhrase.phrase" :back="currentPhrase.translation" :context="currentPhrase.context"
-						:translation-language="currentPhrase.translation_language" />
-
-					<WidgetFlashCard v-else-if="currentPhrase && currentPhrase.type === 'linguistic'"
-						:key="`linguistic-${currentIndex}`" ref="flashCardRef" :phrase-type="'linguistic'"
-						:front="currentPhrase.phrase"
-						:back="currentPhrase.linguistic_data?.definition || currentPhrase.phrase"
-						:context="currentPhrase.context" :direction="currentPhrase.direction"
-						:language-info="currentPhrase.language_info" :linguistic-data="currentPhrase.linguistic_data" />
-
-					<WidgetFlashCard v-else-if="currentPhrase" :key="`fallback-${currentIndex}`" ref="flashCardRef"
-						:front="currentPhrase.phrase" :back="currentPhrase.translation || 'No translation'" />
+					<WidgetFlashCard v-if="currentPhrase" :key="currentIndex" ref="flashCardRef"
+						:phrase="currentPhrase" :leitner-level="cardLevel" />
 				</Transition>
 			</div>
 
@@ -93,6 +82,13 @@ const currentItem = computed(() => props.items[currentIndex.value]);
 const currentPhrase = computed(() => currentItem.value?.phrase as PhraseType);
 const totalItems = computed(() => props.items.length);
 
+// Leitner level drives the L3+ cloze. get-review-session returns raw Mongoose docs, so schema fields
+// like boxLevel sit under `_doc` rather than at the top level — read both so the level is found either way.
+const cardLevel = computed<number | undefined>(() => {
+	const item = currentItem.value as any;
+	return item?.boxLevel ?? item?._doc?.boxLevel;
+});
+
 onMounted(() => {
 	window.addEventListener('keydown', handleKeyDown);
 });
@@ -103,6 +99,12 @@ onUnmounted(() => {
 
 function handleKeyDown(event: KeyboardEvent) {
 	if (props.loading || props.items.length === 0) return;
+
+	// Don't hijack typing: while the cloze answer input (or any field) is focused, let keys through.
+	const target = event.target as HTMLElement | null;
+	if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+		return;
+	}
 
 	switch (event.code) {
 		case 'Space':
