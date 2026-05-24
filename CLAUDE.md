@@ -125,6 +125,19 @@ Modules are discovered dynamically by the modular-rest framework. Entry point: [
 - **i18n**: strings in [frontend/locales/en.json](frontend/locales/en.json) — only English is wired up today.
 - **UI components**: prefer **pilotui** (in-house Vue 3 + Tailwind library) before hand-rolling. Components are organized by category path (`pilotui/elements`, `pilotui/form`, `pilotui/shell`, etc.), use the `CL` prefix (e.g. `<CLButton>`), and require wrapping the app in `AppRoot` for theming. Registered in [frontend/plugins/component-library.ts](frontend/plugins/component-library.ts). **LLM-friendly docs**: <https://codebridger.github.io/lib-vue-components/llm.md> — fetch when adding or editing UI to see component APIs.
 
+## Commits & versioning
+
+This repo uses **semantic versioning**, and commit titles follow **Conventional Commits** so the type prefix maps to the intended `vMAJOR.MINOR.PATCH` bump. Pick the type by the change's real impact, not by habit:
+
+- `feat:` → **minor** (`0.X.0`) — new user-facing capability
+- `fix:` / `perf:` → **patch** (`0.0.X`) — bug fix or performance
+- `feat!:` / `fix!:` / a `BREAKING CHANGE:` footer → **major** (`X.0.0`)
+- `refactor:` / `chore:` / `docs:` / `test:` / `style:` / `ci:` / `build:` → **no bump**
+
+Don't dress a real feature as `refactor`/`chore` (it would skip a release) or inflate a refactor into `feat` (it over-bumps). If you squash-merge a PR, the **PR title** becomes the commit message, so it must follow the same convention.
+
+> Release automation is **not** wired up in this repo yet (no `semantic-release`, no tags, `server/package.json` is `0.0.0`) — the convention currently records the *intended* bump. The sibling **subturtle-extension-apps** repo enforces the identical mapping automatically via `semantic-release`.
+
 ## Gotchas
 
 - **Gemini, not OpenAI**, for new live-session work.
