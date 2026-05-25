@@ -27,6 +27,7 @@ import { LIVE_SESSION_MODEL } from "./openai/config";
 import { GEMINI_LIVE_SESSION_MODEL } from "./gemini/config";
 import { requestEphemeralToken } from "./openai/functions";
 import { requestGeminiEphemeralToken } from "./gemini/functions";
+import { LIVE_SESSION_VOICES } from "./voices";
 
 const createLiveSession = defineFunction({
   name: "create-live-session-record",
@@ -96,11 +97,11 @@ const updateLiveSession = defineFunction({
         const isGemini = provider === "gemini";
         const costs = isGemini
           ? extractGeminiCostCalculationInput(
-              update.partialUsage as GeminiTokenUsageType
-            )
+            update.partialUsage as GeminiTokenUsageType
+          )
           : extractCostCalculationInput(
-              update.partialUsage as TokenUsageType
-            );
+            update.partialUsage as TokenUsageType
+          );
         await recordUsage({
           userId,
           serviceType: "live_session",
@@ -149,9 +150,23 @@ const updateLiveSession = defineFunction({
   },
 });
 
+/**
+ * Returns the AI-coach voice list (single source of truth in `./voices`) so the
+ * dashboard and extension render an identical picker. Static data; gated on
+ * `user_access` only because every caller is already authenticated.
+ */
+const getLiveSessionVoices = defineFunction({
+  name: "get-live-session-voices",
+  permissionTypes: ["user_access", "anonymous_access"],
+  callback: async function () {
+    return LIVE_SESSION_VOICES;
+  },
+});
+
 module.exports.functions = [
   requestEphemeralToken,
   requestGeminiEphemeralToken,
   createLiveSession,
   updateLiveSession,
+  getLiveSessionVoices,
 ];

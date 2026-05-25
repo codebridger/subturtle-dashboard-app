@@ -1,11 +1,11 @@
 <template>
-    <MaterialPracticeToolScaffold :title="bundle?.title || 'Flashcards'" :activePhrase="practicedCount"
-        :totalPhrases="totalPhrases" :bundleId="id.toString()"
+    <MaterialPracticeToolScaffold :title="bundle?.title || 'Practice'" :activePhrase="practicedCount"
+        :totalPhrases="totalPhrases" :bundleId="''"
         :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
-        <template v-if="bundle">
-            <!-- Freemium Timer Section -->
+        <template v-if="selectedPhrases.length">
+    <!-- Freemium Timer Section -->
             <FreemiumTimer v-if="profileStore.isFreemium" class="shrink-0" :duration="timerConfig.duration"
                 :label="t('freemium.timer.remaining_time')" @expired="showTimerExpiredModal = true"
                 @warning="handleTimerWarning" />
@@ -237,7 +237,7 @@ import { Modal } from 'pilotui/complex';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
 import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
-import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import type { LiveSessionRequest } from '~/types/live-session-request';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -255,9 +255,17 @@ definePageMeta({
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
-const { id } = route.params;
-const { sessionData } = route.query;
-const sessionDataParsed = JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType;
+const sessionReq = parseSessionRequest(route.query.session as string | undefined);
+const returnTo = sessionReq?.returnTo || '/board';
+
+function parseSessionRequest(raw?: string): LiveSessionRequest | null {
+    if (!raw) return null;
+    try {
+        return JSON.parse(atob(raw)) as LiveSessionRequest;
+    } catch {
+        return null;
+    }
+}
 
 const liveSessionStore = useLiveSessionGeminiStore();
 const profileStore = useProfileStore();
@@ -268,10 +276,7 @@ const bundle = ref<PopulatedPhraseBundleType | null>(null);
 const selectedPhrases = ref<PhraseType[]>([]);
 const phraseIndex = ref(-1);
 const practicedPhraseIds = ref<Set<string>>(new Set());
-const activePhrase = computed(() => {
-    if (!bundle.value) return null;
-    return selectedPhrases.value[phraseIndex.value];
-});
+const activePhrase = computed(() => selectedPhrases.value[phraseIndex.value] ?? null);
 const totalPhrases = computed<number>(() => {
     return selectedPhrases.value.length || 0;
 });
@@ -455,15 +460,18 @@ const instructions = `
     `;
 
 onMounted(async () => {
-    if (!sessionDataParsed) {
+    if (!sessionReq) {
         errorMode.value = true;
         errorMessage.value = t('live-practice.toast.no-session-data');
         return;
     }
 
-    await fetchFlashcard().then(() => {
-        selectedPhrases.value = getPhraseSelection();
-    });
+    await resolvePhrases();
+    if (!selectedPhrases.value.length) {
+        errorMode.value = true;
+        errorMessage.value = t('live-practice.toast.fetch-failed');
+        return;
+    }
 
     await createLiveSession();
 });
@@ -545,7 +553,7 @@ const tools = {
 // the model pick up the user's language from their first message, with English
 // as the safe default.
 function resolveNativeLanguage(): string {
-    const raw = sessionDataParsed.nativeLanguage;
+    const raw = sessionReq?.nativeLanguage;
     if (raw && raw !== 'auto') return raw;
 
     const langs = new Set(
@@ -561,24 +569,33 @@ function resolveNativeLanguage(): string {
     return "English by default; if the user speaks another language in their first message, switch to that language and stick with it for the rest of the session";
 }
 
-function fetchFlashcard() {
-    return dataProvider
-        .findOne<PopulatedPhraseBundleType>({
-            database: DATABASE.USER_CONTENT,
-            collection: COLLECTIONS.PHRASE_BUNDLE,
-            query: {
-                _id: id,
-                refId: authUser.value?.id,
-            },
-            populates: ['phrases'],
-        })
-        .then((res) => {
+async function resolvePhrases() {
+    const source = sessionReq!.source;
+    try {
+        if (source.kind === 'bundle') {
+            const res = await dataProvider.findOne<PopulatedPhraseBundleType>({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE_BUNDLE,
+                query: { _id: source.bundleId, refId: authUser.value?.id },
+                populates: ['phrases'],
+            });
             if (!res) throw new Error('Bundle not found');
             bundle.value = res;
-        })
-        .catch(() => {
-            toastError({ title: t('live-practice.toast.fetch-failed') });
-        });
+            selectedPhrases.value = selectFromBundle(source, (res.phrases as PhraseType[]) || []);
+        } else {
+            const phrases = await dataProvider.findByIds<PhraseType>({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE,
+                ids: source.phraseIds,
+                accessQuery: { refId: authUser.value?.id },
+            });
+            selectedPhrases.value = phrases || [];
+        }
+        // Auto-activate when there's a single phrase (e.g. Practice now).
+        if (selectedPhrases.value.length === 1) phraseIndex.value = 0;
+    } catch {
+        toastError({ title: t('live-practice.toast.fetch-failed') });
+    }
 }
 
 function createLiveSession() {
@@ -595,9 +612,9 @@ function createLiveSession() {
         .createLiveSession({
             sessionDetails: {
                 instructions: finalInstructions,
-                voice: sessionDataParsed.aiCharacter || 'Kore',
+                voice: sessionReq!.aiCharacter || 'Kore',
             },
-            metadata: sessionDataParsed,
+            metadata: sessionReq!,
             tools,
             audioRef: null,
             onUpdate: handleSessionEvent,
@@ -636,12 +653,12 @@ function endLiveSession() {
         showRecapModal.value = true;
         return;
     }
-    router.push(`/bundles/${id}`);
+    router.push(returnTo);
 }
 
 function dismissRecap() {
     showRecapModal.value = false;
-    router.push(`/bundles/${id}`);
+    router.push(returnTo);
 }
 
 function handleSessionEvent(eventData: any) {
@@ -663,32 +680,26 @@ function triggerTheConversation() {
     liveSessionStore.triggerConversation(message + '\n' + microphoneNotice);
 }
 
-function getPhraseSelection() {
-    const mode = sessionDataParsed.selectionMode;
+function selectFromBundle(
+    source: Extract<LiveSessionRequest['source'], { kind: 'bundle' }>,
+    all: PhraseType[]
+): PhraseType[] {
     const phrases: PhraseType[] = [];
 
-    if (mode === 'random') {
-        const { totalPhrases = 1 } = sessionDataParsed;
-        while (phrases.length < totalPhrases) {
-            const randomIndex = Math.floor(Math.random() * totalPhrases);
-            const tempPhrase = bundle.value?.phrases[randomIndex] as PhraseType;
-            const exists = phrases.find((p) => p._id === tempPhrase._id);
-
-            if (!exists) {
+    if (source.selectionMode === 'random') {
+        const { totalPhrases = 1 } = source;
+        while (phrases.length < totalPhrases && phrases.length < all.length) {
+            const tempPhrase = all[Math.floor(Math.random() * all.length)];
+            if (tempPhrase && !phrases.find((p) => p._id === tempPhrase._id)) {
                 phrases.push(tempPhrase);
             }
         }
-    } else if (mode === 'selection') {
-        const { fromPhrase = 1, toPhrase = 2 } = sessionDataParsed;
+    } else {
+        const { fromPhrase = 1, toPhrase = 2 } = source;
         for (let i = fromPhrase - 1; i <= toPhrase - 1; i++) {
-            if (i >= (bundle.value?.phrases.length || 0)) {
-                break;
-            }
-
-            const tempPhrase = bundle.value?.phrases[i] as PhraseType;
-            const exists = phrases.find((p) => p._id === tempPhrase._id);
-
-            if (!exists) {
+            if (i < 0 || i >= all.length) continue;
+            const tempPhrase = all[i];
+            if (tempPhrase && !phrases.find((p) => p._id === tempPhrase._id)) {
                 phrases.push(tempPhrase);
             }
         }
@@ -712,7 +723,7 @@ function handleUpgrade() {
 function goToFreeTools() {
     // "Show me free tools" — back to the bundle, where saving phrases and
     // Smart Review (both free, never AI-gated) live.
-    router.push(`/bundles/${id}`);
+    router.push(returnTo);
 }
 
 function selectPhrase(index: number) {
