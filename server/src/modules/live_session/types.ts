@@ -13,6 +13,7 @@ import type {
 
 export type { LiveSessionType, TokenUsageType, TurnDetectionType, ClientSecretType } from "./openai/types";
 export type { GeminiLiveSessionType, GeminiTokenUsageType } from "./gemini/types";
+export type { CoachVoice } from "./voices";
 
 export type SessionType = "bundle-practice";
 export type LiveSessionProvider = "openai" | "gemini";

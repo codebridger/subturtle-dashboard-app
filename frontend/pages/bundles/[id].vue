@@ -169,6 +169,7 @@ import { useBundleStore } from '@/stores/bundle';
 import { useLeitnerStore } from '@/stores/leitner';
 import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import type { LiveSessionRequest } from '~/types/live-session-request';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
@@ -228,11 +229,24 @@ function fetchPhraseList(page: number = 1) {
 }
 
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-    // convert sessionData to base64
-    const sessionDataBase64 = btoa(JSON.stringify(sessionData));
+    // Build the unified live-session request (bundle source) and hand it to the
+    // single /practice/live-session gate.
+    const request: LiveSessionRequest = {
+        aiCharacter: sessionData.aiCharacter,
+        nativeLanguage: sessionData.nativeLanguage,
+        source: {
+            kind: 'bundle',
+            bundleId: id.value,
+            selectionMode: sessionData.selectionMode,
+            fromPhrase: sessionData.fromPhrase,
+            toPhrase: sessionData.toPhrase,
+            totalPhrases: sessionData.totalPhrases,
+        },
+        returnTo: `/bundles/${id.value}`,
+    };
 
-    const url = `/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`;
-    router.push(url);
+    const session = btoa(JSON.stringify(request));
+    router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
 }
 
 function handleFreemiumAddPhrase() {
