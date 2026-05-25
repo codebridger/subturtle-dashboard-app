@@ -62,6 +62,10 @@
                                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     {{ new Date(session.createdAt).toLocaleString() }}
                                 </span>
+                                <span v-if="session.updatedAt"
+                                    class="rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                    {{ formatSessionDuration(session.createdAt, session.updatedAt) }}
+                                </span>
                             </div>
                             <div
                                 class="flex items-center gap-1 text-sm font-semibold text-primary transition-colors group-hover:text-primary-dark">
@@ -120,6 +124,7 @@ import { dataProvider } from '@modular-rest/client';
 import type { PaginationType } from '@modular-rest/client/dist/types/types';
 import { COLLECTIONS, DATABASE } from '~/types/database.type';
 import type { LiveSessionRecordType, LivePracticeSessionSetupType } from '~/types/live-session.type';
+import { formatSessionDuration } from '~/utils/duration';
 
 const { t } = useI18n();
 const router = useRouter();
