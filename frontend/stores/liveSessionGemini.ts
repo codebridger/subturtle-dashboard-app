@@ -705,7 +705,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     sessionId: id.value,
                     userId: authUser.value?.id,
                     provider: 'gemini',
-                    update: { totalUsage: tokenUsage.value, dialogs: dialogsToFlush },
+                    update: { dialogs: dialogsToFlush },
                 },
             })
             .catch((err) => console.warn('Failed to flush dialog', err));
@@ -814,6 +814,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         t.cached_tokens_details.text_tokens += partialUsage.cached_tokens_details.text_tokens;
         t.cached_tokens_details.audio_tokens += partialUsage.cached_tokens_details.audio_tokens;
 
+        // Persist usage here: usageMetadata lands after the turn's dialog flush, so the last turn (or an AI-only session) would otherwise never be saved.
         return functionProvider
             .run({
                 name: 'update-live-session-record',
@@ -821,7 +822,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     sessionId: id.value,
                     userId: authUser.value?.id,
                     provider: 'gemini',
-                    update: { partialUsage },
+                    update: { partialUsage, totalUsage: tokenUsage.value },
                 },
             })
             .catch((err) => console.warn('Failed to record partial usage', err));
