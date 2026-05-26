@@ -1,6 +1,10 @@
 import { defineFunction } from "@modular-rest/server";
-import { getDetailedTranslation, getSimpleTranslation } from "./service";
-import { TranslateWithContextParams } from "./types";
+import {
+  getDetailedTranslation,
+  getSimpleTranslation,
+  getTranslationAdvice,
+} from "./service";
+import { TranslateWithContextParams, TranslationAdviceParams } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 
 /**
@@ -171,4 +175,42 @@ const listVoices = defineFunction({
   },
 });
 
-export const functions = [translateWithContext, textToSpeech, listVoices];
+/**
+ * Conversational advisor for the save modal's "fix this?" chat.
+ * Returns either { reply } text or { chunks } updated patterns.
+ */
+const translationAdvice = defineFunction({
+  name: "translationAdvice",
+  permissionTypes: ["anonymous_access"],
+  callback: async (params: TranslationAdviceParams) => {
+    const { phrase, context, message } = params;
+
+    if (!message || typeof message !== "string") {
+      throw new Error("message is required");
+    }
+
+    try {
+      return getTranslationAdvice({
+        phrase,
+        context,
+        message,
+        currentChunks: params.currentChunks,
+        history: params.history,
+        sourceLanguage: params.sourceLanguage,
+        targetLanguage: params.targetLanguage,
+      });
+    } catch (error: unknown) {
+      console.error("Translation advice error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get translation advice: ${errorMessage}`);
+    }
+  },
+});
+
+export const functions = [
+  translateWithContext,
+  textToSpeech,
+  listVoices,
+  translationAdvice,
+];

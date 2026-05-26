@@ -15,6 +15,7 @@ export default defineNuxtConfig({
             mode: process.env.NUXT_PUBLIC_MODE,
             MIXPANEL_PROJECT_TOKEN: process.env.NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN,
             MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
+            chromeWebStoreUrl: process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL || 'https://chromewebstore.google.com/detail/PLACEHOLDER',
         },
     },
 

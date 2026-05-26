@@ -39,21 +39,21 @@
         "limitation": {
             "title": "Upgrade Required",
             "no_phrase_spots_left": "No free phrase spots left",
-            "upgrade_message": "Upgrade to Pro to save and practice phrases without limits.",
+            "upgrade_message": "Upgrade to Learner to save and practice phrases without limits.",
             "free_spots_left": "Free spots left to save phrases",
             "free_sessions_left": "Free live practice sessions left",
-            "go_pro": "Go Pro!",
+            "go_pro": "Upgrade to Learner",
             "upgrade_now": "Upgrade Now",
             "upgrade": "Upgrade",
             "continue_with_limits": "Continue with limits :(",
             "no_free_spots_left": "No free phrase spots left.",
-            "upgrade_to_pro_message": "Upgrade to Pro to save and practice phrases without limits."
+            "upgrade_to_pro_message": "Upgrade to Learner to save and practice phrases without limits."
         },
         "timer": {
             "remaining_time": "Free session time remaining",
             "time_expired": "Free Session Time Expired",
             "session_limit_reached": "Your 5-minute free session limit has been reached.",
-            "upgrade_for_unlimited": "Upgrade to Pro for unlimited session time.",
+            "upgrade_for_unlimited": "Upgrade to Learner for unlimited session time.",
             "exit_session": "Exit Session"
         }
     },
@@ -81,6 +81,13 @@
         "cancel": "Cancel",
         "going-live": "Starting a live session",
         "ai-character": "AI Character",
+        "native-language": "Your native language",
+        "native-language-hint": "The coach will explain instructions and feedback in this language; English is used for the practice itself.",
+        "native-language-auto": "Auto (detect from my speech)",
+        "text-input-placeholder": "Type a message…",
+        "send-text": "Send",
+        "type-instead": "Type instead",
+        "use-mic": "Use mic",
         "selection": "Selection",
         "random": "Random",
         "from-phrase": "From Phrase",
@@ -91,7 +98,51 @@
         "from-less-than-to-error": "From phrase must be less than or equal to To phrase",
         "total-phrases-required": "Total phrases is required",
         "back-to-dashboard": "Back to Dashboard",
-        "oops-something-went-wrong": "Oops, something went wrong"
+        "oops-something-went-wrong": "Oops, something went wrong",
+        "click-to-start": "Click on any vocabulary card to start practicing",
+        "currently-practicing": "Currently practicing:",
+        "transcript-empty-hint": "Your conversation will appear here.",
+        "speaker-coach": "Coach",
+        "speaker-you": "You",
+        "mic-level-aria": "Microphone input level",
+        "status": {
+            "reconnecting": "Reconnecting…",
+            "renewing": "Renewing connection…",
+            "connecting": "Connecting…",
+            "disconnected": "Disconnected",
+            "coach-speaking": "Coach is speaking…",
+            "tap-to-speak": "Tap the mic to speak",
+            "tap-or-space-to-speak": "Tap the mic or press space to speak",
+            "listening": "Listening — go ahead"
+        },
+        "translations": {
+            "show": "Show translations",
+            "hide": "Hide translations",
+            "show-short": "Show",
+            "hide-short": "Hide",
+            "show-tooltip": "Show translations",
+            "hide-tooltip": "Hide translations (self-test mode)"
+        },
+        "recap": {
+            "title": "Practice complete",
+            "summary": "You practiced {practiced} of {total} phrases this session.",
+            "back-to-bundle": "Back to bundle"
+        },
+        "toast": {
+            "reconnecting-title": "Reconnecting…",
+            "reconnecting-message": "Renewing the session token.",
+            "reconnected-title": "Reconnected",
+            "reconnect-failed": "Could not reconnect, ending session.",
+            "fetch-failed": "Failed to fetch flashcard",
+            "no-session-data": "No session data found",
+            "start-failed": "Failed to start live session"
+        },
+        "mic-toggle": {
+            "tap-tooltip": "Tap to mute or unmute the microphone.",
+            "tap-label": "Tap to talk",
+            "hands-free-tooltip": "Hands-free: keep the microphone open for the whole session.",
+            "hands-free-label": "Hands-free"
+        }
     },
     "subscription": {
         "title": "Subscription",
@@ -125,12 +176,9 @@
         "verification-failed": "Payment verification failed",
         "payment-result": "Payment Result",
         "monthly-subscription": "Monthly Subscription",
-        "monthly-description": "Access to all features for 30 days with 1000 credits",
+        "monthly-description": "Access to all features for 30 days",
         "features": "What's Included",
         "active-plan": "Active Plan",
-        "freemium": "Freemium Plan",
-        "premium": "Premium Plan",
-        "pro": "Pro Plan",
         "joined-at": "Joined at",
         "month": "Month",
         "current-plan": "Current Plan",
@@ -142,14 +190,59 @@
         "available": "Available",
         "used": "Used",
         "credit-in-usd": "Credit in USD",
-        "plan": "Plan"
+        "plan": "Plan",
+        "trial-active": "Free trial — {days} days left",
+        "canceling": "Cancels on {date}",
+        "pricing": {
+            "annual-toggle": "Save 20% with annual billing",
+            "most-popular": "Most popular",
+            "coming-soon": "Coming soon",
+            "month": "month",
+            "year": "year",
+            "or-monthly": "or {price}/mo billed monthly",
+            "starter-price": "Free, forever. No card needed.",
+            "free-plan": "Free plan",
+            "current-plan": "Current plan",
+            "learner-cta": "Start 3-day free trial",
+            "learner-subline": "Try free for 3 days. Cancel any time.",
+            "fluent-cta": "Notify me when it's ready",
+            "fluent-notified": "You're on the list ✓",
+            "fluent-helper": "We'll email you as soon as Fluent is available."
+        },
+        "cap-banner": {
+            "running-low": "You're running low on AI tools this month.",
+            "paused": "AI features are paused for this month — your saves and Smart Review still work.",
+            "upgrade-cta": "Upgrade",
+            "dismiss": "Dismiss"
+        },
+        "ai-cap": {
+            "title": "AI tools paused",
+            "message": "That was your last AI session for this month.",
+            "sub-message": "Free users get a taste of Subturtle's AI tools — go Learner for the full monthly budget.",
+            "primary": "Go Learner",
+            "secondary": "Show me free tools"
+        },
+        "save-cap": {
+            "title": "Nice run!",
+            "message": "You've saved 200 phrases — nice run.",
+            "sub-message": "Free users get 200 saves per month. To keep saving without limits, go Learner.",
+            "primary": "See plans",
+            "secondary": "Maybe later"
+        },
+        "cancel-offramp": {
+            "title": "Before you go",
+            "message": "Stay on Free instead?",
+            "sub-message": "You keep 200 saves a month and unlimited Smart Review — no card needed.",
+            "stay": "Stay on Free",
+            "continue": "Continue to cancel"
+        }
     },
     "auth": {
-        "signin_with_instagram": "SIGN IN WITH INSTAGRAM",
         "signin_with_google": "SIGN IN WITH GOOGLE",
         "login_page": "Login Page",
         "signin": "Sign In",
-        "signup": "Sign Up"
+        "signup": "Sign Up",
+        "signin_subtitle": "Sign in with Google to get started"
     },
     "practice": {
         "nav": "Practice",
@@ -175,6 +268,7 @@
         "cost-info": "Cost Information",
         "total-tokens": "Total Tokens",
         "total-cost": "Total Cost (USD)",
+        "duration": "Duration",
         "start-new-session": "Start New Session"
     },
     "profile": {
@@ -313,5 +407,13 @@
         "activity_ready": "Ready to start",
         "start_activity": "Start Activity",
         "back_to_board": "Back to Board"
+    },
+    "extension": {
+        "nudge": {
+            "title": "Install the Subturtle extension",
+            "description": "Subturtle works while you watch. Install our Chrome extension to save phrases on YouTube, Netflix, and any text page.",
+            "cta": "Install for Chrome",
+            "dismiss": "Dismiss"
+        }
     }
 }

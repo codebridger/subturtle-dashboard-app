@@ -1,5 +1,17 @@
 <template>
-    <MaterialPracticeToolScaffold :title="bundle?.title || 'Flashcards'" :activePhrase="phraseIndex + 1"
+    <!-- The OpenAI Realtime live-session flow is detached. The page file
+         and store remain in the codebase for reference / future re-enable,
+         but `OPENAI_DISABLED` short-circuits before any API call so visiting
+         this URL has no runtime effect. -->
+    <section v-if="OPENAI_DISABLED"
+        class="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-8 text-center">
+        <h1 class="text-2xl font-bold">OpenAI live sessions are disabled</h1>
+        <p class="text-base text-gray-600 dark:text-gray-400">
+            This flow has been retired. Please start a new session from your bundle.
+        </p>
+        <Button color="primary" to="/sessions/new" label="Start a new session" />
+    </section>
+    <MaterialPracticeToolScaffold v-else :title="bundle?.title || 'Flashcards'" :activePhrase="phraseIndex + 1"
         :totalPhrases="totalPhrases" :bundleId="id.toString()" :body-class="'flex flex-col items-center justify-start'"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
@@ -90,18 +102,33 @@
         :primary-button-label="t('freemium.limitation.go_pro')"
         :secondary-button-label="t('freemium.timer.exit_session')" :auto-redirect-on-upgrade="false" prevent-close
         hide-close @upgrade="handleUpgrade" @secondary="endLiveSession" @close="handleTimerModalClose" />
+
+    <!-- AI budget exhausted modal (100% hard cap) -->
+    <FreemiumLimitationModal v-model="showAiCapModal" :modal-title="t('subscription.ai-cap.title')"
+        :main-message="t('subscription.ai-cap.message')" :sub-message="t('subscription.ai-cap.sub-message')"
+        icon-name="IconLock" :primary-button-label="t('subscription.ai-cap.primary')"
+        :secondary-button-label="t('subscription.ai-cap.secondary')" :auto-redirect-on-upgrade="false" prevent-close
+        hide-close @upgrade="handleUpgrade" @secondary="goToFreeTools" />
 </template>
 
 <script setup lang="ts">
 import { Card, Button, Icon } from 'pilotui/elements';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseType, type PopulatedPhraseBundleType } from '~/types/database.type';
-import { useLiveSessionStore } from '~/stores/liveSession';
+import { useLiveSessionStore } from '~/stores/liveSessionOpenai';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 import { analytic } from '~/plugins/mixpanel';
+import { AI_CREDIT_EXHAUSTED_CODE } from '~/types/tiers';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
+
+// Hard-coded kill switch: flip to `false` to re-enable the OpenAI Realtime
+// flow. While this is `true`, the template renders a notice instead of the
+// practice UI and `onMounted` skips every live-session call so visiting
+// `/practice/live-session-openai-{id}` has no runtime effect.
+const OPENAI_DISABLED = false;
 
 definePageMeta({
     // @ts-ignore
@@ -115,7 +142,11 @@ const router = useRouter();
 const { t } = useI18n();
 const { id } = route.params;
 const { sessionData } = route.query;
-const sessionDataParsed = JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType;
+// Skip parsing when the page is detached so a missing/garbage query string
+// doesn't blow up the disabled-notice render.
+const sessionDataParsed = OPENAI_DISABLED
+    ? ({} as LivePracticeSessionSetupType)
+    : (JSON.parse(atob(sessionData as string)) as LivePracticeSessionSetupType);
 
 const liveSessionStore = useLiveSessionStore();
 const profileStore = useProfileStore();
@@ -135,6 +166,7 @@ const totalPhrases = computed<number>(() => {
 
 // Timer modal state
 const showTimerExpiredModal = ref(false);
+const showAiCapModal = ref(false);
 
 // Timer configuration - can be customized per use case
 const timerConfig = {
@@ -177,6 +209,8 @@ const instructions = `
     `;
 
 onMounted(async () => {
+    if (OPENAI_DISABLED) return;
+
     if (!sessionDataParsed) {
         errorMode.value = true;
         errorMessage.value = 'No session data found';
@@ -276,9 +310,16 @@ function createLiveSession() {
         })
         .catch((error) => {
             analytic.track('live-session_failed');
-
+            const message = error?.error || error?.message || '';
+            // AI budget exhausted (the 100% hard cap) — surface the upgrade
+            // modal instead of the generic error screen.
+            if (message.includes(AI_CREDIT_EXHAUSTED_CODE)) {
+                analytic.track(ANALYTICS_EVENTS.CAP_HIT, { cap: 'ai_taste' });
+                showAiCapModal.value = true;
+                return;
+            }
             errorMode.value = true;
-            errorMessage.value = error?.error || error?.message || 'Failed to start live session';
+            errorMessage.value = message || 'Failed to start live session';
         });
 }
 
@@ -365,6 +406,12 @@ function handleTimerModalClose() {
 
 function handleUpgrade() {
     router.push('/settings/subscription');
+}
+
+function goToFreeTools() {
+    // "Show me free tools" — back to the bundle, where saving phrases and
+    // Smart Review (both free, never AI-gated) live.
+    router.push(`/bundles/${id}`);
 }
 
 function selectPhrase(index: number) {

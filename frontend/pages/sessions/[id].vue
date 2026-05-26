@@ -7,7 +7,8 @@
                 <h1 class="text-2xl font-bold">{{ t('live-session.session-details') }}</h1>
             </div>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                {{ session?.createdAt ? new Date(session.createdAt).toLocaleString() : '' }}
+                <span>{{ session?.createdAt ? new Date(session.createdAt).toLocaleString() : '' }}</span>
+                <span v-if="session?.createdAt && session?.updatedAt"> · {{ t('live-session.duration') }}: {{ formatSessionDuration(session.createdAt, session.updatedAt) }}</span>
             </p>
         </div>
 
@@ -64,6 +65,7 @@ import { Icon } from 'pilotui/elements';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE } from '~/types/database.type';
 import type { LiveSessionRecordType } from '~/types/live-session.type';
+import { formatSessionDuration } from '~/utils/duration';
 
 const route = useRoute();
 const loading = ref(true);

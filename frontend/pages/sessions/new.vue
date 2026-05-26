@@ -13,7 +13,7 @@
                 :breadcrumbs="[{ label: t('live-session.your-sessions'), to: '/sessions' }, { label: t('live-session.start-new-session') }]" />
 
             <section>
-                <LiveSessionStartNew />
+                <LiveSessionGeminiStartNew />
             </section>
         </div>
     </div>

@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { Icon } from 'pilotui/elements';
 import { ref, computed, watch } from 'vue';
-import { useLiveSessionStore } from '~/stores/liveSession';
+import { useLiveSessionStore } from '~/stores/liveSessionOpenai';
 
 const liveSessionStore = useLiveSessionStore();
 

@@ -84,6 +84,10 @@ const app = createRest({
       return false;
     },
   },
+  // Expose the raw request body so the Stripe webhook can verify signatures.
+  koaBodyOptions: {
+    includeUnparsed: true,
+  },
   mongo: {
     mongoBaseAddress:
       process.env.MONGO_BASE_ADDRESS || "mongodb://localhost:27017",

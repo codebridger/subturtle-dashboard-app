@@ -1,24 +1,21 @@
-import { CostCalculationInput } from "../subscription/calculator";
+import { CostCalculationInput } from "../../subscription/calculator";
 import { TokenUsageType } from "./types";
 import Decimal from "decimal.js-light";
 
-// Configure Decimal for higher precision
 Decimal.set({ precision: 100, rounding: Decimal.ROUND_HALF_UP });
 
-// This is the unknown cost percentage for the live session
-// Based on our calculation there is a 5.1305% unknown cost
-// for the live session
+// Markup applied on top of the published per-million rates. Set this when a
+// reconciliation against actual OpenAI billing shows a consistent delta —
+// historically the live-session product has billed ~5.1% above the
+// published per-token rates. 0 means "use the published rates as-is".
 const unknownCostPercentage = 0;
 
 function calculatePrice(cost: number) {
-  // use decimal to avoid floating point errors
-  const unknownCost = new Decimal(cost)
-    .dividedBy(100)
-    .mul(unknownCostPercentage);
-  return new Decimal(cost).add(unknownCost).toNumber();
+  const markup = new Decimal(cost).dividedBy(100).mul(unknownCostPercentage);
+  return new Decimal(cost).add(markup).toNumber();
 }
 
-// Price definitions per million tokens for each token type
+// OpenAI Realtime pricing (per million tokens, USD).
 const prices_per_m = {
   input_token_details: {
     text_tokens: calculatePrice(0.6),
@@ -35,28 +32,21 @@ const prices_per_m = {
 };
 
 /**
- * Calculates the cost of a live session based on token usage
+ * Build the cost-calculation input list for an OpenAI Realtime session from
+ * its `usage` object. Cached token counts are subtracted from the
+ * non-cached buckets so the caller doesn't double-count.
  *
- * This function performs precise calculations for the cost of live sessions by:
- * 1. Computing individual costs for different token types (text, audio, cached)
- * 2. Using high-precision decimal arithmetic to avoid floating-point errors
- * 3. Providing a detailed breakdown of usage and costs
- *
- * The calculated costs follow this pricing model:
- * - Input text tokens: $0.6 per million tokens
- * - Input audio tokens: $10.0 per million tokens
- * - Cached text tokens: $0.3 per million tokens
- * - Cached audio tokens: $0.3 per million tokens
- * - Output text tokens: $2.4 per million tokens
- * - Output audio tokens: $20.0 per million tokens
- *
- * @param usage - Object containing token usage details across different categories
- * @returns The total cost in USD with high precision (10 decimal places)
+ * Pricing (per million tokens):
+ *  - Input text: $0.6
+ *  - Input audio: $10.0
+ *  - Cached text: $0.3
+ *  - Cached audio: $0.3
+ *  - Output text: $2.4
+ *  - Output audio: $20.0
  */
 export function extractCostCalculationInput(usage: TokenUsageType) {
   const expenses: CostCalculationInput[] = [];
 
-  // Add input tokens (always present)
   expenses.push({
     label: "Input Text Tokens",
     totalTokens:
@@ -73,7 +63,6 @@ export function extractCostCalculationInput(usage: TokenUsageType) {
     usdCostPerMillion: prices_per_m.input_token_details.audio_tokens,
   });
 
-  // Add cached tokens if present
   if (usage.input_token_details.cached_tokens_details) {
     if (usage.input_token_details.cached_tokens_details.text_tokens > 0) {
       expenses.push({
@@ -96,7 +85,6 @@ export function extractCostCalculationInput(usage: TokenUsageType) {
     }
   }
 
-  // Add output tokens (always present)
   expenses.push({
     label: "Output Text Tokens",
     totalTokens: usage.output_token_details.text_tokens,

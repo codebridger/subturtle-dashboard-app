@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import {
   DATABASE,
   FREE_CREDIT_COLLECTION,
+  FLUENT_WAITLIST_COLLECTION,
   FREEMIUM_DURATION_DAYS,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
@@ -43,6 +44,7 @@ const subscriptionCollection = defineCollection({
         enum: [
           "active",
           "canceled",
+          "expired",
           "incomplete",
           "incomplete_expired",
           "past_due",
@@ -52,6 +54,36 @@ const subscriptionCollection = defineCollection({
         ],
         required: true,
         default: "active",
+      },
+      // Pricing-tier ladder (Council 002). Optional: pre-rollout subscriptions
+      // and freemium-derived records may not carry a tier.
+      tier: {
+        type: String,
+        enum: ["starter", "learner", "fluent"],
+        required: false,
+      },
+      // Billing cadence of the paid subscription.
+      subscription_type: {
+        type: String,
+        enum: ["monthly", "annual"],
+        required: false,
+      },
+      // Stripe price ID that created this subscription — lets the webhook and UI
+      // resolve tier/cadence/currency without re-hitting Stripe.
+      price_id: {
+        type: String,
+        required: false,
+      },
+      // End of the credit-card-required free trial, when the subscription is trialing.
+      trial_end: {
+        type: Date,
+        required: false,
+      },
+      // True when the subscription is scheduled to cancel at the end of the
+      // current period — set when the user cancels via the Stripe portal.
+      cancel_at_period_end: {
+        type: Boolean,
+        default: false,
       },
       payment_meta_data: {
         type: Object,
@@ -236,6 +268,12 @@ const freeCreaditCollection = defineCollection({
         required: true,
         default: 0,
       },
+      // One-shot guard: set true after the `starter-ai-exhausted` analytics
+      // event fires, so it fires at most once per 30-day allocation window.
+      ai_exhausted_flagged: {
+        type: Boolean,
+        default: false,
+      },
     },
     {
       timestamps: true,
@@ -267,8 +305,57 @@ freeCreaditCollection.schema
     return this.total_credits - this.credits_used;
   });
 
+// Add virtual property for usage percentage (mirrors the subscription virtual)
+freeCreaditCollection.schema
+  .virtual("usage_percentage")
+  .get(function (this: any) {
+    if (this.total_credits <= 0) return 0;
+    const percentage = Math.round(
+      (this.credits_used / this.total_credits) * 100
+    );
+    return Math.min(percentage, 100); // Cap at 100%
+  });
+
+// Latent-demand waitlist for the Fluent tier while it ships "dark".
+// One row per user (upserted) — the captured emails get migrated into a
+// complimentary Fluent unlock when PRFAQ-003 (Mini Lectures) ships.
+const fluentWaitlistCollection = defineCollection({
+  database: DATABASE,
+  collection: FLUENT_WAITLIST_COLLECTION,
+  schema: new Schema(
+    {
+      user_id: {
+        type: Types.ObjectId,
+        required: true,
+        ref: `${DATABASE}.users`,
+        unique: true,
+      },
+      email: {
+        type: String,
+        required: true,
+      },
+    },
+    { timestamps: true }
+  ),
+  permissions: [
+    new Permission({
+      accessType: "user_access",
+      read: true,
+      write: true,
+      onlyOwnData: true,
+      ownerIdField: "user_id",
+    }),
+    new Permission({
+      accessType: "admin",
+      read: true,
+      write: true,
+    }),
+  ],
+});
+
 module.exports = [
   subscriptionCollection,
   usageCollection,
   freeCreaditCollection,
+  fluentWaitlistCollection,
 ];

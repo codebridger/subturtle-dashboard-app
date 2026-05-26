@@ -5,10 +5,22 @@
             <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {{ t('live-practice.ai-character') }}
             </label>
-            <select v-model="formData.aiCharacter"
+            <VoicePicker v-model="formData.aiCharacter" :voices="resolvedVoices" />
+        </div>
+
+        <!-- Native Language Selection -->
+        <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('live-practice.native-language') }}
+            </label>
+            <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('live-practice.native-language-hint') }}
+            </p>
+            <select v-model="formData.nativeLanguage"
                 class="focus:border-primary-500 focus:ring-primary-500 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <option v-for="character in aiCharacters" :key="character" :value="character">
-                    {{ character.charAt(0).toUpperCase() + character.slice(1) }}
+                <option value="auto">{{ t('live-practice.native-language-auto') }}</option>
+                <option v-for="lang in SUPPORTED_LANGUAGES" :key="lang.code" :value="lang.title">
+                    {{ lang.title }}
                 </option>
             </select>
         </div>
@@ -74,6 +86,10 @@
 
 <script setup lang="ts">
 import { Input } from 'pilotui';
+import { SUPPORTED_LANGUAGES } from '~/utils/languages.static';
+import VoicePicker from '~/components/live/VoicePicker.vue';
+import { useLiveSessionVoices } from '~/composables/useLiveSessionVoices';
+import type { CoachVoice } from '~/types/live-session.type';
 
 const { t } = useI18n();
 
@@ -84,7 +100,12 @@ const props = defineProps<{
         fromPhrase: string;
         toPhrase: string;
         totalPhrases: string;
+        nativeLanguage: string;
     };
+    // Omitted by the bundle Gemini flow → voices are fetched from the server so
+    // the picker matches the extension. The OpenAI/Gemini `StartNew` variants
+    // still pass their own name lists.
+    voiceOptions?: (string | CoachVoice)[];
 }>();
 
 const emit = defineEmits<{
@@ -95,11 +116,24 @@ const emit = defineEmits<{
             fromPhrase: string;
             toPhrase: string;
             totalPhrases: string;
+            nativeLanguage: string;
         }
     ];
 }>();
 
-const aiCharacters = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
+const { voices: serverVoices, ensureLoaded } = useLiveSessionVoices();
+
+onMounted(() => {
+    if (!props.voiceOptions) ensureLoaded();
+});
+
+// Use the explicit list when provided (StartNew variants); otherwise the
+// server-backed list fetched above.
+const resolvedVoices = computed<(string | CoachVoice)[]>(() =>
+    props.voiceOptions && props.voiceOptions.length
+        ? props.voiceOptions
+        : serverVoices.value
+);
 
 const formData = computed({
     get: () => props.modelValue,

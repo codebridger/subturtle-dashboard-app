@@ -1,6 +1,15 @@
 import { openRouter } from "../../utils/openrouter";
-import { DetailedPhraseDataType, TranslateWithContextParams } from "./types";
-import { LanguageLearningDataSchema } from "./schema";
+import {
+  DetailedPhraseDataType,
+  TranslateWithContextParams,
+  TranslationAdviceParams,
+  TranslationAdviceType,
+} from "./types";
+import {
+  LanguageLearningDataSchema,
+  TranslationAdviceSchema,
+} from "./schema";
+import { TRANSLATION_MODELS } from "../../utils/openrouter-models";
 
 /**
  * Get a simple translation of a phrase with context
@@ -29,13 +38,7 @@ export async function getSimpleTranslation({
 
   try {
     const response = await openRouter.createChatCompletion({
-      models: [
-        // Accepted models
-        "google/gemini-2.5-flash-lite", // 1.05M context, $0.10/M input, $0.40/M output
-        "google/gemini-2.5-flash", // 1m context, $0.15/M input, $0.60/M output
-        "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
-        // "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
-      ],
+      models: TRANSLATION_MODELS,
       messages: [
         {
           role: "system",
@@ -72,9 +75,15 @@ export async function getDetailedTranslation({
 }: TranslateWithContextParams): Promise<DetailedPhraseDataType> {
   // Create prompt for OpenRouter
   const systemPrompt = `
-  As a language learning specialist, take the "phrase" and "context", and provide all descriptive fields in the mentioned target language. 
+  As a language learning specialist, take the "phrase" and "context", and provide all descriptive fields in the mentioned target language.
   all grammart, cultural, and usage notes must be about the source language.
-  dont forget to use original source language terms in the notes when needed.`;
+  dont forget to use original source language terms in the notes when needed.
+
+  Phonetic transliteration: spell out how to pronounce the SOURCE-language "phrase" itself (${sourceLanguage} -> read by a ${targetLanguage} speaker), written using the ${targetLanguage} alphabet. Do NOT transliterate the translation. For long selections (~5 words or more), return an empty string for the top-level transliteration and rely on the per-chunk transliterations instead.
+
+  Chunks: inside the user's selection ("phrase"), find the reusable language patterns worth learning (collocations, phrasal verbs, idioms, discourse markers).
+  Rules: at most one chunk per 5-8 words of the selection, hard ceiling of 2 chunks. Each chunk's "text" must appear verbatim inside the selection. For each chunk, also provide: "transliteration" (how to pronounce that chunk, source language, in the ${targetLanguage} alphabet) and "definition" (a short, self-contained explanation of that chunk's meaning and usage, 1-2 sentences, in ${targetLanguage}).
+  Return an empty "chunks" array when the selection is under ~5 words, or when the selection is written in a different language than the target learning language.`;
 
   const userPrompt = `
   Translate from ${sourceLanguage} to ${targetLanguage}:
@@ -86,13 +95,7 @@ export async function getDetailedTranslation({
     const result =
       await openRouter.createStructuredOutputWithZod<DetailedPhraseDataType>({
         options: {
-          models: [
-            // Accepted models
-            "google/gemini-2.5-flash-lite", // 1.05M context, $0.10/M input, $0.40/M output
-            "google/gemini-2.5-flash", // 1m context, $0.15/M input, $0.60/M output
-            "google/gemini-flash-1.5-8b", // 1m context, $0.038/M input, $0.15/M output
-            // "openai/gpt-4.1-nano", // 1m context, $0.10/M input, $0.40/M output
-          ],
+          models: TRANSLATION_MODELS,
           messages: [
             {
               role: "system",
@@ -104,7 +107,10 @@ export async function getDetailedTranslation({
             },
           ],
           temperature: 0,
-          max_tokens: 700,
+          // Richer schema now includes per-chunk definition + transliteration
+          // (token-heavy in target languages like Persian); 700 truncated the
+          // JSON ("unterminated string"), so allow more headroom.
+          max_tokens: 2000,
         },
         zodSchema: LanguageLearningDataSchema, // Pass the Zod schema directly
         schemaName: "language_learning_data",
@@ -117,5 +123,67 @@ export async function getDetailedTranslation({
     console.error("Detailed translation error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to translate text: ${errorMessage}`);
+  }
+}
+
+/**
+ * Conversational advisor for the save modal's "fix this?" chat.
+ * Given the user's message and the current selection/context (+ current chunks),
+ * the model either replies with plain text or returns an updated chunks list.
+ */
+export async function getTranslationAdvice({
+  phrase,
+  context,
+  message,
+  currentChunks = [],
+  history = [],
+  sourceLanguage = "en",
+  targetLanguage,
+}: TranslationAdviceParams): Promise<TranslationAdviceType> {
+  const systemPrompt = `
+  You are a friendly language tutor helping the user understand a phrase they are learning.
+  The selection language is ${sourceLanguage}; reply in ${targetLanguage}.
+  Selection: "${phrase}"
+  Context: "${context}"
+  Currently highlighted patterns (chunks): ${JSON.stringify(currentChunks)}
+
+  Your MAIN job is to answer the user's questions about this phrase: meaning, grammar, usage, nuance, examples, differences between words, etc. Put your answer in "reply".
+
+  Editing the highlighted patterns is a SECONDARY ability. Only return a "chunks" array when the user EXPLICITLY asks to add, remove, or change which patterns are highlighted (e.g. "highlight X", "remove that", "don't include Y"). When you do, each chunk's "text" must appear verbatim in the selection, include its "transliteration" (pronunciation in the ${targetLanguage} alphabet), and you may also add a short "reply" explaining the change.
+  If the user is just asking a question (even one that mentions a phrase, like "what about 'on the'?"), answer it in "reply" and DO NOT change the chunks.`;
+
+  // Maintain the conversation: replay prior turns so the model has context.
+  const historyMessages = (history || [])
+    .filter((m) => m && m.text)
+    .map((m) => ({
+      role: (m.role === "assistant" ? "assistant" : "user") as
+        | "assistant"
+        | "user",
+      content: m.text,
+    }));
+
+  try {
+    const result =
+      await openRouter.createStructuredOutputWithZod<TranslationAdviceType>({
+        options: {
+          models: TRANSLATION_MODELS,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...historyMessages,
+            { role: "user", content: message },
+          ],
+          temperature: 0,
+          max_tokens: 800,
+        },
+        zodSchema: TranslationAdviceSchema,
+        schemaName: "translation_advice",
+        strict: true,
+      });
+
+    return result;
+  } catch (error: unknown) {
+    console.error("Translation advice error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get translation advice: ${errorMessage}`);
   }
 }

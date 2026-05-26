@@ -18,6 +18,11 @@ import {
   PaymentVerificationResult,
 } from "./types";
 import { PaymentSession } from "../types";
+import { getTier, resolveTierByPriceId } from "../../subscription/tiers";
+import {
+  trackServerEvent,
+  SERVER_ANALYTICS_EVENTS,
+} from "../../../utils/analytics";
 
 /**
  * Stripe payment adapter implementation
@@ -46,10 +51,23 @@ export class StripeAdapter implements PaymentAdapter {
   private async getOrCreateStripeCustomer(userId: string): Promise<string> {
     // Get the stripe_customer collection
     const stripeCustomerCollection = getCollection(DATABASE, "stripe_customer");
-    // Try to find existing mapping
-    let record = await stripeCustomerCollection.findOne({ user_id: userId });
-    if (record && record.get("customer_id")) {
-      return record.get("customer_id");
+    // Try to find an existing mapping
+    const record = await stripeCustomerCollection.findOne({ user_id: userId });
+    const storedCustomerId = record?.get("customer_id");
+
+    if (storedCustomerId) {
+      // Verify the stored customer still exists in Stripe — it may have been
+      // deleted out-of-band. If so, fall through and create a fresh one so the
+      // mapping self-heals instead of failing every checkout/portal call.
+      try {
+        const existing = await this.stripe.customers.retrieve(storedCustomerId);
+        if (!(existing as any).deleted) {
+          return storedCustomerId;
+        }
+      } catch (err: any) {
+        if (err?.code !== "resource_missing") throw err;
+        // resource_missing => the customer was deleted; recreate below.
+      }
     }
 
     const user = await userManager.getUserById(userId);
@@ -75,69 +93,76 @@ export class StripeAdapter implements PaymentAdapter {
   }
 
   /**
+   * Look up our internal userId for a Stripe customer ID, or null if unknown.
+   */
+  private async getUserIdForCustomer(
+    customerId: string
+  ): Promise<string | null> {
+    const stripeCustomerCollection = getCollection<any>(
+      DATABASE,
+      "stripe_customer"
+    );
+    const record = await stripeCustomerCollection.findOne({
+      customer_id: customerId,
+    });
+    return record?.user_id || null;
+  }
+
+  /**
    * Create a checkout session for Stripe
    */
   async createCheckoutSession(
     request: CreateCheckoutRequest
   ): Promise<CheckoutSessionResult> {
-    const { userId, productId, successUrl, cancelUrl } = request;
+    const { userId, tierId, cadence, currency, successUrl, cancelUrl } =
+      request;
+
+    // Resolve the tier + Stripe price ID from the registry (the source of truth).
+    const tier = getTier(tierId);
+    if (!tier.isPaid || tier.status !== "live") {
+      throw new Error(`Tier "${tierId}" is not available for checkout`);
+    }
+    const priceId = tier.prices?.[cadence]?.[currency];
+    if (!priceId) {
+      throw new Error(
+        `No Stripe price configured for tier "${tierId}" ${cadence}/${currency}`
+      );
+    }
 
     // Ensure Stripe customer exists for this user
     const customerId = await this.getOrCreateStripeCustomer(userId);
 
-    // Fetch product details from Stripe
-    const product = await this.stripe.products.retrieve(productId);
+    // Fetch the price so the payment_session record mirrors its amount/currency.
+    const price = await this.stripe.prices.retrieve(priceId);
 
-    if (!product) {
-      throw new Error(`Invalid product ID: ${productId}`);
+    const sessionMetadata: Record<string, string> = {
+      userId,
+      tierId,
+      cadence,
+      currency,
+      priceId,
+      creditsAmount: tier.creditBudget.toString(),
+      subscriptionDays: tier.durationDays.toString(),
+    };
+
+    // The trial is credit-card-required: `payment_method_collection: "always"`
+    // forces card collection even though the subscription starts in a trial.
+    const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData =
+      { metadata: sessionMetadata };
+    if (tier.trialDays) {
+      subscriptionData.trial_period_days = tier.trialDays;
     }
 
-    // Get metadata from the product
-    const creditsAmount = parseInt(product.metadata.creditsAmount || "0", 10);
-    const subscriptionDays = parseInt(
-      product.metadata.subscriptionDays || "0",
-      10
-    );
-
-    if (!creditsAmount || !subscriptionDays) {
-      throw new Error(
-        "Product is missing required metadata: creditsAmount or subscriptionDays"
-      );
-    }
-
-    // Get price data for this product
-    const prices = await this.stripe.prices.list({
-      product: productId,
-      active: true,
-      limit: 1,
-    });
-
-    if (!prices.data.length) {
-      throw new Error("No active price found for this product");
-    }
-
-    const price = prices.data[0];
-
-    // Create a Stripe checkout session
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price: price.id,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       customer: customerId,
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
-      metadata: {
-        ...product.metadata,
-        userId,
-        productId,
-        creditsAmount: creditsAmount.toString(),
-        subscriptionDays: subscriptionDays.toString(),
-      },
+      payment_method_collection: "always",
+      subscription_data: subscriptionData,
+      metadata: sessionMetadata,
     });
 
     // Save session in database
@@ -157,8 +182,8 @@ export class StripeAdapter implements PaymentAdapter {
           status: "created",
           provider_data: {
             session_id: session.id,
-            price_id: price.id,
-            product_id: productId,
+            price_id: priceId,
+            product_id: tier.stripeProductId,
             expires_at: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes expiry
             success_url: successUrl,
             cancel_url: cancelUrl,
@@ -296,10 +321,8 @@ export class StripeAdapter implements PaymentAdapter {
         case "customer.subscription.created": {
           const subscription = event.data.object as Stripe.Subscription;
 
-          // 1. Get the Stripe Customer ID from the subscription
+          // 1. Resolve our userId from the Stripe customer.
           const stripeCustomerId = subscription.customer as string;
-
-          // 2. Look up your userId from your database
           const stripeCustomerCollection = getCollection<any>(
             DATABASE,
             "stripe_customer"
@@ -315,39 +338,37 @@ export class StripeAdapter implements PaymentAdapter {
             };
           }
 
-          // 3. Get the invoice id from Stripe via the latest invoice
-          let invoice_id: string | undefined = undefined;
-          if (subscription.latest_invoice) {
-            const invoice = await this.stripe.invoices.retrieve(
-              subscription.latest_invoice as string
-            );
-            invoice_id = (invoice.id as string) || undefined;
+          // 2. Resolve the tier from the price ID via the registry — the
+          //    registry, not Stripe product metadata, is the source of truth
+          //    for the credit budget.
+          const item = subscription.items.data[0];
+          const priceId = item.price.id;
+          const resolved = resolveTierByPriceId(priceId);
+          if (!resolved) {
+            return {
+              success: false,
+              message: `No tier matches Stripe price ${priceId}`,
+            };
           }
+          const { tier, cadence } = resolved;
 
-          // 4. Get product metadata
-          const subscriptionItem = subscription.items.data[0];
-          const priceId = subscriptionItem.price.id;
-          const price = await this.stripe.prices.retrieve(priceId);
-          const productId = price.product as string;
-          const product = await this.stripe.products.retrieve(productId);
-          const creditsAmount = product.metadata.creditsAmount;
-
-          // 5. Get the current period start and end
-          const currentPeriodStart =
-            subscription.items.data[0].current_period_start;
-          const currentPeriodEnd =
-            subscription.items.data[0].current_period_end;
-
-          // 6. Add credits to user's subscription
+          // 3. Create the subscription with the tier's credit budget. A
+          //    trialing subscription still gets the full budget so the trial
+          //    actually unlocks the tier.
           await addNewSubscriptionWithCredit({
             userId,
-            creditAmount: parseInt(creditsAmount, 10),
-            startDateUnixTimestamp: currentPeriodStart,
-            endDateUnixTimestamp: currentPeriodEnd,
+            creditAmount: tier.creditBudget,
+            startDateUnixTimestamp: item.current_period_start,
+            endDateUnixTimestamp: item.current_period_end,
+            tier: tier.id,
+            subscriptionType: cadence,
+            priceId,
+            status: subscription.status,
+            trialEndUnixTimestamp: subscription.trial_end ?? undefined,
             paymentMetaData: {
               provider: this.provider,
               stripe: {
-                label: product.name,
+                label: tier.userFacingName,
                 subscription_id: subscription.id,
               },
             },
@@ -363,12 +384,26 @@ export class StripeAdapter implements PaymentAdapter {
           const subscription = event.data.object as Stripe.Subscription;
 
           try {
-            const { success, message } =
+            const { success, message, wasTrialing } =
               await cancelSubscriptionByProviderAndSubscriptionId({
                 provider: this.provider,
                 subscriptionId: subscription.id,
                 status: subscription.status,
               });
+
+            // A cancel that happened while still trialing is a trial cancel —
+            // fire the server-truth analytics event.
+            if (wasTrialing) {
+              const userId = await this.getUserIdForCustomer(
+                subscription.customer as string
+              );
+              if (userId) {
+                trackServerEvent(
+                  SERVER_ANALYTICS_EVENTS.TRIAL_CANCELED,
+                  userId
+                );
+              }
+            }
 
             return {
               success,
@@ -384,20 +419,45 @@ export class StripeAdapter implements PaymentAdapter {
 
         case "customer.subscription.updated": {
           const subscription = event.data.object as Stripe.Subscription;
+          const item = subscription.items.data[0];
+          const priceId = item.price.id;
+          const previousAttributes = (event.data as any).previous_attributes;
 
-          const currentPeriodStart =
-            subscription.items.data[0].current_period_start;
-          const currentPeriodEnd =
-            subscription.items.data[0].current_period_end;
+          // Resolve the tier so a period rollover (renewal, or the trial->paid
+          // transition) can refill the correct credit budget.
+          const resolved = resolveTierByPriceId(priceId);
 
           const { success, message } =
             await updateSubscriptionStatusByProviderAndSubscriptionId({
               provider: this.provider,
               subscriptionId: subscription.id,
               status: subscription.status,
-              startDateUnixTimestamp: currentPeriodStart,
-              endDateUnixTimestamp: currentPeriodEnd,
+              startDateUnixTimestamp: item.current_period_start,
+              endDateUnixTimestamp: item.current_period_end,
+              tier: resolved?.tier.id,
+              subscriptionType: resolved?.cadence,
+              priceId,
+              creditAmount: resolved?.tier.creditBudget,
+              trialEndUnixTimestamp: subscription.trial_end ?? undefined,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
             });
+
+          // trial -> paid conversion: fire the server-truth analytics event.
+          if (
+            previousAttributes?.status === "trialing" &&
+            subscription.status === "active"
+          ) {
+            const userId = await this.getUserIdForCustomer(
+              subscription.customer as string
+            );
+            if (userId) {
+              trackServerEvent(
+                SERVER_ANALYTICS_EVENTS.TRIAL_CONVERTED,
+                userId,
+                { cadence: resolved?.cadence, tier: resolved?.tier.id }
+              );
+            }
+          }
 
           return {
             success,

@@ -1,0 +1,136 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+env:
+  GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-22.04
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - '.github/workflows/test.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/test.yml'
+
+  server-tests:
+    name: Server (Jest)
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: server/.nvmrc
+          cache: yarn
+          cache-dependency-path: server/yarn.lock
+      - name: Create .npmrc
+        run: |
+          echo "@codebridger:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GIGET_AUTH_TOKEN}" >> .npmrc
+      - run: yarn install --frozen-lockfile
+      - run: yarn test
+
+  frontend-unit:
+    name: Frontend Unit (Vitest)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Create .npmrc
+        run: |
+          echo "@codebridger:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GIGET_AUTH_TOKEN}" >> .npmrc
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:unit
+
+  frontend-e2e:
+    name: Frontend E2E (Playwright)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Create .npmrc
+        run: |
+          echo "@codebridger:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GIGET_AUTH_TOKEN}" >> .npmrc
+      - run: yarn install --frozen-lockfile
+      - name: Get Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Playwright browsers (chromium)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: yarn playwright install --with-deps chromium
+      - name: Install Playwright system deps only
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: yarn playwright install-deps chromium
+      - name: Create .env for build
+        run: echo "NUXT_PUBLIC_BASE_URL_API=http://localhost:8080" > .env
+      - run: yarn build
+      - run: yarn test:e2e
+        env:
+          CI: 'true'
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  all-tests-pass:
+    name: All tests pass
+    needs: [server-tests, frontend-unit, frontend-e2e]
+    if: always()
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Verify no required job failed
+        run: |
+          results='${{ toJSON(needs) }}'
+          echo "$results"
+          if echo "$results" | grep -E '"result": *"(failure|cancelled)"'; then
+            echo "::error::One or more required test jobs failed."
+            exit 1
+          fi

@@ -76,13 +76,17 @@ The module exposes these API functions for external access:
 ```plain
 _id: ObjectId (PK)
 user_id: ObjectId (FK)
-subscription_type: ENUM (monthly, quarterly, annual)
+tier: ENUM (starter, learner, fluent)
+subscription_type: ENUM (monthly, annual)
+price_id: String (Stripe price ID that created the subscription)
+trial_end: Date (set while the subscription is trialing)
 start_date: Date
 end_date: Date
 total_credits: Number
 credits_used: Number
-status: ENUM (active, expired, canceled)
+status: ENUM (active, canceled, expired, incomplete, incomplete_expired, past_due, paused, trialing, unpaid)
 available_credit: Number (virtual/calculated)
+usage_percentage: Number (virtual/calculated)
 ```
 
 #### Usage Table

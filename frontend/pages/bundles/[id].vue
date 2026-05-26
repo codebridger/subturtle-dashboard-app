@@ -41,15 +41,15 @@
                     <div class="flex w-full flex-col items-end justify-end md:w-auto md:flex-row">
                         <!-- Freemium: Combined Limitation + Add Phrase in Beautiful Gradient Wrapper -->
                         <div v-if="profileStore.isFreemium" class="w-full md:w-auto">
-                            <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
-                                :main-message="t('freemium.limitation.no_free_spots_left')"
-                                :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
-                                :primary-button-label="t('freemium.limitation.go_pro')"
-                                :secondary-button-label="t('freemium.limitation.continue_with_limits')"
-                                auto-redirect-on-upgrade>
+                            <FreemiumLimitationModal :modal-title="t('subscription.save-cap.title')"
+                                :main-message="t('subscription.save-cap.message')"
+                                :sub-message="t('subscription.save-cap.sub-message')"
+                                :primary-button-label="t('subscription.save-cap.primary')"
+                                :secondary-button-label="t('subscription.save-cap.secondary')"
+                                auto-redirect-on-upgrade @secondary="snoozeSaveCap">
                                 <template #trigger="{ toggleModal }">
                                     <FreemiumLimitCard type="phrase" @action="handleFreemiumAddPhrase"
-                                        @upgrade-needed="toggleModal(true)" />
+                                        @upgrade-needed="onSaveCapUpgradeNeeded(toggleModal)" />
                                 </template>
                             </FreemiumLimitationModal>
                         </div>
@@ -169,9 +169,12 @@ import { useBundleStore } from '@/stores/bundle';
 import { useLeitnerStore } from '@/stores/leitner';
 import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import type { LiveSessionRequest } from '~/types/live-session-request';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -226,17 +229,50 @@ function fetchPhraseList(page: number = 1) {
 }
 
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-    // convert sessionData to base64
-    const sessionDataBase64 = btoa(JSON.stringify(sessionData));
+    // Build the unified live-session request (bundle source) and hand it to the
+    // single /practice/live-session gate.
+    const request: LiveSessionRequest = {
+        aiCharacter: sessionData.aiCharacter,
+        nativeLanguage: sessionData.nativeLanguage,
+        source: {
+            kind: 'bundle',
+            bundleId: id.value,
+            selectionMode: sessionData.selectionMode,
+            fromPhrase: sessionData.fromPhrase,
+            toPhrase: sessionData.toPhrase,
+            totalPhrases: sessionData.totalPhrases,
+        },
+        returnTo: `/bundles/${id.value}`,
+    };
 
-    // Uerl should not be include # at the beginning
-    const url = `/practice/live-session-${id.value}?sessionData=${sessionDataBase64}`;
-    router.push(url);
+    const session = btoa(JSON.stringify(request));
+    router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
 }
 
 function handleFreemiumAddPhrase() {
     // User is not at limit yet, so add the phrase
     bundleStore.addEmptyTemporarilyPhrase();
+}
+
+// 200-save cap modal: "Maybe later" snoozes the modal for 24h; it never shows
+// twice in the same session. Once snoozed/shown, a further click on the
+// at-limit card skips the interstitial and goes straight to the plans page.
+const SAVE_CAP_SNOOZE_KEY = 'subturtle_save_cap_snooze_until';
+const saveCapShownThisSession = ref(false);
+
+function onSaveCapUpgradeNeeded(toggleModal: (value: boolean) => void) {
+    const snoozedUntil = Number(localStorage.getItem(SAVE_CAP_SNOOZE_KEY) || 0);
+    if (saveCapShownThisSession.value || Date.now() < snoozedUntil) {
+        router.push('/settings/subscription');
+        return;
+    }
+    saveCapShownThisSession.value = true;
+    analytic.track(ANALYTICS_EVENTS.CAP_HIT, { cap: 'save_words' });
+    toggleModal(true);
+}
+
+function snoozeSaveCap() {
+    localStorage.setItem(SAVE_CAP_SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
 }
 
 async function openReviewModal() {

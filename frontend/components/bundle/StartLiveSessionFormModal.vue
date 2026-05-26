@@ -9,28 +9,24 @@
         <StartLiveSessionForm v-model="formData" ref="formRef" />
 
         <template #footer>
-            <div class="-m-5">
-                <!-- Freemium: Show freemium limit card -->
-                <div v-if="profileStore.isFreemium">
-                    <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
-                        :main-message="t('freemium.limitation.no_free_spots_left')"
-                        :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
-                        :primary-button-label="t('freemium.limitation.go_pro')"
-                        :secondary-button-label="t('freemium.limitation.continue_with_limits')"
-                        @upgrade="handleConfirmUpgrade">
-                        <template #trigger="{ toggleModal: toggleLimitationModal }">
-                            <FreemiumLimitCard type="liveSession" :action-label="t('live-practice.start')"
-                                @action="startSession" @upgrade="toggleLimitationModal(true)" />
-                        </template>
-                    </FreemiumLimitationModal>
-                </div>
-
-                <!-- Premium: Regular start button -->
-                <div v-else>
-                    <Button color="primary" :disabled="!isFormValid" @click="startSession"
-                        :label="t('live-practice.start')" />
-                </div>
+            <!-- Freemium: full-bleed limit card — the -m-5 cancels the modal footer's p-5 so the gradient card reaches the edges -->
+            <div v-if="profileStore.isFreemium" class="-m-5">
+                <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
+                    :main-message="t('freemium.limitation.no_free_spots_left')"
+                    :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
+                    :primary-button-label="t('freemium.limitation.go_pro')"
+                    :secondary-button-label="t('freemium.limitation.continue_with_limits')"
+                    @upgrade="handleConfirmUpgrade">
+                    <template #trigger="{ toggleModal: toggleLimitationModal }">
+                        <FreemiumLimitCard type="liveSession" :action-label="t('live-practice.start')"
+                            @action="startSession" @upgrade="toggleLimitationModal(true)" />
+                    </template>
+                </FreemiumLimitationModal>
             </div>
+
+            <!-- Premium: Regular start button -->
+            <Button v-else color="primary" block :disabled="!isFormValid" @click="startSession"
+                :label="t('live-practice.start')" />
         </template>
     </Modal>
 </template>
@@ -60,11 +56,12 @@ const emit = defineEmits<{
 const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
 
 const formData = reactive({
-    aiCharacter: 'alloy',
+    aiCharacter: 'Kore',
     selectionMode: 'selection' as 'selection' | 'random',
     fromPhrase: '1',
     toPhrase: '10',
     totalPhrases: '10',
+    nativeLanguage: 'auto',
 });
 
 const isFormValid = computed(() => {
@@ -83,6 +80,7 @@ function startSession() {
     const sessionData = {
         aiCharacter: formData.aiCharacter,
         selectionMode: formData.selectionMode,
+        nativeLanguage: formData.nativeLanguage,
     };
 
     if (formData.selectionMode === 'selection') {

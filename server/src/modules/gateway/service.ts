@@ -32,7 +32,9 @@ export async function createCheckoutSession(
   try {
     const result = await adapter.createCheckoutSession({
       userId,
-      productId: request.productId,
+      tierId: request.tierId,
+      cadence: request.cadence,
+      currency: request.currency,
       successUrl: request.successUrl,
       cancelUrl: request.cancelUrl,
     });

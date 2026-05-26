@@ -51,8 +51,20 @@
                                     class="rounded-lg bg-blue-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
                                     {{ session.type }}
                                 </span>
+                                <span :class="[
+                                    'rounded-lg px-2 py-1 text-xs font-bold uppercase tracking-wide',
+                                    session.provider === 'gemini'
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+                                ]">
+                                    {{ session.provider === 'gemini' ? 'Gemini' : 'OpenAI' }}
+                                </span>
                                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     {{ new Date(session.createdAt).toLocaleString() }}
+                                </span>
+                                <span v-if="session.updatedAt"
+                                    class="rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                    {{ formatSessionDuration(session.createdAt, session.updatedAt) }}
                                 </span>
                             </div>
                             <div
@@ -112,6 +124,7 @@ import { dataProvider } from '@modular-rest/client';
 import type { PaginationType } from '@modular-rest/client/dist/types/types';
 import { COLLECTIONS, DATABASE } from '~/types/database.type';
 import type { LiveSessionRecordType, LivePracticeSessionSetupType } from '~/types/live-session.type';
+import { formatSessionDuration } from '~/utils/duration';
 
 const { t } = useI18n();
 const router = useRouter();

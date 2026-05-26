@@ -87,11 +87,17 @@ This pattern allows for:
 
 ### Creating a Payment Session
 
+The session is created from a tier + billing cadence + currency — the frontend
+never holds raw Stripe price IDs. The adapter resolves the price from the tier
+registry (`subscription/tiers.ts`).
+
 ```typescript
 // Client-side code
 const result = await functionProvider.run("createPaymentSession", {
-  productId: "stripe_product_id",
-  provider: "stripe", // Optional, defaults to Stripe
+  tierId: "learner",   // a paid, live tier
+  cadence: "monthly",  // "monthly" | "annual"
+  currency: "usd",     // "usd" | "eur" | "gbp"
+  userId: currentUserId,
   successUrl: "https://example.com/success",
   cancelUrl: "https://example.com/cancel"
 });
@@ -124,13 +130,44 @@ https://your-api-domain.com/gateway/webhook/stripe
 ## Environment Variables
 
 - `STRIPE_SECRET_KEY`: Stripe API secret key
+- `STRIPE_WEBHOOK_SECRET`: Stripe webhook signing secret. When set, the
+  `/webhook/stripe` handler verifies the signature; when unset it accepts the
+  parsed payload unverified and logs a warning (local dev only).
 
 ## Integration with Other Modules
 
 - **Subscription Module**: Triggers add credits to user subscriptions upon successful payments
 - **Auth Module**: User authentication for payment sessions 
 
-## Stripe CLI
+## Local development — Stripe webhooks
+
+Stripe can't reach `localhost`, so subscription creation (which happens in the
+`customer.subscription.created` webhook) won't run locally without the Stripe
+CLI forwarding events:
+
 ```bash
-stripe listen --forward-to localhost:8080/gateway/webhook/stripe
+stripe login                                                     # one-time
+stripe listen --forward-to localhost:8080/gateway/webhook/stripe  # keep running
 ```
+
+`stripe listen` prints a `whsec_...` signing secret — put it in `server/.env`
+as `STRIPE_WEBHOOK_SECRET` and restart the server. It only forwards events that
+fire **while it is running**; events from an earlier checkout are missed — run a
+fresh checkout, or resend the event from the Stripe dashboard.
+
+The webhook route is mounted at `/gateway/webhook/stripe` (modular-rest mounts
+each module's router under `/<module-name>`).
+
+## 3-day trial
+
+The Learner tier's 3-day, credit-card-required trial is **not** a Stripe
+dashboard / product / price setting — it is applied in code, per checkout
+session. `createCheckoutSession` (`adapters/stripe.adapter.ts`) sets
+`subscription_data.trial_period_days` from `tier.trialDays`, and
+`payment_method_collection: "always"` forces the card up front. The trial
+length lives in the registry — `subscription/tiers.ts` (`learner.trialDays`) —
+so changing it needs no Stripe change.
+
+To inspect a trial in Stripe, look at the resulting **Subscription** (Customers
+→ the customer, or Billing → Subscriptions) — it shows status `Trialing` with a
+trial-end date. Nothing trial-related appears on the Product or Price.
