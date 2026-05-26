@@ -168,3 +168,46 @@ describe("text-turn", () => {
     expect(mockGenerateContent).not.toHaveBeenCalled();
   });
 });
+
+describe("create-text-session", () => {
+  const createSession: any = functions.find(
+    (f) => f.name === "create-text-session"
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCheckCredit.mockResolvedValue({ allowedToProceed: true });
+    mockCollection.create.mockResolvedValue({ _id: "sess-new" });
+  });
+
+  it("persists an allowed model and returns the session id", async () => {
+    const res = await createSession.callback({
+      userId: "user1",
+      instructions: "be a tutor",
+      toolDeclarations: [],
+      model: "gemini-2.5-flash",
+    });
+    expect(res).toEqual({ sessionId: "sess-new", model: "gemini-2.5-flash" });
+    expect(mockCollection.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("defaults the model when none is provided", async () => {
+    const res = await createSession.callback({
+      userId: "user1",
+      instructions: "be a tutor",
+    });
+    expect(res.model).toBe("gemini-2.5-flash-lite");
+  });
+
+  it("rejects an unsupported model before any credit check or write", async () => {
+    await expect(
+      createSession.callback({
+        userId: "user1",
+        instructions: "be a tutor",
+        model: "made-up-model",
+      })
+    ).rejects.toThrow(/Unsupported text model/);
+    expect(mockCheckCredit).not.toHaveBeenCalled();
+    expect(mockCollection.create).not.toHaveBeenCalled();
+  });
+});

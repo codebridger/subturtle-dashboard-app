@@ -17,7 +17,11 @@ import { GoogleGenAI } from "@google/genai";
 import { checkCreditAllocation, recordUsage } from "../subscription/service";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../subscription/config";
 import { DATABASE, LIVE_SESSION_TEXT_COLLECTION } from "../../config";
-import { DEFAULT_TEXT_MODEL } from "./config";
+import {
+  ALLOWED_TEXT_MODELS,
+  DEFAULT_TEXT_MODEL,
+  isAllowedTextModel,
+} from "./config";
 import {
   accumulateUsage,
   emptyUsage,
@@ -42,6 +46,17 @@ const createTextSession = defineFunction({
   }) {
     const { userId, instructions, toolDeclarations, model, metadata } = context;
 
+    // Only models priced in config.ts are accepted — `model` is client-supplied,
+    // and an unpriced one would be billed at the fallback rate.
+    const chosenModel = model || DEFAULT_TEXT_MODEL;
+    if (!isAllowedTextModel(chosenModel)) {
+      throw new Error(
+        `Unsupported text model "${chosenModel}". Allowed: ${ALLOWED_TEXT_MODELS.join(
+          ", "
+        )}.`
+      );
+    }
+
     // AI features are credit-gated; `minCredits: 1` blocks only at true
     // exhaustion (the 100% hard cap). Text sessions do NOT consume a freemium
     // live-session slot.
@@ -56,7 +71,6 @@ const createTextSession = defineFunction({
     }
 
     const collection = getCollection(DATABASE, LIVE_SESSION_TEXT_COLLECTION);
-    const chosenModel = model || DEFAULT_TEXT_MODEL;
 
     const record = await collection.create({
       refId: userId,

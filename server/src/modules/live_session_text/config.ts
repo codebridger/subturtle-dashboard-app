@@ -25,6 +25,10 @@ export const TEXT_PRICES_PER_M: Record<
   string,
   { promptText: number; responseText: number }
 > = {
+  "gemini-3.1-flash-lite": {
+    promptText: withMarkup(0.25),
+    responseText: withMarkup(1.5),
+  },
   "gemini-2.5-flash-lite": {
     promptText: withMarkup(0.1),
     responseText: withMarkup(0.4),
@@ -33,11 +37,16 @@ export const TEXT_PRICES_PER_M: Record<
     promptText: withMarkup(0.3),
     responseText: withMarkup(2.5),
   },
-  "gemini-2.5-pro": {
-    promptText: withMarkup(1.25),
-    responseText: withMarkup(10.0),
-  },
 };
 
 // Fallback rates for any model not listed above (defaults to the cheapest tier).
 export const DEFAULT_TEXT_PRICE = TEXT_PRICES_PER_M[DEFAULT_TEXT_MODEL];
+
+// The models a text session may use — the pricing-table keys are the single
+// source of truth, so adding a priced model automatically allows it.
+export const ALLOWED_TEXT_MODELS = Object.keys(TEXT_PRICES_PER_M);
+
+/** Whether `model` is an accepted text-session model. */
+export function isAllowedTextModel(model: string): boolean {
+  return ALLOWED_TEXT_MODELS.includes(model);
+}
