@@ -5,6 +5,7 @@ export const BUNDLE_COLLECTION = "phrase_bundle";
 
 // Live session collections
 export const LIVE_SESSION_COLLECTION = "live_session";
+export const LIVE_SESSION_TEXT_COLLECTION = "live_session_text";
 
 // Subscription collections
 export const SUBSCRIPTION_COLLECTION = "subscription";

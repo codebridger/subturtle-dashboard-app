@@ -228,20 +228,47 @@ function fetchPhraseList(page: number = 1) {
     });
 }
 
-function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-    // Build the unified live-session request (bundle source) and hand it to the
+/**
+ * Resolve the form's selection (range or random) into a concrete, ordered list
+ * of phrase ids. Doing it here — where the bundle is already loaded — keeps the
+ * session pages simple (they just fetch ids) and makes a random selection stable
+ * across refresh.
+ */
+function resolveSelectedPhraseIds(
+    sessionData: LivePracticeSessionSetupType
+): string[] {
+    // The store reverses `phrases` for display; reverse back so range selection
+    // maps to the bundle's original phrase order (matching prior behavior).
+    const all = [...(bundleStore.bundleDetail?.phrases ?? [])].reverse();
+    const picked: string[] = [];
+
+    if (sessionData.selectionMode === 'random') {
+        const total = sessionData.totalPhrases ?? 1;
+        while (picked.length < total && picked.length < all.length) {
+            const candidate = all[Math.floor(Math.random() * all.length)];
+            if (candidate && !picked.includes(candidate)) picked.push(candidate);
+        }
+    } else {
+        const from = sessionData.fromPhrase ?? 1;
+        const to = sessionData.toPhrase ?? 2;
+        for (let i = from - 1; i <= to - 1; i++) {
+            const candidate = all[i];
+            if (candidate && !picked.includes(candidate)) picked.push(candidate);
+        }
+    }
+
+    return picked;
+}
+
+function handleStartLiveSession(sessionData: LivePracticeSessionSetupType & { mode?: 'voice' | 'text' }) {
+    // Resolve the selection up front and hand a concrete phrase-id list to the
     // single /practice/live-session gate.
     const request: LiveSessionRequest = {
         aiCharacter: sessionData.aiCharacter,
         nativeLanguage: sessionData.nativeLanguage,
-        source: {
-            kind: 'bundle',
-            bundleId: id.value,
-            selectionMode: sessionData.selectionMode,
-            fromPhrase: sessionData.fromPhrase,
-            toPhrase: sessionData.toPhrase,
-            totalPhrases: sessionData.totalPhrases,
-        },
+        mode: sessionData.mode,
+        title: bundleStore.bundleDetail?.title,
+        source: { phraseIds: resolveSelectedPhraseIds(sessionData) },
         returnTo: `/bundles/${id.value}`,
     };
 
