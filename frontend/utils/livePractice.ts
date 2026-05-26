@@ -124,7 +124,8 @@ export function buildPracticeTools(cb: PracticeToolCallbacks) {
                 name: 'finish_practice',
                 description:
                     'Finish the practice session. Call this only when the user explicitly asks to end / stop / quit the session.',
-                parameters: { type: 'OBJECT', properties: {} },
+                // No params: omit `parameters` entirely. Gemini's generateContent
+                // rejects an OBJECT parameter with empty `properties` (400).
             },
         },
         activate_phrase: {
