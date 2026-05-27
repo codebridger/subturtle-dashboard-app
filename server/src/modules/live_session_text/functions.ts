@@ -176,12 +176,17 @@ const textTurn = defineFunction({
     const functionCalls = res.functionCalls || [];
 
     if (functionCalls.length > 0) {
-      // The model wants to call tools. Persist the pending function-call turn so
-      // the next call (with the client's tool results) continues coherently.
-      contents.push({
+      // Persist the model's EXACT function-call turn so the next request (with
+      // the client's tool results) continues coherently. We must reuse the
+      // response's own parts: on Gemini 3 each functionCall part carries a
+      // `thoughtSignature` that the API requires when the call is fed back in
+      // history — rebuilding from `functionCalls` alone drops it and the
+      // follow-up turn fails with 400 INVALID_ARGUMENT.
+      const modelContent = res.candidates?.[0]?.content ?? {
         role: "model",
         parts: functionCalls.map((fc) => ({ functionCall: fc })),
-      });
+      };
+      contents.push(modelContent);
       await collection.updateOne({ _id: sessionId, refId: userId } as any, {
         $set: { contents, usage: totalUsage },
       });

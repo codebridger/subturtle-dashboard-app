@@ -1,7 +1,6 @@
 <template>
     <MaterialPracticeToolScaffold :title="setup.request?.title || 'Practice'" :activePhrase="practicedCount"
-        :totalPhrases="totalPhrases" :bundleId="''"
-        :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
+        :totalPhrases="totalPhrases" :bundleId="''" :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
         :isLoading="!errorMode && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
         <template v-if="selectedPhrases.length">
@@ -44,7 +43,7 @@
                         ]">
                             <div class="flex items-baseline justify-center gap-2">
                                 <span class="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">{{ index + 1
-                                    }}</span>
+                                }}</span>
                                 <h2 class="truncate text-sm font-bold sm:!text-base md:!text-lg">{{ phrase.phrase }}
                                 </h2>
                             </div>
@@ -120,8 +119,7 @@
                         :class="isTextFocused || textInput ? 'rounded-2xl' : 'rounded-full'">
                         <textarea ref="textareaRef" v-model="textInput"
                             :placeholder="t('live-practice.text-input-placeholder')"
-                            :disabled="!liveSessionStore.isSessionActive"
-                            :rows="isTextFocused || textInput ? 3 : 1"
+                            :disabled="!liveSessionStore.isSessionActive" :rows="isTextFocused || textInput ? 3 : 1"
                             @focus="isTextFocused = true" @blur="isTextFocused = false"
                             @keydown.enter.exact.prevent="sendTextMessage"
                             class="flex-1 resize-none bg-transparent text-sm leading-tight text-gray-800 outline-none disabled:opacity-50 dark:text-white-light" />
@@ -371,7 +369,7 @@ function createLiveSession() {
 
     liveSessionStore
         .createLiveSession({
-            sessionDetails: { instructions: finalInstructions },
+            sessionDetails: { instructions: finalInstructions, model: 'gemini-3.1-flash-lite' },
             metadata: setup.request!,
             tools,
             audioRef: null,

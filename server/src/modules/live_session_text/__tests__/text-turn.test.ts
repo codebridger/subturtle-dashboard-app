@@ -66,9 +66,24 @@ describe("text-turn", () => {
 
   it("returns pending function calls and persists the model's call turn", async () => {
     mockCollection.findOne.mockResolvedValue(baseRecord());
+    // Mirror the real SDK: the function-call part also carries a
+    // `thoughtSignature` (Gemini 3) on candidates[0].content.parts.
     mockGenerateContent.mockResolvedValue({
       text: "",
       functionCalls: [{ name: "activate_phrase", args: { index: 2 } }],
+      candidates: [
+        {
+          content: {
+            role: "model",
+            parts: [
+              {
+                functionCall: { name: "activate_phrase", args: { index: 2 } },
+                thoughtSignature: "SIG-abc",
+              },
+            ],
+          },
+        },
+      ],
       usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 0, totalTokenCount: 10 },
     });
 
@@ -82,11 +97,14 @@ describe("text-turn", () => {
     expect(res.functionCalls[0].name).toBe("activate_phrase");
     expect(mockRecordUsage).toHaveBeenCalledTimes(1);
 
-    // Persisted contents end with the model's functionCall turn; no AI dialog yet.
+    // Persisted contents end with the model's EXACT function-call turn — the
+    // `thoughtSignature` must be preserved (Gemini 3 rejects the next turn
+    // without it). No AI dialog yet.
     const saved = mockCollection.updateOne.mock.calls[0][1].$set;
     const lastTurn = saved.contents[saved.contents.length - 1];
     expect(lastTurn.role).toBe("model");
     expect(lastTurn.parts[0].functionCall.name).toBe("activate_phrase");
+    expect(lastTurn.parts[0].thoughtSignature).toBe("SIG-abc");
     expect(saved.dialogs).toBeUndefined();
   });
 

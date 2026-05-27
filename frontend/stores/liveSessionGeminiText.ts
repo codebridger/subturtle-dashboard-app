@@ -162,8 +162,10 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
             }
 
             if (res?.text) appendDialog(res.text, 'ai');
-        } catch (error) {
-            console.error('Failed to run text turn:', error);
+        } catch (error: any) {
+            // Surface the server's message (modular-rest puts it on `error.error`)
+            // rather than an opaque object, so failures are debuggable.
+            console.error('Failed to run text turn:', error?.error ?? error?.message ?? error);
             onUpdateCallback?.({ type: 'error', error });
         }
     }
