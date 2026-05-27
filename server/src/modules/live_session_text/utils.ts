@@ -52,7 +52,9 @@ export function accumulateUsage(
 
 /**
  * Build the cost-calculation input list for a text turn, keyed off the model.
- * Cached input is billed at the input rate; thinking tokens at the output rate.
+ * `promptTokenCount` already INCLUDES the cached tokens, so the full-rate input
+ * line subtracts them and they are re-added on their own line at the discounted
+ * cache-hit rate (`cachedText`). Thinking tokens are billed at the output rate.
  */
 export function extractTextCostCalculationInput(
   usage: TextTokenUsageType,
@@ -83,7 +85,7 @@ export function extractTextCostCalculationInput(
     expenses.push({
       label: "Cached Text Tokens",
       totalTokens: usage.cached_tokens,
-      usdCostPerMillion: rate.promptText,
+      usdCostPerMillion: rate.cachedText,
     });
   }
 

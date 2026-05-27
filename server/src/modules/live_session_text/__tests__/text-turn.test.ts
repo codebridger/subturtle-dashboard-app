@@ -4,6 +4,7 @@
  * function-call loop, persistence, and billing without a DB or network.
  */
 const mockGenerateContent = jest.fn();
+const mockCachesCreate = jest.fn();
 const mockCollection = {
   findOne: jest.fn(),
   updateOne: jest.fn(),
@@ -19,6 +20,7 @@ jest.mock("@modular-rest/server", () => ({
 jest.mock("@google/genai", () => ({
   GoogleGenAI: jest.fn().mockImplementation(() => ({
     models: { generateContent: mockGenerateContent },
+    caches: { create: mockCachesCreate },
   })),
 }));
 jest.mock("../../subscription/service", () => ({
@@ -62,6 +64,8 @@ describe("text-turn", () => {
     mockCheckCredit.mockResolvedValue({ allowedToProceed: true });
     mockRecordUsage.mockResolvedValue(undefined);
     mockCollection.updateOne.mockResolvedValue({});
+    // A fresh session has no cache yet, so the first turn creates one.
+    mockCachesCreate.mockResolvedValue({ name: "cachedContents/test-cache" });
   });
 
   it("returns pending function calls and persists the model's call turn", async () => {
@@ -184,6 +188,177 @@ describe("text-turn", () => {
       })
     ).rejects.toThrow(/AI_CREDIT_EXHAUSTED/);
     expect(mockGenerateContent).not.toHaveBeenCalled();
+  });
+
+  it("caches the static prefix and references it via cachedContent (no inline prefix)", async () => {
+    mockCollection.findOne.mockResolvedValue(baseRecord());
+    mockGenerateContent.mockResolvedValue({
+      text: "Hi there!",
+      functionCalls: [],
+      usageMetadata: {
+        promptTokenCount: 1200,
+        candidatesTokenCount: 8,
+        cachedContentTokenCount: 1100,
+        totalTokenCount: 1208,
+      },
+    });
+
+    await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hello" },
+    });
+
+    // The static prefix (system prompt + tools) is cached once...
+    expect(mockCachesCreate).toHaveBeenCalledTimes(1);
+    const cacheArgs = mockCachesCreate.mock.calls[0][0];
+    expect(cacheArgs.model).toBe("gemini-2.5-flash-lite");
+    expect(cacheArgs.config.systemInstruction).toBe("be a tutor");
+    expect(cacheArgs.config.tools[0].functionDeclarations[0].name).toBe(
+      "activate_phrase"
+    );
+    expect(cacheArgs.config.ttl).toMatch(/^\d+s$/);
+
+    // ...and the turn references it WITHOUT re-sending systemInstruction/tools
+    // (sending both alongside cachedContent is a 400).
+    const genConfig = mockGenerateContent.mock.calls[0][0].config;
+    expect(genConfig.cachedContent).toBe("cachedContents/test-cache");
+    expect(genConfig.systemInstruction).toBeUndefined();
+    expect(genConfig.tools).toBeUndefined();
+
+    // Cache state is persisted so the next turn reuses it, and the cached
+    // tokens surfaced into usage (billed at the discounted rate).
+    const saved = mockCollection.updateOne.mock.calls[0][1].$set;
+    expect(saved.cacheName).toBe("cachedContents/test-cache");
+    expect(saved.cacheDisabled).toBe(false);
+    expect(saved.cacheExpireTime).toBeGreaterThan(Date.now());
+    expect(saved.usage.cached_tokens).toBe(1100);
+  });
+
+  it("reuses a live cache without recreating it", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({
+        cacheName: "cachedContents/existing",
+        cacheExpireTime: Date.now() + 60 * 60 * 1000,
+        cacheDisabled: false,
+      })
+    );
+    mockGenerateContent.mockResolvedValue({
+      text: "ok",
+      functionCalls: [],
+      usageMetadata: {
+        promptTokenCount: 1200,
+        candidatesTokenCount: 5,
+        cachedContentTokenCount: 1100,
+        totalTokenCount: 1205,
+      },
+    });
+
+    await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+
+    expect(mockCachesCreate).not.toHaveBeenCalled();
+    expect(mockGenerateContent.mock.calls[0][0].config.cachedContent).toBe(
+      "cachedContents/existing"
+    );
+  });
+
+  it("recreates a cache that is within the refresh window of its TTL", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({
+        cacheName: "cachedContents/stale",
+        cacheExpireTime: Date.now() + 1000, // inside the 60s refresh buffer
+        cacheDisabled: false,
+      })
+    );
+    mockCachesCreate.mockResolvedValue({ name: "cachedContents/fresh" });
+    mockGenerateContent.mockResolvedValue({
+      text: "ok",
+      functionCalls: [],
+      usageMetadata: {
+        promptTokenCount: 1200,
+        candidatesTokenCount: 5,
+        cachedContentTokenCount: 1100,
+        totalTokenCount: 1205,
+      },
+    });
+
+    await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+
+    expect(mockCachesCreate).toHaveBeenCalledTimes(1);
+    expect(mockGenerateContent.mock.calls[0][0].config.cachedContent).toBe(
+      "cachedContents/fresh"
+    );
+    expect(mockCollection.updateOne.mock.calls[0][1].$set.cacheName).toBe(
+      "cachedContents/fresh"
+    );
+  });
+
+  it("inlines the prefix and disables caching when cache creation fails", async () => {
+    mockCollection.findOne.mockResolvedValue(baseRecord());
+    mockCachesCreate.mockRejectedValue(
+      new Error("400 INVALID_ARGUMENT: Cached content is too small")
+    );
+    mockGenerateContent.mockResolvedValue({
+      text: "ok",
+      functionCalls: [],
+      usageMetadata: {
+        promptTokenCount: 700,
+        candidatesTokenCount: 5,
+        totalTokenCount: 705,
+      },
+    });
+
+    await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+
+    // The turn still succeeds, inlining systemInstruction + tools as before.
+    const genConfig = mockGenerateContent.mock.calls[0][0].config;
+    expect(genConfig.cachedContent).toBeUndefined();
+    expect(genConfig.systemInstruction).toBe("be a tutor");
+    expect(genConfig.tools[0].functionDeclarations[0].name).toBe(
+      "activate_phrase"
+    );
+    // The session is marked so later turns don't retry a doomed creation.
+    expect(mockCollection.updateOne.mock.calls[0][1].$set.cacheDisabled).toBe(
+      true
+    );
+  });
+
+  it("skips cache creation when the session already disabled caching", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ cacheDisabled: true })
+    );
+    mockGenerateContent.mockResolvedValue({
+      text: "ok",
+      functionCalls: [],
+      usageMetadata: {
+        promptTokenCount: 700,
+        candidatesTokenCount: 5,
+        totalTokenCount: 705,
+      },
+    });
+
+    await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+
+    expect(mockCachesCreate).not.toHaveBeenCalled();
+    expect(mockGenerateContent.mock.calls[0][0].config.systemInstruction).toBe(
+      "be a tutor"
+    );
   });
 });
 

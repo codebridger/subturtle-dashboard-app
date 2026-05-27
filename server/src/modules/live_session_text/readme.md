@@ -66,6 +66,30 @@ usage). Pricing is **model-aware**: `TEXT_PRICES_PER_M` in `config.ts` is keyed 
 > ⚠️ The per-million USD rates in `config.ts` are published rates to **confirm against current
 > Gemini pricing** before relying on the billing numbers.
 
+## Context caching (`functions.ts`, `config.ts`)
+
+The static prefix — system prompt + phrase list + tool declarations — is identical on every turn,
+so re-sending it each turn made input tokens (and cost) grow turn over turn; for a multi-turn
+session that prefix dominated the bill. `text-turn` instead creates an **explicit Gemini context
+cache** (`ai.caches.create`, in `ensureTextCache`) holding that prefix once, then references it by
+name via `config.cachedContent` on each `generateContent` call. Gemini reports those tokens as
+`cachedContentTokenCount` and bills them at the discounted cache-hit rate (`cachedText` in
+`TEXT_PRICES_PER_M`) instead of the full input rate.
+
+- **Explicit, not implicit.** Implicit caching is suppressed once `tools` are declared (and is
+  unreliable on flash-lite), and the practice flow always declares tools — so the cache is managed
+  explicitly. When `cachedContent` is set, `systemInstruction`/`tools` MUST be omitted from the
+  request (sending both is a 400); `ensureTextCache` + the `text-turn` config switch enforce this.
+- **Lifecycle.** The cache name and expiry live on the session record (`cacheName`,
+  `cacheExpireTime`). A turn reuses a live cache and transparently recreates it once it nears the
+  `CACHE_TTL_SECONDS` TTL (within `CACHE_REFRESH_BUFFER_MS`).
+- **Fallback.** Creation needs a prefix above the model's token floor — **2,048 tokens on the
+  default `gemini-2.5-flash-lite`**, 1,024 on `gemini-2.5-flash` / `gemini-3.1-flash-lite` (verified
+  against the live API). A small bundle can fall under that and `caches.create` returns 400;
+  `ensureTextCache` then sets `cacheDisabled` and the turn inlines the prefix exactly as before —
+  caching is a best-effort cost optimization, never a hard dependency. (A real ≈3,100-token session
+  measured an 81% drop in turn cost with caching on.)
+
 ## Frontend touchpoints
 
 - Store [`frontend/stores/liveSessionGeminiText.ts`](../../../../frontend/stores/liveSessionGeminiText.ts)

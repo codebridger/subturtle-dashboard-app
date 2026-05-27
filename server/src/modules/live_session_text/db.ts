@@ -14,6 +14,9 @@ const textSessionSchema = new Schema<TextSessionRecordType>(
     dialogs: { type: Array<Object>, default: [] },
     usage: { type: Object },
     metadata: { type: Object, default: {} },
+    cacheName: { type: String },
+    cacheExpireTime: { type: Number },
+    cacheDisabled: { type: Boolean, default: false },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

@@ -33,9 +33,11 @@ describe("text session cost extraction", () => {
     expect(items["Output Text Tokens"].totalTokens).toBe(25);
     expect(items["Output Text Tokens"].usdCostPerMillion).toBe(rate.responseText);
 
-    // cached billed at the input rate
+    // cached billed at the discounted cache-hit rate, not the full input rate —
+    // this is what actually makes caching reduce a session's cost.
     expect(items["Cached Text Tokens"].totalTokens).toBe(30);
-    expect(items["Cached Text Tokens"].usdCostPerMillion).toBe(rate.promptText);
+    expect(items["Cached Text Tokens"].usdCostPerMillion).toBe(rate.cachedText);
+    expect(rate.cachedText).toBeLessThan(rate.promptText);
   });
 
   it("uses distinct rates per model", () => {

@@ -49,6 +49,16 @@ export interface TextSessionRecordType {
   dialogs: TextDialogType[];
   usage: TextTokenUsageType;
   metadata: Record<string, any>;
+  /**
+   * Explicit context-cache state for the static prefix (system prompt + tools).
+   *  - `cacheName`: the `cachedContents/…` resource referenced via `cachedContent`.
+   *  - `cacheExpireTime`: epoch ms; the turn recreates the cache before this.
+   *  - `cacheDisabled`: set once creation fails (e.g. prefix under the token
+   *    floor) so the session stops retrying and inlines the prefix instead.
+   */
+  cacheName?: string;
+  cacheExpireTime?: number;
+  cacheDisabled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

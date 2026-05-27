@@ -19,6 +19,8 @@ import { AI_CREDIT_EXHAUSTED_CODE } from "../subscription/config";
 import { DATABASE, LIVE_SESSION_TEXT_COLLECTION } from "../../config";
 import {
   ALLOWED_TEXT_MODELS,
+  CACHE_REFRESH_BUFFER_MS,
+  CACHE_TTL_SECONDS,
   DEFAULT_TEXT_MODEL,
   isAllowedTextModel,
 } from "./config";
@@ -32,6 +34,86 @@ import type { TextSessionRecordType, TextTurnInput } from "./types";
 
 function makeDialogId(speaker: "user" | "ai") {
   return `${speaker}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** The session's tool declarations in `generateContent`/cache `tools` shape. */
+function buildTools(record: TextSessionRecordType) {
+  return record.toolDeclarations && record.toolDeclarations.length > 0
+    ? [{ functionDeclarations: record.toolDeclarations }]
+    : undefined;
+}
+
+type CacheResolution = {
+  cacheName?: string;
+  cacheExpireTime?: number;
+  cacheDisabled: boolean;
+  /** Present iff this turn should reference a cache via `cachedContent`. */
+  usableName?: string;
+};
+
+/**
+ * Resolve the explicit context cache for a session's static prefix (system
+ * prompt + tool declarations). The prefix is identical on every turn, so we
+ * cache it once and reference it by name — Gemini then bills those tokens at the
+ * cache-hit rate instead of re-charging the full prefix each turn.
+ *
+ * Best-effort by design:
+ *  - reuses a live cache until it nears its TTL, then transparently recreates it;
+ *  - if creation fails (most likely the prefix is under the model's cache floor
+ *    — 2,048 tokens on flash-lite, 1,024 elsewhere; see config.ts), the session
+ *    is marked `cacheDisabled` and the caller inlines the prefix, exactly as
+ *    before caching existed.
+ *
+ * Implicit caching is intentionally not relied on: it is suppressed once `tools`
+ * are declared (and is unreliable on flash-lite), and the practice flow always
+ * declares tools.
+ */
+async function ensureTextCache(
+  ai: GoogleGenAI,
+  record: TextSessionRecordType,
+  model: string
+): Promise<CacheResolution> {
+  const current: CacheResolution = {
+    cacheName: record.cacheName,
+    cacheExpireTime: record.cacheExpireTime,
+    cacheDisabled: !!record.cacheDisabled,
+  };
+
+  if (current.cacheDisabled) return current;
+
+  const now = Date.now();
+  const stillFresh =
+    !!current.cacheName &&
+    !!current.cacheExpireTime &&
+    now < current.cacheExpireTime - CACHE_REFRESH_BUFFER_MS;
+  if (stillFresh) return { ...current, usableName: current.cacheName };
+
+  try {
+    const cache = await ai.caches.create({
+      model,
+      config: {
+        systemInstruction: record.instructions,
+        tools: buildTools(record),
+        ttl: `${CACHE_TTL_SECONDS}s`,
+        displayName: `text-session-${record._id}`,
+      },
+    });
+    if (!cache.name) throw new Error("cache created without a name");
+    return {
+      cacheName: cache.name,
+      cacheExpireTime: now + CACHE_TTL_SECONDS * 1000,
+      cacheDisabled: false,
+      usableName: cache.name,
+    };
+  } catch (err: any) {
+    // Caching is an optimization, not a requirement — degrade to inlining the
+    // prefix and stop retrying for this session (the prefix size won't change).
+    console.warn(
+      `[live_session_text] context cache unavailable for ${record._id}; ` +
+        `inlining the prefix. ${err?.message || err}`
+    );
+    return { cacheDisabled: true };
+  }
 }
 
 const createTextSession = defineFunction({
@@ -151,16 +233,21 @@ const textTurn = defineFunction({
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    // Cache the static prefix so its tokens bill at the cache-hit rate instead
+    // of the full input rate on every turn. When a cache is in use,
+    // `systemInstruction`/`tools` MUST be omitted — they live in the cache, and
+    // sending both is a 400. Otherwise inline them, exactly as before.
+    const cache = await ensureTextCache(ai, record, model);
     const res = await ai.models.generateContent({
       model,
       contents,
-      config: {
-        systemInstruction: record.instructions,
-        tools:
-          record.toolDeclarations && record.toolDeclarations.length > 0
-            ? [{ functionDeclarations: record.toolDeclarations }]
-            : undefined,
-      },
+      config: cache.usableName
+        ? { cachedContent: cache.usableName }
+        : {
+            systemInstruction: record.instructions,
+            tools: buildTools(record),
+          },
     });
 
     // Bill this turn's tokens (authoritative — the server holds the metadata).
@@ -172,6 +259,15 @@ const textTurn = defineFunction({
       modelUsed: model,
     });
     const totalUsage = accumulateUsage(record.usage || emptyUsage(), usage);
+
+    // Persist the resolved cache state alongside the turn so the next turn
+    // reuses (or knows to skip) the cache.
+    const cachePatch: Record<string, any> = {
+      cacheDisabled: cache.cacheDisabled,
+    };
+    if (cache.cacheName !== undefined) cachePatch.cacheName = cache.cacheName;
+    if (cache.cacheExpireTime !== undefined)
+      cachePatch.cacheExpireTime = cache.cacheExpireTime;
 
     const functionCalls = res.functionCalls || [];
 
@@ -188,7 +284,7 @@ const textTurn = defineFunction({
       };
       contents.push(modelContent);
       await collection.updateOne({ _id: sessionId, refId: userId } as any, {
-        $set: { contents, usage: totalUsage },
+        $set: { contents, usage: totalUsage, ...cachePatch },
       });
       return { done: false, functionCalls, usage, totalUsage };
     }
@@ -199,7 +295,7 @@ const textTurn = defineFunction({
       dialogs.push({ id: makeDialogId("ai"), content: text, speaker: "ai" });
     }
     await collection.updateOne({ _id: sessionId, refId: userId } as any, {
-      $set: { contents, dialogs, usage: totalUsage },
+      $set: { contents, dialogs, usage: totalUsage, ...cachePatch },
     });
     return { done: true, text, usage, totalUsage };
   },
