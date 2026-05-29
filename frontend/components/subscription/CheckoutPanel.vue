@@ -65,7 +65,12 @@ const cadence = computed(() => props.cadence);
 function refreshTotal() {
     try {
         const session = actions?.getSession?.();
-        localizedTotal.value = session?.total?.total?.amount || '';
+        // Show the recurring per-period localized price (e.g. "€13.19"). The
+        // session "total" is the amount due TODAY, which is 0 during a free trial,
+        // so prefer the line item's unitAmount.
+        const li = session?.lineItems?.[0];
+        localizedTotal.value =
+            li?.unitAmount?.amount || session?.total?.total?.amount || '';
     } catch {
         /* ignore */
     }

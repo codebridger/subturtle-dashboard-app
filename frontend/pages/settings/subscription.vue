@@ -222,6 +222,7 @@ import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
 
 import { ref, computed } from 'vue';
+import { loadStripe } from '@stripe/stripe-js';
 import { functionProvider } from '@modular-rest/client';
 import type { PublicTierPlan, Cadence, TierId } from '~/types/tiers';
 import { useProfileStore } from '~/stores/profile';
@@ -268,11 +269,28 @@ const showCheckout = ref(false);
 const checkoutTier = ref<TierId | null>(null);
 const checkoutPlanName = ref('');
 
-// GBP base price; Stripe Adaptive Pricing localizes the displayed currency at checkout.
+// Adaptive Pricing: probe the visitor's local currency + GBP conversion rate once
+// (via one Stripe session), then display the cards in that currency. Falls back
+// to the GBP base when unavailable / not localized.
+const localCurrency = ref<string | null>(null);
+const fxRate = ref<number | null>(null);
+
+// Display the price in the visitor's local currency (e.g. EUR) when Adaptive
+// Pricing localizes it; otherwise the GBP base price.
 function formatAmount(plan: PublicTierPlan, cad: Cadence): string {
-    const amount = plan.pricing?.[cad]?.gbp;
-    if (amount == null) return '';
-    return `£${amount.toFixed(2)}`;
+    const gbp = plan.pricing?.[cad]?.gbp;
+    if (gbp == null) return '';
+    if (localCurrency.value && fxRate.value) {
+        try {
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: localCurrency.value,
+            }).format(gbp * fxRate.value);
+        } catch {
+            /* unknown currency code — fall through to GBP */
+        }
+    }
+    return `£${gbp.toFixed(2)}`;
 }
 
 function formatDate(d: string | Date | undefined): string {
@@ -295,8 +313,63 @@ async function fetchPlans() {
     }
 }
 
-onMounted(() => {
-    fetchPlans();
+// Probe the visitor's local currency + conversion rate via one Stripe Checkout
+// Elements session (the only client-side way Stripe exposes the localized amount).
+// Cached per browser session so it costs one session, not one per page load.
+async function probeLocalCurrency() {
+    const pk = config.public.STRIPE_PUBLISHABLE_KEY as string | undefined;
+    if (!pk) return;
+    try {
+        const cached = sessionStorage.getItem('subturtle.localPricing');
+        if (cached) {
+            const c = JSON.parse(cached);
+            if (c.currency && c.fxRate) {
+                localCurrency.value = c.currency;
+                fxRate.value = c.fxRate;
+                return;
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+    const probe = paidPlans.value.find((p) => p.id === 'reader') || paidPlans.value[0];
+    const gbp = probe?.pricing?.monthly?.gbp;
+    if (!probe || gbp == null) return;
+    try {
+        const { clientSecret } = await functionProvider.run<{ clientSecret: string }>({
+            name: 'createCustomCheckoutSession',
+            args: {
+                tierId: probe.id,
+                cadence: 'monthly',
+                userId: profileStore.authUser?.id,
+                successUrl: `${window.location.origin}/#/payment-success`,
+            },
+        });
+        const stripe = await loadStripe(pk);
+        if (!stripe) return;
+        const sdk = (stripe as any).initCheckoutElementsSdk({ clientSecret, adaptivePricing: { allowed: true } });
+        const res = await sdk.loadActions();
+        if (res.type !== 'success') return;
+        const session = res.actions.getSession();
+        const minor = session?.lineItems?.[0]?.unitAmount?.minorUnitsAmount;
+        // Only localize when Stripe actually presents a non-GBP currency.
+        if (!session.currency || session.currency === 'gbp' || !minor) return;
+        const rate = minor / (gbp * 100);
+        localCurrency.value = session.currency;
+        fxRate.value = rate;
+        try {
+            sessionStorage.setItem('subturtle.localPricing', JSON.stringify({ currency: session.currency, fxRate: rate }));
+        } catch {
+            /* ignore */
+        }
+    } catch (err) {
+        console.error('Local pricing probe failed (showing GBP):', err);
+    }
+}
+
+onMounted(async () => {
+    await fetchPlans();
+    probeLocalCurrency();
 });
 
 // Open the embedded Custom Checkout panel for a paid tier at the selected cadence.
