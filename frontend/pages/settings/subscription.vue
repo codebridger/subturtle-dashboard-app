@@ -99,24 +99,24 @@
                     </div>
                 </Card>
 
-                <!-- Billing cadence + currency controls -->
-                <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+                <!-- Billing cadence toggle (GBP base; Stripe localizes at checkout) -->
+                <div class="flex items-center justify-center">
                     <SwitchBall id="cadence-toggle" v-model="isAnnual" color="primary"
                         :label="t('subscription.pricing.annual-toggle')" sublabel="" />
-                    <div class="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-[#1b2e4b]">
-                        <button v-for="c in currencies" :key="c" type="button"
-                            class="px-3 py-1.5 text-sm font-medium transition-colors" :class="currency === c
-                                ? 'bg-primary text-white'
-                                : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-[#0e1726] dark:text-white-dark'"
-                            @click="currency = c">
-                            {{ c.toUpperCase() }}
-                        </button>
-                    </div>
                 </div>
 
-                <!-- Pricing Cards -->
-                <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
-                    <Card v-for="plan in plans" :key="plan.id"
+                <!-- Pricing Cards (Reader / Learner / Coach) -->
+                <div v-if="isLoadingPlans" class="py-12 text-center text-gray-500">
+                    {{ t('subscription.pricing.loading') }}
+                </div>
+                <div v-else-if="plansError" class="rounded-lg bg-red-100 p-4 text-center text-red-700">
+                    {{ t('subscription.pricing.error') }}
+                </div>
+                <div v-else-if="!paidPlans.length" class="py-12 text-center text-gray-500">
+                    {{ t('subscription.pricing.empty') }}
+                </div>
+                <div v-else class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <Card v-for="plan in paidPlans" :key="plan.id"
                         class="relative flex h-full w-full flex-col rounded-lg border shadow-none transition-all duration-300"
                         :class="plan.id === 'learner'
                             ? 'border-primary ring-1 ring-primary/30'
@@ -129,35 +129,21 @@
 
                         <div class="flex flex-grow flex-col p-5">
                             <!-- Name + tagline -->
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-xl font-bold text-gray-900 dark:text-white-light">{{ plan.name }}</h3>
-                                <span v-if="plan.status === 'dark'"
-                                    class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-[#1b2e4b] dark:text-white-dark">
-                                    {{ t('subscription.pricing.coming-soon') }}
-                                </span>
-                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white-light">{{ plan.name }}</h3>
                             <p class="mt-1 min-h-[2.5rem] text-sm text-gray-500">{{ plan.tagline }}</p>
 
-                            <!-- Price line -->
+                            <!-- Price line (GBP base) -->
                             <div class="mt-4 min-h-[3.5rem]">
-                                <template v-if="!plan.isPaid">
-                                    <p class="text-lg font-semibold text-gray-900 dark:text-white-light">
-                                        {{ t('subscription.pricing.starter-price') }}
-                                    </p>
-                                </template>
-                                <template v-else>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
-                                        {{ formatAmount(plan, cadence) }}
-                                        <span class="text-sm font-medium text-gray-500">
-                                            / {{ isAnnual ? t('subscription.pricing.year') :
-                                                t('subscription.pricing.month') }}
-                                        </span>
-                                    </p>
-                                    <p v-if="isAnnual" class="text-xs text-gray-400">
-                                        {{ t('subscription.pricing.or-monthly', { price: formatAmount(plan, 'monthly') })
-                                        }}
-                                    </p>
-                                </template>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
+                                    {{ formatAmount(plan, cadence) }}
+                                    <span class="text-sm font-medium text-gray-500">
+                                        / {{ isAnnual ? t('subscription.pricing.year') :
+                                            t('subscription.pricing.month') }}
+                                    </span>
+                                </p>
+                                <p v-if="isAnnual" class="text-xs text-gray-400">
+                                    {{ t('subscription.pricing.or-monthly', { price: formatAmount(plan, 'monthly') }) }}
+                                </p>
                             </div>
 
                             <!-- Feature list -->
@@ -171,36 +157,40 @@
 
                             <!-- CTA -->
                             <div class="mt-auto">
-                                <!-- Starter (free) — no actionable CTA -->
-                                <Button v-if="!plan.isPaid" block disabled
-                                    :label="isFreemium ? t('subscription.pricing.current-plan') : t('subscription.pricing.free-plan')" />
+                                <!-- Already on this plan -->
+                                <Button v-if="activePlanId === plan.id" block color="primary"
+                                    :label="t('subscription.manage-subscription')" @click="goToPortal" />
 
-                                <!-- Learner — the single primary CTA -->
+                                <!-- Learner — the trial CTA -->
                                 <template v-else-if="plan.id === 'learner'">
-                                    <Button v-if="activePlanId === 'learner'" block color="primary"
-                                        :label="t('subscription.manage-subscription')" @click="goToPortal" />
-                                    <template v-else>
-                                        <Button block color="primary" :loading="isLoading"
-                                            :label="t('subscription.pricing.learner-cta')"
-                                            @click="initiateCheckout('learner')" />
-                                        <p class="mt-2 text-center text-xs text-gray-400">
-                                            {{ t('subscription.pricing.learner-subline') }}
-                                        </p>
-                                    </template>
-                                </template>
-
-                                <!-- Fluent — dark / coming soon -->
-                                <template v-else>
-                                    <Button block outline color="secondary" :disabled="fluentNotified"
-                                        :label="fluentNotified ? t('subscription.pricing.fluent-notified') : t('subscription.pricing.fluent-cta')"
-                                        @click="notifyFluent" />
+                                    <Button block color="primary" :loading="isLoading"
+                                        :label="t('subscription.pricing.learner-cta')"
+                                        @click="initiateCheckout(plan.id)" />
                                     <p class="mt-2 text-center text-xs text-gray-400">
-                                        {{ t('subscription.pricing.fluent-helper') }}
+                                        {{ t('subscription.pricing.learner-subline') }}
                                     </p>
                                 </template>
+
+                                <!-- Reader / Coach -->
+                                <Button v-else block outline color="primary" :loading="isLoading"
+                                    :label="t('subscription.pricing.choose-plan', { name: plan.name })"
+                                    @click="initiateCheckout(plan.id)" />
                             </div>
                         </div>
                     </Card>
+                </div>
+
+                <!-- Starter — "Continue with Free" link below the cards -->
+                <div v-if="!isLoadingPlans && !plansError" class="text-center">
+                    <p v-if="starterPlan" class="text-sm text-gray-500">{{ starterPlan.tagline }}</p>
+                    <p class="mt-1 text-xs text-gray-400">{{ t('subscription.pricing.starter-price') }}</p>
+                    <span v-if="isFreemium" class="mt-2 inline-block text-sm font-medium text-gray-500">
+                        {{ t('subscription.pricing.current-plan') }}
+                    </span>
+                    <button v-else type="button"
+                        class="mt-2 text-sm font-medium text-primary hover:underline" @click="goToPortal">
+                        {{ t('subscription.pricing.continue-free') }}
+                    </button>
                 </div>
 
                 <!-- Payment Status Messages -->
@@ -228,7 +218,7 @@ import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 
 import { ref, computed } from 'vue';
 import { functionProvider } from '@modular-rest/client';
-import type { PublicTierPlan, Cadence, Currency, TierId } from '~/types/tiers';
+import type { PublicTierPlan, Cadence, TierId } from '~/types/tiers';
 import { useProfileStore } from '~/stores/profile';
 import { analytic } from '~/plugins/mixpanel';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
@@ -246,15 +236,19 @@ definePageMeta({
 
 const isLoading = ref(false);
 const isResetLoading = ref(false);
+const isLoadingPlans = ref(false);
 const error = ref('');
+const plansError = ref(false);
 const plans = ref<PublicTierPlan[]>([]);
 
 const isAnnual = ref(false);
 const cadence = computed<Cadence>(() => (isAnnual.value ? 'annual' : 'monthly'));
-const currencies: Currency[] = ['usd', 'eur', 'gbp'];
-const currency = ref<Currency>('usd');
-const fluentNotified = ref(false);
 const showCancelOffRamp = ref(false);
+
+// Council 004: three paid cards (Reader / Learner / Coach) come from the backend;
+// Starter is the "Continue with Free" link below them.
+const paidPlans = computed(() => plans.value.filter((p) => p.isPaid));
+const starterPlan = computed(() => plans.value.find((p) => !p.isPaid));
 
 const activeSubscriptionData = computed(() => profileStore.activeSubscription);
 const isFreemium = computed(() => profileStore.isFreemium);
@@ -269,34 +263,38 @@ interface CheckoutResponse {
     expiresAt: string;
 }
 
-const currencySymbols: Record<Currency, string> = { usd: '$', eur: '€', gbp: '£' };
-
+// GBP base price; Stripe Adaptive Pricing localizes the displayed currency at checkout.
 function formatAmount(plan: PublicTierPlan, cad: Cadence): string {
-    const amount = plan.pricing?.[cad]?.[currency.value];
+    const amount = plan.pricing?.[cad]?.gbp;
     if (amount == null) return '';
-    return `${currencySymbols[currency.value]}${amount.toFixed(2)}`;
+    return `£${amount.toFixed(2)}`;
 }
 
 function formatDate(d: string | Date | undefined): string {
     return d ? new Date(d).toLocaleDateString() : '';
 }
 
-function fetchPlans() {
-    return functionProvider
-        .run<PublicTierPlan[]>({
+async function fetchPlans() {
+    isLoadingPlans.value = true;
+    plansError.value = false;
+    try {
+        plans.value = await functionProvider.run<PublicTierPlan[]>({
             name: 'getSubscriptionPlans',
             args: {},
-        })
-        .then((res) => {
-            plans.value = res;
         });
+    } catch (err) {
+        plansError.value = true;
+        console.error('Failed to load subscription plans:', err);
+    } finally {
+        isLoadingPlans.value = false;
+    }
 }
 
 onMounted(() => {
     fetchPlans();
 });
 
-// Initiate Stripe checkout for a paid tier at the selected cadence/currency.
+// Initiate Stripe checkout for a paid tier at the selected cadence (GBP base).
 async function initiateCheckout(tierId: TierId) {
     isLoading.value = true;
     error.value = '';
@@ -311,7 +309,6 @@ async function initiateCheckout(tierId: TierId) {
             args: {
                 tierId,
                 cadence: cadence.value,
-                currency: currency.value,
                 successUrl,
                 cancelUrl,
                 userId: profileStore.authUser?.id,
@@ -321,7 +318,6 @@ async function initiateCheckout(tierId: TierId) {
         if (response && response.url) {
             analytic.track(ANALYTICS_EVENTS.TRIAL_STARTED, {
                 cadence: cadence.value,
-                currency: currency.value,
             });
             window.location.href = response.url;
         } else {
@@ -332,21 +328,6 @@ async function initiateCheckout(tierId: TierId) {
         console.error('Checkout error:', err);
     } finally {
         isLoading.value = false;
-    }
-}
-
-// Fluent ships dark — capture latent demand. Optimistically acknowledges in
-// the UI, then persists to the waitlist and fires the analytics event.
-async function notifyFluent() {
-    fluentNotified.value = true;
-    analytic.track(ANALYTICS_EVENTS.FLUENT_WAITLIST_SIGNUP);
-    try {
-        await functionProvider.run({
-            name: 'notifyFluentWaitlist',
-            args: { userId: profileStore.authUser?.id },
-        });
-    } catch (err) {
-        console.error('Fluent waitlist signup failed:', err);
     }
 }
 

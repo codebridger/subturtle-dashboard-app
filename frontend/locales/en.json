@@ -210,9 +210,11 @@
             "current-plan": "Current plan",
             "learner-cta": "Start 3-day free trial",
             "learner-subline": "Try free for 3 days. Cancel any time.",
-            "fluent-cta": "Notify me when it's ready",
-            "fluent-notified": "You're on the list ✓",
-            "fluent-helper": "We'll email you as soon as Fluent is available."
+            "choose-plan": "Choose {name}",
+            "continue-free": "Continue with Free",
+            "loading": "Loading plans…",
+            "error": "Couldn't load plans. Please try again.",
+            "empty": "No plans available right now."
         },
         "cap-banner": {
             "running-low": "You're running low on AI tools this month.",
