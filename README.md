@@ -155,6 +155,15 @@ The application is deployed using Google Cloud Run with the following workflow:
 - **Production**: Automated deployments through GitHub Actions
 - **Development**: Deployments triggered on merges to the development branch
 
+### Stripe pricing setup
+
+Subscription tiers (names, prices, caps, copy) are **Stripe-driven** — the server
+reads them from Stripe at runtime, so pricing changes are made in the Stripe
+Dashboard, not in code. Seeding the Stripe products is a manual migration
+(`yarn setup:stripe`, run from `server/`). Full procedure — when/where to run it,
+dry-run, the LIVE guard, and commands — is in the gateway module README:
+[`server/src/modules/gateway/README.md`](server/src/modules/gateway/README.md).
+
 ## 📚 Additional Resources
 
 - [Nuxt.js Documentation](https://nuxtjs.org/docs/get-started/installation)

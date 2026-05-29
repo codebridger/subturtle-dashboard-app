@@ -100,12 +100,12 @@ Do TEST first, verify end-to-end, then repeat for LIVE.
 
 1. **Secrets** — `STRIPE_SECRET_KEY` (test key) + `STRIPE_WEBHOOK_SECRET` in
    `server/.env`.
-2. **Seed Stripe** — `yarn setup:stripe`. Creates/updates the Starter (free),
-   Learner, Fluent products with the full metadata, writes GBP prices, and
-   archives every other active product/price (legacy Pro/Premium, USD/EUR matrix).
-   Idempotent and re-runnable; it is a **bootstrap/repair** tool, so it resets
-   metadata to the seed — make routine copy changes in the Dashboard, not by
-   re-running it.
+2. **Seed Stripe** — `yarn setup:stripe` (preview first with
+   `DRY_RUN=1 yarn setup:stripe`). Creates/updates the Starter (free), Learner,
+   Fluent products with the full metadata, writes GBP prices, and archives every
+   other active product/price (legacy Pro/Premium, USD/EUR matrix). Idempotent
+   and re-runnable; it is a **bootstrap/repair** tool, so it resets metadata to
+   the seed — make routine copy changes in the Dashboard, not by re-running it.
 3. **Enable Adaptive Pricing** — Dashboard → Settings → Adaptive Pricing (TEST).
 4. **Webhook events** — on the `/gateway/webhook/stripe` endpoint enable:
    `checkout.session.completed`, `customer.subscription.created`,
@@ -114,8 +114,28 @@ Do TEST first, verify end-to-end, then repeat for LIVE.
 5. **Deploy the server** (after the products exist, since the registry now reads
    Stripe; with no products it has nothing to serve).
 6. **Verify** — see [the verification checklist](#verification-checklist).
-7. **Repeat for LIVE** — live key, `setup:stripe`, Adaptive Pricing toggle,
-   webhook endpoint + events, deploy.
+7. **Repeat for LIVE** — see [Running against production](#running-setupstripe-against-production-manual-local),
+   then enable the Adaptive Pricing toggle + webhook events on the LIVE endpoint
+   and deploy.
+
+## Running `setup:stripe` against production (manual, local)
+
+Run it **manually from a local shell**, passing the LIVE key inline on the
+command. Don't store the live key in `server/.env` — provide it per run. Always
+dry-run first to review what would be archived (see the landmine above).
+
+```bash
+# 1. Preview (read-only, no confirmation flag needed)
+DRY_RUN=1 STRIPE_SECRET_KEY=sk_live_… yarn setup:stripe
+
+# 2. Apply (only after the preview looks right)
+STRIPE_ALLOW_LIVE=1 STRIPE_SECRET_KEY=sk_live_… yarn setup:stripe
+```
+
+- The inline `STRIPE_SECRET_KEY` overrides any test key in `server/.env` (dotenv
+  never overwrites an already-set var).
+- A dry run writes nothing and is exempt from the `STRIPE_ALLOW_LIVE` guard; the
+  real run requires `STRIPE_ALLOW_LIVE=1`.
 
 ## Verification checklist
 

@@ -142,6 +142,48 @@ cancel and record the Adaptive Pricing presentment currency; the `product.*` /
 `price.*` events invalidate the cached tier registry so Dashboard edits take
 effect without a deploy.
 
+## Tier / pricing setup (`setup:stripe`)
+
+Subscription tiers — names, taglines, feature labels, caps, credit budgets, trial
+days, and prices — are **read from Stripe at runtime** (cached) via
+`TierRegistryService`, not hardcoded. Product/marketing change pricing in the
+Stripe Dashboard with no deploy. (Architecture, metadata schema, caching, and
+Adaptive Pricing details:
+[`../subscription/tier-registry.md`](../subscription/tier-registry.md).)
+
+`yarn setup:stripe` (`server/scripts/setup-stripe-pricing.ts`) **seeds** those
+Stripe products / prices / metadata from `subscription/tier-seed.ts`.
+
+**When** — it's a deliberate, occasional **migration**: first-time setup, or when
+adding a tier / metadata key. It is **not** part of any deploy — it's destructive
+(archives non-conforming products/prices) and resets metadata to the seed, which
+would clobber Dashboard edits. Run it once before the pricing code first serves
+traffic in an environment.
+
+**Where / how** — manually, from a local shell in `server/`, with the key passed
+inline (never stored in `server/.env`). Always dry-run first to review what gets
+archived:
+
+```bash
+# Preview (read-only, no flag needed) — works for TEST or LIVE
+DRY_RUN=1 STRIPE_SECRET_KEY=sk_live_… yarn setup:stripe
+
+# Apply — a LIVE run requires the explicit guard flag
+STRIPE_ALLOW_LIVE=1 STRIPE_SECRET_KEY=sk_live_… yarn setup:stripe
+```
+
+- **TEST vs LIVE** is chosen purely by the key prefix (`sk_test_` / `rk_test_` →
+  TEST, `sk_live_` / `rk_live_` → LIVE). The inline `STRIPE_SECRET_KEY` overrides
+  any key in `server/.env` (dotenv never overwrites an already-set var).
+- A LIVE run is **refused unless `STRIPE_ALLOW_LIVE=1`**; a dry run is exempt
+  because it writes nothing.
+- ⚠️ `setup:stripe` archives **every active product without a known tier id** —
+  on a LIVE account that holds other products, dry-run first and confirm the list.
+
+After seeding: enable Adaptive Pricing (Dashboard → Settings → Adaptive Pricing)
+and the webhook events listed above. Full rollout runbook + verification
+checklist: [`../subscription/tier-registry.md`](../subscription/tier-registry.md).
+
 ## Environment Variables
 
 - `STRIPE_SECRET_KEY`: Stripe API secret key
