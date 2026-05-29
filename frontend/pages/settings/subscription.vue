@@ -205,6 +205,10 @@
                     :primary-button-label="t('subscription.cancel-offramp.stay')"
                     :secondary-button-label="t('subscription.cancel-offramp.continue')"
                     :auto-redirect-on-upgrade="false" @secondary="goToPortal" />
+
+                <!-- Embedded Custom Checkout (localized price via Adaptive Pricing) -->
+                <CheckoutPanel v-if="showCheckout && checkoutTier" :tier-id="checkoutTier" :cadence="cadence"
+                    :plan-name="checkoutPlanName" @close="showCheckout = false" @success="onCheckoutSuccess" />
             </div>
         </div>
     </div>
@@ -215,6 +219,7 @@ import { Card, Button, Progress, Icon } from 'pilotui/elements';
 import { SwitchBall } from 'pilotui/form';
 import PageHeader from '~/components/common/PageHeader.vue';
 import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
 
 import { ref, computed } from 'vue';
 import { functionProvider } from '@modular-rest/client';
@@ -257,11 +262,11 @@ const isTrialing = computed(() => activeSubscriptionData.value?.status === 'tria
 const isCanceling = computed(() => !!activeSubscriptionData.value?.cancel_at_period_end);
 const activePlanName = computed(() => activeSubscriptionData.value?.label || t('subscription.title'));
 
-interface CheckoutResponse {
-    sessionId: string;
-    url: string;
-    expiresAt: string;
-}
+// Embedded Custom Checkout panel state (replaces the hosted redirect). The panel
+// shows the localized price (EUR for EU visitors) via Stripe Adaptive Pricing.
+const showCheckout = ref(false);
+const checkoutTier = ref<TierId | null>(null);
+const checkoutPlanName = ref('');
 
 // GBP base price; Stripe Adaptive Pricing localizes the displayed currency at checkout.
 function formatAmount(plan: PublicTierPlan, cad: Cadence): string {
@@ -294,41 +299,28 @@ onMounted(() => {
     fetchPlans();
 });
 
-// Initiate Stripe checkout for a paid tier at the selected cadence (GBP base).
-async function initiateCheckout(tierId: TierId) {
-    isLoading.value = true;
+// Open the embedded Custom Checkout panel for a paid tier at the selected cadence.
+// The localized price (e.g. EUR) is shown in-panel via Stripe Adaptive Pricing —
+// no redirect.
+function initiateCheckout(tierId: TierId) {
+    const plan = paidPlans.value.find((p) => p.id === tierId);
+    checkoutTier.value = tierId;
+    checkoutPlanName.value = plan?.name || '';
     error.value = '';
+    analytic.track(ANALYTICS_EVENTS.TRIAL_STARTED, { cadence: cadence.value });
+    showCheckout.value = true;
+}
 
+// After a successful in-panel payment: refresh the subscription and land on the
+// success page (the webhook grants entitlements from metadata server-side).
+async function onCheckoutSuccess() {
+    showCheckout.value = false;
     try {
-        const baseUrl = window.location.origin;
-        const successUrl = `${baseUrl}/#/payment-success`;
-        const cancelUrl = `${baseUrl}/#/payment-canceled`;
-
-        const response = await functionProvider.run<CheckoutResponse>({
-            name: 'createPaymentSession',
-            args: {
-                tierId,
-                cadence: cadence.value,
-                successUrl,
-                cancelUrl,
-                userId: profileStore.authUser?.id,
-            },
-        });
-
-        if (response && response.url) {
-            analytic.track(ANALYTICS_EVENTS.TRIAL_STARTED, {
-                cadence: cadence.value,
-            });
-            window.location.href = response.url;
-        } else {
-            throw new Error(t('subscription.checkout-failed'));
-        }
-    } catch (err: any) {
-        error.value = err.message || t('subscription.unexpected-error');
-        console.error('Checkout error:', err);
-    } finally {
-        isLoading.value = false;
+        await profileStore.fetchSubscription();
+    } catch {
+        /* ignore */
     }
+    window.location.href = `${window.location.origin}/#/payment-success`;
 }
 
 // Hands the user to Stripe's hosted billing portal — payment method, invoices,

@@ -216,6 +216,14 @@
             "error": "Couldn't load plans. Please try again.",
             "empty": "No plans available right now."
         },
+        "checkout": {
+            "title": "Subscribe to {plan}",
+            "loading": "Loading secure checkout…",
+            "pay": "Subscribe",
+            "no-key": "Checkout is not configured (missing Stripe key).",
+            "load-failed": "Couldn't load checkout. Please try again.",
+            "pay-failed": "Payment failed. Please try again."
+        },
         "cap-banner": {
             "running-low": "You're running low on AI tools this month.",
             "paused": "AI features are paused for this month — your saves and Smart Review still work.",

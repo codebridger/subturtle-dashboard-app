@@ -205,6 +205,89 @@ export class StripeAdapter implements PaymentAdapter {
   }
 
   /**
+   * Create an EMBEDDED Custom Checkout session (ui_mode: "custom") for in-app
+   * checkout with Stripe Adaptive Pricing. Returns a client secret that the
+   * frontend Checkout Elements SDK uses to render the payment UI AND read the
+   * localized (presentment-currency) amount to display — while we still settle in
+   * GBP. This replaces the hosted redirect for the purchase flow.
+   */
+  async createCustomCheckoutSession(
+    request: CreateCheckoutRequest
+  ): Promise<{ clientSecret: string; sessionId: string }> {
+    const { userId, tierId, cadence, successUrl } = request;
+
+    const { priceId, productId, entitlements, unitAmount, currency } =
+      await resolveTierCheckout(this.stripe, tierId, cadence);
+
+    const customerId = await this.getOrCreateStripeCustomer(userId);
+
+    const sessionMetadata: Record<string, string> = {
+      userId,
+      tierId,
+      cadence,
+      priceId,
+      creditsAmount: entitlements.creditsGranted.toString(),
+      voiceMinutes: entitlements.voiceMinutesGranted.toString(),
+      subscriptionDays: entitlements.durationDays.toString(),
+    };
+
+    const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData =
+      { metadata: sessionMetadata };
+    if (entitlements.trialDays) {
+      subscriptionData.trial_period_days = entitlements.trialDays;
+    }
+
+    const session = await this.stripe.checkout.sessions.create({
+      ui_mode: "custom",
+      mode: "subscription",
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      payment_method_collection: "always",
+      subscription_data: subscriptionData,
+      // Adaptive Pricing: show the customer their local currency at checkout;
+      // we settle and report in GBP.
+      adaptive_pricing: { enabled: true },
+      // ui_mode "custom" requires a return_url for redirect-based payment methods.
+      return_url: `${successUrl || ""}?session_id={CHECKOUT_SESSION_ID}`,
+      metadata: sessionMetadata,
+    });
+
+    // Record the GBP SETTLEMENT amount/currency (same as the hosted path).
+    const paymentSessionCollection = getCollection(
+      DATABASE,
+      PAYMENT_SESSION_COLLECTION
+    );
+    await paymentSessionCollection.updateOne(
+      { "provider_data.session_id": session.id },
+      {
+        $set: {
+          user_id: userId,
+          provider: this.provider,
+          amount: unitAmount ? unitAmount / 100 : 0,
+          currency, // gbp (settlement)
+          status: "created",
+          provider_data: {
+            session_id: session.id,
+            price_id: priceId,
+            product_id: productId,
+            expires_at: new Date(Date.now() + 30 * 60 * 1000),
+            success_url: successUrl,
+            metadata: session.metadata || {},
+          },
+        },
+      },
+      { upsert: true }
+    );
+
+    if (!session.client_secret) {
+      throw new Error(
+        "Stripe did not return a client_secret for the custom checkout session"
+      );
+    }
+    return { clientSecret: session.client_secret, sessionId: session.id };
+  }
+
+  /**
    * Verify payment status with Stripe
    */
   async verifyPayment(sessionId: string): Promise<PaymentVerificationResult> {

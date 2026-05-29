@@ -5,7 +5,7 @@ import {
   handleWebhookEvent,
 } from "./service";
 import { CheckoutSessionRequest } from "./types";
-import { PaymentProvider } from "./adapters";
+import { PaymentProvider, PaymentAdapterFactory } from "./adapters";
 import { TierId, Cadence } from "../subscription/tiers";
 
 /**
@@ -64,4 +64,30 @@ const verifyPayment = defineFunction({
   },
 });
 
-export const functions = [createPaymentSession, verifyPayment];
+// Create an embedded Custom Checkout session — returns a client secret for the
+// Stripe Checkout Elements SDK so the localized price + payment render in-app
+// (no redirect), with Adaptive Pricing localizing the displayed currency.
+const createCustomCheckoutSession = defineFunction({
+  name: "createCustomCheckoutSession",
+  permissionTypes: ["user_access"],
+  callback: async function (params: {
+    tierId: TierId;
+    cadence: Cadence;
+    successUrl?: string;
+    userId?: string;
+  }) {
+    const { tierId, cadence, successUrl, userId } = params;
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    return await PaymentAdapterFactory.getStripeAdapter().createCustomCheckoutSession(
+      { userId, tierId, cadence, successUrl }
+    );
+  },
+});
+
+export const functions = [
+  createPaymentSession,
+  verifyPayment,
+  createCustomCheckoutSession,
+];
