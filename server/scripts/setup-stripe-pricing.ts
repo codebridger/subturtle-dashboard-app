@@ -2,62 +2,39 @@
  * Idempotent Stripe pricing setup for the 3-tier ladder (Council 002).
  *
  * Run:  yarn setup:stripe   (uses STRIPE_SECRET_KEY from server/.env)
- * Re-run safely — existing products/prices are matched by metadata and reused.
+ * Re-run safely — products/prices are matched by metadata and reused.
  *
  * What it does:
- *   1. Archives any active legacy product (the retired Pro/Premium plan) that
- *      does not carry one of our tier IDs.
- *   2. Creates/reuses the Learner and Fluent products.
- *   3. Creates/reuses 12 prices — each tier x {monthly, annual} x {usd, eur, gbp}.
- *   4. Prints a ready-to-paste block of IDs for `tiers.ts`.
+ *   1. Archives any active product that does not carry one of our tier IDs
+ *      (the retired Pro/Premium plan, stray test products).
+ *   2. Creates/reuses the Starter (free), Learner, and Fluent products and
+ *      writes the full metadata schema read by TierRegistryService:
+ *      tierId, status, tagline, creditsAmount, subscriptionDays, trialDays,
+ *      aiBudgetLabel, featureLabels (JSON), caps_<feature>.
+ *   3. Creates/reuses ONE recurring GBP price per cadence for each paid tier,
+ *      and archives every other active price on the product (the legacy USD/EUR
+ *      matrix, stale prices). Stripe Adaptive Pricing converts the GBP base to
+ *      the buyer's local currency at checkout — see the Adaptive Pricing toggle
+ *      in Stripe Dashboard -> Settings -> Adaptive Pricing (enable in TEST+LIVE).
  *
- * Stripe prices are immutable: if a price with matching metadata exists but its
- * amount/interval differs, a fresh price is created and the stale one archived.
+ * Stripe is the source of truth at runtime: the server reads these products via
+ * TierRegistryService. The seed values live in
+ * src/modules/subscription/tier-seed.ts; this script just pushes them to Stripe.
  */
 import * as path from "path";
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 import Stripe from "stripe";
+import { Cadence } from "../src/modules/subscription/tiers";
+import {
+  TIER_SEED_SPECS,
+  TierSeedSpec,
+  buildProductMetadata,
+} from "../src/modules/subscription/tier-seed";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-
-type Cadence = "monthly" | "annual";
-type Currency = "usd" | "eur" | "gbp";
-
-interface TierSpec {
-  tierId: string;
-  name: string;
-  creditsAmount: string; // internal credit budget per 30-day window
-  subscriptionDays: string;
-  /** Amounts in minor units (cents / pence). */
-  prices: Record<Cadence, Record<Currency, number>>;
-}
-
-const TIER_SPECS: TierSpec[] = [
-  {
-    tierId: "learner",
-    name: "Learner",
-    creditsAmount: "300000000",
-    subscriptionDays: "30",
-    prices: {
-      monthly: { usd: 999, eur: 999, gbp: 899 },
-      annual: { usd: 9599, eur: 9599, gbp: 8599 },
-    },
-  },
-  {
-    tierId: "fluent",
-    name: "Fluent",
-    creditsAmount: "600000000",
-    subscriptionDays: "30",
-    prices: {
-      monthly: { usd: 1699, eur: 1699, gbp: 1499 },
-      annual: { usd: 15999, eur: 15999, gbp: 14399 },
-    },
-  },
-];
-
-const KNOWN_TIER_IDS = TIER_SPECS.map((t) => t.tierId);
+const KNOWN_TIER_IDS = TIER_SEED_SPECS.map((t) => t.tierId);
 const CADENCES: Cadence[] = ["monthly", "annual"];
-const CURRENCIES: Currency[] = ["usd", "eur", "gbp"];
+// Base currency only; Adaptive Pricing handles the rest at checkout.
+const BASE_CURRENCY = "gbp";
 const CADENCE_TO_INTERVAL: Record<Cadence, "month" | "year"> = {
   monthly: "month",
   annual: "year",
@@ -78,7 +55,7 @@ async function listAll<T extends { id: string }>(
   return out;
 }
 
-async function archiveLegacyProducts(): Promise<void> {
+async function archiveLegacyProducts(stripe: Stripe): Promise<void> {
   const products = await listAll<Stripe.Product>(
     (p) => stripe.products.list(p),
     { active: true }
@@ -94,15 +71,14 @@ async function archiveLegacyProducts(): Promise<void> {
   }
 }
 
-async function upsertProduct(spec: TierSpec): Promise<Stripe.Product> {
+async function upsertProduct(
+  stripe: Stripe,
+  spec: TierSeedSpec
+): Promise<Stripe.Product> {
   const existing = await listAll<Stripe.Product>((p) =>
     stripe.products.list(p)
   );
-  const metadata = {
-    tierId: spec.tierId,
-    creditsAmount: spec.creditsAmount,
-    subscriptionDays: spec.subscriptionDays,
-  };
+  const metadata = buildProductMetadata(spec);
   const match = existing.find((p) => p.metadata?.tierId === spec.tierId);
   if (match) {
     const updated = await stripe.products.update(match.id, {
@@ -119,12 +95,12 @@ async function upsertProduct(spec: TierSpec): Promise<Stripe.Product> {
 }
 
 async function upsertPrice(
+  stripe: Stripe,
   productId: string,
-  spec: TierSpec,
-  cadence: Cadence,
-  currency: Currency
+  spec: TierSeedSpec,
+  cadence: Cadence
 ): Promise<string> {
-  const amount = spec.prices[cadence][currency];
+  const amount = spec.prices![cadence];
   const interval = CADENCE_TO_INTERVAL[cadence];
   const existing = await listAll<Stripe.Price>((p) => stripe.prices.list(p), {
     product: productId,
@@ -135,103 +111,105 @@ async function upsertPrice(
       p.active &&
       p.metadata?.tierId === spec.tierId &&
       p.metadata?.cadence === cadence &&
-      p.metadata?.currency === currency &&
+      p.currency === BASE_CURRENCY &&
       p.unit_amount === amount &&
       p.recurring?.interval === interval
   );
   if (exactMatch) {
-    console.log(`    reused   ${cadence}/${currency} -> ${exactMatch.id}`);
+    console.log(`    reused   ${cadence}/gbp -> ${exactMatch.id}`);
     return exactMatch.id;
   }
 
-  // Stripe prices are immutable — archive any stale price in the same slot.
-  for (const stale of existing) {
-    if (
-      stale.active &&
-      stale.metadata?.tierId === spec.tierId &&
-      stale.metadata?.cadence === cadence &&
-      stale.metadata?.currency === currency
-    ) {
-      await stripe.prices.update(stale.id, { active: false });
-      console.log(`    archived stale ${cadence}/${currency} ${stale.id}`);
-    }
-  }
-
+  // Stripe prices are immutable — a stale GBP price (different amount) is left
+  // for archiveOtherPrices to retire below.
   const created = await stripe.prices.create({
     product: productId,
     unit_amount: amount,
-    currency,
+    currency: BASE_CURRENCY,
     recurring: { interval },
-    nickname: `${spec.name} ${cadence} ${currency.toUpperCase()}`,
-    metadata: { tierId: spec.tierId, cadence, currency },
+    nickname: `${spec.name} ${cadence} GBP`,
+    metadata: { tierId: spec.tierId, cadence, currency: BASE_CURRENCY },
   });
-  console.log(`    created  ${cadence}/${currency} -> ${created.id}`);
+  console.log(`    created  ${cadence}/gbp -> ${created.id}`);
   return created.id;
 }
 
-async function main(): Promise<void> {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY is not set in server/.env");
+/**
+ * Archive every active price on the product that isn't in `keep`. Clean-slate
+ * cleanup: removes the legacy USD/EUR matrix and any stale GBP prices, leaving
+ * only the current GBP-per-cadence set. A product's default_price can't be
+ * archived, so it is first repointed at a kept price.
+ */
+async function archiveOtherPrices(
+  stripe: Stripe,
+  productId: string,
+  keep: Set<string>
+): Promise<void> {
+  const existing = await listAll<Stripe.Price>((p) => stripe.prices.list(p), {
+    product: productId,
+  });
+  const product = await stripe.products.retrieve(productId);
+  const defaultPriceId =
+    typeof product.default_price === "string"
+      ? product.default_price
+      : product.default_price?.id;
+  if (keep.size > 0 && defaultPriceId && !keep.has(defaultPriceId)) {
+    await stripe.products.update(productId, {
+      default_price: keep.values().next().value,
+    });
   }
-  const mode = process.env.STRIPE_SECRET_KEY.startsWith("sk_live")
-    ? "LIVE"
-    : "TEST";
-  console.log(`Stripe pricing setup - ${mode} mode\n`);
-
-  console.log("Archiving legacy products...");
-  await archiveLegacyProducts();
-
-  const result: Record<
-    string,
-    { productId: string; prices: Record<Cadence, Record<Currency, string>> }
-  > = {};
-
-  for (const spec of TIER_SPECS) {
-    console.log(`\n${spec.name}:`);
-    const product = await upsertProduct(spec);
-    const prices: Record<Cadence, Record<Currency, string>> = {
-      monthly: {} as Record<Currency, string>,
-      annual: {} as Record<Currency, string>,
-    };
-    for (const cadence of CADENCES) {
-      for (const currency of CURRENCIES) {
-        prices[cadence][currency] = await upsertPrice(
-          product.id,
-          spec,
-          cadence,
-          currency
-        );
-      }
+  for (const price of existing) {
+    if (!price.active || keep.has(price.id)) continue;
+    try {
+      await stripe.prices.update(price.id, { active: false });
+      console.log(`    archived ${price.currency} ${price.id}`);
+    } catch (err: any) {
+      console.warn(`    could not archive ${price.id}: ${err?.message || err}`);
     }
-    result[spec.tierId] = { productId: product.id, prices };
-  }
-
-  console.log(
-    "\n\n=== Paste these IDs into server/src/modules/subscription/tiers.ts ===\n"
-  );
-  for (const tierId of KNOWN_TIER_IDS) {
-    const r = result[tierId];
-    const m = r.prices.monthly;
-    const a = r.prices.annual;
-    console.log(`${tierId}:`);
-    console.log(`  stripeProductId: "${r.productId}",`);
-    console.log(`  prices: {`);
-    console.log(
-      `    monthly: { usd: "${m.usd}", eur: "${m.eur}", gbp: "${m.gbp}" },`
-    );
-    console.log(
-      `    annual: { usd: "${a.usd}", eur: "${a.eur}", gbp: "${a.gbp}" },`
-    );
-    console.log(`  },\n`);
   }
 }
 
-main()
-  .then(() => {
-    console.log("Done.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("Stripe setup failed:", err);
-    process.exit(1);
-  });
+async function main(): Promise<void> {
+  const apiKey = process.env.STRIPE_SECRET_KEY;
+  if (!apiKey) {
+    throw new Error("STRIPE_SECRET_KEY is not set in server/.env");
+  }
+  const stripe = new Stripe(apiKey);
+  const mode = apiKey.startsWith("sk_live") ? "LIVE" : "TEST";
+  console.log(`Stripe pricing setup - ${mode} mode\n`);
+
+  console.log("Archiving non-conforming products...");
+  await archiveLegacyProducts(stripe);
+
+  for (const spec of TIER_SEED_SPECS) {
+    console.log(`\n${spec.name}:`);
+    const product = await upsertProduct(stripe, spec);
+    const keep = new Set<string>();
+    if (spec.prices) {
+      for (const cadence of CADENCES) {
+        keep.add(await upsertPrice(stripe, product.id, spec, cadence));
+      }
+    } else {
+      console.log("  (free tier — no prices)");
+    }
+    // Clean slate: archive the legacy USD/EUR matrix + any stale prices.
+    await archiveOtherPrices(stripe, product.id, keep);
+  }
+
+  console.log(
+    "\nDone. Tier products + GBP prices + metadata are live in Stripe; the" +
+      " server reads them at runtime via TierRegistryService (no code paste" +
+      " needed). Remember to enable Adaptive Pricing in the Dashboard (TEST+LIVE)."
+  );
+}
+
+// Only run when invoked directly (yarn setup:stripe), so tests can import the
+// pure helpers/seed without a Stripe key or network calls.
+if (require.main === module) {
+  main()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error("Stripe setup failed:", err);
+      process.exit(1);
+    });
+}

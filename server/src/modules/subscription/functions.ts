@@ -6,7 +6,7 @@ import {
 import { Types } from "mongoose";
 
 import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
-import { TIERS, PublicTierPlan } from "./tiers";
+import { PublicTierPlan, getTierRegistry } from "./tiers";
 import { DATABASE, FLUENT_WAITLIST_COLLECTION } from "../../config";
 
 /**
@@ -51,9 +51,10 @@ const getSubscriptionPlans = defineFunction({
   name: "getSubscriptionPlans",
   permissionTypes: ["anonymous_access"],
   callback: async (_params): Promise<PublicTierPlan[]> => {
-    // Registry-driven — no live Stripe product listing. Dark tiers (Fluent)
-    // are included so the pricing page can render them as "Coming soon".
-    return Object.values(TIERS).map((tier) => ({
+    // Stripe-driven via the cached registry. Dark tiers (Fluent) are included
+    // so the pricing page can render them as "Coming soon".
+    const tiers = await getTierRegistry().listTiers();
+    return tiers.map((tier) => ({
       id: tier.id,
       status: tier.status,
       name: tier.userFacingName,
@@ -120,9 +121,25 @@ const notifyFluentWaitlist = defineFunction({
   },
 });
 
+/**
+ * Admin-only: drop the cached tier registry so the next read re-fetches tier
+ * data from Stripe. Use after editing tier products/prices/metadata in the
+ * Stripe Dashboard when you don't want to wait out the 5-minute cache TTL.
+ * (The product.updated / price.updated webhook does this automatically too.)
+ */
+const invalidateTierCache = defineFunction({
+  name: "invalidateTierCache",
+  permissionTypes: ["advanced_settings"],
+  callback: async () => {
+    getTierRegistry().invalidate();
+    return { success: true };
+  },
+});
+
 module.exports.functions = [
   getSubscriptionDetails,
   getSubscriptionPlans,
   getFreemiumAllowance,
   notifyFluentWaitlist,
+  invalidateTierCache,
 ];

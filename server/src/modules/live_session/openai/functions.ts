@@ -14,7 +14,7 @@ import { defineFunction } from "@modular-rest/server";
 import {
   checkCreditAllocation,
   isUserOnFreemium,
-  getOrCreateFreemiumAllocation,
+  canStartFreemiumLiveSession,
   updateFreemiumAllocation,
 } from "../../subscription/service";
 import { LIVE_SESSION_MODEL } from "./config";
@@ -77,14 +77,8 @@ export const requestEphemeralToken = defineFunction({
 
     const isOnFreemium = await isUserOnFreemium(setup.userId);
     if (isOnFreemium) {
-      const freemiumAllocation = await getOrCreateFreemiumAllocation(
-        setup.userId
-      );
-
-      if (
-        freemiumAllocation.allowed_lived_sessions_used >=
-        freemiumAllocation.allowed_lived_sessions
-      ) {
+      const allowed = await canStartFreemiumLiveSession(setup.userId);
+      if (!allowed) {
         throw new Error(
           "User has reached the maximum number of allowed lived sessions"
         );

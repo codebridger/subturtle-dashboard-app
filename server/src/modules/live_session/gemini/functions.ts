@@ -15,7 +15,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import {
   checkCreditAllocation,
   isUserOnFreemium,
-  getOrCreateFreemiumAllocation,
+  canStartFreemiumLiveSession,
   updateFreemiumAllocation,
 } from "../../subscription/service";
 import {
@@ -73,12 +73,8 @@ export const requestGeminiEphemeralToken = defineFunction({
 
     const isOnFreemium = await isUserOnFreemium(userId);
     if (isOnFreemium && !isResume) {
-      const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
-
-      if (
-        freemiumAllocation.allowed_lived_sessions_used >=
-        freemiumAllocation.allowed_lived_sessions
-      ) {
+      const allowed = await canStartFreemiumLiveSession(userId);
+      if (!allowed) {
         throw new Error(
           "User has reached the maximum number of allowed lived sessions"
         );

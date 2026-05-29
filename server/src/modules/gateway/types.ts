@@ -32,7 +32,7 @@ export interface PaymentSession {
 export interface CheckoutSessionRequest {
   tierId: TierId;
   cadence: Cadence;
-  currency: Currency;
+  currency?: Currency; // ignored — Adaptive Pricing picks the buyer's currency
   successUrl?: string;
   cancelUrl?: string;
   provider?: PaymentProvider; // Optional - defaults to STRIPE if not specified

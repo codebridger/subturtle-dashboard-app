@@ -18,7 +18,7 @@ import {
   PaymentVerificationResult,
 } from "./types";
 import { PaymentSession } from "../types";
-import { getTier, resolveTierByPriceId } from "../../subscription/tiers";
+import { getTierRegistry } from "../../subscription/tiers";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -93,6 +93,35 @@ export class StripeAdapter implements PaymentAdapter {
   }
 
   /**
+   * Adaptive Pricing presentment currency for a subscription. With Adaptive
+   * Pricing a buyer can be charged in their local currency converted from our
+   * GBP base price; that presentment currency is recorded on the Checkout
+   * Session (not the Subscription or Invoice), so we look up the session that
+   * created this subscription. Returns undefined when unavailable (e.g. a
+   * subscription created outside Checkout) and never throws.
+   */
+  private async resolvePresentmentCurrency(
+    subscriptionId: string
+  ): Promise<string | undefined> {
+    try {
+      const sessions = await this.stripe.checkout.sessions.list({
+        subscription: subscriptionId,
+        limit: 1,
+      });
+      return (
+        sessions.data[0]?.presentment_details?.presentment_currency ?? undefined
+      );
+    } catch (err: any) {
+      console.warn(
+        `[stripe] could not resolve presentment currency for ${subscriptionId}: ${
+          err?.message || err
+        }`
+      );
+      return undefined;
+    }
+  }
+
+  /**
    * Look up our internal userId for a Stripe customer ID, or null if unknown.
    */
   private async getUserIdForCustomer(
@@ -114,18 +143,23 @@ export class StripeAdapter implements PaymentAdapter {
   async createCheckoutSession(
     request: CreateCheckoutRequest
   ): Promise<CheckoutSessionResult> {
-    const { userId, tierId, cadence, currency, successUrl, cancelUrl } =
-      request;
+    const { userId, tierId, cadence, successUrl, cancelUrl } = request;
 
-    // Resolve the tier + Stripe price ID from the registry (the source of truth).
-    const tier = getTier(tierId);
+    // Resolve the tier + Stripe price ID from the registry (Stripe-backed).
+    const tier = await getTierRegistry().getTier(tierId);
+    if (!tier) {
+      throw new Error(`Tier "${tierId}" not found`);
+    }
     if (!tier.isPaid || tier.status !== "live") {
       throw new Error(`Tier "${tierId}" is not available for checkout`);
     }
-    const priceId = tier.prices?.[cadence]?.[currency];
+    // GBP is the single base price per cadence; Stripe Adaptive Pricing converts
+    // it to the buyer's local currency at checkout, so the client no longer
+    // sends a per-currency price (request.currency is accepted but ignored).
+    const priceId = tier.prices?.[cadence]?.gbp;
     if (!priceId) {
       throw new Error(
-        `No Stripe price configured for tier "${tierId}" ${cadence}/${currency}`
+        `No Stripe GBP price configured for tier "${tierId}" ${cadence}`
       );
     }
 
@@ -139,7 +173,7 @@ export class StripeAdapter implements PaymentAdapter {
       userId,
       tierId,
       cadence,
-      currency,
+      currency: price.currency, // base currency (gbp); presentment set post-checkout
       priceId,
       creditsAmount: tier.creditBudget.toString(),
       subscriptionDays: tier.durationDays.toString(),
@@ -161,6 +195,9 @@ export class StripeAdapter implements PaymentAdapter {
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
       payment_method_collection: "always",
+      // Convert the GBP base price into the buyer's local currency at checkout.
+      // (Also defaults to the Dashboard Adaptive Pricing setting; set explicitly.)
+      adaptive_pricing: { enabled: true },
       subscription_data: subscriptionData,
       metadata: sessionMetadata,
     });
@@ -338,12 +375,12 @@ export class StripeAdapter implements PaymentAdapter {
             };
           }
 
-          // 2. Resolve the tier from the price ID via the registry — the
-          //    registry, not Stripe product metadata, is the source of truth
-          //    for the credit budget.
+          // 2. Resolve the tier from the price ID via the Stripe-backed
+          //    registry — the credit budget comes from the tier's Stripe
+          //    metadata (creditsAmount), cached for 5 minutes.
           const item = subscription.items.data[0];
           const priceId = item.price.id;
-          const resolved = resolveTierByPriceId(priceId);
+          const resolved = await getTierRegistry().resolveByPriceId(priceId);
           if (!resolved) {
             return {
               success: false,
@@ -352,7 +389,13 @@ export class StripeAdapter implements PaymentAdapter {
           }
           const { tier, cadence } = resolved;
 
-          // 3. Create the subscription with the tier's credit budget. A
+          // 3. Adaptive Pricing: capture the buyer's actual charged currency
+          //    (converted from our GBP base) so it can be reported on.
+          const presentmentCurrency = await this.resolvePresentmentCurrency(
+            subscription.id
+          );
+
+          // 4. Create the subscription with the tier's credit budget. A
           //    trialing subscription still gets the full budget so the trial
           //    actually unlocks the tier.
           await addNewSubscriptionWithCredit({
@@ -370,6 +413,9 @@ export class StripeAdapter implements PaymentAdapter {
               stripe: {
                 label: tier.userFacingName,
                 subscription_id: subscription.id,
+                ...(presentmentCurrency && {
+                  presentment_currency: presentmentCurrency,
+                }),
               },
             },
           });
@@ -425,7 +471,7 @@ export class StripeAdapter implements PaymentAdapter {
 
           // Resolve the tier so a period rollover (renewal, or the trial->paid
           // transition) can refill the correct credit budget.
-          const resolved = resolveTierByPriceId(priceId);
+          const resolved = await getTierRegistry().resolveByPriceId(priceId);
 
           const { success, message } =
             await updateSubscriptionStatusByProviderAndSubscriptionId({
@@ -462,6 +508,22 @@ export class StripeAdapter implements PaymentAdapter {
           return {
             success,
             message,
+          };
+        }
+
+        // Tier data lives in Stripe products/prices/metadata. When any of them
+        // change in the Dashboard, drop the cached registry so the next read
+        // re-fetches — no deploy and no waiting out the 5-minute TTL.
+        case "product.created":
+        case "product.updated":
+        case "product.deleted":
+        case "price.created":
+        case "price.updated":
+        case "price.deleted": {
+          getTierRegistry().invalidate();
+          return {
+            success: true,
+            message: `Tier cache invalidated on ${event.type}`,
           };
         }
 

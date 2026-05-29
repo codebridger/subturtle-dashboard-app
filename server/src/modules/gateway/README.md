@@ -87,16 +87,19 @@ This pattern allows for:
 
 ### Creating a Payment Session
 
-The session is created from a tier + billing cadence + currency — the frontend
-never holds raw Stripe price IDs. The adapter resolves the price from the tier
-registry (`subscription/tiers.ts`).
+The session is created from a tier + billing cadence — the frontend never holds
+raw Stripe price IDs. The adapter resolves the GBP base price from the
+Stripe-backed tier registry (`TierRegistryService`; see
+[`subscription/tier-registry.md`](../subscription/tier-registry.md)). Stripe
+Adaptive Pricing converts the GBP base to the buyer's local currency at checkout,
+so no per-currency argument is needed (a `currency` field is still accepted for
+backward compatibility but ignored).
 
 ```typescript
 // Client-side code
 const result = await functionProvider.run("createPaymentSession", {
   tierId: "learner",   // a paid, live tier
   cadence: "monthly",  // "monthly" | "annual"
-  currency: "usd",     // "usd" | "eur" | "gbp"
   userId: currentUserId,
   successUrl: "https://example.com/success",
   cancelUrl: "https://example.com/cancel"
@@ -126,6 +129,18 @@ Configure your payment provider (Stripe) to send webhooks to:
 ```
 https://your-api-domain.com/gateway/webhook/stripe
 ```
+
+Enable these events on the endpoint:
+
+- `checkout.session.completed`
+- `customer.subscription.created` / `.updated` / `.deleted`
+- `product.created` / `.updated` / `.deleted`
+- `price.created` / `.updated` / `.deleted`
+
+The `customer.subscription.*` events drive subscription create / credit-refill /
+cancel and record the Adaptive Pricing presentment currency; the `product.*` /
+`price.*` events invalidate the cached tier registry so Dashboard edits take
+effect without a deploy.
 
 ## Environment Variables
 
@@ -165,8 +180,8 @@ dashboard / product / price setting — it is applied in code, per checkout
 session. `createCheckoutSession` (`adapters/stripe.adapter.ts`) sets
 `subscription_data.trial_period_days` from `tier.trialDays`, and
 `payment_method_collection: "always"` forces the card up front. The trial
-length lives in the registry — `subscription/tiers.ts` (`learner.trialDays`) —
-so changing it needs no Stripe change.
+length comes from the tier's Stripe metadata (`trialDays`), surfaced as
+`tier.trialDays` by the registry — change it in the Stripe Dashboard, no deploy.
 
 To inspect a trial in Stripe, look at the resulting **Subscription** (Customers
 → the customer, or Billing → Subscriptions) — it shows status `Trialing` with a

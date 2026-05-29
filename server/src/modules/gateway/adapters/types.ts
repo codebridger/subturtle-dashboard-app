@@ -11,14 +11,16 @@ export enum PaymentProvider {
 
 /**
  * Common request interface for creating a checkout session.
- * The caller passes tier + cadence + currency; the adapter resolves the Stripe
- * price ID from the tier registry, so the frontend never holds raw price IDs.
+ * The caller passes tier + cadence; the adapter resolves the GBP base Stripe
+ * price from the tier registry, so the frontend never holds raw price IDs.
+ * `currency` is accepted for backward compatibility but ignored — Stripe
+ * Adaptive Pricing converts the GBP base to the buyer's local currency.
  */
 export interface CreateCheckoutRequest {
   userId: string;
   tierId: TierId;
   cadence: Cadence;
-  currency: Currency;
+  currency?: Currency;
   successUrl?: string;
   cancelUrl?: string;
 }

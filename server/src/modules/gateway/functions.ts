@@ -16,7 +16,7 @@ import { TierId, Cadence, Currency } from "../subscription/tiers";
 interface CreatePaymentParams {
   tierId: TierId;
   cadence: Cadence;
-  currency: Currency;
+  currency?: Currency; // ignored — Adaptive Pricing picks the buyer's currency
   provider?: PaymentProvider;
   successUrl?: string;
   cancelUrl?: string;

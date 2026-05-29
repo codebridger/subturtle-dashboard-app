@@ -19,7 +19,7 @@ import {
   emitSubscriptionExpiredEvent,
 } from "./events";
 import { Subscription, FreeCredit } from "./types";
-import { TierId, Cadence } from "./tiers";
+import { TierId, Cadence, TierDefinition, getTierRegistry } from "./tiers";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
@@ -54,6 +54,58 @@ function computeUsagePercentage(doc: {
 }
 
 /**
+ * The Starter tier from the Stripe-backed registry — the free allocation mirrors
+ * it. Returns null if the registry can't be loaded (e.g. a Stripe cold-start
+ * outage) so callers fall back to the config defaults instead of blocking free
+ * signups.
+ */
+export async function getStarterTier(): Promise<TierDefinition | null> {
+  try {
+    return await getTierRegistry().getTier("starter");
+  } catch (err: any) {
+    console.error(
+      "[subscription] Starter tier unavailable from Stripe; using freemium fallback defaults:",
+      err?.message || err
+    );
+    return null;
+  }
+}
+
+/**
+ * Freemium allocation values, sourced from the Starter tier when available and
+ * falling back to the config constants otherwise. A `null` (unlimited) Starter
+ * cap on a gated free-tier feature falls back to the constant, since the
+ * freemium pool tracks finite limits.
+ */
+async function getFreemiumDefaults() {
+  const starter = await getStarterTier();
+  return {
+    credits: starter?.creditBudget ?? FREEMIUM_DEFAULT_CREDITS,
+    saveWords: starter?.caps.save_words ?? FREEMIUM_DEFAULT_SAVE_WORDS,
+    liveSessions:
+      starter?.caps.live_conversations ?? FREEMIUM_DEFAULT_LIVED_SESSIONS,
+    durationDays: starter?.durationDays ?? FREEMIUM_DURATION_DAYS,
+  };
+}
+
+/**
+ * Tier-aware gate: whether a freemium user may start one more live session under
+ * the Starter tier's `live_conversations` cap (null = unlimited). Reads the used
+ * counter from the allocation; does not consume a slot.
+ */
+export async function canStartFreemiumLiveSession(
+  userId: string
+): Promise<boolean> {
+  const starter = await getStarterTier();
+  const cap = starter
+    ? starter.caps.live_conversations
+    : FREEMIUM_DEFAULT_LIVED_SESSIONS;
+  if (cap === null) return true; // unlimited live sessions on this tier
+  const allocation = await getOrCreateFreemiumAllocation(userId);
+  return (allocation.allowed_lived_sessions_used || 0) < cap;
+}
+
+/**
  * Get or create freemium allocation for a user
  */
 export async function getOrCreateFreemiumAllocation(userId: string) {
@@ -68,21 +120,23 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
     end_date: { $gte: new Date() },
   });
 
-  // If no active freemium allocation exists, create a new one
+  // If no active freemium allocation exists, create a new one — mirroring the
+  // Starter tier read from Stripe (with config fallbacks).
   if (!freemiumAllocation) {
+    const defaults = await getFreemiumDefaults();
     const startDate = new Date();
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + FREEMIUM_DURATION_DAYS);
+    endDate.setDate(endDate.getDate() + defaults.durationDays);
 
     const newFreemiumAllocation = {
       user_id: Types.ObjectId(userId),
       start_date: startDate,
       end_date: endDate,
-      total_credits: FREEMIUM_DEFAULT_CREDITS,
+      total_credits: defaults.credits,
       credits_used: 0,
-      allowed_save_words: FREEMIUM_DEFAULT_SAVE_WORDS,
+      allowed_save_words: defaults.saveWords,
       allowed_save_words_used: 0,
-      allowed_lived_sessions: FREEMIUM_DEFAULT_LIVED_SESSIONS,
+      allowed_lived_sessions: defaults.liveSessions,
       allowed_lived_sessions_used: 0,
     };
 

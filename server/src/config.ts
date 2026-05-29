@@ -16,10 +16,17 @@ export const FLUENT_WAITLIST_COLLECTION = "fluent_waitlist";
 export const PAYMENT_COLLECTION = "payment";
 export const PAYMENT_SESSION_COLLECTION = "payment_session";
 
-// Freemium default values
+// Freemium defaults — FALLBACKS that mirror the Starter tier.
+// The freemium allocation is normally sourced live from the Starter tier in
+// Stripe (creditsAmount / caps_save_words / caps_live_conversations /
+// subscriptionDays) via the TierRegistryService; these constants are only used
+// if the registry is unavailable (e.g. a Stripe cold-start outage), so free
+// signups never block. Keep them in sync with the Starter seed as a safety net.
 export const FREEMIUM_DEFAULT_CREDITS = 5000000; // 5M credits
-export const FREEMIUM_DEFAULT_SAVE_WORDS = 200; // 200 words / 30-day window (Starter tier)
-export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 lived sessions can be created
+export const FREEMIUM_DEFAULT_SAVE_WORDS = 200; // 200 words / 30-day window
+export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 live sessions / window
+// Also drives the static Mongo TTL index on free_credit (must be a constant —
+// a Mongo index expiry cannot be computed per-tier at runtime).
 export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 
 // Schedule

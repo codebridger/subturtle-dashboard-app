@@ -1,5 +1,11 @@
 This document outlines the design of Subturtle's internal credit-based subscription module. The module serves as a critical component that tracks and manages credit consumption across various services while maintaining a seamless user experience. By operating behind the scenes, it enables controlled resource allocation without exposing limitations directly to users. This system balances business sustainability with quality of service, providing flexible interfaces for other modules to interact with credit management while maintaining clear boundaries of responsibility.
 
+> **Pricing tiers are Stripe-driven.** Tier names, taglines, feature labels,
+> caps, credit budgets, trial days, and prices are read from Stripe at runtime
+> (cached) — not hardcoded. The free allocation mirrors the Starter tier. See
+> [`tier-registry.md`](tier-registry.md) for the metadata schema, caching,
+> Adaptive Pricing, and the rollout runbook.
+
 ## System Architecture Overview
 
 The subscription system functions as an internal module within the Subturtle backend application, silently managing credit allocations and usage tracking without exposing limitations to end users. The module provides a clean API for other system components to check balances, record usage, and manage credit allocation.
