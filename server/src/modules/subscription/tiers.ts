@@ -1,35 +1,45 @@
 /**
- * Tier registry — the single source of truth for SubTurtle's 3-tier pricing ladder.
+ * Tier display copy + shared tier types (Council 004 ladder).
  *
- * Pure data + pure helpers, with ZERO db/Stripe imports, so it is trivially
- * unit-testable and safe to import from both the plans RPC and the Stripe webhook.
+ * Under ADR-004, Stripe product metadata is the source of truth for paid-tier
+ * ENTITLEMENTS (credits, voice minutes, caps, flags) — parsed in entitlements.ts.
+ * This file holds the DISPLAY COPY keyed by tier_id (names, taglines, card
+ * bullets) and the shared tier types. The free Starter tier's limits live in
+ * config.ts — the single source for free-tier caps.
  *
- * "Monetize any feature with the same standard": every monetizable capability is a
- * `FeatureKey` with a per-tier cap in `caps`. To monetize a NEW feature:
- *   1. add a `FeatureKey`
- *   2. add its cap to all three tiers
- *   3. call `tierAllowsFeature(tierId, key)` at the feature's entry point
+ * Feature gating reads from resolved `Entitlements` (paid) or config (Starter)
+ * via `featureCapFor` / `featureAllowedFor` — NOT from a static per-tier cap
+ * table. The `FeatureKey` list stays in code: Stripe sets a cap's VALUE, it never
+ * invents a new feature key.
  *
- * STRIPE IDS: the `stripeProductId` / `prices.*` values below are PLACEHOLDERS.
- * Run `yarn setup:stripe` (Phase 2) and paste the printed real IDs over them.
+ * TRANSITION NOTE: `stripeProductId` / `prices` (Stripe ids) are now resolved
+ * live from Stripe, so they are `null` here; `amount` / `creditBudget` /
+ * `durationDays` / `trialDays` are kept only until the webhook (S2), plans (S3),
+ * and checkout (S7) read them from Stripe — S8 then removes them, leaving this
+ * file as display copy + types only.
  */
+import type { Entitlements } from "./entitlements";
+import {
+  FREEMIUM_DEFAULT_SAVE_WORDS,
+  FREEMIUM_DEFAULT_LIVED_SESSIONS,
+} from "../../config";
 
-export type TierId = "starter" | "learner" | "fluent";
+export type TierId = "starter" | "reader" | "learner" | "coach";
 export type Cadence = "monthly" | "annual";
 export type Currency = "usd" | "eur" | "gbp";
 export type TierStatus = "live" | "dark"; // dark = "Coming soon, Notify me"
 
 /**
- * Every monetizable capability. A cap of `null` means unlimited, `0` means locked
- * (not available on that tier), a positive number is a hard per-window cap.
+ * Every gated capability. The cap VALUE is resolved per user from entitlements
+ * (paid) or config (Starter); this list (the keys) stays in code. A cap of
+ * `null` means unlimited, `0` means locked, a positive number is a hard cap.
  */
 export type FeatureKey =
   | "save_words"
   | "smart_review"
-  | "ai_credits"
   | "weekly_insights"
   | "session_history"
-  | "live_conversations";
+  | "live_sessions";
 
 export interface TierPrices {
   monthly: Partial<Record<Currency, string>>; // Stripe price IDs
@@ -48,23 +58,21 @@ export interface TierDefinition {
   userFacingName: string;
   tagline: string;
   isPaid: boolean;
-  /** Stripe product ID; null for the free Starter tier. */
+  /** Stripe product ID — resolved live from Stripe now; null in code. */
   stripeProductId: string | null;
-  /** Stripe price IDs per cadence/currency; null for the free Starter tier. */
+  /** Stripe price IDs — resolved live from Stripe now; null in code. */
   prices: TierPrices | null;
-  /** Display amounts per cadence/currency; null for the free Starter tier. */
+  /** Display amounts per cadence/currency; GBP base (Adaptive Pricing localizes). */
   amount: TierAmounts | null;
-  /** Internal AI credit budget per 30-day window. Never shown to users. */
+  /** Internal AI credit budget mirror — source of truth is Stripe metadata. */
   creditBudget: number;
   /** Length of a billing/allocation window in days. */
   durationDays: number;
   /** Credit-card-required free trial length in days; 0 = no trial. */
   trialDays: number;
-  /** Per-feature caps: null = unlimited, 0 = locked, n = hard cap. */
-  caps: Record<FeatureKey, number | null>;
   /** Plain-English card bullets — must not contain the word "credit". */
   featureLabels: string[];
-  /** Plain-English label for the AI budget on the comparison table. */
+  /** Plain-English label for the AI/voice budget on the comparison table. */
   aiBudgetLabel: string;
 }
 
@@ -80,7 +88,7 @@ export interface PublicTierPlan {
   isPaid: boolean;
   featureLabels: string[];
   aiBudgetLabel: string;
-  /** null for the free Starter tier. */
+  /** GBP base price; null for the free Starter tier. */
   pricing: TierAmounts | null;
 }
 
@@ -97,123 +105,100 @@ export const TIERS: Record<TierId, TierDefinition> = {
     creditBudget: 5_000_000,
     durationDays: 30,
     trialDays: 0,
-    caps: {
-      save_words: 200,
-      smart_review: null,
-      ai_credits: 5_000_000, // mirrors creditBudget
-      weekly_insights: 0,
-      session_history: 0,
-      live_conversations: 3,
-    },
     featureLabels: [
       "Save up to 200 phrases a month",
       "Unlimited Smart Review flashcards",
-      "Hover to translate any subtitle, any time",
+      "Hover to translate any subtitle",
       "A taste of AI tools each month",
-      "Basic progress stats",
     ],
     aiBudgetLabel: "a taste each month",
+  },
+  reader: {
+    id: "reader",
+    status: "live",
+    userFacingName: "Reader",
+    tagline: "Read, save, and chat with AI about every phrase you meet.",
+    isPaid: true,
+    stripeProductId: null,
+    prices: null,
+    amount: {
+      monthly: { gbp: 4.49 },
+      annual: { gbp: 42.99 },
+    },
+    creditBudget: 200_000_000,
+    durationDays: 30,
+    trialDays: 0,
+    featureLabels: [
+      "Save as many phrases as you want",
+      "Unlimited text chat with the AI coach",
+      "Unlimited translations",
+      "Unlimited Smart Review",
+      "Voice top-ups when you want them",
+    ],
+    aiBudgetLabel: "voice top-ups any time",
   },
   learner: {
     id: "learner",
     status: "live",
     userFacingName: "Learner",
-    tagline: "Make real progress. Learn every day without running out of tools.",
+    tagline: "Make real progress — read with AI, then practice out loud.",
     isPaid: true,
-    stripeProductId: "prod_UW04JV1WnBPlvv",
-    prices: {
-      monthly: {
-        usd: "price_1TWy4AJzqwOMGRBg9jLyvCxN",
-        eur: "price_1TWy4AJzqwOMGRBgFIunKN0o",
-        gbp: "price_1TWy4BJzqwOMGRBgiVzYadH7",
-      },
-      annual: {
-        usd: "price_1TWy4CJzqwOMGRBgL0fV6xtm",
-        eur: "price_1TWy4CJzqwOMGRBga45x0ptR",
-        gbp: "price_1TWy4DJzqwOMGRBgj1vSI9UM",
-      },
-    },
+    stripeProductId: null,
+    prices: null,
     amount: {
-      monthly: { usd: 9.99, eur: 9.99, gbp: 8.99 },
-      annual: { usd: 95.99, eur: 95.99, gbp: 85.99 },
+      monthly: { gbp: 10.99 },
+      annual: { gbp: 104.99 },
     },
     creditBudget: 300_000_000,
     durationDays: 30,
     trialDays: 3,
-    caps: {
-      save_words: null,
-      smart_review: null,
-      ai_credits: 300_000_000, // mirrors creditBudget
-      weekly_insights: null,
-      session_history: null,
-      live_conversations: null,
-    },
     featureLabels: [
-      "Save as many phrases as you want — no limits",
-      "Full AI translation budget for daily practice",
-      "Live AI voice conversations — plenty each month",
+      "Everything in Reader",
+      "About 10 voice chats a month (~90 min)",
       "Weekly progress insights",
       "Full session history",
     ],
-    aiBudgetLabel: "full monthly budget",
+    aiBudgetLabel: "about 10 voice chats a month (~90 min)",
   },
-  fluent: {
-    id: "fluent",
-    status: "dark", // not buyable until "Mini Lectures" (PRFAQ-003) ships
-    userFacingName: "Fluent",
-    tagline: "For learners who are ready to go further.",
+  coach: {
+    id: "coach",
+    status: "live",
+    userFacingName: "Coach",
+    tagline: "Speak English every day with your AI coach.",
     isPaid: true,
-    stripeProductId: "prod_UW04hTRTzN7iiB",
-    prices: {
-      monthly: {
-        usd: "price_1TWy4EJzqwOMGRBgAr1Fp6o3",
-        eur: "price_1TWy4EJzqwOMGRBgEjgAjUU7",
-        gbp: "price_1TWy4FJzqwOMGRBgtqdREIq3",
-      },
-      annual: {
-        usd: "price_1TWy4FJzqwOMGRBgUhy6mVXk",
-        eur: "price_1TWy4GJzqwOMGRBgvLf7ZxoX",
-        gbp: "price_1TWy4GJzqwOMGRBgTLq1K5Cb",
-      },
-    },
+    stripeProductId: null,
+    prices: null,
     amount: {
-      monthly: { usd: 16.99, eur: 16.99, gbp: 14.99 },
-      annual: { usd: 159.99, eur: 159.99, gbp: 143.99 },
+      monthly: { gbp: 24.99 },
+      annual: { gbp: 239.99 },
     },
     creditBudget: 600_000_000,
     durationDays: 30,
     trialDays: 0,
-    caps: {
-      save_words: null,
-      smart_review: null,
-      ai_credits: 600_000_000, // mirrors creditBudget
-      weekly_insights: null,
-      session_history: null,
-      live_conversations: null,
-    },
     featureLabels: [
       "Everything in Learner",
-      "Mini Lectures — short, focused lessons built from real content",
-      "Improved Live Sessions with richer feedback",
-      "A larger AI budget for longer daily practice",
+      "About 30 voice chats a month (~300 min)",
+      "Top up voice minutes any time",
     ],
-    aiBudgetLabel: "larger monthly budget",
+    aiBudgetLabel: "about 30 voice chats a month (~300 min)",
   },
 };
 
-/** Get a tier definition by id. */
+/** Get a tier definition (display copy) by id. */
 export function getTier(id: TierId): TierDefinition {
   return TIERS[id];
 }
 
-/** Tiers currently visible/sellable as live — excludes "dark" tiers like Fluent. */
+/** Tiers currently visible/sellable as live — excludes any "dark" tier. */
 export function liveTiers(): TierDefinition[] {
   return Object.values(TIERS).filter((t) => t.status === "live");
 }
 
 /**
- * Resolve a Stripe price ID back to its tier + cadence + currency.
- * Used by the Stripe webhook to derive entitlements from an incoming subscription.
+ * Resolve a Stripe price ID back to its tier + cadence + currency from the code
+ * registry. DEPRECATED: price ids are resolved live from Stripe now (the
+ * registry holds none), so this returns null. Kept only until the webhook (S2)
+ * stops importing it; removed in S8.
  */
 export function resolveTierByPriceId(
   priceId: string
@@ -233,7 +218,7 @@ export function resolveTierByPriceId(
   return null;
 }
 
-/** Resolve a Stripe product ID back to its tier. */
+/** Resolve a Stripe product ID back to its tier. DEPRECATED (see above). */
 export function resolveTierByProductId(
   productId: string
 ): TierDefinition | null {
@@ -242,12 +227,39 @@ export function resolveTierByProductId(
   );
 }
 
-/** Whether a tier grants access to a feature at all (cap !== 0). */
-export function tierAllowsFeature(id: TierId, feature: FeatureKey): boolean {
-  return TIERS[id].caps[feature] !== 0;
+/**
+ * The per-window cap for a feature, resolved from entitlements (paid) or config
+ * (free Starter, when `entitlements` is null). null = unlimited, 0 = locked,
+ * n = hard cap.
+ */
+export function featureCapFor(
+  entitlements: Entitlements | null,
+  feature: FeatureKey
+): number | null {
+  switch (feature) {
+    case "smart_review":
+      return null; // unlimited on every tier (Council 004)
+    case "save_words":
+      return entitlements
+        ? entitlements.saveWordsCap
+        : FREEMIUM_DEFAULT_SAVE_WORDS;
+    case "live_sessions":
+      return entitlements
+        ? entitlements.liveSessionsCap
+        : FREEMIUM_DEFAULT_LIVED_SESSIONS;
+    case "weekly_insights":
+      return entitlements ? (entitlements.weeklyInsights ? null : 0) : 0;
+    case "session_history":
+      return entitlements ? (entitlements.sessionHistory ? null : 0) : 0;
+    default:
+      return 0; // unknown feature -> locked (defensive)
+  }
 }
 
-/** The per-tier cap for a feature: null = unlimited, 0 = locked, n = hard cap. */
-export function featureCap(id: TierId, feature: FeatureKey): number | null {
-  return TIERS[id].caps[feature];
+/** Whether the tier grants access to a feature at all (cap !== 0). */
+export function featureAllowedFor(
+  entitlements: Entitlements | null,
+  feature: FeatureKey
+): boolean {
+  return featureCapFor(entitlements, feature) !== 0;
 }
