@@ -460,31 +460,44 @@ export class LeitnerService {
   }
 
   private static async syncScheduledJob(userId: string) {
-    if (this.syncedUsers.has(userId.toString())) return;
+    const key = userId.toString();
+    if (this.syncedUsers.has(key)) return;
 
-    const settings = await this.getSettings(userId);
-    const { reviewInterval, reviewHour } = settings;
+    // Claim the sync up-front. getSettings() below re-enters syncScheduledJob() in
+    // the background, so without claiming first a single sync fans out into many
+    // concurrent createJob() calls racing on the same `leitner-review-<userId>`
+    // name. Marking it synced here turns those re-entrant calls into no-ops.
+    this.syncedUsers.add(key);
 
-    // Cron: 0 minute, reviewHour hour, every X days, *, *
-    const cron = `0 ${reviewHour} */${reviewInterval} * *`;
+    try {
+      const settings = await this.getSettings(userId);
+      const { reviewInterval, reviewHour } = settings;
 
-    const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
-    const profile = await profileCol.findOne({ refId: userId }) as any;
-    const timeZone = profile?.timeZone;
+      // Cron: 0 minute, reviewHour hour, every X days, *, *
+      const cron = `0 ${reviewHour} */${reviewInterval} * *`;
 
-    await ScheduleService.createJob(
-      `leitner-review-${userId}`,
-      'leitner-review-job',
-      {
-        cronExpression: cron,
-        args: { userId },
-        jobType: 'recurrent',
-        catchUp: true,
-        timeZone
-      }
-    );
+      const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
+      const profile = await profileCol.findOne({ refId: userId }) as any;
+      const timeZone = profile?.timeZone;
 
-    this.syncedUsers.add(userId.toString());
+      await ScheduleService.createJob(
+        `leitner-review-${userId}`,
+        'leitner-review-job',
+        {
+          cronExpression: cron,
+          args: { userId },
+          jobType: 'recurrent',
+          catchUp: true,
+          timeZone
+        }
+      );
+    } catch (e) {
+      // Never let a schedule-sync failure bubble into the caller's request flow
+      // (registration trigger, login, settings update). Release the claim so a
+      // later request can retry the sync.
+      this.syncedUsers.delete(key);
+      console.error(`[LeitnerService] syncScheduledJob failed for ${userId}:`, e);
+    }
   }
 
   static async resyncSchedule(userId: string) {
