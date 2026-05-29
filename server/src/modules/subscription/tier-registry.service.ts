@@ -313,8 +313,10 @@ export class TierRegistryService {
    * Fetch every tier product and its prices from Stripe and parse them into a
    * snapshot. Throws if no tier products exist or any one fails to parse, so the
    * caller can keep the last good cache instead of caching broken data.
+   *
+   * Internal — callers use getTier/listTiers/resolve*; the cache layer drives this.
    */
-  async loadFromStripe(): Promise<Map<TierId, TierDefinition>> {
+  private async loadFromStripe(): Promise<Map<TierId, TierDefinition>> {
     const products = await listAll<Stripe.Product>(
       (p) => this.stripe.products.list(p),
       { active: true }
