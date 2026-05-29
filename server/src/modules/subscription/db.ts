@@ -104,6 +104,22 @@ const subscriptionCollection = defineCollection({
         type: Object,
         required: false,
       },
+      // Idempotency / period marker (ADR-004): the Stripe current_period_end we
+      // last granted (created or refilled) for. Grants apply only for a period
+      // strictly newer than this, so a duplicate or out-of-order webhook cannot
+      // double-grant or regress to an older period.
+      granted_period_end: {
+        type: Date,
+        required: false,
+      },
+      // Entitlement snapshot LOCKED at purchase (ADR-004): the parsed Stripe
+      // product metadata for the current paid period. Re-read from metadata only
+      // on a real period rollover, so a mid-period metadata edit never changes a
+      // customer's current period. Feature gating reads from this snapshot.
+      entitlements: {
+        type: Object,
+        required: false,
+      },
     },
     {
       timestamps: true,

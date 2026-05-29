@@ -18,7 +18,11 @@ import {
   PaymentVerificationResult,
 } from "./types";
 import { PaymentSession } from "../types";
-import { getTier, resolveTierByPriceId } from "../../subscription/tiers";
+import { getTier, Cadence } from "../../subscription/tiers";
+import {
+  resolveEntitlements,
+  Entitlements,
+} from "../../subscription/entitlements";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -322,15 +326,9 @@ export class StripeAdapter implements PaymentAdapter {
           const subscription = event.data.object as Stripe.Subscription;
 
           // 1. Resolve our userId from the Stripe customer.
-          const stripeCustomerId = subscription.customer as string;
-          const stripeCustomerCollection = getCollection<any>(
-            DATABASE,
-            "stripe_customer"
+          const userId = await this.getUserIdForCustomer(
+            subscription.customer as string
           );
-          const customerRecord = await stripeCustomerCollection.findOne({
-            customer_id: stripeCustomerId,
-          });
-          const userId = customerRecord?.user_id;
           if (!userId) {
             return {
               success: false,
@@ -338,37 +336,42 @@ export class StripeAdapter implements PaymentAdapter {
             };
           }
 
-          // 2. Resolve the tier from the price ID via the registry — the
-          //    registry, not Stripe product metadata, is the source of truth
-          //    for the credit budget.
+          // 2. Read entitlements from the product metadata — the source of
+          //    truth for credits + voice minutes (ADR-004).
           const item = subscription.items.data[0];
           const priceId = item.price.id;
-          const resolved = resolveTierByPriceId(priceId);
-          if (!resolved) {
-            return {
-              success: false,
-              message: `No tier matches Stripe price ${priceId}`,
-            };
+          let entitlements: Entitlements;
+          try {
+            entitlements = await resolveEntitlements(this.stripe, { priceId });
+          } catch (err: any) {
+            // Fail safe = REFUSE, not guess: reject so Stripe retries + alert.
+            return this.refuseEntitlementGrant(userId, priceId, err);
           }
-          const { tier, cadence } = resolved;
+          const cadence: Cadence =
+            item.price.recurring?.interval === "year" ? "annual" : "monthly";
 
-          // 3. Create the subscription with the tier's credit budget. A
-          //    trialing subscription still gets the full budget so the trial
-          //    actually unlocks the tier.
+          // 3. Grant from the parsed metadata, snapshotting it onto the doc and
+          //    marking the granted period. A trialing subscription still gets the
+          //    full budget so the trial unlocks the tier. Idempotent on
+          //    (subscription id, period).
           await addNewSubscriptionWithCredit({
             userId,
-            creditAmount: tier.creditBudget,
+            creditAmount: entitlements.creditsGranted,
+            voiceMinutes: entitlements.voiceMinutesGranted,
             startDateUnixTimestamp: item.current_period_start,
             endDateUnixTimestamp: item.current_period_end,
-            tier: tier.id,
+            grantedPeriodEndUnixTimestamp: item.current_period_end,
+            stripeSubscriptionId: subscription.id,
+            tier: entitlements.tierId,
             subscriptionType: cadence,
             priceId,
             status: subscription.status,
             trialEndUnixTimestamp: subscription.trial_end ?? undefined,
+            entitlements,
             paymentMetaData: {
               provider: this.provider,
               stripe: {
-                label: tier.userFacingName,
+                label: getTier(entitlements.tierId).userFacingName,
                 subscription_id: subscription.id,
               },
             },
@@ -423,9 +426,20 @@ export class StripeAdapter implements PaymentAdapter {
           const priceId = item.price.id;
           const previousAttributes = (event.data as any).previous_attributes;
 
-          // Resolve the tier so a period rollover (renewal, or the trial->paid
-          // transition) can refill the correct credit budget.
-          const resolved = resolveTierByPriceId(priceId);
+          // Read entitlements from the product metadata so a real period
+          // rollover (renewal, or the trial->paid transition) refills the correct
+          // credit + voice budget from the metadata current at renewal time.
+          let entitlements: Entitlements;
+          try {
+            entitlements = await resolveEntitlements(this.stripe, { priceId });
+          } catch (err: any) {
+            const userId = await this.getUserIdForCustomer(
+              subscription.customer as string
+            );
+            return this.refuseEntitlementGrant(userId, priceId, err);
+          }
+          const cadence: Cadence =
+            item.price.recurring?.interval === "year" ? "annual" : "monthly";
 
           const { success, message } =
             await updateSubscriptionStatusByProviderAndSubscriptionId({
@@ -434,10 +448,12 @@ export class StripeAdapter implements PaymentAdapter {
               status: subscription.status,
               startDateUnixTimestamp: item.current_period_start,
               endDateUnixTimestamp: item.current_period_end,
-              tier: resolved?.tier.id,
-              subscriptionType: resolved?.cadence,
+              tier: entitlements.tierId,
+              subscriptionType: cadence,
               priceId,
-              creditAmount: resolved?.tier.creditBudget,
+              creditAmount: entitlements.creditsGranted,
+              voiceMinutes: entitlements.voiceMinutesGranted,
+              entitlements,
               trialEndUnixTimestamp: subscription.trial_end ?? undefined,
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             });
@@ -451,11 +467,10 @@ export class StripeAdapter implements PaymentAdapter {
               subscription.customer as string
             );
             if (userId) {
-              trackServerEvent(
-                SERVER_ANALYTICS_EVENTS.TRIAL_CONVERTED,
-                userId,
-                { cadence: resolved?.cadence, tier: resolved?.tier.id }
-              );
+              trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_CONVERTED, userId, {
+                cadence,
+                tier: entitlements.tierId,
+              });
             }
           }
 
@@ -480,6 +495,32 @@ export class StripeAdapter implements PaymentAdapter {
         message: error.message || "Unknown error occurred",
       };
     }
+  }
+
+  /**
+   * Fail-safe refusal (ADR-004): a Stripe product's entitlement metadata was
+   * missing or invalid, so we refuse to grant rather than guess an amount or
+   * silently drop the user to free. Returning failure makes the webhook respond
+   * non-2xx, so Stripe retries — buying time for a human to fix the metadata.
+   * Loud log + analytics alert.
+   */
+  private refuseEntitlementGrant(
+    userId: string | null,
+    priceId: string,
+    err: any
+  ): { success: boolean; message: string } {
+    const message = `Refusing entitlement grant: invalid metadata for Stripe price ${priceId}: ${
+      err?.message || err
+    }`;
+    console.error(`[ALERT] ${message}`);
+    if (userId) {
+      trackServerEvent(
+        SERVER_ANALYTICS_EVENTS.ENTITLEMENT_GRANT_REFUSED,
+        userId,
+        { priceId, error: err?.message || String(err) }
+      );
+    }
+    return { success: false, message };
   }
 
   public async getSubscriptionDetails(paymentId: string) {

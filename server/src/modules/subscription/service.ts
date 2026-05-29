@@ -21,6 +21,7 @@ import {
 } from "./events";
 import { Subscription, FreeCredit } from "./types";
 import { TierId, Cadence } from "./tiers";
+import { Entitlements } from "./entitlements";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
@@ -242,6 +243,9 @@ export async function addNewSubscriptionWithCredit(props: {
   status?: Subscription["status"];
   trialEndUnixTimestamp?: number;
   voiceMinutes?: number;
+  entitlements?: Entitlements;
+  grantedPeriodEndUnixTimestamp?: number;
+  stripeSubscriptionId?: string;
 }) {
   const {
     userId,
@@ -256,6 +260,9 @@ export async function addNewSubscriptionWithCredit(props: {
     status = "active",
     trialEndUnixTimestamp,
     voiceMinutes,
+    entitlements,
+    grantedPeriodEndUnixTimestamp,
+    stripeSubscriptionId,
   } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
@@ -266,6 +273,33 @@ export async function addNewSubscriptionWithCredit(props: {
     throw new Error(
       "Cannot provide both startDateUnixTimestamp and endDateUnixTimestamp and totalDays"
     );
+  }
+
+  // Idempotency (ADR-004): if this Stripe subscription was already created/granted
+  // for this period (or a newer one), do not create a second doc or re-grant.
+  // Guards against duplicate/out-of-order `customer.subscription.created` events.
+  if (stripeSubscriptionId) {
+    const existing = (await subscriptionsCollection.findOne({
+      "payment_meta_data.stripe.subscription_id": stripeSubscriptionId,
+    })) as Subscription | null;
+    if (existing) {
+      const existingGrantedEnd = existing.granted_period_end
+        ? new Date(existing.granted_period_end).getTime() / 1000
+        : 0;
+      if (
+        !grantedPeriodEndUnixTimestamp ||
+        existingGrantedEnd >= grantedPeriodEndUnixTimestamp
+      ) {
+        return {
+          subscriptionId: existing._id,
+          expirationDate: existing.end_date,
+          creditBalance:
+            (existing.total_credits || 0) - (existing.credits_used || 0),
+          isNewSubscription: false,
+          idempotent: true,
+        };
+      }
+    }
   }
 
   // Deactivate any previous active/trialing subscriptions for the user
@@ -305,6 +339,11 @@ export async function addNewSubscriptionWithCredit(props: {
     ...(trialEndUnixTimestamp && {
       trial_end: new Date(trialEndUnixTimestamp * 1000),
     }),
+    // Lock the period marker + entitlement snapshot for this paid period.
+    ...(grantedPeriodEndUnixTimestamp && {
+      granted_period_end: new Date(grantedPeriodEndUnixTimestamp * 1000),
+    }),
+    ...(entitlements && { entitlements }),
   };
 
   const createdSubscription = await subscriptionsCollection.create(
@@ -389,6 +428,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
   priceId?: string;
   creditAmount?: number;
   voiceMinutes?: number;
+  entitlements?: Entitlements;
   trialEndUnixTimestamp?: number;
   cancelAtPeriodEnd?: boolean;
 }) {
@@ -403,6 +443,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     priceId,
     creditAmount,
     voiceMinutes,
+    entitlements,
     trialEndUnixTimestamp,
     cancelAtPeriodEnd,
   } = props;
@@ -431,13 +472,15 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     };
   }
 
-  const currentStart = currentSubscription.start_date.getTime() / 1000;
-  const currentEnd = currentSubscription.end_date.getTime() / 1000;
-  const isSamePeriod =
-    !!startDateUnixTimestamp &&
-    !!endDateUnixTimestamp &&
-    startDateUnixTimestamp === currentStart &&
-    endDateUnixTimestamp === currentEnd;
+  // A new-period grant only when the incoming period_end is strictly newer than
+  // the one we last granted (ADR-004): idempotent on re-delivery, and safe
+  // against out-of-order (older) deliveries that would otherwise regress the
+  // window or double-grant.
+  const lastGrantedEnd = currentSubscription.granted_period_end
+    ? new Date(currentSubscription.granted_period_end).getTime() / 1000
+    : 0;
+  const isNewPeriodGrant =
+    !!endDateUnixTimestamp && endDateUnixTimestamp > lastGrantedEnd;
 
   const update: any = { status };
   if (tier) update.tier = tier;
@@ -448,19 +491,24 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     ? new Date(trialEndUnixTimestamp * 1000)
     : null;
 
-  if (!isSamePeriod) {
-    // Billing period rolled over (renewal, or trial -> first paid period):
-    // move the window and refill the credit budget for the new period.
+  if (isNewPeriodGrant) {
+    // Real period rollover (renewal, or trial -> first paid period): move the
+    // window, RE-READ the entitlement snapshot, and refill the monthly credit +
+    // voice budgets (no rollover). A mid-period metadata edit therefore reaches
+    // a customer only at their next renewal.
     update.start_date = new Date(startDateUnixTimestamp * 1000);
     update.end_date = new Date(endDateUnixTimestamp * 1000);
+    update.granted_period_end = new Date(endDateUnixTimestamp * 1000);
     if (creditAmount !== undefined) {
       update.total_credits = creditAmount;
       update.credits_used = 0;
     }
-    // Refill the monthly voice budget on the new period (no rollover).
     if (voiceMinutes !== undefined) {
       update.voice_minutes_total = voiceMinutes;
       update.voice_minutes_used = 0;
+    }
+    if (entitlements) {
+      update.entitlements = entitlements;
     }
   }
 

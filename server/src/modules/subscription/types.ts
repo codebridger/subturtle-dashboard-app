@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { PaymentProvider } from "../gateway/adapters";
 import { TierId } from "./tiers";
+import { Entitlements } from "./entitlements";
 
 export interface Subscription {
   _id?: Types.ObjectId;
@@ -39,6 +40,10 @@ export interface Subscription {
     provider: PaymentProvider;
     [key: string]: any;
   };
+  // Period marker for idempotent grants + the entitlement snapshot locked for
+  // the current paid period (ADR-004). See db.ts for the rules.
+  granted_period_end?: Date;
+  entitlements?: Entitlements;
 }
 
 export interface FreeCredit {
