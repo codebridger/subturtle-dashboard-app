@@ -21,6 +21,10 @@ export const PAYMENT_SESSION_COLLECTION = "payment_session";
 export const FREEMIUM_DEFAULT_CREDITS = 5000000; // 5M credits
 export const FREEMIUM_DEFAULT_SAVE_WORDS = 200; // 200 words / 30-day window (Starter tier)
 export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 lived sessions can be created
+// Starter "taste" of voice: ~5 minutes / 30-day window. Starter voice still
+// debits the credit pool (no real minute meter on free) — this counter exists
+// for schema symmetry with paid tiers and the future metering engine.
+export const FREEMIUM_DEFAULT_VOICE_MINUTES = 5;
 export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 
 // Schedule

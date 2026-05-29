@@ -39,6 +39,20 @@ const subscriptionCollection = defineCollection({
         required: true,
         default: 0,
       },
+      // Monthly voice-minute budget (Council 004). Seeded from the tier's Stripe
+      // metadata on create/renewal; reset to 0 used on each new period. The voice
+      // metering engine (debit/check/overage) is a separate workstream — these
+      // are the schema + seeding only.
+      voice_minutes_total: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      voice_minutes_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
       status: {
         type: String,
         enum: [
@@ -55,11 +69,12 @@ const subscriptionCollection = defineCollection({
         required: true,
         default: "active",
       },
-      // Pricing-tier ladder (Council 002). Optional: pre-rollout subscriptions
-      // and freemium-derived records may not carry a tier.
+      // Pricing-tier ladder (Council 004: Starter / Reader / Learner / Coach).
+      // Optional: pre-rollout subscriptions and freemium-derived records may not
+      // carry a tier.
       tier: {
         type: String,
-        enum: ["starter", "learner", "fluent"],
+        enum: ["starter", "reader", "learner", "coach"],
         required: false,
       },
       // Billing cadence of the paid subscription.
@@ -264,6 +279,18 @@ const freeCreaditCollection = defineCollection({
         required: true,
       },
       allowed_lived_sessions_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      // Starter "taste" of voice (Council 004). Free-tier voice still debits the
+      // credit pool; this mirrors the paid voice counter for schema symmetry.
+      voice_minutes_total: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      voice_minutes_used: {
         type: Number,
         required: true,
         default: 0,

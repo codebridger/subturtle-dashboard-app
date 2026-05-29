@@ -9,6 +9,7 @@ import {
   FREEMIUM_DEFAULT_SAVE_WORDS,
   FREEMIUM_DURATION_DAYS,
   FREEMIUM_DEFAULT_LIVED_SESSIONS,
+  FREEMIUM_DEFAULT_VOICE_MINUTES,
 } from "../../config";
 import { LOW_CREDITS_THRESHOLD, SOFT_CAP_PERCENT } from "./config";
 
@@ -84,6 +85,8 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
       allowed_save_words_used: 0,
       allowed_lived_sessions: FREEMIUM_DEFAULT_LIVED_SESSIONS,
       allowed_lived_sessions_used: 0,
+      voice_minutes_total: FREEMIUM_DEFAULT_VOICE_MINUTES,
+      voice_minutes_used: 0,
     };
 
     freemiumAllocation = await freeCreditCollection
@@ -238,6 +241,7 @@ export async function addNewSubscriptionWithCredit(props: {
   priceId?: string;
   status?: Subscription["status"];
   trialEndUnixTimestamp?: number;
+  voiceMinutes?: number;
 }) {
   const {
     userId,
@@ -251,6 +255,7 @@ export async function addNewSubscriptionWithCredit(props: {
     priceId,
     status = "active",
     trialEndUnixTimestamp,
+    voiceMinutes,
   } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
@@ -290,6 +295,8 @@ export async function addNewSubscriptionWithCredit(props: {
     end_date: endDate,
     total_credits: creditAmount,
     credits_used: 0,
+    voice_minutes_total: voiceMinutes ?? 0,
+    voice_minutes_used: 0,
     status,
     payment_meta_data: paymentMetaData,
     ...(tier && { tier }),
@@ -381,6 +388,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
   subscriptionType?: Cadence;
   priceId?: string;
   creditAmount?: number;
+  voiceMinutes?: number;
   trialEndUnixTimestamp?: number;
   cancelAtPeriodEnd?: boolean;
 }) {
@@ -394,6 +402,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     subscriptionType,
     priceId,
     creditAmount,
+    voiceMinutes,
     trialEndUnixTimestamp,
     cancelAtPeriodEnd,
   } = props;
@@ -447,6 +456,11 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     if (creditAmount !== undefined) {
       update.total_credits = creditAmount;
       update.credits_used = 0;
+    }
+    // Refill the monthly voice budget on the new period (no rollover).
+    if (voiceMinutes !== undefined) {
+      update.voice_minutes_total = voiceMinutes;
+      update.voice_minutes_used = 0;
     }
   }
 

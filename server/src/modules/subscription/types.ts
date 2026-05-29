@@ -14,6 +14,8 @@ export interface Subscription {
   end_date: Date;
   total_credits: number;
   credits_used: number;
+  voice_minutes_total?: number;
+  voice_minutes_used?: number;
   status:
     | "active"
     | "canceled"
@@ -50,6 +52,8 @@ export interface FreeCredit {
   allowed_save_words_used: number;
   allowed_lived_sessions: number;
   allowed_lived_sessions_used: number;
+  voice_minutes_total?: number;
+  voice_minutes_used?: number;
   ai_exhausted_flagged?: boolean;
   available_credit?: number;
   usage_percentage?: number;
