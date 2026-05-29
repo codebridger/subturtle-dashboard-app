@@ -3,8 +3,6 @@ import {
   TIERS,
   getTier,
   liveTiers,
-  resolveTierByPriceId,
-  resolveTierByProductId,
   featureCapFor,
   featureAllowedFor,
 } from "../tiers";
@@ -50,15 +48,6 @@ describe("tier registry", () => {
       expect(ids).toEqual(
         expect.arrayContaining(["starter", "reader", "learner", "coach"])
       );
-    });
-  });
-
-  describe("resolveTierByPriceId / resolveTierByProductId (deprecated)", () => {
-    it("returns null — price/product ids are resolved live from Stripe now", () => {
-      // The registry no longer carries Stripe ids; these helpers are kept only
-      // until the webhook stops importing them (removed in S8).
-      expect(resolveTierByPriceId("price_anything")).toBeNull();
-      expect(resolveTierByProductId("prod_anything")).toBeNull();
     });
   });
 
@@ -114,11 +103,13 @@ describe("tier registry", () => {
       }
     });
 
-    it("only the Learner tier offers a trial at launch", () => {
-      expect(getTier("starter").trialDays).toBe(0);
-      expect(getTier("reader").trialDays).toBe(0);
-      expect(getTier("learner").trialDays).toBe(3);
-      expect(getTier("coach").trialDays).toBe(0);
+    it("holds only display copy: GBP amounts on paid tiers, none on Starter", () => {
+      // The registry no longer carries Stripe ids, credit budgets, or caps —
+      // entitlements live in Stripe metadata. It keeps display copy + GBP price.
+      expect(getTier("starter").amount).toBeNull();
+      expect(getTier("reader").amount?.monthly.gbp).toBe(4.49);
+      expect(getTier("learner").amount?.annual.gbp).toBe(104.99);
+      expect(getTier("coach").amount?.monthly.gbp).toBe(24.99);
     });
   });
 });

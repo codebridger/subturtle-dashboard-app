@@ -2,21 +2,20 @@
  * Tier display copy + shared tier types (Council 004 ladder).
  *
  * Under ADR-004, Stripe product metadata is the source of truth for paid-tier
- * ENTITLEMENTS (credits, voice minutes, caps, flags) — parsed in entitlements.ts.
- * This file holds the DISPLAY COPY keyed by tier_id (names, taglines, card
- * bullets) and the shared tier types. The free Starter tier's limits live in
- * config.ts — the single source for free-tier caps.
+ * ENTITLEMENTS (credits, voice minutes, caps, flags, trial/duration) — parsed in
+ * entitlements.ts and resolved LIVE from Stripe. This file holds ONLY the display
+ * copy keyed by tier_id (names, taglines, card bullets, GBP display amounts) and
+ * the shared tier types. The free Starter tier's limits live in config.ts — the
+ * single source for free-tier caps.
  *
  * Feature gating reads from resolved `Entitlements` (paid) or config (Starter)
- * via `featureCapFor` / `featureAllowedFor` — NOT from a static per-tier cap
- * table. The `FeatureKey` list stays in code: Stripe sets a cap's VALUE, it never
- * invents a new feature key.
+ * via `featureCapFor` / `featureAllowedFor`. The `FeatureKey` list stays in code:
+ * Stripe sets a cap's VALUE, it never invents a new feature key.
  *
- * TRANSITION NOTE: `stripeProductId` / `prices` (Stripe ids) are now resolved
- * live from Stripe, so they are `null` here; `amount` / `creditBudget` /
- * `durationDays` / `trialDays` are kept only until the webhook (S2), plans (S3),
- * and checkout (S7) read them from Stripe — S8 then removes them, leaving this
- * file as display copy + types only.
+ * `amount` is the GBP display price, kept as the baked-in fallback the plans
+ * endpoint serves when Stripe is unreachable; the actual price ids live in Stripe
+ * and are resolved at checkout/list time. There are no Stripe ids, credit
+ * budgets, or per-feature caps in this file any more.
  */
 import type { Entitlements } from "./entitlements";
 import {
@@ -26,7 +25,6 @@ import {
 
 export type TierId = "starter" | "reader" | "learner" | "coach";
 export type Cadence = "monthly" | "annual";
-export type Currency = "usd" | "eur" | "gbp";
 export type TierStatus = "live" | "dark"; // dark = "Coming soon, Notify me"
 
 /**
@@ -41,14 +39,14 @@ export type FeatureKey =
   | "session_history"
   | "live_sessions";
 
-export interface TierPrices {
-  monthly: Partial<Record<Currency, string>>; // Stripe price IDs
-  annual: Partial<Record<Currency, string>>;
-}
-
+/**
+ * GBP display amounts (major units). One settlement currency — Stripe Adaptive
+ * Pricing localizes the displayed currency at checkout, so there is no per-
+ * currency map any more.
+ */
 export interface TierAmounts {
-  monthly: Partial<Record<Currency, number>>; // display amounts, major units
-  annual: Partial<Record<Currency, number>>;
+  monthly: { gbp?: number };
+  annual: { gbp?: number };
 }
 
 export interface TierDefinition {
@@ -58,18 +56,8 @@ export interface TierDefinition {
   userFacingName: string;
   tagline: string;
   isPaid: boolean;
-  /** Stripe product ID — resolved live from Stripe now; null in code. */
-  stripeProductId: string | null;
-  /** Stripe price IDs — resolved live from Stripe now; null in code. */
-  prices: TierPrices | null;
-  /** Display amounts per cadence/currency; GBP base (Adaptive Pricing localizes). */
+  /** GBP display amounts; null for the free Starter tier. */
   amount: TierAmounts | null;
-  /** Internal AI credit budget mirror — source of truth is Stripe metadata. */
-  creditBudget: number;
-  /** Length of a billing/allocation window in days. */
-  durationDays: number;
-  /** Credit-card-required free trial length in days; 0 = no trial. */
-  trialDays: number;
   /** Plain-English card bullets — must not contain the word "credit". */
   featureLabels: string[];
   /** Plain-English label for the AI/voice budget on the comparison table. */
@@ -78,7 +66,6 @@ export interface TierDefinition {
 
 /**
  * Public, bundle-safe projection of a tier — what `getSubscriptionPlans` returns.
- * Deliberately omits Stripe price IDs and the raw credit budget.
  */
 export interface PublicTierPlan {
   id: TierId;
@@ -99,12 +86,7 @@ export const TIERS: Record<TierId, TierDefinition> = {
     userFacingName: "Starter",
     tagline: "Start learning English from the videos you already watch.",
     isPaid: false,
-    stripeProductId: null,
-    prices: null,
     amount: null,
-    creditBudget: 5_000_000,
-    durationDays: 30,
-    trialDays: 0,
     featureLabels: [
       "Save up to 200 phrases a month",
       "Unlimited Smart Review flashcards",
@@ -119,15 +101,10 @@ export const TIERS: Record<TierId, TierDefinition> = {
     userFacingName: "Reader",
     tagline: "Read, save, and chat with AI about every phrase you meet.",
     isPaid: true,
-    stripeProductId: null,
-    prices: null,
     amount: {
       monthly: { gbp: 4.49 },
       annual: { gbp: 42.99 },
     },
-    creditBudget: 200_000_000,
-    durationDays: 30,
-    trialDays: 0,
     featureLabels: [
       "Save as many phrases as you want",
       "Unlimited text chat with the AI coach",
@@ -143,15 +120,10 @@ export const TIERS: Record<TierId, TierDefinition> = {
     userFacingName: "Learner",
     tagline: "Make real progress — read with AI, then practice out loud.",
     isPaid: true,
-    stripeProductId: null,
-    prices: null,
     amount: {
       monthly: { gbp: 10.99 },
       annual: { gbp: 104.99 },
     },
-    creditBudget: 300_000_000,
-    durationDays: 30,
-    trialDays: 3,
     featureLabels: [
       "Everything in Reader",
       "About 10 voice chats a month (~90 min)",
@@ -166,15 +138,10 @@ export const TIERS: Record<TierId, TierDefinition> = {
     userFacingName: "Coach",
     tagline: "Speak English every day with your AI coach.",
     isPaid: true,
-    stripeProductId: null,
-    prices: null,
     amount: {
       monthly: { gbp: 24.99 },
       annual: { gbp: 239.99 },
     },
-    creditBudget: 600_000_000,
-    durationDays: 30,
-    trialDays: 0,
     featureLabels: [
       "Everything in Learner",
       "About 30 voice chats a month (~300 min)",
@@ -192,39 +159,6 @@ export function getTier(id: TierId): TierDefinition {
 /** Tiers currently visible/sellable as live — excludes any "dark" tier. */
 export function liveTiers(): TierDefinition[] {
   return Object.values(TIERS).filter((t) => t.status === "live");
-}
-
-/**
- * Resolve a Stripe price ID back to its tier + cadence + currency from the code
- * registry. DEPRECATED: price ids are resolved live from Stripe now (the
- * registry holds none), so this returns null. Kept only until the webhook (S2)
- * stops importing it; removed in S8.
- */
-export function resolveTierByPriceId(
-  priceId: string
-): { tier: TierDefinition; cadence: Cadence; currency: Currency } | null {
-  const cadences: Cadence[] = ["monthly", "annual"];
-  for (const tier of Object.values(TIERS)) {
-    if (!tier.prices) continue;
-    for (const cadence of cadences) {
-      const byCurrency = tier.prices[cadence];
-      for (const currency of Object.keys(byCurrency) as Currency[]) {
-        if (byCurrency[currency] === priceId) {
-          return { tier, cadence, currency };
-        }
-      }
-    }
-  }
-  return null;
-}
-
-/** Resolve a Stripe product ID back to its tier. DEPRECATED (see above). */
-export function resolveTierByProductId(
-  productId: string
-): TierDefinition | null {
-  return (
-    Object.values(TIERS).find((t) => t.stripeProductId === productId) || null
-  );
 }
 
 /**
