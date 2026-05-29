@@ -188,6 +188,10 @@ Checkout Elements SDK in the browser:
   card's GBP price with `Intl.NumberFormat` (cached per browser session in
   `sessionStorage["subturtle.localPricing"]`). Falls back to the GBP base if there
   is no publishable key, Stripe is unavailable, or the presentment currency is GBP.
+  While that probe is in flight (cache miss only — tracked by `isProbingCurrency`),
+  each card's price shows a skeleton placeholder instead of the GBP base, so the
+  amount doesn't flash GBP and then switch to the localized value. Cache hits and
+  the no-key path resolve synchronously, so they skip the skeleton entirely.
 
 **Settlement is always GBP.** The customer pays in their local (presentment)
 currency, but we store the GBP amount on `payment_session`/`payment`, and the

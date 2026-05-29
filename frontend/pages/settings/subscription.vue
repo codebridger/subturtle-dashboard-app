@@ -132,18 +132,29 @@
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white-light">{{ plan.name }}</h3>
                             <p class="mt-1 min-h-[2.5rem] text-sm text-gray-500">{{ plan.tagline }}</p>
 
-                            <!-- Price line (GBP base) -->
+                            <!-- Price line. While the visitor's local currency is being probed
+                                 (Adaptive Pricing), show a skeleton so the GBP base price doesn't
+                                 flash and then switch to the localized one. -->
                             <div class="mt-4 min-h-[3.5rem]">
-                                <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
-                                    {{ formatAmount(plan, cadence) }}
-                                    <span class="text-sm font-medium text-gray-500">
-                                        / {{ isAnnual ? t('subscription.pricing.year') :
-                                            t('subscription.pricing.month') }}
-                                    </span>
-                                </p>
-                                <p v-if="isAnnual" class="text-xs text-gray-400">
-                                    {{ t('subscription.pricing.or-monthly', { price: formatAmount(plan, 'monthly') }) }}
-                                </p>
+                                <template v-if="isProbingCurrency">
+                                    <div class="h-8 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                                    <div v-if="isAnnual"
+                                        class="mt-1.5 h-3 w-24 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]">
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
+                                        {{ formatAmount(plan, cadence) }}
+                                        <span class="text-sm font-medium text-gray-500">
+                                            / {{ isAnnual ? t('subscription.pricing.year') :
+                                                t('subscription.pricing.month') }}
+                                        </span>
+                                    </p>
+                                    <p v-if="isAnnual" class="text-xs text-gray-400">
+                                        {{ t('subscription.pricing.or-monthly', { price: formatAmount(plan, 'monthly') })
+                                        }}
+                                    </p>
+                                </template>
                             </div>
 
                             <!-- Feature list -->
@@ -275,6 +286,12 @@ const checkoutPlanName = ref('');
 const localCurrency = ref<string | null>(null);
 const fxRate = ref<number | null>(null);
 
+// True only while the local currency is being probed over the network (cache
+// miss). Drives the price skeleton so the GBP base price doesn't flash before
+// the localized one arrives. Stays false for cache hits and when there is no
+// publishable key — those resolve to a price synchronously, no skeleton needed.
+const isProbingCurrency = ref(false);
+
 // Display the price in the visitor's local currency (e.g. EUR) when Adaptive
 // Pricing localizes it; otherwise the GBP base price.
 function formatAmount(plan: PublicTierPlan, cad: Cadence): string {
@@ -335,6 +352,7 @@ async function probeLocalCurrency() {
     const probe = paidPlans.value.find((p) => p.id === 'reader') || paidPlans.value[0];
     const gbp = probe?.pricing?.monthly?.gbp;
     if (!probe || gbp == null) return;
+    isProbingCurrency.value = true;
     try {
         const { clientSecret } = await functionProvider.run<{ clientSecret: string }>({
             name: 'createCustomCheckoutSession',
@@ -373,6 +391,8 @@ async function probeLocalCurrency() {
         }
     } catch (err) {
         console.error('Local pricing probe failed (showing GBP):', err);
+    } finally {
+        isProbingCurrency.value = false;
     }
 }
 
