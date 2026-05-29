@@ -59,6 +59,10 @@
                                 ]">
                                     {{ session.provider === 'gemini' ? 'Gemini' : 'OpenAI' }}
                                 </span>
+                                <span v-if="session._isText"
+                                    class="rounded-lg bg-violet-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-violet-700 dark:bg-violet-900/50 dark:text-violet-300">
+                                    {{ t('live-practice.mode.text') }}
+                                </span>
                                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     {{ new Date(session.createdAt).toLocaleString() }}
                                 </span>
@@ -136,9 +140,19 @@ definePageMeta({
 });
 
 const perPage = ref(20);
-const sessionList = ref<LiveSessionRecordType[]>([]);
+const voiceList = ref<LiveSessionRecordType[]>([]);
+const textList = ref<any[]>([]);
 const pagination = ref<PaginationType | null>(null);
 const isLoading = ref(false);
+
+// Voice and text sessions live in separate collections; merge them into one
+// time-sorted list. Pagination follows the (dominant) voice collection; text
+// sessions — a newer, lighter feature — are merged from their first page.
+const sessionList = computed<any[]>(() =>
+    [...voiceList.value, ...textList.value].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+);
 const isEmptyState = computed(() => !sessionList.value.length && !isLoading.value);
 
 // Type guard for practice sessions
@@ -165,8 +179,31 @@ const controller = dataProvider.list<LiveSessionRecordType>(
         limit: perPage.value,
         page: 1,
         onFetched: (data) => {
-            sessionList.value = data;
+            voiceList.value = data;
             pagination.value = controller.pagination;
+        },
+    }
+);
+
+const textController = dataProvider.list<any>(
+    {
+        database: DATABASE.USER_CONTENT,
+        collection: COLLECTIONS.LIVE_SESSION_TEXT,
+        query: { refId: authUser.value?.id },
+        options: { sort: { createdAt: -1 } },
+    },
+    {
+        limit: perPage.value,
+        page: 1,
+        onFetched: (data) => {
+            // Text records carry no provider/type of their own — normalize to
+            // the shape the list renders and tag them so we can show a chip.
+            textList.value = (data as any[]).map((s) => ({
+                ...s,
+                provider: 'gemini',
+                type: s.type || 'bundle-practice',
+                _isText: true,
+            }));
         },
     }
 );
@@ -175,11 +212,13 @@ onMounted(async () => {
     isLoading.value = true;
 
     try {
-        // update pagination
-        await controller.updatePagination();
-        // fetch first page
-        await controller.fetchPage(1);
+        await Promise.all([
+            controller.updatePagination().then(() => controller.fetchPage(1)),
+            textController.updatePagination().then(() => textController.fetchPage(1)),
+        ]);
     } catch (error) {
+        // Partial lists still render; just stop the spinner.
+    } finally {
         isLoading.value = false;
     }
 });
