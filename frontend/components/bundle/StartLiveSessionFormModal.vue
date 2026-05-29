@@ -50,7 +50,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     'update:modelValue': [value: boolean];
-    start: [data: LivePracticeSessionSetupType];
+    start: [data: LivePracticeSessionSetupType & { mode?: 'voice' | 'text' }];
 }>();
 
 const formRef = ref<InstanceType<typeof StartLiveSessionForm> | null>(null);
@@ -62,6 +62,7 @@ const formData = reactive({
     toPhrase: '10',
     totalPhrases: '10',
     nativeLanguage: 'auto',
+    mode: 'voice' as 'voice' | 'text',
 });
 
 const isFormValid = computed(() => {
@@ -81,6 +82,7 @@ function startSession() {
         aiCharacter: formData.aiCharacter,
         selectionMode: formData.selectionMode,
         nativeLanguage: formData.nativeLanguage,
+        mode: formData.mode,
     };
 
     if (formData.selectionMode === 'selection') {
