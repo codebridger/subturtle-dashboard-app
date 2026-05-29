@@ -332,3 +332,55 @@ export async function listTierEntitlements(
   }
   return out;
 }
+
+/**
+ * Resolve the single GBP price id + entitlements for a tier/cadence, live from
+ * Stripe — used by checkout. Non-GBP customers are localized by Stripe Adaptive
+ * Pricing; we always charge against the GBP base price and settle in GBP. Throws
+ * if the tier product, its metadata, or its GBP price for the cadence is
+ * missing/invalid.
+ */
+export async function resolveTierCheckout(
+  stripe: Stripe,
+  tierId: string,
+  cadence: "monthly" | "annual"
+): Promise<{
+  priceId: string;
+  productId: string;
+  entitlements: Entitlements;
+  unitAmount: number | null; // minor units (pence)
+  currency: string; // gbp (settlement)
+}> {
+  const products = await stripe.products.list({ active: true, limit: 100 });
+  const product = products.data.find((p) => p.metadata?.tier_id === tierId);
+  if (!product) {
+    throw new EntitlementParseError(
+      `No active Stripe product for tier "${tierId}"`
+    );
+  }
+  const entitlements = parseTierMetadata(product);
+  if (entitlements.status !== "live") {
+    throw new EntitlementParseError(`Tier "${tierId}" is not live for checkout`);
+  }
+  const interval = cadence === "annual" ? "year" : "month";
+  const prices = await stripe.prices.list({
+    product: product.id,
+    active: true,
+    limit: 100,
+  });
+  const price = prices.data.find(
+    (p) => p.currency === "gbp" && p.recurring?.interval === interval
+  );
+  if (!price) {
+    throw new EntitlementParseError(
+      `No active GBP ${cadence} price for tier "${tierId}"`
+    );
+  }
+  return {
+    priceId: price.id,
+    productId: product.id,
+    entitlements,
+    unitAmount: price.unit_amount,
+    currency: price.currency,
+  };
+}

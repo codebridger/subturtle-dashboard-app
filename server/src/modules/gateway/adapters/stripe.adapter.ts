@@ -21,6 +21,7 @@ import { PaymentSession } from "../types";
 import { getTier, Cadence } from "../../subscription/tiers";
 import {
   resolveEntitlements,
+  resolveTierCheckout,
   clearEntitlementsCache,
   Entitlements,
 } from "../../subscription/entitlements";
@@ -120,43 +121,34 @@ export class StripeAdapter implements PaymentAdapter {
   async createCheckoutSession(
     request: CreateCheckoutRequest
   ): Promise<CheckoutSessionResult> {
-    const { userId, tierId, cadence, currency, successUrl, cancelUrl } =
-      request;
+    const { userId, tierId, cadence, successUrl, cancelUrl } = request;
 
-    // Resolve the tier + Stripe price ID from the registry (the source of truth).
-    const tier = getTier(tierId);
-    if (!tier.isPaid || tier.status !== "live") {
-      throw new Error(`Tier "${tierId}" is not available for checkout`);
-    }
-    const priceId = tier.prices?.[cadence]?.[currency];
-    if (!priceId) {
-      throw new Error(
-        `No Stripe price configured for tier "${tierId}" ${cadence}/${currency}`
-      );
-    }
+    // Resolve the single GBP price + entitlements for this tier/cadence LIVE from
+    // Stripe — product metadata is the source of truth (ADR-004). Non-GBP
+    // customers are shown their local currency by Stripe Adaptive Pricing; we
+    // always charge against the GBP base price and settle in GBP.
+    const { priceId, productId, entitlements, unitAmount, currency } =
+      await resolveTierCheckout(this.stripe, tierId, cadence);
 
     // Ensure Stripe customer exists for this user
     const customerId = await this.getOrCreateStripeCustomer(userId);
-
-    // Fetch the price so the payment_session record mirrors its amount/currency.
-    const price = await this.stripe.prices.retrieve(priceId);
 
     const sessionMetadata: Record<string, string> = {
       userId,
       tierId,
       cadence,
-      currency,
       priceId,
-      creditsAmount: tier.creditBudget.toString(),
-      subscriptionDays: tier.durationDays.toString(),
+      creditsAmount: entitlements.creditsGranted.toString(),
+      voiceMinutes: entitlements.voiceMinutesGranted.toString(),
+      subscriptionDays: entitlements.durationDays.toString(),
     };
 
     // The trial is credit-card-required: `payment_method_collection: "always"`
     // forces card collection even though the subscription starts in a trial.
     const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData =
       { metadata: sessionMetadata };
-    if (tier.trialDays) {
-      subscriptionData.trial_period_days = tier.trialDays;
+    if (entitlements.trialDays) {
+      subscriptionData.trial_period_days = entitlements.trialDays;
     }
 
     const session = await this.stripe.checkout.sessions.create({
@@ -171,7 +163,10 @@ export class StripeAdapter implements PaymentAdapter {
       metadata: sessionMetadata,
     });
 
-    // Save session in database
+    // Save session in database. With Adaptive Pricing the customer pays in their
+    // local (presentment) currency, but we record the GBP SETTLEMENT amount +
+    // currency (the base price) — our reports, refunds, proration, and the
+    // webhook all work in GBP.
     const paymentSessionCollection = getCollection(
       DATABASE,
       PAYMENT_SESSION_COLLECTION
@@ -183,13 +178,13 @@ export class StripeAdapter implements PaymentAdapter {
         $set: {
           user_id: userId,
           provider: this.provider,
-          amount: price.unit_amount ? price.unit_amount / 100 : 0,
-          currency: price.currency,
+          amount: unitAmount ? unitAmount / 100 : 0,
+          currency, // gbp (settlement)
           status: "created",
           provider_data: {
             session_id: session.id,
             price_id: priceId,
-            product_id: tier.stripeProductId,
+            product_id: productId,
             expires_at: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes expiry
             success_url: successUrl,
             cancel_url: cancelUrl,

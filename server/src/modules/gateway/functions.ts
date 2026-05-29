@@ -6,7 +6,7 @@ import {
 } from "./service";
 import { CheckoutSessionRequest } from "./types";
 import { PaymentProvider } from "./adapters";
-import { TierId, Cadence, Currency } from "../subscription/tiers";
+import { TierId, Cadence } from "../subscription/tiers";
 
 /**
  * Array of exported functions for the gateway module
@@ -16,7 +16,6 @@ import { TierId, Cadence, Currency } from "../subscription/tiers";
 interface CreatePaymentParams {
   tierId: TierId;
   cadence: Cadence;
-  currency: Currency;
   provider?: PaymentProvider;
   successUrl?: string;
   cancelUrl?: string;
@@ -31,7 +30,6 @@ const createPaymentSession = defineFunction({
     const {
       tierId,
       cadence,
-      currency,
       provider = PaymentProvider.STRIPE,
       successUrl,
       cancelUrl,
@@ -45,7 +43,6 @@ const createPaymentSession = defineFunction({
     const request: CheckoutSessionRequest = {
       tierId,
       cadence,
-      currency,
       provider,
       successUrl,
       cancelUrl,
