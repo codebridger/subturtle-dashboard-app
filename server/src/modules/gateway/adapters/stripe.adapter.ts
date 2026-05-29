@@ -21,8 +21,10 @@ import { PaymentSession } from "../types";
 import { getTier, Cadence } from "../../subscription/tiers";
 import {
   resolveEntitlements,
+  clearEntitlementsCache,
   Entitlements,
 } from "../../subscription/entitlements";
+import { clearPlansCache } from "../../subscription/plans";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -478,6 +480,31 @@ export class StripeAdapter implements PaymentAdapter {
             success,
             message,
           };
+        }
+
+        // A Stripe edit to a product or price may change entitlements or display
+        // pricing. Drop the entitlement + plans caches so the next read
+        // re-fetches, instead of waiting for the TTL (ADR-004 cache-invalidation).
+        case "product.created":
+        case "product.updated":
+        case "product.deleted": {
+          const product = event.data.object as Stripe.Product;
+          clearEntitlementsCache(product.id);
+          clearPlansCache();
+          return { success: true, message: `Caches cleared (${event.type})` };
+        }
+
+        case "price.created":
+        case "price.updated":
+        case "price.deleted": {
+          const price = event.data.object as Stripe.Price;
+          const productId =
+            typeof price.product === "string"
+              ? price.product
+              : (price.product as Stripe.Product | undefined)?.id;
+          clearEntitlementsCache(productId);
+          clearPlansCache();
+          return { success: true, message: `Caches cleared (${event.type})` };
         }
 
         // Handle other webhook events here

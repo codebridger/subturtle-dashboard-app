@@ -278,3 +278,57 @@ export async function resolveEntitlements(
   });
   return entitlements;
 }
+
+/** One active tier product with its parsed entitlements and GBP prices. */
+export interface TierProductPlan {
+  entitlements: Entitlements;
+  /** Display amounts in major GBP units (e.g. 10.99), or null if not found. */
+  monthlyGbp: number | null;
+  annualGbp: number | null;
+}
+
+/**
+ * List every active tier product (those carrying `tier_id` metadata) with its
+ * parsed entitlements and GBP monthly/annual prices. Voice top-up packs and any
+ * non-tier products are skipped.
+ *
+ * Unlike the webhook path, a product whose metadata FAILS to parse is skipped
+ * (with a warning) rather than thrown: one malformed product must not break the
+ * anonymous, high-traffic pricing page. The plans endpoint's last-known-good
+ * fallback covers a total Stripe outage.
+ */
+export async function listTierEntitlements(
+  stripe: Stripe
+): Promise<TierProductPlan[]> {
+  const products = await stripe.products.list({ active: true, limit: 100 });
+  const out: TierProductPlan[] = [];
+  for (const product of products.data) {
+    if (!product.metadata?.tier_id) continue; // skip packs / non-tier products
+    let entitlements: Entitlements;
+    try {
+      entitlements = parseTierMetadata(product);
+    } catch (err: any) {
+      console.warn(
+        `[entitlements] skipping product ${product.id} on plans list: ${
+          err?.message || err
+        }`
+      );
+      continue;
+    }
+    const prices = await stripe.prices.list({
+      product: product.id,
+      active: true,
+      limit: 100,
+    });
+    let monthlyGbp: number | null = null;
+    let annualGbp: number | null = null;
+    for (const price of prices.data) {
+      if (price.currency !== "gbp" || !price.recurring) continue;
+      const amount = price.unit_amount != null ? price.unit_amount / 100 : null;
+      if (price.recurring.interval === "month") monthlyGbp = amount;
+      else if (price.recurring.interval === "year") annualGbp = amount;
+    }
+    out.push({ entitlements, monthlyGbp, annualGbp });
+  }
+  return out;
+}

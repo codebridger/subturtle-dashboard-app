@@ -6,7 +6,9 @@ import {
 import { Types } from "mongoose";
 
 import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
-import { TIERS, PublicTierPlan } from "./tiers";
+import { PublicTierPlan } from "./tiers";
+import { getSubscriptionPlansCached, getFallbackPlans } from "./plans";
+import { PaymentAdapterFactory } from "../gateway/adapters";
 import { DATABASE, FLUENT_WAITLIST_COLLECTION } from "../../config";
 
 /**
@@ -51,18 +53,20 @@ const getSubscriptionPlans = defineFunction({
   name: "getSubscriptionPlans",
   permissionTypes: ["anonymous_access"],
   callback: async (_params): Promise<PublicTierPlan[]> => {
-    // Registry-driven — no live Stripe product listing. Dark tiers (Fluent)
-    // are included so the pricing page can render them as "Coming soon".
-    return Object.values(TIERS).map((tier) => ({
-      id: tier.id,
-      status: tier.status,
-      name: tier.userFacingName,
-      tagline: tier.tagline,
-      isPaid: tier.isPaid,
-      featureLabels: tier.featureLabels,
-      aiBudgetLabel: tier.aiBudgetLabel,
-      pricing: tier.amount,
-    }));
+    // Built from live Stripe products (ADR-004), through a TTL cache with a
+    // last-known-good + baked-in fallback. If even acquiring the Stripe adapter
+    // fails, serve the code fallback so this anonymous page never renders empty.
+    let stripe;
+    try {
+      stripe = PaymentAdapterFactory.getStripeAdapter().stripe;
+    } catch (err) {
+      console.error(
+        "[subscription] getSubscriptionPlans: Stripe adapter unavailable, serving fallback",
+        err
+      );
+      return getFallbackPlans();
+    }
+    return getSubscriptionPlansCached(stripe);
   },
 });
 
