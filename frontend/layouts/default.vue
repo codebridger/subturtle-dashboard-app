@@ -20,8 +20,12 @@
             </template>
 
             <template #content>
-                <UsageCapBanner />
-                <NuxtPage />
+                <!-- overflow-x-clip contains decorative full-bleed page backgrounds (e.g. blurred blobs positioned past the edge)
+                     so they never trigger a page-wide horizontal scroll; clip (not hidden) leaves vertical scrolling untouched. -->
+                <div class="overflow-x-clip">
+                    <UsageCapBanner />
+                    <NuxtPage />
+                </div>
             </template>
         </DashboardShell>
 
