@@ -351,10 +351,19 @@ async function probeLocalCurrency() {
         const res = await sdk.loadActions();
         if (res.type !== 'success') return;
         const session = res.actions.getSession();
-        const minor = session?.lineItems?.[0]?.unitAmount?.minorUnitsAmount;
         // Only localize when Stripe actually presents a non-GBP currency.
-        if (!session.currency || session.currency === 'gbp' || !minor) return;
-        const rate = minor / (gbp * 100);
+        if (!session.currency || session.currency === 'gbp') return;
+        // Prefer Stripe's TRUE conversion rate (currencyOptions[].currencyConversion.fxRate)
+        // so every card matches checkout exactly; deriving a rate from one tier's
+        // already-rounded amount drifts by a cent. Fall back to that derivation.
+        const opt = (session.currencyOptions || []).find((o: any) => o?.currencyConversion?.fxRate);
+        const minor = session?.lineItems?.[0]?.unitAmount?.minorUnitsAmount;
+        const rate = opt
+            ? parseFloat(opt.currencyConversion.fxRate)
+            : minor
+            ? minor / (gbp * 100)
+            : null;
+        if (!rate) return;
         localCurrency.value = session.currency;
         fxRate.value = rate;
         try {
