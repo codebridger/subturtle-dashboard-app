@@ -105,11 +105,12 @@
                         :label="t('subscription.pricing.annual-toggle')" sublabel="" />
                 </div>
 
-                <!-- Pricing Cards (Reader / Learner / Coach) — built live from Stripe.
-                     While loading, show skeleton cards (not a spinner) so the layout
-                     is stable; if Stripe can't provide plans, show a calm notice. -->
-                <div v-if="isLoadingPlans" class="grid grid-cols-1 gap-8 md:grid-cols-3">
-                    <Card v-for="n in 3" :key="n"
+                <!-- Pricing Cards (Starter / Reader / Learner / Coach) — paid tiers built
+                     live from Stripe, free Starter from code. While loading, show skeleton
+                     cards (not a spinner) so the layout is stable; if Stripe can't provide
+                     plans, show a calm notice. -->
+                <div v-if="isLoadingPlans" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                    <Card v-for="n in 4" :key="n"
                         class="relative flex h-full w-full flex-col rounded-lg border border-[#e0e6ed] shadow-none dark:border-[#1b2e4b]">
                         <div class="flex flex-grow flex-col p-5">
                             <div class="h-6 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
@@ -130,8 +131,8 @@
                 <div v-else-if="!paidPlans.length" class="py-12 text-center text-gray-500">
                     {{ t('subscription.pricing.empty') }}
                 </div>
-                <div v-else class="grid grid-cols-1 gap-8 md:grid-cols-3">
-                    <Card v-for="plan in paidPlans" :key="plan.id"
+                <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                    <Card v-for="plan in plans" :key="plan.id"
                         class="relative flex h-full w-full flex-col rounded-lg border shadow-none transition-all duration-300"
                         :class="plan.highlight
                             ? 'border-primary ring-1 ring-primary/30'
@@ -147,17 +148,17 @@
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white-light">{{ plan.name }}</h3>
                             <p class="mt-1 min-h-[2.5rem] text-sm text-gray-500">{{ plan.tagline }}</p>
 
-                            <!-- Price line. While the visitor's local currency is being probed
-                                 (Adaptive Pricing), show a skeleton so the GBP base price doesn't
-                                 flash and then switch to the localized one. -->
+                            <!-- Price line. Paid: skeleton while the local currency is probed
+                                 (Adaptive Pricing) so the GBP base doesn't flash, then the
+                                 localized price. Free Starter: always "Free". -->
                             <div class="mt-4 min-h-[3.5rem]">
-                                <template v-if="isProbingCurrency">
+                                <template v-if="plan.isPaid && isProbingCurrency">
                                     <div class="h-8 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
                                     <div v-if="isAnnual"
                                         class="mt-1.5 h-3 w-24 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]">
                                     </div>
                                 </template>
-                                <template v-else>
+                                <template v-else-if="plan.isPaid">
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
                                         {{ formatAmount(plan, cadence) }}
                                         <span class="text-sm font-medium text-gray-500">
@@ -169,6 +170,12 @@
                                         {{ t('subscription.pricing.or-monthly', { price: formatAmount(plan, 'monthly') })
                                         }}
                                     </p>
+                                </template>
+                                <template v-else>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
+                                        {{ t('subscription.pricing.free') }}
+                                    </p>
+                                    <p class="text-xs text-gray-400">{{ t('subscription.pricing.starter-price') }}</p>
                                 </template>
                             </div>
 
@@ -183,8 +190,19 @@
 
                             <!-- CTA -->
                             <div class="mt-auto">
-                                <!-- Already on this plan -->
-                                <Button v-if="activePlanId === plan.id" block color="primary"
+                                <!-- Free Starter: current-level indicator for free users,
+                                     "Downgrade to Free" for users on a paid tier. -->
+                                <template v-if="plan.id === 'starter'">
+                                    <div v-if="isFreemium"
+                                        class="rounded-md bg-gray-100 py-2.5 text-center text-sm font-medium text-gray-500 dark:bg-[#1b2e4b] dark:text-white-dark">
+                                        {{ t('subscription.pricing.current-plan') }}
+                                    </div>
+                                    <Button v-else block outline color="primary"
+                                        :label="t('subscription.pricing.downgrade-free')" @click="downgradeToFree" />
+                                </template>
+
+                                <!-- Already on this paid plan -->
+                                <Button v-else-if="activePlanId === plan.id" block color="primary"
                                     :label="t('subscription.manage-subscription')" @click="goToPortal" />
 
                                 <!-- Trial CTA — shown for any tier with a free trial (days from Stripe) -->
@@ -204,19 +222,6 @@
                             </div>
                         </div>
                     </Card>
-                </div>
-
-                <!-- Starter — "Continue with Free" link below the cards -->
-                <div v-if="!isLoadingPlans && !plansError" class="text-center">
-                    <p v-if="starterPlan" class="text-sm text-gray-500">{{ starterPlan.tagline }}</p>
-                    <p class="mt-1 text-xs text-gray-400">{{ t('subscription.pricing.starter-price') }}</p>
-                    <span v-if="isFreemium" class="mt-2 inline-block text-sm font-medium text-gray-500">
-                        {{ t('subscription.pricing.current-plan') }}
-                    </span>
-                    <button v-else type="button"
-                        class="mt-2 text-sm font-medium text-primary hover:underline" @click="goToPortal">
-                        {{ t('subscription.pricing.continue-free') }}
-                    </button>
                 </div>
 
                 <!-- Payment Status Messages -->
@@ -280,7 +285,6 @@ const showCancelOffRamp = ref(false);
 // Council 004: three paid cards (Reader / Learner / Coach) come from the backend;
 // Starter is the "Continue with Free" link below them.
 const paidPlans = computed(() => plans.value.filter((p) => p.isPaid));
-const starterPlan = computed(() => plans.value.find((p) => !p.isPaid));
 
 const activeSubscriptionData = computed(() => profileStore.activeSubscription);
 const isFreemium = computed(() => profileStore.isFreemium);
@@ -447,6 +451,17 @@ async function onCheckoutSuccess() {
 function goToPortal() {
     const url = activeSubscriptionData.value?.portal_url;
     if (url) window.location.href = url;
+}
+
+// "Downgrade to Free" on the Starter card. Reuse the existing cancel flow: the
+// off-ramp interstitial for trialing users, the Stripe billing portal for active
+// paid users (where the cancellation that reverts them to Starter is confirmed).
+function downgradeToFree() {
+    if (isTrialing.value) {
+        showCancelOffRamp.value = true;
+    } else {
+        goToPortal();
+    }
 }
 
 async function handleProfileReset() {

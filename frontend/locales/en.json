@@ -207,6 +207,8 @@
             "starter-price": "Free, forever. No card needed.",
             "free-plan": "Free plan",
             "current-plan": "Current plan",
+            "free": "Free",
+            "downgrade-free": "Downgrade to Free",
             "trial-cta": "Start {days}-day free trial",
             "trial-subline": "Try free for {days} days. Cancel any time.",
             "choose-plan": "Choose {name}",
