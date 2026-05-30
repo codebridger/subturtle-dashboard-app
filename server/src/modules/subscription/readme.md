@@ -18,13 +18,18 @@ that reads and validates that metadata:
   fail-safe **refusal** (non-2xx so Stripe retries) plus an `entitlement-grant-refused`
   alert — never a guessed amount or a silent drop to free.
 - `getSubscriptionPlans` is built from the live Stripe products through a TTL cache with
-  a last-known-good snapshot and a baked-in code fallback, so the public pricing page
-  never renders empty.
+  a last-known-good snapshot (real Stripe data). There is **no baked-in plan fallback**:
+  if Stripe has never succeeded (cold start + outage) it throws, and the frontend shows a
+  skeleton while loading + a "payment system unavailable" notice on failure — never
+  invented plan data.
 - Checkout uses **one GBP base price** per tier/cadence + Stripe Adaptive Pricing; the
   customer pays in their local currency but we settle and report in GBP.
-- Display copy (names, taglines, card bullets, GBP amounts) stays in code keyed by
-  `tier_id` in `tiers.ts`; the **free Starter tier's limits live only in `config.ts`**.
-  Feature gating reads resolved entitlements (paid) or config (Starter) via
+- Display copy for PAID tiers (name = the Stripe product name; `tagline`, `feature_<n>`
+  bullets, `ai_budget_label`, `highlight`, `badge`) also lives in **Stripe metadata** and
+  is parsed leniently in `display.ts` (a copy typo must never block a money grant or 500
+  the pricing page). The only tier defined in code is the **free Starter** (it has no
+  Stripe product): its copy is `STARTER_TIER` in `tiers.ts` and its caps live in
+  `config.ts`. Feature gating reads resolved entitlements (paid) or config (Starter) via
   `featureCapFor` / `featureAllowedFor`.
 
 New schema fields on the subscription/free_credit collections: `voice_minutes_total`,

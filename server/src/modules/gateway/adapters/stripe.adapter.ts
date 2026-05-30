@@ -18,11 +18,12 @@ import {
   PaymentVerificationResult,
 } from "./types";
 import { PaymentSession } from "../types";
-import { getTier, Cadence } from "../../subscription/tiers";
+import { Cadence } from "../../subscription/tiers";
 import {
   resolveEntitlements,
   resolveTierCheckout,
   clearEntitlementsCache,
+  cachedTierName,
   Entitlements,
 } from "../../subscription/entitlements";
 import { clearPlansCache } from "../../subscription/plans";
@@ -430,6 +431,13 @@ export class StripeAdapter implements PaymentAdapter {
           const cadence: Cadence =
             item.price.recurring?.interval === "year" ? "annual" : "monthly";
 
+          // The card label is the Stripe product NAME (source of truth), cached by
+          // the resolveEntitlements call above; fall back to the capitalized tier id.
+          const tierLabel =
+            cachedTierName({ priceId }) ||
+            entitlements.tierId.charAt(0).toUpperCase() +
+              entitlements.tierId.slice(1);
+
           // 3. Grant from the parsed metadata, snapshotting it onto the doc and
           //    marking the granted period. A trialing subscription still gets the
           //    full budget so the trial unlocks the tier. Idempotent on
@@ -451,7 +459,7 @@ export class StripeAdapter implements PaymentAdapter {
             paymentMetaData: {
               provider: this.provider,
               stripe: {
-                label: getTier(entitlements.tierId).userFacingName,
+                label: tierLabel,
                 subscription_id: subscription.id,
               },
             },

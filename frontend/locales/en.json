@@ -200,7 +200,6 @@
         "canceling": "Cancels on {date}",
         "pricing": {
             "annual-toggle": "Save 20% with annual billing",
-            "most-popular": "Most popular",
             "coming-soon": "Coming soon",
             "month": "month",
             "year": "year",
@@ -208,12 +207,12 @@
             "starter-price": "Free, forever. No card needed.",
             "free-plan": "Free plan",
             "current-plan": "Current plan",
-            "learner-cta": "Start 3-day free trial",
-            "learner-subline": "Try free for 3 days. Cancel any time.",
+            "trial-cta": "Start {days}-day free trial",
+            "trial-subline": "Try free for {days} days. Cancel any time.",
             "choose-plan": "Choose {name}",
             "continue-free": "Continue with Free",
             "loading": "Loading plans…",
-            "error": "Couldn't load plans. Please try again.",
+            "error": "Plans are temporarily unavailable due to a payment system issue. Please check back soon.",
             "empty": "No plans available right now."
         },
         "checkout": {

@@ -17,8 +17,11 @@
  *   - `credits_granted` and `voice_minutes_granted` directly grant money-costing
  *     value, so they carry hard min/max bounds — a typo (missing or extra zero)
  *     is rejected, not granted.
- *   - Display copy (name, tagline, feature labels) is NOT here — it stays in code
- *     keyed by `tier_id`. Stripe metadata holds machine values only.
+ *   - This module validates MACHINE values only (the money-granting ones), and is
+ *     LOUD on error. User-facing DISPLAY copy (name, tagline, feature bullets,
+ *     highlight/badge) also lives on the Stripe product but is parsed leniently
+ *     and separately in `display.ts` — a copy typo must never block a grant, and a
+ *     bad number must never be shown as harmless.
  *
  * Metadata is read through a short-TTL cache to keep Stripe calls cheap and
  * within rate limits; the cache is invalidated on the `product.updated` /
@@ -26,6 +29,7 @@
  */
 import Stripe from "stripe";
 import { z } from "zod";
+import { parseTierDisplay, TierDisplay } from "./display";
 
 /**
  * Metadata schema version. Bump when the key set or their meaning changes; the
@@ -203,6 +207,10 @@ const entitlementCache = new Map<string, CacheEntry>();
 // mapping is stable and can be cached without a TTL (saves a price fetch on warm
 // lookups). Cleared together with the entitlement cache.
 const priceToProduct = new Map<string, string>();
+// The product NAME (the user-facing tier label, e.g. "Learner") captured whenever
+// we fetch a product, so the webhook can stamp the subscription label from Stripe
+// (the source of truth) without a second round-trip. Keyed by product id.
+const productNameCache = new Map<string, string>();
 
 function getCachedByProduct(productId: string): Entitlements | null {
   const entry = entitlementCache.get(productId);
@@ -220,10 +228,28 @@ function getCachedByProduct(productId: string): Entitlements | null {
 export function clearEntitlementsCache(productId?: string): void {
   if (productId) {
     entitlementCache.delete(productId);
+    productNameCache.delete(productId);
   } else {
     entitlementCache.clear();
     priceToProduct.clear();
+    productNameCache.clear();
   }
+}
+
+/**
+ * The cached Stripe product NAME for an already-resolved tier (the user-facing
+ * label, e.g. "Learner"). Returns null if the product has not been resolved this
+ * TTL window — the caller falls back. Pass the same priceId/productId previously
+ * passed to `resolveEntitlements`; no Stripe call is made here.
+ */
+export function cachedTierName(opts: {
+  priceId?: string;
+  productId?: string;
+}): string | null {
+  let productId = opts.productId;
+  if (!productId && opts.priceId) productId = priceToProduct.get(opts.priceId);
+  if (!productId) return null;
+  return productNameCache.get(productId) ?? null;
 }
 
 /**
@@ -265,10 +291,12 @@ export async function resolveEntitlements(
     }
     product = p as Stripe.Product;
     priceToProduct.set(opts.priceId, product.id);
+    productNameCache.set(product.id, (product.name || "").trim());
     const cached = getCachedByProduct(product.id);
     if (cached) return cached;
   } else {
     product = await stripe.products.retrieve(productId as string);
+    productNameCache.set(product.id, (product.name || "").trim());
   }
 
   const entitlements = parseTierMetadata(product);
@@ -279,9 +307,11 @@ export async function resolveEntitlements(
   return entitlements;
 }
 
-/** One active tier product with its parsed entitlements and GBP prices. */
+/** One active tier product with its parsed entitlements, display copy, and GBP prices. */
 export interface TierProductPlan {
   entitlements: Entitlements;
+  /** User-facing copy (name, tagline, bullets, highlight/badge) from Stripe. */
+  display: TierDisplay;
   /** Display amounts in major GBP units (e.g. 10.99), or null if not found. */
   monthlyGbp: number | null;
   annualGbp: number | null;
@@ -328,7 +358,12 @@ export async function listTierEntitlements(
       if (price.recurring.interval === "month") monthlyGbp = amount;
       else if (price.recurring.interval === "year") annualGbp = amount;
     }
-    out.push({ entitlements, monthlyGbp, annualGbp });
+    out.push({
+      entitlements,
+      display: parseTierDisplay(product),
+      monthlyGbp,
+      annualGbp,
+    });
   }
   return out;
 }

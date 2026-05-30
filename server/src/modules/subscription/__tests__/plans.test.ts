@@ -1,16 +1,13 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import {
-  getSubscriptionPlansCached,
-  getFallbackPlans,
-  clearPlansCache,
-} from "../plans";
+import { getSubscriptionPlansCached, clearPlansCache } from "../plans";
 
 function meta(
   tier_id: string,
   rank: string,
   voice: string,
   wi: string,
-  sh: string
+  sh: string,
+  trial = "0"
 ): Record<string, string> {
   return {
     schema_version: "1",
@@ -25,15 +22,48 @@ function meta(
     weekly_insights: wi,
     session_history: sh,
     duration_days: "30",
-    trial_days: "0",
+    trial_days: trial,
   };
 }
 
+// Products carry BOTH machine entitlements and display copy in metadata (ADR-004);
+// the card name is the product's native `name`.
 const products = {
   data: [
-    { id: "prod_coach", metadata: meta("coach", "3", "300", "true", "true") },
-    { id: "prod_reader", metadata: meta("reader", "1", "0", "false", "false") },
-    { id: "prod_learner", metadata: meta("learner", "2", "90", "true", "true") },
+    {
+      id: "prod_coach",
+      name: "Coach",
+      metadata: {
+        ...meta("coach", "3", "300", "true", "true"),
+        tagline: "Speak English every day with your AI coach.",
+        ai_budget_label: "300 minutes of voice chat a month",
+        feature_1: "Everything in Learner",
+        feature_2: "300 minutes of voice chat a month",
+      },
+    },
+    {
+      id: "prod_reader",
+      name: "Reader",
+      metadata: {
+        ...meta("reader", "1", "0", "false", "false"),
+        tagline: "Read, save, and chat with AI about every phrase you meet.",
+        ai_budget_label: "voice top-ups any time",
+        feature_1: "Save as many phrases as you want",
+      },
+    },
+    {
+      id: "prod_learner",
+      name: "Learner",
+      metadata: {
+        ...meta("learner", "2", "90", "true", "true", "3"),
+        tagline: "Make real progress — read with AI, then practice out loud.",
+        ai_budget_label: "90 minutes of voice chat a month",
+        feature_1: "Everything in Reader",
+        feature_2: "90 minutes of voice chat a month",
+        highlight: "true",
+        badge: "Most popular",
+      },
+    },
   ],
 };
 const pricesByProduct: Record<string, any> = {
@@ -74,22 +104,19 @@ function downStripe(): any {
   };
 }
 
-describe("getFallbackPlans (baked-in)", () => {
-  it("returns all four tiers; Starter has no pricing", () => {
-    const f = getFallbackPlans();
-    expect(f.map((p) => p.id)).toEqual(["starter", "reader", "learner", "coach"]);
-    expect(f.find((p) => p.id === "starter")!.pricing).toBeNull();
-    expect(f.find((p) => p.id === "reader")!.pricing?.monthly.gbp).toBe(4.49);
-  });
-});
-
 describe("getSubscriptionPlansCached", () => {
   beforeEach(() => {
     clearPlansCache();
     jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("builds from Stripe, Starter first then by tier_rank, GBP pricing, no 'credit' copy", async () => {
+  // NOTE: this MUST be the first test — it relies on there being no
+  // last-known-good snapshot yet (the module starts fresh per test file).
+  it("throws when Stripe is down and there is no last-known-good snapshot", async () => {
+    await expect(getSubscriptionPlansCached(downStripe())).rejects.toThrow();
+  });
+
+  it("builds from Stripe: Starter first then by tier_rank, GBP pricing, no 'credit' copy", async () => {
     const plans = await getSubscriptionPlansCached(okStripe());
     expect(plans.map((p) => p.id)).toEqual(["starter", "reader", "learner", "coach"]);
     expect(plans.find((p) => p.id === "learner")!.pricing?.monthly.gbp).toBe(10.99);
@@ -100,6 +127,25 @@ describe("getSubscriptionPlansCached", () => {
       .join(" ")
       .toLowerCase();
     expect(copy).not.toContain("credit");
+  });
+
+  it("projects display copy + highlight/badge/trialDays from Stripe metadata", async () => {
+    const plans = await getSubscriptionPlansCached(okStripe());
+    const learner = plans.find((p) => p.id === "learner")!;
+    expect(learner.name).toBe("Learner"); // from product.name
+    expect(learner.tagline).toContain("Make real progress");
+    expect(learner.featureLabels).toEqual([
+      "Everything in Reader",
+      "90 minutes of voice chat a month",
+    ]);
+    expect(learner.highlight).toBe(true);
+    expect(learner.badge).toBe("Most popular");
+    expect(learner.trialDays).toBe(3);
+
+    const reader = plans.find((p) => p.id === "reader")!;
+    expect(reader.highlight).toBe(false);
+    expect(reader.badge).toBeNull();
+    expect(reader.trialDays).toBe(0);
   });
 
   it("serves the warm cache without re-reading Stripe", async () => {
@@ -114,7 +160,7 @@ describe("getSubscriptionPlansCached", () => {
     await getSubscriptionPlansCached(okStripe()); // success -> last-known-good set
     clearPlansCache();
     const plans = await getSubscriptionPlansCached(downStripe());
-    // never empty: serves the last successful build
+    // never empty: serves the last successful build (real Stripe data)
     expect(plans.map((p) => p.id)).toEqual(["starter", "reader", "learner", "coach"]);
   });
 });

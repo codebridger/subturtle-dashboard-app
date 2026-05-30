@@ -7,7 +7,7 @@ import { Types } from "mongoose";
 
 import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
 import { PublicTierPlan } from "./tiers";
-import { getSubscriptionPlansCached, getFallbackPlans } from "./plans";
+import { getSubscriptionPlansCached } from "./plans";
 import { PaymentAdapterFactory } from "../gateway/adapters";
 import { DATABASE, FLUENT_WAITLIST_COLLECTION } from "../../config";
 
@@ -54,18 +54,11 @@ const getSubscriptionPlans = defineFunction({
   permissionTypes: ["anonymous_access"],
   callback: async (_params): Promise<PublicTierPlan[]> => {
     // Built from live Stripe products (ADR-004), through a TTL cache with a
-    // last-known-good + baked-in fallback. If even acquiring the Stripe adapter
-    // fails, serve the code fallback so this anonymous page never renders empty.
-    let stripe;
-    try {
-      stripe = PaymentAdapterFactory.getStripeAdapter().stripe;
-    } catch (err) {
-      console.error(
-        "[subscription] getSubscriptionPlans: Stripe adapter unavailable, serving fallback",
-        err
-      );
-      return getFallbackPlans();
-    }
+    // last-known-good snapshot (real Stripe data). There is no baked-in plan
+    // fallback: if the Stripe adapter can't be acquired AND there is no snapshot,
+    // this throws so the frontend can show a "payment system unavailable" message
+    // rather than rendering invented plan data.
+    const stripe = PaymentAdapterFactory.getStripeAdapter().stripe;
     return getSubscriptionPlansCached(stripe);
   },
 });

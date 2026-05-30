@@ -16,7 +16,10 @@
  *      and their per-currency prices).
  *   2. Creates/reuses the Reader, Learner, Coach products, each carrying full
  *      entitlement metadata (schema_version, credits_granted,
- *      voice_minutes_granted, caps, flags, trial_days, ...).
+ *      voice_minutes_granted, caps, flags, trial_days, ...) AND display copy
+ *      (tagline, feature_1..N bullets, ai_budget_label, highlight, badge). The
+ *      product NAME is the card name. The backend reads ALL of this from Stripe
+ *      at runtime — these literals only seed it.
  *   3. Creates/reuses ONE GBP monthly + ONE GBP annual recurring price per tier.
  *      Non-GBP customers see local currency via Stripe Adaptive Pricing (a
  *      Dashboard setting — see MANUAL STEPS); we settle in GBP. No per-currency
@@ -51,6 +54,7 @@ import {
   ENTITLEMENT_SCHEMA_VERSION,
   parseTierMetadata,
 } from "../src/modules/subscription/entitlements";
+import { parseTierDisplay } from "../src/modules/subscription/display";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -82,6 +86,17 @@ interface TierSpec {
   trialDays: number;
   /** GBP amounts in minor units (pence). */
   prices: Record<Cadence, number>;
+  // --- Display copy (the runtime source of truth is Stripe; these seed it). ---
+  /** One-line card subtitle. */
+  tagline: string;
+  /** Card bullets — must not contain the word "credit". */
+  featureLabels: string[];
+  /** Voice/AI budget label for the comparison table. */
+  aiBudgetLabel: string;
+  /** Emphasise this card (border/ring) on the pricing page. */
+  highlight: boolean;
+  /** Ribbon text (e.g. "Most popular"); "" for none. */
+  badge: string;
 }
 
 // Canonical Council 004 entitlements. Prices come from the council price table;
@@ -103,6 +118,17 @@ const TIER_SPECS: TierSpec[] = [
     durationDays: 30,
     trialDays: 0,
     prices: { monthly: 449, annual: 4299 },
+    tagline: "Read, save, and chat with AI about every phrase you meet.",
+    featureLabels: [
+      "Save as many phrases as you want",
+      "Unlimited text chat with the AI coach",
+      "Unlimited translations",
+      "Unlimited Smart Review",
+      "Voice top-ups when you want them",
+    ],
+    aiBudgetLabel: "voice top-ups any time",
+    highlight: false,
+    badge: "",
   },
   {
     tierId: "learner",
@@ -119,6 +145,16 @@ const TIER_SPECS: TierSpec[] = [
     durationDays: 30,
     trialDays: 3, // 3-day CC-required trial unlocks Learner
     prices: { monthly: 1099, annual: 10499 },
+    tagline: "Make real progress — read with AI, then practice out loud.",
+    featureLabels: [
+      "Everything in Reader",
+      "90 minutes of voice chat a month",
+      "Weekly progress insights",
+      "Full session history",
+    ],
+    aiBudgetLabel: "90 minutes of voice chat a month",
+    highlight: true,
+    badge: "Most popular",
   },
   {
     tierId: "coach",
@@ -135,6 +171,15 @@ const TIER_SPECS: TierSpec[] = [
     durationDays: 30,
     trialDays: 0,
     prices: { monthly: 2499, annual: 23999 },
+    tagline: "Speak English every day with your AI coach.",
+    featureLabels: [
+      "Everything in Learner",
+      "300 minutes of voice chat a month",
+      "Top up voice minutes any time",
+    ],
+    aiBudgetLabel: "300 minutes of voice chat a month",
+    highlight: false,
+    badge: "",
   },
 ];
 
@@ -156,7 +201,7 @@ const PACK_SPECS: PackSpec[] = [
 const KNOWN_TIER_IDS = TIER_SPECS.map((t) => t.tierId);
 const KNOWN_PACK_KEYS = PACK_SPECS.map((p) => p.key);
 
-/** Build + self-validate a tier product's entitlement metadata. */
+/** Build + self-validate a tier product's entitlement + display metadata. */
 function tierMetadata(spec: TierSpec): Stripe.MetadataParam {
   const metadata: Record<string, string> = {
     schema_version: ENTITLEMENT_SCHEMA_VERSION,
@@ -172,9 +217,29 @@ function tierMetadata(spec: TierSpec): Stripe.MetadataParam {
     session_history: String(spec.sessionHistory),
     duration_days: String(spec.durationDays),
     trial_days: String(spec.trialDays),
+    // Display copy — Stripe is the RUNTIME source of truth (display.ts reads
+    // these); the literals above/here only SEED it. Card name = product.name.
+    tagline: spec.tagline,
+    ai_budget_label: spec.aiBudgetLabel,
+    highlight: String(spec.highlight),
+    badge: spec.badge,
   };
-  // Validate with the server's own parser — a typo fails here, not in Stripe.
-  parseTierMetadata({ id: `(local:${spec.tierId})`, metadata });
+  spec.featureLabels.forEach((label, i) => {
+    metadata[`feature_${i + 1}`] = label;
+  });
+
+  // Validate with the server's OWN parsers — a typo fails here, not in Stripe.
+  parseTierMetadata({ id: `(local:${spec.tierId})`, metadata }); // machine values (LOUD)
+  const display = parseTierDisplay({ name: spec.name, metadata }); // display copy
+  if (display.featureLabels.length !== spec.featureLabels.length) {
+    throw new Error(`feature bullets did not round-trip for "${spec.tierId}"`);
+  }
+  const copy = [display.tagline, display.aiBudgetLabel, ...display.featureLabels]
+    .join(" ")
+    .toLowerCase();
+  if (copy.includes("credit")) {
+    throw new Error(`user-facing copy must not contain "credit" ("${spec.tierId}")`);
+  }
   return metadata;
 }
 

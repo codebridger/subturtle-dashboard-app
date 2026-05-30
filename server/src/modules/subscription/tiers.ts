@@ -1,21 +1,22 @@
 /**
- * Tier display copy + shared tier types (Council 004 ladder).
+ * Free-tier copy + shared tier types (Council 004 ladder).
  *
- * Under ADR-004, Stripe product metadata is the source of truth for paid-tier
- * ENTITLEMENTS (credits, voice minutes, caps, flags, trial/duration) — parsed in
- * entitlements.ts and resolved LIVE from Stripe. This file holds ONLY the display
- * copy keyed by tier_id (names, taglines, card bullets, GBP display amounts) and
- * the shared tier types. The free Starter tier's limits live in config.ts — the
- * single source for free-tier caps.
+ * Under ADR-004, Stripe is the single source of truth for the PAID tiers:
+ *   - ENTITLEMENTS (credits, voice minutes, caps, flags, trial/duration) — parsed
+ *     in entitlements.ts and resolved LIVE from Stripe.
+ *   - DISPLAY copy (name, tagline, bullets, highlight/badge) — parsed in
+ *     display.ts from the same Stripe product.
+ *   - PRICES — the Stripe Price objects (GBP base + Adaptive Pricing).
+ * There is NO paid-tier data in this file any more.
+ *
+ * The ONE exception is the free Starter tier: it has no Stripe product (free
+ * plans aren't sold, and the strict money-granting metadata schema doesn't fit
+ * £0), so its copy lives here and its caps live in config.ts — the single source
+ * for free-tier limits.
  *
  * Feature gating reads from resolved `Entitlements` (paid) or config (Starter)
  * via `featureCapFor` / `featureAllowedFor`. The `FeatureKey` list stays in code:
  * Stripe sets a cap's VALUE, it never invents a new feature key.
- *
- * `amount` is the GBP display price, kept as the baked-in fallback the plans
- * endpoint serves when Stripe is unreachable; the actual price ids live in Stripe
- * and are resolved at checkout/list time. There are no Stripe ids, credit
- * budgets, or per-feature caps in this file any more.
  */
 import type { Entitlements } from "./entitlements";
 import {
@@ -49,6 +50,10 @@ export interface TierAmounts {
   annual: { gbp?: number };
 }
 
+/**
+ * A code-defined tier. Only the free Starter is defined this way now (paid tiers
+ * come from Stripe); the shape is kept generic for the registry + re-export.
+ */
 export interface TierDefinition {
   id: TierId;
   status: TierStatus;
@@ -66,6 +71,8 @@ export interface TierDefinition {
 
 /**
  * Public, bundle-safe projection of a tier — what `getSubscriptionPlans` returns.
+ * Paid-tier fields are filled from Stripe (entitlements + display + prices);
+ * Starter is filled from the code definition below.
  */
 export interface PublicTierPlan {
   id: TierId;
@@ -77,89 +84,33 @@ export interface PublicTierPlan {
   aiBudgetLabel: string;
   /** GBP base price; null for the free Starter tier. */
   pricing: TierAmounts | null;
+  /** Emphasise this card (border/ring). From Stripe `highlight` metadata. */
+  highlight: boolean;
+  /** Optional ribbon text (e.g. "Most popular"). From Stripe `badge` metadata. */
+  badge: string | null;
+  /** Free-trial length in days (0 = none). Drives the trial CTA. From Stripe. */
+  trialDays: number;
 }
 
-export const TIERS: Record<TierId, TierDefinition> = {
-  starter: {
-    id: "starter",
-    status: "live",
-    userFacingName: "Starter",
-    tagline: "Start learning English from the videos you already watch.",
-    isPaid: false,
-    amount: null,
-    featureLabels: [
-      "Save up to 200 phrases a month",
-      "Unlimited Smart Review flashcards",
-      "Hover to translate any subtitle",
-      "A taste of AI tools each month",
-    ],
-    aiBudgetLabel: "a taste each month",
-  },
-  reader: {
-    id: "reader",
-    status: "live",
-    userFacingName: "Reader",
-    tagline: "Read, save, and chat with AI about every phrase you meet.",
-    isPaid: true,
-    amount: {
-      monthly: { gbp: 4.49 },
-      annual: { gbp: 42.99 },
-    },
-    featureLabels: [
-      "Save as many phrases as you want",
-      "Unlimited text chat with the AI coach",
-      "Unlimited translations",
-      "Unlimited Smart Review",
-      "Voice top-ups when you want them",
-    ],
-    aiBudgetLabel: "voice top-ups any time",
-  },
-  learner: {
-    id: "learner",
-    status: "live",
-    userFacingName: "Learner",
-    tagline: "Make real progress — read with AI, then practice out loud.",
-    isPaid: true,
-    amount: {
-      monthly: { gbp: 10.99 },
-      annual: { gbp: 104.99 },
-    },
-    featureLabels: [
-      "Everything in Reader",
-      "About 10 voice chats a month (~90 min)",
-      "Weekly progress insights",
-      "Full session history",
-    ],
-    aiBudgetLabel: "about 10 voice chats a month (~90 min)",
-  },
-  coach: {
-    id: "coach",
-    status: "live",
-    userFacingName: "Coach",
-    tagline: "Speak English every day with your AI coach.",
-    isPaid: true,
-    amount: {
-      monthly: { gbp: 24.99 },
-      annual: { gbp: 239.99 },
-    },
-    featureLabels: [
-      "Everything in Learner",
-      "About 30 voice chats a month (~300 min)",
-      "Top up voice minutes any time",
-    ],
-    aiBudgetLabel: "about 30 voice chats a month (~300 min)",
-  },
+/**
+ * The free Starter tier — the single code-defined tier (it has no Stripe
+ * product). Its caps live in config.ts; this is just its display copy.
+ */
+export const STARTER_TIER: TierDefinition = {
+  id: "starter",
+  status: "live",
+  userFacingName: "Starter",
+  tagline: "Start learning English from the videos you already watch.",
+  isPaid: false,
+  amount: null,
+  featureLabels: [
+    "Save up to 200 phrases a month",
+    "Unlimited Smart Review flashcards",
+    "Hover to translate any subtitle",
+    "A taste of AI tools each month",
+  ],
+  aiBudgetLabel: "a taste each month",
 };
-
-/** Get a tier definition (display copy) by id. */
-export function getTier(id: TierId): TierDefinition {
-  return TIERS[id];
-}
-
-/** Tiers currently visible/sellable as live — excludes any "dark" tier. */
-export function liveTiers(): TierDefinition[] {
-  return Object.values(TIERS).filter((t) => t.status === "live");
-}
 
 /**
  * The per-window cap for a feature, resolved from entitlements (paid) or config

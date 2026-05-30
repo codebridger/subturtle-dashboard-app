@@ -105,11 +105,26 @@
                         :label="t('subscription.pricing.annual-toggle')" sublabel="" />
                 </div>
 
-                <!-- Pricing Cards (Reader / Learner / Coach) -->
-                <div v-if="isLoadingPlans" class="py-12 text-center text-gray-500">
-                    {{ t('subscription.pricing.loading') }}
+                <!-- Pricing Cards (Reader / Learner / Coach) — built live from Stripe.
+                     While loading, show skeleton cards (not a spinner) so the layout
+                     is stable; if Stripe can't provide plans, show a calm notice. -->
+                <div v-if="isLoadingPlans" class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <Card v-for="n in 3" :key="n"
+                        class="relative flex h-full w-full flex-col rounded-lg border border-[#e0e6ed] shadow-none dark:border-[#1b2e4b]">
+                        <div class="flex flex-grow flex-col p-5">
+                            <div class="h-6 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                            <div class="mt-2 h-4 w-44 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                            <div class="mt-4 h-8 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                            <ul class="my-6 flex-grow space-y-3">
+                                <li v-for="i in 4" :key="i"
+                                    class="h-4 w-full animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></li>
+                            </ul>
+                            <div class="mt-auto h-10 w-full animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                        </div>
+                    </Card>
                 </div>
-                <div v-else-if="plansError" class="rounded-lg bg-red-100 p-4 text-center text-red-700">
+                <div v-else-if="plansError"
+                    class="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-400">
                     {{ t('subscription.pricing.error') }}
                 </div>
                 <div v-else-if="!paidPlans.length" class="py-12 text-center text-gray-500">
@@ -118,13 +133,13 @@
                 <div v-else class="grid grid-cols-1 gap-8 md:grid-cols-3">
                     <Card v-for="plan in paidPlans" :key="plan.id"
                         class="relative flex h-full w-full flex-col rounded-lg border shadow-none transition-all duration-300"
-                        :class="plan.id === 'learner'
+                        :class="plan.highlight
                             ? 'border-primary ring-1 ring-primary/30'
                             : 'border-[#e0e6ed] dark:border-[#1b2e4b]'">
-                        <!-- Most popular badge -->
-                        <span v-if="plan.id === 'learner'"
+                        <!-- Ribbon badge (e.g. "Most popular") — text from Stripe metadata -->
+                        <span v-if="plan.badge"
                             class="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
-                            {{ t('subscription.pricing.most-popular') }}
+                            {{ plan.badge }}
                         </span>
 
                         <div class="flex flex-grow flex-col p-5">
@@ -172,13 +187,13 @@
                                 <Button v-if="activePlanId === plan.id" block color="primary"
                                     :label="t('subscription.manage-subscription')" @click="goToPortal" />
 
-                                <!-- Learner — the trial CTA -->
-                                <template v-else-if="plan.id === 'learner'">
+                                <!-- Trial CTA — shown for any tier with a free trial (days from Stripe) -->
+                                <template v-else-if="plan.trialDays > 0">
                                     <Button block color="primary" :loading="isLoading"
-                                        :label="t('subscription.pricing.learner-cta')"
+                                        :label="t('subscription.pricing.trial-cta', { days: plan.trialDays })"
                                         @click="initiateCheckout(plan.id)" />
                                     <p class="mt-2 text-center text-xs text-gray-400">
-                                        {{ t('subscription.pricing.learner-subline') }}
+                                        {{ t('subscription.pricing.trial-subline', { days: plan.trialDays }) }}
                                     </p>
                                 </template>
 

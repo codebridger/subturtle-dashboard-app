@@ -1,11 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import {
-  TIERS,
-  getTier,
-  liveTiers,
-  featureCapFor,
-  featureAllowedFor,
-} from "../tiers";
+import { STARTER_TIER, featureCapFor, featureAllowedFor } from "../tiers";
 import type { Entitlements } from "../entitlements";
 import {
   FREEMIUM_DEFAULT_SAVE_WORDS,
@@ -32,22 +26,20 @@ function ent(overrides: Partial<Entitlements> = {}): Entitlements {
   };
 }
 
-describe("tier registry", () => {
-  describe("getTier", () => {
-    it("returns the Council 004 tier definitions", () => {
-      expect(getTier("starter").userFacingName).toBe("Starter");
-      expect(getTier("reader").userFacingName).toBe("Reader");
-      expect(getTier("learner").userFacingName).toBe("Learner");
-      expect(getTier("coach").userFacingName).toBe("Coach");
-    });
-  });
-
-  describe("liveTiers", () => {
-    it("includes all four Council 004 tiers (none are dark)", () => {
-      const ids = liveTiers().map((t) => t.id);
-      expect(ids).toEqual(
-        expect.arrayContaining(["starter", "reader", "learner", "coach"])
-      );
+describe("tiers (free Starter in code; paid tiers come from Stripe)", () => {
+  describe("STARTER_TIER", () => {
+    it("is the free tier: no price, and no 'credit' in user-facing copy", () => {
+      expect(STARTER_TIER.id).toBe("starter");
+      expect(STARTER_TIER.isPaid).toBe(false);
+      expect(STARTER_TIER.amount).toBeNull();
+      const copy = [
+        STARTER_TIER.tagline,
+        STARTER_TIER.aiBudgetLabel,
+        ...STARTER_TIER.featureLabels,
+      ]
+        .join(" ")
+        .toLowerCase();
+      expect(copy).not.toContain("credit");
     });
   });
 
@@ -90,26 +82,6 @@ describe("tier registry", () => {
       const learner = ent({ weeklyInsights: true, sessionHistory: true });
       expect(featureAllowedFor(learner, "weekly_insights")).toBe(true);
       expect(featureAllowedFor(learner, "session_history")).toBe(true);
-    });
-  });
-
-  describe("registry invariants", () => {
-    it("never exposes the word 'credit' in user-facing copy", () => {
-      for (const tier of Object.values(TIERS)) {
-        const copy = [tier.tagline, tier.aiBudgetLabel, ...tier.featureLabels]
-          .join(" ")
-          .toLowerCase();
-        expect(copy).not.toContain("credit");
-      }
-    });
-
-    it("holds only display copy: GBP amounts on paid tiers, none on Starter", () => {
-      // The registry no longer carries Stripe ids, credit budgets, or caps —
-      // entitlements live in Stripe metadata. It keeps display copy + GBP price.
-      expect(getTier("starter").amount).toBeNull();
-      expect(getTier("reader").amount?.monthly.gbp).toBe(4.49);
-      expect(getTier("learner").amount?.annual.gbp).toBe(104.99);
-      expect(getTier("coach").amount?.monthly.gbp).toBe(24.99);
     });
   });
 });

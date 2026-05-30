@@ -21,6 +21,7 @@ jest.mock("../../subscription/entitlements", () => ({
   resolveEntitlements: jest.fn(),
   resolveTierCheckout: jest.fn(),
   clearEntitlementsCache: jest.fn(),
+  cachedTierName: jest.fn(() => null), // label falls back to the capitalized tier id
 }));
 jest.mock("../../subscription/plans", () => ({
   clearPlansCache: jest.fn(),
@@ -103,6 +104,8 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(args.tier).toBe("learner");
     expect(args.subscriptionType).toBe("monthly");
     expect(args.entitlements).toEqual(entitlements);
+    // Label falls back to the capitalized tier id when no product name is cached.
+    expect(args.paymentMetaData.stripe.label).toBe("Learner");
   });
 
   it("FAIL-SAFE: refuses (no grant) and alerts when metadata is invalid", async () => {
