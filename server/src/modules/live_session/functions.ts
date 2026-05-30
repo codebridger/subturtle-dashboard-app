@@ -19,7 +19,12 @@ import {
   TokenUsageType,
   GeminiLiveSessionType,
 } from "./types";
-import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
+import {
+  DATABASE,
+  LIVE_SESSION_COLLECTION,
+  LIVE_SESSION_TEXT_COLLECTION,
+} from "../../config";
+import { assertFeatureEnabled } from "../subscription/enforcement";
 import { extractCostCalculationInput } from "./openai/utils";
 import { extractGeminiCostCalculationInput } from "./gemini/utils";
 import { recordUsage, debitVoiceMinutes } from "../subscription/service";
@@ -151,6 +156,47 @@ const updateLiveSession = defineFunction({
 });
 
 /**
+ * List the user's past live sessions (voice + text, merged, newest first).
+ * Full session history is a Learner+ entitlement (session_history) — free/Reader
+ * are locked out and get a structured EntitlementLimitError so the frontend can
+ * show an upgrade prompt instead of the list. Replaces the client-side dataProvider
+ * list so the gate is enforced server-side.
+ */
+const listLiveSessions = defineFunction({
+  name: "list-live-sessions",
+  permissionTypes: ["user_access"],
+  callback: async function (context: {
+    userId: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { userId, page = 0, limit = 20 } = context;
+    await assertFeatureEnabled(userId, "session_history");
+
+    const window = (page + 1) * limit;
+    const voiceCol = getCollection<LiveSessionRecordType>(
+      DATABASE,
+      LIVE_SESSION_COLLECTION
+    );
+    const textCol = getCollection<any>(DATABASE, LIVE_SESSION_TEXT_COLLECTION);
+    const [voice, text] = await Promise.all([
+      voiceCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
+      textCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
+    ]);
+    const merged = [...(voice as any[]), ...(text as any[])].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return {
+      items: merged.slice(page * limit, window),
+      page,
+      limit,
+      hasMore: merged.length > window,
+    };
+  },
+});
+
+/**
  * Debit consumed voice minutes from the user's budget when a voice session ends.
  * The client reports the elapsed audio time in seconds; the server rounds up to
  * whole minutes and decrements the active budget (subscription or freemium).
@@ -186,5 +232,6 @@ module.exports.functions = [
   createLiveSession,
   updateLiveSession,
   debitVoiceMinutesFn,
+  listLiveSessions,
   getLiveSessionVoices,
 ];
