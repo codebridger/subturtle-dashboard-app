@@ -24,6 +24,7 @@ import {
   GEMINI_NEW_SESSION_TTL_MS,
 } from "./config";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
+import { EntitlementLimitError } from "../../subscription/enforcement";
 import { GeminiLiveSessionType } from "./types";
 
 interface GeminiPracticeSetup {
@@ -79,8 +80,10 @@ export const requestGeminiEphemeralToken = defineFunction({
         freemiumAllocation.allowed_lived_sessions_used >=
         freemiumAllocation.allowed_lived_sessions
       ) {
-        throw new Error(
-          "User has reached the maximum number of allowed lived sessions"
+        throw new EntitlementLimitError(
+          "live_sessions",
+          freemiumAllocation.allowed_lived_sessions,
+          freemiumAllocation.allowed_lived_sessions_used
         );
       }
 
