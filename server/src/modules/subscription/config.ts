@@ -29,3 +29,11 @@ export const SOFT_CAP_PERCENT = 80;
  * to show the upgrade modal instead of a generic error toast.
  */
 export const AI_CREDIT_EXHAUSTED_CODE = "AI_CREDIT_EXHAUSTED";
+
+/**
+ * Stable code thrown when a tier limit/lock blocks an action (save-words cap,
+ * weekly_insights / session_history lock, voice budget, live-session count). Lives
+ * here (a dependency-free constants file) so the frontend can import it WITHOUT
+ * pulling in enforcement.ts and its server-only deps (mongoose, modular-rest).
+ */
+export const TIER_LIMIT_REACHED_CODE = "TIER_LIMIT_REACHED";

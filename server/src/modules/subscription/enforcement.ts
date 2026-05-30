@@ -18,9 +18,11 @@ import { Types } from "mongoose";
 import { DATABASE, SUBSCRIPTION_COLLECTION } from "../../config";
 import { Entitlements } from "./entitlements";
 import { FeatureKey, featureCapFor } from "./tiers";
+import { TIER_LIMIT_REACHED_CODE } from "./config";
 
-/** Stable code thrown when a tier limit/lock blocks an action. */
-export const TIER_LIMIT_REACHED_CODE = "TIER_LIMIT_REACHED";
+// Re-exported so callers can keep importing it from enforcement; the canonical
+// definition lives in config.ts (dependency-free, frontend-safe).
+export { TIER_LIMIT_REACHED_CODE };
 
 /**
  * Anything an entitlement can gate. The `FeatureKey`s are cap/flag based;

@@ -245,6 +245,20 @@
             "primary": "See plans",
             "secondary": "Maybe later"
         },
+        "tier-limit": {
+            "title": "Upgrade to unlock",
+            "message": "This feature isn't included in your current plan.",
+            "sub": "Upgrade your plan to keep going without limits.",
+            "primary": "See plans",
+            "secondary": "Not now",
+            "features": {
+                "save_words": "You've reached your plan's saved-words limit.",
+                "weekly_insights": "Progress insights are a Learner feature.",
+                "session_history": "Full session history is a Learner feature.",
+                "live_sessions": "You've used all your free live sessions.",
+                "voice_minutes": "You're out of voice minutes on your plan."
+            }
+        },
         "cancel-offramp": {
             "title": "Before you go",
             "message": "Stay on Free instead?",
