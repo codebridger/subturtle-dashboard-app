@@ -12,8 +12,24 @@
             <PageHeader :title="t('live-session.your-sessions')" :subtitle="t('live-session.6-months-expiry')"
                 overline="LIVE SESSIONS" />
 
+            <!-- Locked: full session history is a Learner+ feature (the global upgrade modal also opens). -->
+            <div v-if="locked" class="flex flex-1 flex-col items-center justify-center py-12">
+                <div
+                    class="flex max-w-xl flex-col items-center justify-center rounded-3xl border border-white/20 bg-white/40 p-12 text-center shadow-xl backdrop-blur-md dark:bg-gray-800/40">
+                    <Icon name="IconLockDots" class="h-12 w-12 text-primary" />
+                    <h3 class="mt-6 text-xl font-bold text-gray-900 dark:text-gray-100">
+                        {{ t('subscription.tier-limit.features.session_history') }}
+                    </h3>
+                    <p class="mt-2 text-base text-gray-500 dark:text-gray-400">{{ t('subscription.tier-limit.sub') }}</p>
+                    <div class="mt-8">
+                        <Button color="primary" :label="t('subscription.tier-limit.primary')"
+                            @click="router.push('/settings/subscription')" />
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty State -->
-            <div v-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center py-12">
+            <div v-else-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center py-12">
                 <div
                     class="flex max-w-xl flex-col items-center justify-center rounded-3xl border border-white/20 bg-white/40 p-12 text-center shadow-xl backdrop-blur-md dark:bg-gray-800/40">
                     <!-- Decorative blob for empty state -->
@@ -73,7 +89,7 @@
                             </div>
                             <div
                                 class="flex items-center gap-1 text-sm font-semibold text-primary transition-colors group-hover:text-primary-dark">
-                                <span> {{ session.dialogs.length || 0 }} {{ t('live-session.dialogs') }} </span>
+                                <span> {{ session.dialogs?.length || 0 }} {{ t('live-session.dialogs') }} </span>
                                 <Icon name="IconChevronRight" class="h-4 w-4" />
                             </div>
                         </div>
@@ -112,9 +128,8 @@
             </div>
 
             <!-- Pagination -->
-            <div v-if="pagination && !isEmptyState" class="mt-8 max-w-2xl flex justify-center">
-                <Pagination v-model="controller.pagination.page" :totalPages="controller.pagination.pages"
-                    @change-page="controller.fetchPage($event)" />
+            <div v-if="totalPages > 1 && !isEmptyState && !locked" class="mt-8 max-w-2xl flex justify-center">
+                <Pagination v-model="currentPage" :totalPages="totalPages" @change-page="loadSessions" />
             </div>
         </div>
     </div>
@@ -124,9 +139,7 @@
 import { Icon, Button } from 'pilotui/elements';
 import { Pagination } from 'pilotui/complex';
 import PageHeader from '~/components/common/PageHeader.vue';
-import { dataProvider } from '@modular-rest/client';
-import type { PaginationType } from '@modular-rest/client/dist/types/types';
-import { COLLECTIONS, DATABASE } from '~/types/database.type';
+import { functionProvider } from '@modular-rest/client';
 import type { LiveSessionRecordType, LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { formatSessionDuration } from '~/utils/duration';
 
@@ -140,88 +153,43 @@ definePageMeta({
 });
 
 const perPage = ref(20);
-const voiceList = ref<LiveSessionRecordType[]>([]);
-const textList = ref<any[]>([]);
-const pagination = ref<PaginationType | null>(null);
+const sessionList = ref<any[]>([]);
+const currentPage = ref(1);
+const totalPages = ref(1);
 const isLoading = ref(false);
+const locked = ref(false);
 
-// Voice and text sessions live in separate collections; merge them into one
-// time-sorted list. Pagination follows the (dominant) voice collection; text
-// sessions — a newer, lighter feature — are merged from their first page.
-const sessionList = computed<any[]>(() =>
-    [...voiceList.value, ...textList.value].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-);
-const isEmptyState = computed(() => !sessionList.value.length && !isLoading.value);
+const isEmptyState = computed(() => !sessionList.value.length && !isLoading.value && !locked.value);
 
 // Type guard for practice sessions
-const isPracticeSession = (session: LiveSessionRecordType): session is LiveSessionRecordType & { session: LivePracticeSessionSetupType } => {
+const isPracticeSession = (session: any): session is LiveSessionRecordType & { session: LivePracticeSessionSetupType } => {
     return session.type === 'bundle-practice' && !!session.session;
 };
 
-const controller = dataProvider.list<LiveSessionRecordType>(
-    {
-        database: DATABASE.USER_CONTENT,
-        collection: COLLECTIONS.LIVE_SESSION,
-        query: {
-            refId: authUser.value?.id,
-            // where dialogs atleast contains one object with speaker:"user"
-            // dialogs: { $elemMatch: { speaker: 'user' } },
-        },
-        options: {
-            sort: {
-                createdAt: -1,
-            },
-        },
-    },
-    {
-        limit: perPage.value,
-        page: 1,
-        onFetched: (data) => {
-            voiceList.value = data;
-            pagination.value = controller.pagination;
-        },
-    }
-);
-
-const textController = dataProvider.list<any>(
-    {
-        database: DATABASE.USER_CONTENT,
-        collection: COLLECTIONS.LIVE_SESSION_TEXT,
-        query: { refId: authUser.value?.id },
-        options: { sort: { createdAt: -1 } },
-    },
-    {
-        limit: perPage.value,
-        page: 1,
-        onFetched: (data) => {
-            // Text records carry no provider/type of their own — normalize to
-            // the shape the list renders and tag them so we can show a chip.
-            textList.value = (data as any[]).map((s) => ({
-                ...s,
-                provider: 'gemini',
-                type: s.type || 'bundle-practice',
-                _isText: true,
-            }));
-        },
-    }
-);
-
-onMounted(async () => {
+// Full session history is a Learner+ entitlement. The gated list-live-sessions
+// RPC merges voice + text and paginates server-side; for free/Reader it throws
+// TIER_LIMIT_REACHED (the global interceptor shows the upgrade modal) and we
+// render a locked state instead of the list.
+async function loadSessions(page = 1) {
     isLoading.value = true;
-
     try {
-        await Promise.all([
-            controller.updatePagination().then(() => controller.fetchPage(1)),
-            textController.updatePagination().then(() => textController.fetchPage(1)),
-        ]);
-    } catch (error) {
-        // Partial lists still render; just stop the spinner.
+        const res = await functionProvider.run<{ items: any[]; pages: number }>({
+            name: 'list-live-sessions',
+            args: { userId: authUser.value?.id, page: page - 1, limit: perPage.value },
+        });
+        sessionList.value = res.items || [];
+        currentPage.value = page;
+        totalPages.value = res.pages || 1;
+        locked.value = false;
+    } catch (e) {
+        sessionList.value = [];
+        locked.value = true;
     } finally {
         isLoading.value = false;
     }
-});
+}
+
+onMounted(() => loadSessions(1));
 
 function goToBundles() {
     router.push('/bundles');

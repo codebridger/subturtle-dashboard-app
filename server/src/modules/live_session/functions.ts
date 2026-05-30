@@ -179,19 +179,24 @@ const listLiveSessions = defineFunction({
       LIVE_SESSION_COLLECTION
     );
     const textCol = getCollection<any>(DATABASE, LIVE_SESSION_TEXT_COLLECTION);
-    const [voice, text] = await Promise.all([
+    const [voice, text, voiceCount, textCount] = await Promise.all([
       voiceCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
       textCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
+      voiceCol.countDocuments({ refId: userId }),
+      textCol.countDocuments({ refId: userId }),
     ]);
     const merged = [...(voice as any[]), ...(text as any[])].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
+    const total = voiceCount + textCount;
     return {
       items: merged.slice(page * limit, window),
       page,
       limit,
-      hasMore: merged.length > window,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      hasMore: (page + 1) * limit < total,
     };
   },
 });

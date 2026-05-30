@@ -33,6 +33,8 @@ function mockCollections(voiceDocs: any[], textDocs: any[]) {
           coll === LIVE_SESSION_COLLECTION ? voiceDocs : textDocs,
       }),
     }),
+    countDocuments: async () =>
+      coll === LIVE_SESSION_COLLECTION ? voiceDocs.length : textDocs.length,
   }));
 }
 
@@ -56,6 +58,7 @@ describe("list-live-sessions (session_history gate)", () => {
     );
     const res: any = await listLiveSessions.callback({ userId: "u1" });
     expect(res.items.map((s: any) => s._id)).toEqual(["t1", "v1"]); // newest first
+    expect(res.total).toBe(2);
     expect(assertFeatureEnabled).toHaveBeenCalledWith("u1", "session_history");
   });
 });
