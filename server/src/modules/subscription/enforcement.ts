@@ -14,6 +14,7 @@
  * can pattern-match the string to show an upgrade prompt.
  */
 import { getCollection } from "@modular-rest/server";
+import { Types } from "mongoose";
 import { DATABASE, SUBSCRIPTION_COLLECTION } from "../../config";
 import { Entitlements } from "./entitlements";
 import { FeatureKey, featureCapFor } from "./tiers";
@@ -21,14 +22,20 @@ import { FeatureKey, featureCapFor } from "./tiers";
 /** Stable code thrown when a tier limit/lock blocks an action. */
 export const TIER_LIMIT_REACHED_CODE = "TIER_LIMIT_REACHED";
 
+/**
+ * Anything an entitlement can gate. The `FeatureKey`s are cap/flag based;
+ * `voice_minutes` is a numeric budget gated separately (see service.ts).
+ */
+export type GatedFeature = FeatureKey | "voice_minutes";
+
 /** Thrown when a feature is locked (cap 0) or its hard cap is met (used >= cap). */
 export class EntitlementLimitError extends Error {
   readonly code = TIER_LIMIT_REACHED_CODE;
-  readonly feature: FeatureKey;
+  readonly feature: GatedFeature;
   readonly cap: number | null;
   readonly used?: number;
 
-  constructor(feature: FeatureKey, cap: number | null, used?: number) {
+  constructor(feature: GatedFeature, cap: number | null, used?: number) {
     const reason =
       cap === 0 ? "is not included in your plan" : `limit reached (${cap})`;
     super(`${TIER_LIMIT_REACHED_CODE}: "${feature}" ${reason}`);
@@ -53,7 +60,9 @@ interface GateContext {
 export async function getGateContext(userId: string): Promise<GateContext> {
   const subscriptions = getCollection<any>(DATABASE, SUBSCRIPTION_COLLECTION);
   const active = await subscriptions.findOne({
-    user_id: userId,
+    // subscription.user_id is stored as an ObjectId (see service.ts) — a raw
+    // string would never match, silently treating paid users as free.
+    user_id: Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   });

@@ -22,6 +22,7 @@ import {
 import { Subscription, FreeCredit } from "./types";
 import { TierId, Cadence } from "./tiers";
 import { Entitlements } from "./entitlements";
+import { EntitlementLimitError } from "./enforcement";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
@@ -167,6 +168,90 @@ export async function updateFreemiumAllocation(options: {
   );
 
   return updatedFreemiumAllocation;
+}
+
+// --- Voice-minute metering (Council 004) ----------------------------------
+// Voice is a metered budget, not a count cap: tiers grant a pool of minutes
+// (free 5 / Reader 0 / Learner 90 / Coach 300) that is debited as voice sessions
+// are used. The budget lives on the active subscription for paid users, else on
+// the freemium allocation — mirroring the AI-credit budget.
+
+interface VoiceBudget {
+  total: number;
+  used: number;
+  remaining: number;
+  scope: "subscription" | "freemium";
+}
+
+/** Read the user's voice-minute budget from their active subscription, or the
+ *  freemium allocation when there is none. */
+export async function getVoiceBudget(userId: string): Promise<VoiceBudget> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeSubscription = (await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  })) as Subscription | null;
+
+  if (activeSubscription) {
+    const total = activeSubscription.voice_minutes_total || 0;
+    const used = activeSubscription.voice_minutes_used || 0;
+    return { total, used, remaining: total - used, scope: "subscription" };
+  }
+
+  const freemium = await getOrCreateFreemiumAllocation(userId);
+  const total = freemium.voice_minutes_total || 0;
+  const used = freemium.voice_minutes_used || 0;
+  return { total, used, remaining: total - used, scope: "freemium" };
+}
+
+/** Block a voice session when the voice-minute budget is exhausted (or the tier
+ *  grants none, e.g. Reader). Throws the shared EntitlementLimitError. */
+export async function assertVoiceMinutesAvailable(userId: string): Promise<void> {
+  const { total, used, remaining } = await getVoiceBudget(userId);
+  if (remaining <= 0) {
+    throw new EntitlementLimitError("voice_minutes", total, used);
+  }
+}
+
+/** Debit consumed voice minutes (rounded up) from the active budget when a voice
+ *  session ends. Returns the budget after debit. */
+export async function debitVoiceMinutes(
+  userId: string,
+  minutes: number
+): Promise<VoiceBudget> {
+  const debit = Math.max(0, Math.ceil(minutes || 0));
+  if (debit > 0) {
+    const { scope } = await getVoiceBudget(userId);
+    if (scope === "subscription") {
+      const subscriptionsCollection = getCollection<Subscription>(
+        DATABASE,
+        SUBSCRIPTION_COLLECTION
+      );
+      await subscriptionsCollection.updateOne(
+        {
+          user_id: Types.ObjectId(userId),
+          status: { $nin: ["canceled", "incomplete_expired"] },
+          end_date: { $gte: new Date() },
+        },
+        { $inc: { voice_minutes_used: debit } }
+      );
+    } else {
+      const freemium = await getOrCreateFreemiumAllocation(userId);
+      const freeCreditCollection = getCollection<FreeCredit>(
+        DATABASE,
+        FREE_CREDIT_COLLECTION
+      );
+      await freeCreditCollection.updateOne(
+        { _id: (freemium as any)._id },
+        { $inc: { voice_minutes_used: debit } }
+      );
+    }
+  }
+  return getVoiceBudget(userId);
 }
 
 /**

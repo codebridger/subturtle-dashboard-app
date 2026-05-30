@@ -22,7 +22,7 @@ import {
 import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
 import { extractCostCalculationInput } from "./openai/utils";
 import { extractGeminiCostCalculationInput } from "./gemini/utils";
-import { recordUsage } from "../subscription/service";
+import { recordUsage, debitVoiceMinutes } from "../subscription/service";
 import { LIVE_SESSION_MODEL } from "./openai/config";
 import { GEMINI_LIVE_SESSION_MODEL } from "./gemini/config";
 import { requestEphemeralToken } from "./openai/functions";
@@ -151,6 +151,23 @@ const updateLiveSession = defineFunction({
 });
 
 /**
+ * Debit consumed voice minutes from the user's budget when a voice session ends.
+ * The client reports the elapsed audio time in seconds; the server rounds up to
+ * whole minutes and decrements the active budget (subscription or freemium).
+ * Returns the updated budget so the client can reflect remaining minutes. The
+ * pre-session gate (request-*-ephemeral-token) blocks once this hits zero.
+ */
+const debitVoiceMinutesFn = defineFunction({
+  name: "debit-voice-minutes",
+  permissionTypes: ["user_access"],
+  callback: async function (context: { userId: string; seconds: number }) {
+    const { userId, seconds } = context;
+    const minutes = (Number(seconds) || 0) / 60;
+    return debitVoiceMinutes(userId, minutes);
+  },
+});
+
+/**
  * Returns the AI-coach voice list (single source of truth in `./voices`) so the
  * dashboard and extension render an identical picker. Static data; gated on
  * `user_access` only because every caller is already authenticated.
@@ -168,5 +185,6 @@ module.exports.functions = [
   requestGeminiEphemeralToken,
   createLiveSession,
   updateLiveSession,
+  debitVoiceMinutesFn,
   getLiveSessionVoices,
 ];

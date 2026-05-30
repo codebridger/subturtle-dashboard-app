@@ -20,11 +20,16 @@ jest.mock("../../../utils/analytics", () => ({
   SERVER_ANALYTICS_EVENTS: {},
 }));
 
+import { Types } from "mongoose";
 import { getCollection } from "@modular-rest/server";
 import {
   addNewSubscriptionWithCredit,
   updateSubscriptionStatusByProviderAndSubscriptionId,
+  getVoiceBudget,
+  assertVoiceMinutesAvailable,
+  debitVoiceMinutes,
 } from "../service";
+import { EntitlementLimitError } from "../enforcement";
 import { PaymentProvider } from "../../gateway/adapters";
 
 const USER = "507f1f77bcf86cd799439011"; // valid ObjectId hex
@@ -44,6 +49,83 @@ const entitlements: any = {
   durationDays: 30,
   trialDays: 3,
 };
+
+describe("voice-minute metering", () => {
+  let col: any;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    col = { findOne: jest.fn(), updateOne: jest.fn(async () => ({})) };
+    (getCollection as any).mockReturnValue(col);
+  });
+
+  it("reads the budget from the active subscription", async () => {
+    col.findOne.mockResolvedValue({
+      voice_minutes_total: 90,
+      voice_minutes_used: 20,
+    });
+    const budget = await getVoiceBudget(USER);
+    expect(budget).toMatchObject({
+      total: 90,
+      used: 20,
+      remaining: 70,
+      scope: "subscription",
+    });
+  });
+
+  it("allows a voice session while minutes remain", async () => {
+    col.findOne.mockResolvedValue({
+      voice_minutes_total: 90,
+      voice_minutes_used: 89,
+    });
+    await expect(assertVoiceMinutesAvailable(USER)).resolves.toBeUndefined();
+  });
+
+  it("blocks a voice session when the budget is exhausted (e.g. Reader = 0)", async () => {
+    col.findOne.mockResolvedValue({
+      voice_minutes_total: 0,
+      voice_minutes_used: 0,
+    });
+    await expect(assertVoiceMinutesAvailable(USER)).rejects.toThrow(
+      EntitlementLimitError
+    );
+  });
+
+  it("debits rounded-up minutes via $inc, keyed by ObjectId", async () => {
+    col.findOne.mockResolvedValue({
+      voice_minutes_total: 90,
+      voice_minutes_used: 0,
+    });
+    await debitVoiceMinutes(USER, 9.2); // e.g. 552s -> 10 minutes
+    const [filter, update] = col.updateOne.mock.calls[0];
+    expect(filter.user_id).toBeInstanceOf(Types.ObjectId);
+    expect(update).toEqual({ $inc: { voice_minutes_used: 10 } });
+  });
+
+  it("does not write when there is nothing to debit", async () => {
+    col.findOne.mockResolvedValue({
+      voice_minutes_total: 90,
+      voice_minutes_used: 0,
+    });
+    await debitVoiceMinutes(USER, 0);
+    expect(col.updateOne).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the freemium allocation when there is no subscription", async () => {
+    // getVoiceBudget: subscription lookup misses, then getOrCreateFreemiumAllocation hits.
+    col.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          _id: "fc1",
+          voice_minutes_total: 5,
+          voice_minutes_used: 5,
+        }),
+      });
+    await expect(assertVoiceMinutesAvailable(USER)).rejects.toThrow(
+      EntitlementLimitError
+    );
+  });
+});
 
 describe("addNewSubscriptionWithCredit — idempotency + snapshot", () => {
   let col: any;

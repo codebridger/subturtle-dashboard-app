@@ -17,6 +17,7 @@ import {
   isUserOnFreemium,
   getOrCreateFreemiumAllocation,
   updateFreemiumAllocation,
+  assertVoiceMinutesAvailable,
 } from "../../subscription/service";
 import {
   GEMINI_LIVE_SESSION_MODEL,
@@ -71,6 +72,11 @@ export const requestGeminiEphemeralToken = defineFunction({
         `${AI_CREDIT_EXHAUSTED_CODE}: AI features are paused — this month's AI budget is used up.`
       );
     }
+
+    // Voice is metered per tier (free 5 / Reader 0 / Learner 90 / Coach 300):
+    // block when the voice-minute budget is exhausted or the tier grants none.
+    // Resumes still consume from the same budget.
+    await assertVoiceMinutesAvailable(userId);
 
     const isOnFreemium = await isUserOnFreemium(userId);
     if (isOnFreemium && !isResume) {

@@ -16,6 +16,7 @@ import {
   isUserOnFreemium,
   getOrCreateFreemiumAllocation,
   updateFreemiumAllocation,
+  assertVoiceMinutesAvailable,
 } from "../../subscription/service";
 import { LIVE_SESSION_MODEL } from "./config";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
@@ -75,6 +76,9 @@ export const requestEphemeralToken = defineFunction({
         `${AI_CREDIT_EXHAUSTED_CODE}: AI features are paused — this month's AI budget is used up.`
       );
     }
+
+    // Voice is metered per tier: block when the budget is exhausted / not granted.
+    await assertVoiceMinutesAvailable(setup.userId);
 
     const isOnFreemium = await isUserOnFreemium(setup.userId);
     if (isOnFreemium) {

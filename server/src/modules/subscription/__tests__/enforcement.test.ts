@@ -2,6 +2,7 @@ import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 
 jest.mock("@modular-rest/server", () => ({ getCollection: jest.fn() }));
 
+import { Types } from "mongoose";
 import { getCollection } from "@modular-rest/server";
 import {
   getEffectiveCap,
@@ -15,9 +16,14 @@ import {
   FREEMIUM_DEFAULT_LIVED_SESSIONS,
 } from "../../../config";
 
+// Valid 24-hex ObjectId — getGateContext wraps userId in Types.ObjectId().
+const USER = "507f1f77bcf86cd799439011";
+
+let findOneMock: jest.Mock<any>;
 /** Point getGateContext's subscription lookup at a given active-sub doc (or null). */
 function mockActiveSubscription(doc: any) {
-  (getCollection as any).mockReturnValue({ findOne: jest.fn(async () => doc) });
+  findOneMock = jest.fn<any>(async () => doc);
+  (getCollection as any).mockReturnValue({ findOne: findOneMock });
 }
 
 // Only the cap-relevant fields are read by featureCapFor.
@@ -42,32 +48,39 @@ describe("entitlement enforcement", () => {
   describe("free user (no active subscription)", () => {
     beforeEach(() => mockActiveSubscription(null));
 
+    it("queries the subscription by ObjectId, not the raw string", async () => {
+      await getEffectiveCap(USER, "save_words");
+      const query = findOneMock.mock.calls[0][0] as any;
+      expect(query.user_id).toBeInstanceOf(Types.ObjectId);
+      expect(String(query.user_id)).toBe(USER);
+    });
+
     it("resolves free caps from config", async () => {
-      expect(await getEffectiveCap("u1", "save_words")).toBe(
+      expect(await getEffectiveCap(USER, "save_words")).toBe(
         FREEMIUM_DEFAULT_SAVE_WORDS
       );
-      expect(await getEffectiveCap("u1", "live_sessions")).toBe(
+      expect(await getEffectiveCap(USER, "live_sessions")).toBe(
         FREEMIUM_DEFAULT_LIVED_SESSIONS
       );
-      expect(await getEffectiveCap("u1", "smart_review")).toBeNull(); // unlimited
-      expect(await getEffectiveCap("u1", "weekly_insights")).toBe(0); // locked
+      expect(await getEffectiveCap(USER, "smart_review")).toBeNull(); // unlimited
+      expect(await getEffectiveCap(USER, "weekly_insights")).toBe(0); // locked
     });
 
     it("locks weekly_insights and session_history", async () => {
-      await expect(assertFeatureEnabled("u1", "weekly_insights")).rejects.toThrow(
+      await expect(assertFeatureEnabled(USER, "weekly_insights")).rejects.toThrow(
         EntitlementLimitError
       );
       await expect(
-        assertFeatureEnabled("u1", "session_history")
+        assertFeatureEnabled(USER, "session_history")
       ).rejects.toThrow(TIER_LIMIT_REACHED_CODE);
     });
 
     it("allows save_words below the cap and blocks at/over it", async () => {
       await expect(
-        assertWithinCap("u1", "save_words", FREEMIUM_DEFAULT_SAVE_WORDS - 1)
+        assertWithinCap(USER, "save_words", FREEMIUM_DEFAULT_SAVE_WORDS - 1)
       ).resolves.toBeUndefined();
       await expect(
-        assertWithinCap("u1", "save_words", FREEMIUM_DEFAULT_SAVE_WORDS)
+        assertWithinCap(USER, "save_words", FREEMIUM_DEFAULT_SAVE_WORDS)
       ).rejects.toThrow(EntitlementLimitError);
     });
   });
@@ -76,15 +89,15 @@ describe("entitlement enforcement", () => {
     beforeEach(() => mockActiveSubscription({ entitlements: learnerEnt }));
 
     it("unlimited save_words and unlocked insights/history", async () => {
-      expect(await getEffectiveCap("u1", "save_words")).toBeNull();
+      expect(await getEffectiveCap(USER, "save_words")).toBeNull();
       await expect(
-        assertWithinCap("u1", "save_words", 10_000)
+        assertWithinCap(USER, "save_words", 10_000)
       ).resolves.toBeUndefined();
       await expect(
-        assertFeatureEnabled("u1", "weekly_insights")
+        assertFeatureEnabled(USER, "weekly_insights")
       ).resolves.toBeUndefined();
       await expect(
-        assertFeatureEnabled("u1", "session_history")
+        assertFeatureEnabled(USER, "session_history")
       ).resolves.toBeUndefined();
     });
   });
@@ -94,21 +107,21 @@ describe("entitlement enforcement", () => {
 
     it("unlimited saves but insights still locked", async () => {
       await expect(
-        assertWithinCap("u1", "save_words", 999_999)
+        assertWithinCap(USER, "save_words", 999_999)
       ).resolves.toBeUndefined();
       await expect(
-        assertFeatureEnabled("u1", "weekly_insights")
+        assertFeatureEnabled(USER, "weekly_insights")
       ).rejects.toThrow(EntitlementLimitError);
     });
   });
 
   describe("paid subscription missing its snapshot (legacy/data gap)", () => {
-    beforeEach(() => mockActiveSubscription({ user_id: "u1" })); // active, no entitlements
+    beforeEach(() => mockActiveSubscription({ user_id: USER })); // active, no entitlements
 
     it("treats the user as unlimited so a payer is never wrongly gated", async () => {
-      expect(await getEffectiveCap("u1", "save_words")).toBeNull();
+      expect(await getEffectiveCap(USER, "save_words")).toBeNull();
       await expect(
-        assertFeatureEnabled("u1", "weekly_insights")
+        assertFeatureEnabled(USER, "weekly_insights")
       ).resolves.toBeUndefined();
     });
   });
