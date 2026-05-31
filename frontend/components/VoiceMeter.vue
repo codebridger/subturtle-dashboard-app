@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { useProfileStore } from '~/stores/profile';
+    import { useVoiceBalance } from '~/composables/useVoiceBalance';
 
     /**
      * Voice-minute balance meter (Council 004, UX spec Surface 1). One component, three
@@ -54,27 +54,12 @@
     defineEmits<{ topup: [] }>();
 
     const { t } = useI18n();
-    const profileStore = useProfileStore();
 
-    const isFreemium = computed(() => profileStore.isFreemium);
-    const sub = computed(() => profileStore.activeSubscription as any);
-    const free = computed(() => profileStore.freemiumAllocation as any);
-    const tier = computed<string>(() => (isFreemium.value ? 'starter' : sub.value?.tier ?? 'starter'));
+    // Council 004: the balance derivation (base / used / top-ups / usedPct) lives in
+    // ONE place — the useVoiceBalance composable. The meter is pure presentation on top
+    // of it; the bar reflects the base budget only (top-ups shown as a "plus N" line).
+    const { isFreemium, tier, base, used, baseRemaining, topUps, topUpRemaining, usedPct, renewalDate } = useVoiceBalance();
     const isReader = computed(() => tier.value === 'reader');
-
-    // Base = the tier's monthly grant (entitlement snapshot); top-ups are tracked apart.
-    const base = computed<number>(() => {
-        if (isFreemium.value) return free.value?.voice_minutes_total ?? 0;
-        return sub.value?.entitlements?.voiceMinutesGranted ?? sub.value?.voice_minutes_total ?? 0;
-    });
-    const used = computed<number>(() => (isFreemium.value ? free.value?.voice_minutes_used : sub.value?.voice_minutes_used) ?? 0);
-    const baseRemaining = computed(() => Math.max(0, base.value - used.value));
-
-    const topUps = computed<any[]>(() => (isFreemium.value ? [] : sub.value?.active_top_ups ?? []));
-    const topUpRemaining = computed(() => topUps.value.reduce((s, p) => s + (p.minutes_remaining ?? 0), 0));
-
-    // The bar reflects the base budget only (top-ups shown as a "plus N" line).
-    const usedPct = computed(() => (base.value > 0 ? Math.min(100, Math.round((used.value / base.value) * 100)) : used.value > 0 ? 100 : 0));
 
     const fillColor = computed(() => {
         if (usedPct.value >= 100) return 'bg-red-500';
@@ -96,7 +81,7 @@
     const sublineMinutes = computed(() => t('subscription.voice-meter.left-voice', { n: baseRemaining.value, total: base.value }) + plusTopUp.value);
 
     const renewalLabel = computed(() => {
-        const d = isFreemium.value ? free.value?.end_date : sub.value?.end_date;
+        const d = renewalDate.value;
         if (!d) return '';
         try {
             return t('subscription.voice-meter.resets', { date: new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }) });
