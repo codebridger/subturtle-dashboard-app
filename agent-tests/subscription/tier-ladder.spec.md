@@ -33,7 +33,7 @@ to `/gateway/webhook/stripe`; `sk_test_…` key; products seeded. For §7 also f
   - `session_history` → `list-live-sessions` returns **400 "session_history"** (locked).
   - `save_words` → seed used=199, two `createPhrase` → 1st **ok**, 2nd **400 "save_words"**.
   - `live_sessions` → seed used=3, token request → **400 "live_sessions"**.
-  - `voice_minutes` → seed `free_credit.voice_minutes_used=5`, token request → **400 "voice_minutes"**.
+  - `voice_minutes` → seed `free_credits.voice_minutes_used=5`, token request → **400 "voice_minutes"**.
 - **Reset** the seeded usage (`clearSubscriptionAndFreemium {userId}`) before Step 1.
 
 ## Step 1 — Subscribe to Reader (created)
@@ -98,8 +98,8 @@ With frontend `:3000` and a logged-in user (inject the token in `localStorage`):
 - This layer verifies the *surfaces*; the API layer (§Steps) verifies enforcement.
 
 ## §8 — Teardown (always)
-Run **T1**: cancel all the customer's Stripe subs; delete the user's `subscription`,
-`free_credit`, `usage`, `stripe_customer`, `phrase`, `phrase_bundle` rows + the
+Run **T1**: cancel all the customer's Stripe subs; delete the user's `subscriptions`,
+`free_credits`, `usages`, `stripe_customers`, `phrases`, `phrase_bundles` rows + the
 `e2e+…` auth. Confirm no live Stripe subscription remains for `CUSTOMER`.
 
 ## Report

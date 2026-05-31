@@ -35,7 +35,7 @@ asserts the runtime behaviour matches this table.
 Notes:
 - **voice_minutes**: Reader is text-only (granted **0**) → a voice session is
   blocked immediately. Free gets a 5-minute taste; Learner/Coach get 90/300. The
-  budget lives on the active subscription (paid) or `free_credit` (free), and is
+  budget lives on the active subscription (paid) or `free_credits` (free), and is
   debited (rounded up to whole minutes) by `debit-voice-minutes` on session end.
 - **live_sessions count** is enforced for **freemium users only** (paid tiers are
   not count-gated — only their credit + voice budgets apply).

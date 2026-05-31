@@ -32,31 +32,36 @@ writes a PASS/FAIL report. This suits the subscription flow, which is **async**
 4. **Verify each expectation against the capability matrix**, capturing evidence
    (RPC output, DB row, Stripe object, HTTP status, screenshot).
 5. **Tear down (always, even on failure).** Cancel the Stripe subscription, delete
-   the test user + its `stripe_customer` mapping, drop its `subscription` /
-   `free_credit` / `usage` rows. Leave no live Stripe subs.
+   the test user + its `stripe_customers` mapping, drop its `subscriptions` /
+   `free_credits` / `usages` rows. Leave no live Stripe subs.
 6. **Write a report** to `agent-tests/_runs/<UTC-timestamp>.md`: per-expectation
    PASS/FAIL + evidence + a summary. `_runs/` is gitignored.
 
 ## Environment cheat-sheet (this repo)
 
 - **RPC:** `POST http://localhost:8080/function/run` with JSON `{ "name", "args" }`
-  and header `authorization: <token>` (raw JWT, no `Bearer`). A blocked call returns
-  **HTTP 400** `{"status":"error","message":"TIER_LIMIT_REACHED: \"<feature>\" …"}`
-  or `… "AI_CREDIT_EXHAUSTED: …"`.
+  and header `authorization: <token>` (raw JWT, no `Bearer`). **`user_access` RPCs need
+  `userId` IN `args`** — the framework does NOT auto-inject it (omitting it throws
+  "User ID is required", or silently mis-resolves). Success →
+  `{"status":"success","data":<payload>}`; a blocked call → **HTTP 400**
+  `{"status":"error","message":"TIER_LIMIT_REACHED: \"<feature>\" …"}` (or
+  `"AI_CREDIT_EXHAUSTED: …"`).
 - **Auth (no email-signup UI):** `GET /user/loginAnonymous`; or
   `register_id → validateCode → submit_password → login` with dev code **`123456`**
   (`POST /user/<route>`, body `{idType:"email", id, code?, password?}`) → `{ token }`.
 - **Mongo (this machine):** prefix from `server/.env` `MONGO_DB_PREFIX` (currently
-  `subturtle_dev_`). DB **`subturtle_dev_user_content`** holds `subscription`,
-  `free_credit`, `stripe_customer`, `phrase`, `phrase_bundle`, `live_session`,
-  `live_session_text`; **`subturtle_dev_cms`** holds `auths`. Use `mongosh`.
-  `subscription`/`free_credit` key `user_id` as an **ObjectId**; `stripe_customer`
-  keys it as a **string**.
-- **Reset a user:** RPC `clearSubscriptionAndFreemium {userId}` clears
-  `subscription` + `free_credit` + `usage` (NOT the Stripe sub or `stripe_customer`).
+  `subturtle_dev_`). DB **`subturtle_dev_user_content`**. Collection names are
+  **PLURAL** (Mongoose pluralizes the model names from `config.ts`): `subscriptions`,
+  `free_credits`, `stripe_customers`, `phrases`, `phrase_bundles`, `usages`,
+  `live_sessions`, `live_session_texts`. **`subturtle_dev_cms`** holds `auths`. Use
+  `mongosh` (run `$set`/`$nin` via `--eval` only with single quotes or `execFileSync`,
+  else the shell eats the `$`). `subscriptions`/`free_credits` key `user_id` as an
+  **ObjectId**; `stripe_customers` keys it as a **string**.
+- **Reset a user:** RPC `clearSubscriptionAndFreemium {userId}` clears the user's
+  `subscriptions` + `free_credits` + `usages` (NOT the Stripe sub or `stripe_customers`).
 - **Drive Stripe by API** (preferred over the embedded checkout UI — deterministic,
   no 3DS): wire the test user to a Stripe customer (one `createCustomCheckoutSession`
-  call creates the `stripe_customer` mapping, or insert it directly), then
+  call creates the `stripe_customers` mapping, or insert it directly), then
   `stripe.subscriptions.create({ customer, items:[{price}], default_payment_method:
   'pm_card_visa' })`. **Upgrade** = `stripe.subscriptions.update(sub, { items:
   [{ id, price: <next> }] })` (fires `customer.subscription.updated`). Resolve a
@@ -86,3 +91,12 @@ agent-tests/
     tier-ladder.spec.md         # Starter → Reader → Learner → Coach → cancel, full enforcement
   _runs/                        # (gitignored) timestamped run reports
 ```
+
+A working **reference executor** for the tier ladder lives at
+[`server/scripts/e2e-tier-ladder.js`](../server/scripts/e2e-tier-ladder.js): with
+the preconditions met, run `cd server && node scripts/e2e-tier-ladder.js`
+(node 18+) to execute the spec and write a `_runs/` report. It encodes the exact
+collection names + `userId`-in-args contract above, and uses the **fresh-sub-per-tier**
+path (each `create` fires an immediate grant) — an in-place `subscriptions.update`
+only refills entitlements on the next billing period, so observing a plan-swap
+upgrade live needs a Stripe **test clock**. Last run: **38/38 passed**.
