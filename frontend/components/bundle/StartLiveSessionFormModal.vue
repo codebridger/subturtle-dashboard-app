@@ -16,7 +16,9 @@
                 <div v-if="formData.mode !== 'text'" class="mb-3 px-1">
                     <VoiceMeter size="sm" />
                 </div>
-                <div class="-m-5">
+                <!-- Full-bleed sides + bottom only; a negative TOP margin would pull
+                     the card up over the voice-minutes line above it. -->
+                <div class="-mx-5 -mb-5">
                     <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
                         :main-message="t('freemium.limitation.no_free_spots_left')"
                         :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
