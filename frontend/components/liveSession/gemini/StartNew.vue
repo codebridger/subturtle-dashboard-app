@@ -17,8 +17,12 @@
             <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="GEMINI_VOICES" ref="formRef"
                 @start="handleStartLiveSession" />
 
-            <!-- Freemium: Show freemium limit card -->
+            <!-- Freemium: voice-minutes line (voice mode) above the mode-aware limit
+                 card — sessions for voice, text chats for text — plus the upgrade flow. -->
             <div class="m-4" v-if="profileStore.isFreemium">
+                <div v-if="formData.mode !== 'text'" class="mb-3">
+                    <VoiceMeter size="sm" />
+                </div>
                 <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
                     :main-message="t('freemium.limitation.no_free_spots_left')"
                     :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
@@ -26,15 +30,17 @@
                     :secondary-button-label="t('freemium.limitation.continue_with_limits')"
                     @upgrade="handleConfirmUpgrade">
                     <template #trigger="{ toggleModal }">
-                        <FreemiumLimitCard type="liveSession" :action-label="t('live-practice.start')"
+                        <FreemiumLimitCard :type="formData.mode === 'text' ? 'textChat' : 'liveSession'"
+                            :action-label="t('live-practice.start')"
                             @action="startSession" @upgrade="toggleModal(true)" />
                     </template>
                 </FreemiumLimitationModal>
             </div>
 
-            <!-- Premium: voice balance (Council 004 Surface 1) + start button -->
+            <!-- Premium: mode-aware balance (voice minutes / Reader text chats) + start. -->
             <div class="m-4 space-y-3" v-else>
-                <VoiceMeter size="sm" />
+                <VoiceMeter v-if="formData.mode !== 'text'" size="sm" />
+                <TextChatCounter v-else />
                 <Button color="primary" block :disabled="!isFormValid || !formData.bundleId" @click="startSession"
                     :label="t('live-practice.start')" />
             </div>
@@ -52,6 +58,7 @@ import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import VoiceMeter from '~/components/VoiceMeter.vue';
+import TextChatCounter from '~/components/TextChatCounter.vue';
 import { useProfileStore } from '~/stores/profile';
 import { useVoiceBalance } from '~/composables/useVoiceBalance';
 import { openVoiceCapModal } from '~/composables/useVoiceCapModal';
@@ -104,6 +111,7 @@ const formData = reactive({
     toPhrase: '10',
     totalPhrases: '10',
     nativeLanguage: 'auto',
+    mode: 'voice' as 'voice' | 'text',
 });
 
 const isFormValid = computed(() => {
@@ -117,8 +125,8 @@ function startSession() {
     if (!isFormValid.value || !formData.bundleId) return;
 
     // Council 004: a paid user out of voice minutes gets the dedicated voice-cap
-    // modal (top-up / use text chat) instead of starting a session that would 400.
-    if (!profileStore.isFreemium && voiceRemaining.value <= 0) {
+    // modal (top-up / use text chat) — voice mode only, never for a text session.
+    if (!profileStore.isFreemium && formData.mode !== 'text' && voiceRemaining.value <= 0) {
         openVoiceCapModal();
         return;
     }
