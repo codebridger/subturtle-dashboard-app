@@ -350,4 +350,14 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
 
         await expect(page.getByText('Text chat: 23 of 60 used this month', { exact: true })).toBeVisible();
     });
+
+    test('Starter (free) user sees a usage card with the free-tier limits', async ({ page }) => {
+        // Default stub is a free Starter user; the usage card renders for them.
+        await page.goto('/#/settings/subscription');
+
+        await expect(page.getByRole('heading', { name: 'Free plan' })).toBeVisible();
+        await expect(page.getByText('Saved phrases', { exact: true })).toBeVisible();
+        await expect(page.getByText('Text chats', { exact: true })).toBeVisible();
+        await expect(page.getByText('Live sessions', { exact: true })).toBeVisible();
+    });
 });

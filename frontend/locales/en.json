@@ -297,6 +297,13 @@
             "header": "This month",
             "ai-usage": "AI translations & explanations: {n} used"
         },
+        "starter-usage": {
+            "title": "Free plan",
+            "saved-phrases": "Saved phrases",
+            "text-chats": "Text chats",
+            "live-sessions": "Live sessions",
+            "voice": "Voice minutes"
+        },
         "text-chat-counter": {
             "label": "Text chat: {used} of {total} used this month",
             "find-out-more": "Find out more"

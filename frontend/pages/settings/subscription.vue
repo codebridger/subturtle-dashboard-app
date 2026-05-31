@@ -57,6 +57,9 @@
                     </div>
                 </Card>
 
+                <!-- Starter (free) usage card — mirrors the paid active-plan card. -->
+                <StarterUsageCard />
+
                 <!-- AI usage — internal metering (Dev Only) -->
                 <Card v-if="config.public.isNotProduction" class="w-full rounded-lg border border-gray-100 shadow-sm">
                     <template v-if="activeSubscriptionData">
@@ -266,6 +269,7 @@ import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
 import VoiceMeter from '~/components/VoiceMeter.vue';
 import TextChatCounter from '~/components/TextChatCounter.vue';
+import StarterUsageCard from '~/components/StarterUsageCard.vue';
 
 import { ref, computed } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
