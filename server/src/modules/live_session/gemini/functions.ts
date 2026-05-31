@@ -18,6 +18,7 @@ import {
   getOrCreateFreemiumAllocation,
   updateFreemiumAllocation,
   assertVoiceMinutesAvailable,
+  getVoiceSessionMaxSeconds,
 } from "../../subscription/service";
 import {
   GEMINI_LIVE_SESSION_MODEL,
@@ -153,12 +154,18 @@ export const requestGeminiEphemeralToken = defineFunction({
 
       const expiresAtSec = Math.floor((now + GEMINI_TOKEN_TTL_MS) / 1000);
 
+      // Budget-derived cap on this session's wall-clock length, returned so the
+      // client's in-session timer enforces it. The policy lives server-side (the
+      // subscription service) so the dashboard and mobile stay in lockstep.
+      const voiceSessionMaxSeconds = await getVoiceSessionMaxSeconds(userId);
+
       const session: GeminiLiveSessionType = {
         model: GEMINI_LIVE_SESSION_MODEL,
         voice: voiceName,
         instructions,
         modalities: ["AUDIO"],
         expires_at: expiresAtSec,
+        voice_session_max_seconds: voiceSessionMaxSeconds,
         client_secret: {
           value: tokenValue,
           expires_at: expiresAtSec,

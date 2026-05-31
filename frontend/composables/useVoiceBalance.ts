@@ -29,9 +29,11 @@ export function useVoiceBalance() {
     const usedPct = computed(() => (base.value > 0 ? Math.min(100, Math.round((used.value / base.value) * 100)) : used.value > 0 ? 100 : 0));
     const renewalDate = computed(() => (isFreemium.value ? free.value?.end_date : sub.value?.end_date));
 
-    // "X of Y voice minutes left this month" — for inline labels (e.g. the session banner).
+    // "N min left" — compact remaining-minutes label for inline use (the session-card pill).
+    // Deliberately omits the total: sitting next to "X/Y Sessions" (used/total), an "X/Y minutes"
+    // (remaining/total) form reads ambiguously, so we show only the unambiguous "left" count.
     const { t } = useI18n();
-    const leftLabel = computed(() => t('subscription.voice-meter.left-voice', { n: baseRemaining.value, total: base.value }));
+    const leftLabel = computed(() => t('subscription.voice-meter.left-voice', { n: baseRemaining.value }));
 
     return { isFreemium, tier, base, used, baseRemaining, topUps, topUpRemaining, remaining, usedPct, renewalDate, leftLabel };
 }

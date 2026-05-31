@@ -13,7 +13,11 @@ import {
   FREEMIUM_DEFAULT_TEXT_CHATS,
   FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES,
 } from "../../config";
-import { LOW_CREDITS_THRESHOLD, SOFT_CAP_PERCENT } from "./config";
+import {
+  LOW_CREDITS_THRESHOLD,
+  SOFT_CAP_PERCENT,
+  FREE_VOICE_SESSION_MAX_MINUTES,
+} from "./config";
 
 import {
   emitLowCreditsEvent,
@@ -319,6 +323,30 @@ export async function assertVoiceMinutesAvailable(userId: string): Promise<void>
   if (remaining <= 0) {
     throw new EntitlementLimitError("voice_minutes", total, used);
   }
+}
+
+/** Pure policy: how many wall-clock seconds a single voice session may run given
+ *  a voice budget. Free tier is capped per-session (FREE_VOICE_SESSION_MAX_MINUTES)
+ *  but never beyond its remaining minutes; paid tiers are bounded only by the
+ *  remaining balance. Kept pure so it can be unit-tested without a DB and reused
+ *  by any caller. */
+export function voiceSessionMaxSeconds(budget: {
+  remaining: number;
+  scope: "subscription" | "freemium";
+}): number {
+  const capMinutes =
+    budget.scope === "freemium"
+      ? Math.min(FREE_VOICE_SESSION_MAX_MINUTES, budget.remaining)
+      : budget.remaining;
+  return Math.max(0, capMinutes) * 60;
+}
+
+/** The max duration (seconds) the user's NEXT voice session may run for right now.
+ *  Surfaced by the session-start handshake so every client (dashboard, mobile)
+ *  shares ONE duration policy instead of reimplementing it. The session debit is
+ *  ceil-rounded to whole minutes, so this is also the budget-safe ceiling. */
+export async function getVoiceSessionMaxSeconds(userId: string): Promise<number> {
+  return voiceSessionMaxSeconds(await getVoiceBudget(userId));
 }
 
 /** Debit consumed voice minutes (rounded up) from the active budget when a voice

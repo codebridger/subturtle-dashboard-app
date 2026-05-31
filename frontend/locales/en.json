@@ -53,7 +53,7 @@
         "timer": {
             "remaining_time": "Free session time remaining",
             "time_expired": "Free Session Time Expired",
-            "session_limit_reached": "Your 5-minute free session limit has been reached.",
+            "session_limit_reached": "Your free session time has run out.",
             "upgrade_for_unlimited": "Upgrade to Learner for unlimited session time.",
             "exit_session": "Exit Session"
         }
@@ -287,7 +287,7 @@
         "voice-meter": {
             "headline": "Voice chat",
             "left": "{n} of {total} minutes left this month",
-            "left-voice": "{n}/{total} minutes",
+            "left-voice": "{n} min left",
             "low": "Only {n} minutes left this month",
             "none": "0 minutes left this month",
             "plus-topup": ", plus {n} top-up minutes",

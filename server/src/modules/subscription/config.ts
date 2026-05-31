@@ -24,6 +24,16 @@ export const LOW_CREDITS_THRESHOLD = 500000;
 export const SOFT_CAP_PERCENT = 80;
 
 /**
+ * Voice-session policy
+ */
+
+// Hard cap (minutes) on a single FREE-tier voice session. The effective session
+// length is this capped by the user's remaining minutes (see
+// getVoiceSessionMaxSeconds) so one session can't overshoot the monthly budget.
+// Paid tiers have no per-session cap beyond their remaining balance.
+export const FREE_VOICE_SESSION_MAX_MINUTES = 5;
+
+/**
  * Stable error code thrown when an AI operation is blocked because the user's
  * AI budget is exhausted (100% used). The frontend pattern-matches this code
  * to show the upgrade modal instead of a generic error toast.

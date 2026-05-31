@@ -27,6 +27,7 @@ import {
   updateSubscriptionStatusByProviderAndSubscriptionId,
   getVoiceBudget,
   assertVoiceMinutesAvailable,
+  voiceSessionMaxSeconds,
   debitVoiceMinutes,
   addVoiceMinutesPack,
   computeVoiceBalance,
@@ -54,6 +55,29 @@ const entitlements: any = {
   durationDays: 30,
   trialDays: 3,
 };
+
+describe("voiceSessionMaxSeconds (pure session-duration policy)", () => {
+  it("caps a free session at the per-session limit (5 min)", () => {
+    expect(voiceSessionMaxSeconds({ remaining: 5, scope: "freemium" })).toBe(300);
+    // Even with a large remaining, free never exceeds the per-session cap.
+    expect(voiceSessionMaxSeconds({ remaining: 50, scope: "freemium" })).toBe(300);
+  });
+
+  it("never exceeds the user's remaining minutes (free)", () => {
+    // 3 left -> a 3:00 session, not the full 5:00 cap.
+    expect(voiceSessionMaxSeconds({ remaining: 3, scope: "freemium" })).toBe(180);
+  });
+
+  it("returns 0 when out of minutes (clamped, never negative)", () => {
+    expect(voiceSessionMaxSeconds({ remaining: 0, scope: "freemium" })).toBe(0);
+    expect(voiceSessionMaxSeconds({ remaining: -2, scope: "freemium" })).toBe(0);
+  });
+
+  it("bounds a paid session only by remaining (no per-session cap)", () => {
+    expect(voiceSessionMaxSeconds({ remaining: 90, scope: "subscription" })).toBe(5400);
+    expect(voiceSessionMaxSeconds({ remaining: 0, scope: "subscription" })).toBe(0);
+  });
+});
 
 describe("voice-minute metering", () => {
   let col: any;

@@ -9,6 +9,13 @@ export interface GeminiLiveSessionType {
   instructions: string;
   modalities: string[];
   expires_at: number;
+  /**
+   * Max wall-clock seconds this session may run before the client must end it.
+   * Server policy = per-session cap ∧ the user's remaining voice minutes, so
+   * every client (dashboard, mobile) shares one timer-duration source of truth.
+   * 0 means no minutes left. Optional for backward-compat with older servers.
+   */
+  voice_session_max_seconds?: number;
   client_secret: {
     value: string;
     expires_at: number;
