@@ -23,6 +23,8 @@
                 <!-- overflow-x-clip contains decorative full-bleed page backgrounds (e.g. blurred blobs positioned past the edge)
                      so they never trigger a page-wide horizontal scroll; clip (not hidden) leaves vertical scrolling untouched. -->
                 <div class="overflow-x-clip">
+                    <!-- Voice banner stacks above the AI-credits banner (more time-sensitive). -->
+                    <VoiceCapBanner />
                     <UsageCapBanner />
                     <NuxtPage />
                 </div>
@@ -37,6 +39,9 @@
             :secondary-button-label="t('subscription.tier-limit.secondary')"
             @update:model-value="(v) => { if (!v) closeTierLimitModal(); }" />
 
+        <!-- Council 004: dedicated 100% voice-cap modal (top-up / use text chat). -->
+        <VoiceCapModal />
+
         <DevOnly>
             <ThemeCustomizer />
         </DevOnly>
@@ -48,6 +53,8 @@ import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } fro
 import type { SidebarItemType, HorizontalMenuItemType } from 'pilotui/types';
 import UsageCapBanner from '~/components/freemium_alerts/UsageCapBanner.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+import VoiceCapBanner from '~/components/VoiceCapBanner.vue';
+import VoiceCapModal from '~/components/VoiceCapModal.vue';
 import { useTierLimitModal } from '~/composables/useTierLimitModal';
 
 const { t, te } = useI18n();

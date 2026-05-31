@@ -311,6 +311,21 @@
         "billing-page": {
             "title": "Billing"
         },
+        "voice-banner": {
+            "message": "Only {n} of {total} voice minutes left this month.",
+            "reader": "Only {n} voice minutes left on your top-up.",
+            "top-up": "Top up minutes",
+            "upgrade": "Upgrade plan",
+            "dismiss": "Dismiss voice usage warning"
+        },
+        "voice-modal": {
+            "title": "You're out of voice minutes this month.",
+            "body1": "You have 0 of {total} voice minutes left.",
+            "body2": "Add 30 minutes for {price} to keep speaking, or switch to text chat to keep practising.",
+            "add30": "Add 30 min — {price}",
+            "use-text": "Use text chat instead",
+            "see-all": "See all top-up options"
+        },
         "cancel-offramp": {
             "title": "Before you go",
             "message": "Stay on Free instead?",

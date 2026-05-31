@@ -53,12 +53,15 @@ import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModa
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import VoiceMeter from '~/components/VoiceMeter.vue';
 import { useProfileStore } from '~/stores/profile';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
+import { openVoiceCapModal } from '~/composables/useVoiceCapModal';
 
 const GEMINI_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
 
 const router = useRouter();
 const { t } = useI18n();
 const profileStore = useProfileStore();
+const { remaining: voiceRemaining } = useVoiceBalance();
 
 const bundleList = ref<PhraseBundleType[]>([]);
 const filter = ref('');
@@ -112,6 +115,13 @@ const isFormValid = computed(() => {
 
 function startSession() {
     if (!isFormValid.value || !formData.bundleId) return;
+
+    // Council 004: a paid user out of voice minutes gets the dedicated voice-cap
+    // modal (top-up / use text chat) instead of starting a session that would 400.
+    if (!profileStore.isFreemium && voiceRemaining.value <= 0) {
+        openVoiceCapModal();
+        return;
+    }
 
     const sessionData: LivePracticeSessionSetupType = {
         aiCharacter: formData.aiCharacter,

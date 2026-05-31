@@ -297,4 +297,21 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
         await expect(page.getByText(/Add 120 min/)).toBeVisible();
         await expect(page.getByText(/30 min top-up/)).toBeVisible(); // active top-up line
     });
+
+    test('80% voice banner appears for a Learner running low', async ({ page }) => {
+        await page.route('**/function/run', async (route) => {
+            if (route.request().method() === 'OPTIONS') return preflight(route);
+            const name = (route.request().postDataJSON() || {}).name as string;
+            if (name === 'getSubscriptionDetails') {
+                // base 90, used 80 -> 89% used -> the 80% banner shows with 10 left.
+                return respond(route, 200, { status: 'success', data: { ...LEARNER_DETAILS, voice_minutes_used: 80 } });
+            }
+            return route.fallback();
+        });
+
+        await page.goto('/#/settings/subscription');
+
+        await expect(page.getByText('Only 10 of 90 voice minutes left this month.', { exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Upgrade plan' })).toBeVisible();
+    });
 });
