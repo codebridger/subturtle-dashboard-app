@@ -57,6 +57,27 @@ const LEARNER_DETAILS = {
     portal_url: 'https://billing.stripe.test/p/session',
 };
 
+// getSubscriptionDetails for a paid Reader — drives the text-chat counter (S17).
+const READER_DETAILS = {
+    is_freemium: false,
+    tier: 'reader',
+    label: 'Reader',
+    status: 'active',
+    voice_minutes_total: 0,
+    voice_minutes_used: 0,
+    entitlements: { voiceMinutesGranted: 0, textChatMaxMessages: 60 },
+    active_top_ups: [],
+    allowed_text_chats: 60,
+    allowed_text_chats_used: 23,
+    start_date: '2026-05-12T00:00:00.000Z',
+    end_date: '2026-06-12T00:00:00.000Z',
+    remaining_days: 12,
+    usage_percentage: 10,
+    total_credits: 200000000,
+    credits_used: 20000000,
+    portal_url: 'https://billing.stripe.test/p/session',
+};
+
 // getSubscriptionPlans payload — same shape as server plans.ts buildFromStripe():
 // [Starter (free, from code), Reader, Learner, Coach], GBP base prices. Learner is
 // the highlighted "Most popular" tier with a 3-day trial.
@@ -313,5 +334,20 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
 
         await expect(page.getByText('Only 10 of 90 voice minutes left this month.', { exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Upgrade plan' })).toBeVisible();
+    });
+
+    test('Reader sees the text-chat counter in the "This month" section', async ({ page }) => {
+        await page.route('**/function/run', async (route) => {
+            if (route.request().method() === 'OPTIONS') return preflight(route);
+            const name = (route.request().postDataJSON() || {}).name as string;
+            if (name === 'getSubscriptionDetails') {
+                return respond(route, 200, { status: 'success', data: READER_DETAILS });
+            }
+            return route.fallback();
+        });
+
+        await page.goto('/#/settings/subscription');
+
+        await expect(page.getByText('Text chat: 23 of 60 used this month', { exact: true })).toBeVisible();
     });
 });

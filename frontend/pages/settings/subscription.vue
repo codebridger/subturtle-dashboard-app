@@ -49,6 +49,7 @@
                                 {{ t('subscription.this-month.header') }}
                             </h3>
                             <VoiceMeter size="md" @topup="goToTopUps" />
+                            <TextChatCounter />
                             <p v-if="renewsOn" class="mt-3 text-xs text-gray-400">
                                 {{ t('subscription.voice-meter.resets', { date: renewsOn }) }}
                             </p>
@@ -264,6 +265,7 @@ import PageHeader from '~/components/common/PageHeader.vue';
 import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
 import VoiceMeter from '~/components/VoiceMeter.vue';
+import TextChatCounter from '~/components/TextChatCounter.vue';
 
 import { ref, computed } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';

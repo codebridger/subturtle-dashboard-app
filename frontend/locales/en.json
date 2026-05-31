@@ -256,7 +256,13 @@
                 "weekly_insights": "Progress insights are a Learner feature.",
                 "session_history": "Full session history is a Learner feature.",
                 "live_sessions": "You've used all your free live sessions.",
-                "voice_minutes": "You're out of voice minutes on your plan."
+                "voice_minutes": "You're out of voice minutes on your plan.",
+                "text_chat_count": "You've used your 60 chats this month. For unlimited chat with the AI coach, go Learner.",
+                "text_chat_messages_per_chat": "This chat has reached its message limit. Start a new chat to keep going."
+            },
+            "cta": {
+                "text_chat_count": { "primary": "Start 3-day free trial", "secondary": "See all plans" },
+                "text_chat_messages_per_chat": { "primary": "Start a new chat", "secondary": "Upgrade to Learner" }
             }
         },
         "feature-locked": {
@@ -290,6 +296,10 @@
         "this-month": {
             "header": "This month",
             "ai-usage": "AI translations & explanations: {n} used"
+        },
+        "text-chat-counter": {
+            "label": "Text chat: {used} of {total} used this month",
+            "find-out-more": "Find out more"
         },
         "top-ups": {
             "title": "Voice top-ups",

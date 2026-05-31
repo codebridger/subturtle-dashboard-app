@@ -35,8 +35,8 @@
              opens it for ANY RPC blocked by a tier limit/lock; no per-page wiring. -->
         <FreemiumLimitationModal :model-value="tierLimitOpen" :modal-title="t('subscription.tier-limit.title')"
             :main-message="tierLimitMessage" :sub-message="t('subscription.tier-limit.sub')" icon-name="IconLockDots"
-            :primary-button-label="t('subscription.tier-limit.primary')"
-            :secondary-button-label="t('subscription.tier-limit.secondary')"
+            :primary-button-label="tierLimitPrimaryLabel" :secondary-button-label="tierLimitSecondaryLabel"
+            :auto-redirect-on-upgrade="false" @upgrade="onTierLimitPrimary" @secondary="onTierLimitSecondary"
             @update:model-value="(v) => { if (!v) closeTierLimitModal(); }" />
 
         <!-- Council 004: dedicated 100% voice-cap modal (top-up / use text chat). -->
@@ -69,6 +69,31 @@ const tierLimitMessage = computed(() => {
     const key = `subscription.tier-limit.features.${feature}`;
     return feature && te(key) ? t(key) : t('subscription.tier-limit.message');
 });
+
+// Feature-aware CTAs (Council 004 S17): Reader's text-chat limits get bespoke
+// buttons/actions; every other feature keeps the default labels + "go to plans".
+const tierLimitPrimaryLabel = computed(() => {
+    const k = `subscription.tier-limit.cta.${tierLimitFeature.value}.primary`;
+    return te(k) ? t(k) : t('subscription.tier-limit.primary');
+});
+const tierLimitSecondaryLabel = computed(() => {
+    const k = `subscription.tier-limit.cta.${tierLimitFeature.value}.secondary`;
+    return te(k) ? t(k) : t('subscription.tier-limit.secondary');
+});
+function onTierLimitPrimary() {
+    const feature = tierLimitFeature.value;
+    closeTierLimitModal();
+    if (feature === 'text_chat_messages_per_chat') router.push('/practice/live-session-text');
+    else if (feature === 'text_chat_count') router.push('/settings/subscription?suggest=learner');
+    else router.push('/settings/subscription');
+}
+function onTierLimitSecondary() {
+    const feature = tierLimitFeature.value;
+    closeTierLimitModal();
+    if (feature === 'text_chat_messages_per_chat') router.push('/settings/subscription?suggest=learner');
+    else if (feature === 'text_chat_count') router.push('/settings/subscription');
+    // Other features: the secondary ("Not now") simply closes.
+}
 
 function onMenuItemClicked(item: SidebarItemType | HorizontalMenuItemType) {
     if (item?.to) {
