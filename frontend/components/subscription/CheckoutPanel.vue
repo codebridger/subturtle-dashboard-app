@@ -1,6 +1,6 @@
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="$emit('close')">
-        <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-[#0e1726]">
+        <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl dark:bg-[#0e1726]">
             <div class="mb-4 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white-light">{{ t('subscription.checkout.title', { plan: planName }) }}</h3>
                 <button type="button" class="text-gray-400 hover:text-gray-600" @click="$emit('close')">
@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { Button, Icon } from 'pilotui/elements';
 import { functionProvider } from '@modular-rest/client';
@@ -108,13 +108,18 @@ onMounted(async () => {
         }
         actions = res.actions;
 
+        // Reveal the form BEFORE mounting so the Stripe Element containers exist in
+        // the DOM — they live in the `v-else` block gated on `loading`, so mounting
+        // into a not-yet-rendered ref throws "Make sure to call mount() with a valid
+        // DOM element or selector".
+        loading.value = false;
+        await nextTick();
+
         // 3. Show the localized amount + mount the currency selector and payment form.
         refreshTotal();
         sdk.on('change', refreshTotal);
         sdk.createCurrencySelectorElement().mount(currencyElRef.value as HTMLElement);
         sdk.createPaymentElement().mount(paymentElRef.value as HTMLElement);
-
-        loading.value = false;
     } catch (e: any) {
         error.value = e?.message || t('subscription.checkout.load-failed');
         loading.value = false;
