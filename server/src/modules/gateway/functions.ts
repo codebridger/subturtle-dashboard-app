@@ -86,8 +86,34 @@ const createCustomCheckoutSession = defineFunction({
   },
 });
 
+// Create a HOSTED one-shot checkout for a voice-minute top-up pack (Council 004).
+// Returns the Stripe-hosted URL the client opens in a new tab; the top-up webhook
+// grants the minutes on completion.
+const createVoiceTopUpCheckout = defineFunction({
+  name: "create-voice-topup-checkout",
+  permissionTypes: ["user_access"],
+  callback: async function (params: {
+    packKey?: string;
+    successUrl?: string;
+    cancelUrl?: string;
+    userId?: string;
+  }) {
+    const { packKey, successUrl, cancelUrl, userId } = params;
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    if (packKey !== "topup_30" && packKey !== "topup_120") {
+      throw new Error('Unknown top-up pack (expected "topup_30" or "topup_120")');
+    }
+    return await PaymentAdapterFactory.getStripeAdapter().createVoiceTopUpCheckoutSession(
+      { userId, packKey, successUrl, cancelUrl }
+    );
+  },
+});
+
 export const functions = [
   createPaymentSession,
   verifyPayment,
   createCustomCheckoutSession,
+  createVoiceTopUpCheckout,
 ];

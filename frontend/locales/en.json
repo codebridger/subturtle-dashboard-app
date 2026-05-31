@@ -291,6 +291,26 @@
             "header": "This month",
             "ai-usage": "AI translations & explanations: {n} used"
         },
+        "top-ups": {
+            "title": "Voice top-ups",
+            "description": "Add minutes to your monthly voice budget. Top-ups expire 90 days from purchase.",
+            "add": "Add {minutes} min — {price}",
+            "active-header": "Your active top-ups",
+            "active-line": "{size} min top-up — {left} min left — expires {date}",
+            "empty": "You have no active top-ups.",
+            "picker-title": "Top up voice minutes",
+            "picker-sub": "Add minutes to your account. They stay active for 90 days and never auto-renew.",
+            "minutes": "minutes",
+            "best-value": "Best value",
+            "choose": "Choose {minutes} min",
+            "footer": "Top-ups expire 90 days from purchase.",
+            "added-toast": "Top-up added. You now have {n} voice minutes.",
+            "pending-toast": "Your top-up will appear in a moment. Refresh if you don't see it.",
+            "cancelled-toast": "Top-up didn't go through. Your card was not charged."
+        },
+        "billing-page": {
+            "title": "Billing"
+        },
         "cancel-offramp": {
             "title": "Before you go",
             "message": "Stay on Free instead?",

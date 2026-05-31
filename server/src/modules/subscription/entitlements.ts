@@ -424,3 +424,47 @@ export async function resolveTierCheckout(
     currency: price.currency,
   };
 }
+
+/**
+ * Resolve the GBP one-time price id for a voice top-up pack (Council 004 overage),
+ * keyed by its `pack_key` Stripe product metadata. Used to open a one-shot checkout;
+ * Adaptive Pricing localizes the displayed currency, we settle in GBP.
+ */
+export async function resolvePackCheckout(
+  stripe: Stripe,
+  packKey: string
+): Promise<{
+  priceId: string;
+  productId: string;
+  minutes: number;
+  unitAmount: number | null;
+}> {
+  const products = await stripe.products.list({ active: true, limit: 100 });
+  const product = products.data.find(
+    (p) => p.metadata?.kind === "voice_topup" && p.metadata?.pack_key === packKey
+  );
+  if (!product) {
+    throw new EntitlementParseError(
+      `No active Stripe top-up product for pack "${packKey}"`
+    );
+  }
+  const minutes = parseInt(product.metadata?.voice_minutes || "0", 10);
+  const prices = await stripe.prices.list({
+    product: product.id,
+    active: true,
+    limit: 100,
+  });
+  // Packs are one-time charges (no `recurring`).
+  const price = prices.data.find((p) => p.currency === "gbp" && !p.recurring);
+  if (!price) {
+    throw new EntitlementParseError(
+      `No active GBP one-time price for pack "${packKey}"`
+    );
+  }
+  return {
+    priceId: price.id,
+    productId: product.id,
+    minutes,
+    unitAmount: price.unit_amount,
+  };
+}

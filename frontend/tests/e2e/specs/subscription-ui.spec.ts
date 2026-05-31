@@ -273,4 +273,28 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
         // The meter sub-line (base 90, used 30) — proves VoiceMeter computed the balance.
         await expect(page.getByText('60 of 90 minutes left this month', { exact: true })).toBeVisible();
     });
+
+    test('paid user sees the voice top-ups section on /settings/billing', async ({ page }) => {
+        await page.route('**/function/run', async (route) => {
+            if (route.request().method() === 'OPTIONS') return preflight(route);
+            const name = (route.request().postDataJSON() || {}).name as string;
+            if (name === 'getSubscriptionDetails') {
+                return respond(route, 200, {
+                    status: 'success',
+                    data: {
+                        ...LEARNER_DETAILS,
+                        active_top_ups: [{ pack_size: 30, minutes_remaining: 20, expires_at: '2026-08-24T00:00:00.000Z' }],
+                    },
+                });
+            }
+            return route.fallback();
+        });
+
+        await page.goto('/#/settings/billing');
+
+        await expect(page.getByRole('heading', { name: 'Voice top-ups' })).toBeVisible();
+        await expect(page.getByText(/Add 30 min/)).toBeVisible();
+        await expect(page.getByText(/Add 120 min/)).toBeVisible();
+        await expect(page.getByText(/30 min top-up/)).toBeVisible(); // active top-up line
+    });
 });

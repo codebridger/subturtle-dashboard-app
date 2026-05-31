@@ -23,6 +23,7 @@ import { Cadence } from "../../subscription/tiers";
 import {
   resolveEntitlements,
   resolveTierCheckout,
+  resolvePackCheckout,
   clearEntitlementsCache,
   cachedTierName,
   Entitlements,
@@ -287,6 +288,39 @@ export class StripeAdapter implements PaymentAdapter {
       );
     }
     return { clientSecret: session.client_secret, sessionId: session.id };
+  }
+
+  /**
+   * Create a HOSTED one-shot checkout for a voice-minute top-up pack (Council 004
+   * overage). Returns the Stripe-hosted URL to open in a new tab; on completion the
+   * `checkout.session.completed` webhook (mode "payment") grants the minutes via
+   * addVoiceMinutesPack. Adaptive Pricing localizes the displayed currency; we
+   * settle in GBP.
+   */
+  async createVoiceTopUpCheckoutSession(request: {
+    userId: string;
+    packKey: string;
+    successUrl?: string;
+    cancelUrl?: string;
+  }): Promise<{ url: string; sessionId: string }> {
+    const { userId, packKey, successUrl, cancelUrl } = request;
+    const { priceId } = await resolvePackCheckout(this.stripe, packKey);
+    const customerId = await this.getOrCreateStripeCustomer(userId);
+
+    const session = await this.stripe.checkout.sessions.create({
+      mode: "payment",
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      payment_method_types: ["card"],
+      adaptive_pricing: { enabled: true },
+      success_url: successUrl || "",
+      cancel_url: cancelUrl || successUrl || "",
+      // userId is read by the top-up webhook; kind/pack_key are belt-and-suspenders
+      // (the webhook also derives minutes from the product metadata).
+      metadata: { userId, kind: "voice_topup", pack_key: packKey },
+    });
+
+    return { url: session.url || "", sessionId: session.id };
   }
 
   /**
