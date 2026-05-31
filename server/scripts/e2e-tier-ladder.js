@@ -165,6 +165,10 @@ const isLimit = (r, feature) => r.status === 400 && typeof r.body?.message === '
     } catch {}
     try {
       if (userId) mongo(`db.subscriptions.deleteMany({user_id:ObjectId('${userId}')});db.free_credits.deleteMany({user_id:ObjectId('${userId}')});db.usages.deleteMany({user_id:ObjectId('${userId}')});db.stripe_customers.deleteMany({user_id:'${userId}'});db.phrases.deleteMany({refId:'${userId}'});db.phrase_bundles.deleteMany({refId:'${userId}'})`);
+      // The auth identity lives in the cms DB (modular-rest), which the user_content-scoped
+      // mongo() helper above doesn't reach — clean it via getSiblingDB so the
+      // e2e+<ts>@example.com auth rows don't orphan and accumulate across runs.
+      if (EMAIL) mongo(`db.getSiblingDB('subturtle_dev_cms').auths.deleteMany({email:'${EMAIL}'})`);
     } catch (e) { log('teardown mongo error: ' + e); }
     log('teardown done');
 
