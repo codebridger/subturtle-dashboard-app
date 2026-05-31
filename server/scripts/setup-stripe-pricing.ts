@@ -125,7 +125,7 @@ const TIER_SPECS: TierSpec[] = [
     tagline: "Read, save, and chat with AI about every phrase you meet.",
     featureLabels: [
       "Save as many phrases as you want",
-      "Unlimited text chat with the AI coach",
+      "60 text chats per month",
       "Unlimited translations",
       "Unlimited Smart Review",
       "Voice top-ups when you want them",
