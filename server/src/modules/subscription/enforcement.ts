@@ -28,7 +28,11 @@ export { TIER_LIMIT_REACHED_CODE };
  * Anything an entitlement can gate. The `FeatureKey`s are cap/flag based;
  * `voice_minutes` is a numeric budget gated separately (see service.ts).
  */
-export type GatedFeature = FeatureKey | "voice_minutes";
+export type GatedFeature =
+  | FeatureKey
+  | "voice_minutes"
+  | "text_chat_count"
+  | "text_chat_messages_per_chat";
 
 /** Thrown when a feature is locked (cap 0) or its hard cap is met (used >= cap). */
 export class EntitlementLimitError extends Error {

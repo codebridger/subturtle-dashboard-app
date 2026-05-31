@@ -36,6 +36,9 @@ export interface Subscription {
   credits_used: number;
   voice_minutes_total?: number;
   voice_minutes_used?: number;
+  // Reader text-chat caps (Council 004 follow-up): monthly chat count + counter.
+  allowed_text_chats?: number;
+  allowed_text_chats_used?: number;
   // Voice-minute top-up ledger (Council 004 overage). Survives renewal until each
   // pack's 90-day expiry; the per-pack remaining + active list are derived.
   top_ups?: VoiceTopUp[];
@@ -82,6 +85,8 @@ export interface FreeCredit {
   allowed_save_words_used: number;
   allowed_lived_sessions: number;
   allowed_lived_sessions_used: number;
+  allowed_text_chats?: number;
+  allowed_text_chats_used?: number;
   voice_minutes_total?: number;
   voice_minutes_used?: number;
   ai_exhausted_flagged?: boolean;

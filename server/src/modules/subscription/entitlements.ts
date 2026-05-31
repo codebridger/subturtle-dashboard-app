@@ -72,6 +72,7 @@ export interface Entitlements {
   voiceMinutesGranted: number;
   saveWordsCap: number | null;
   textChatCap: number | null;
+  textChatMaxMessages: number | null;
   liveSessionsCap: number | null;
   weeklyInsights: boolean;
   sessionHistory: boolean;
@@ -153,6 +154,9 @@ const entitlementMetadataSchema = z.object({
   ),
   save_words_cap: zCap,
   text_chat_cap: zCap,
+  // Optional for back-compat: products seeded before this field default to
+  // "unlimited" (null) until the next `yarn setup:stripe` run re-seeds them.
+  text_chat_max_messages: zCap.optional(),
   live_sessions_cap: zCap,
   weekly_insights: zBool,
   session_history: zBool,
@@ -188,6 +192,7 @@ export function parseTierMetadata(
     voiceMinutesGranted: d.voice_minutes_granted,
     saveWordsCap: d.save_words_cap,
     textChatCap: d.text_chat_cap,
+    textChatMaxMessages: d.text_chat_max_messages ?? null,
     liveSessionsCap: d.live_sessions_cap,
     weeklyInsights: d.weekly_insights,
     sessionHistory: d.session_history,

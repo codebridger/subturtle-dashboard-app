@@ -10,6 +10,8 @@ import {
   FREEMIUM_DURATION_DAYS,
   FREEMIUM_DEFAULT_LIVED_SESSIONS,
   FREEMIUM_DEFAULT_VOICE_MINUTES,
+  FREEMIUM_DEFAULT_TEXT_CHATS,
+  FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES,
 } from "../../config";
 import { LOW_CREDITS_THRESHOLD, SOFT_CAP_PERCENT } from "./config";
 
@@ -87,6 +89,8 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
       allowed_save_words_used: 0,
       allowed_lived_sessions: FREEMIUM_DEFAULT_LIVED_SESSIONS,
       allowed_lived_sessions_used: 0,
+      allowed_text_chats: FREEMIUM_DEFAULT_TEXT_CHATS,
+      allowed_text_chats_used: 0,
       voice_minutes_total: FREEMIUM_DEFAULT_VOICE_MINUTES,
       voice_minutes_used: 0,
     };
@@ -450,6 +454,78 @@ export async function addVoiceMinutesPack(props: {
 }
 
 /**
+ * Gate + consume one text-chat "start" against the monthly chat cap (Council 004
+ * follow-up). Reader is capped (from the entitlement snapshot); Starter from config;
+ * Learner / Coach are unlimited (no-op). Throws TIER_LIMIT_REACHED
+ * ("text_chat_count") at the cap, otherwise atomically increments the used counter.
+ */
+export async function assertAndConsumeTextChat(userId: string): Promise<void> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const active = (await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  } as any)) as Subscription | null;
+
+  if (active) {
+    const cap = active.allowed_text_chats ?? null; // null = unlimited (Learner/Coach)
+    if (cap === null) return;
+    const used = active.allowed_text_chats_used ?? 0;
+    if (used >= cap) {
+      throw new EntitlementLimitError("text_chat_count", cap, used);
+    }
+    await subscriptionsCollection.updateOne(
+      { _id: (active as any)._id },
+      { $inc: { allowed_text_chats_used: 1 } }
+    );
+    return;
+  }
+
+  // Free (Starter).
+  const freemium: any = await getOrCreateFreemiumAllocation(userId);
+  const cap = freemium.allowed_text_chats ?? FREEMIUM_DEFAULT_TEXT_CHATS;
+  const used = freemium.allowed_text_chats_used ?? 0;
+  if (used >= cap) {
+    throw new EntitlementLimitError("text_chat_count", cap, used);
+  }
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+  await freeCreditCollection.updateOne(
+    { _id: freemium._id },
+    { $inc: { allowed_text_chats_used: 1 } }
+  );
+}
+
+/**
+ * The per-chat message cap for the user's tier (null = unlimited). Reader / Starter
+ * are capped; Learner / Coach are not. `text-turn` uses this to end a chat
+ * gracefully at the cap and to surface a soft "wrap up soon" warning just before it.
+ */
+export async function getTextChatMessageCap(
+  userId: string
+): Promise<number | null> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const active = (await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  } as any)) as Subscription | null;
+
+  if (active) {
+    return active.entitlements?.textChatMaxMessages ?? null;
+  }
+  return FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES;
+}
+
+/**
  * Check credit allocation for a user
  */
 export async function checkCreditAllocation(props: {
@@ -611,6 +687,11 @@ export async function addNewSubscriptionWithCredit(props: {
     credits_used: 0,
     voice_minutes_total: voiceMinutes ?? 0,
     voice_minutes_used: 0,
+    // Reader text-chat monthly cap from the tier metadata (omitted = unlimited).
+    ...(entitlements?.textChatCap != null && {
+      allowed_text_chats: entitlements.textChatCap,
+    }),
+    allowed_text_chats_used: 0,
     status,
     payment_meta_data: paymentMetaData,
     ...(tier && { tier }),
@@ -795,6 +876,10 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     }
     if (entitlements) {
       update.entitlements = entitlements;
+      // Reset Reader's text-chat counter and re-seed its cap from the (possibly
+      // updated) metadata on renewal. null cap = unlimited (Learner / Coach).
+      update.allowed_text_chats = entitlements.textChatCap ?? null;
+      update.allowed_text_chats_used = 0;
     }
   }
 

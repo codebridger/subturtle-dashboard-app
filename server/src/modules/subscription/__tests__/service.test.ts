@@ -31,6 +31,8 @@ import {
   addVoiceMinutesPack,
   computeVoiceBalance,
   carryForwardTopUps,
+  assertAndConsumeTextChat,
+  getTextChatMessageCap,
 } from "../service";
 import { EntitlementLimitError } from "../enforcement";
 import { PaymentProvider } from "../../gateway/adapters";
@@ -401,5 +403,79 @@ describe("addVoiceMinutesPack — grant + idempotency", () => {
     const r = await addVoiceMinutesPack({ userId: USER, minutes: 30, packSize: 30, sessionId: "cs_1" });
     expect(r).toMatchObject({ success: false, applied: false });
     expect(col.updateOne).not.toHaveBeenCalled();
+  });
+});
+
+describe("text-chat caps — assertAndConsumeTextChat + getTextChatMessageCap (S16)", () => {
+  let col: any;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    col = { findOne: jest.fn(), updateOne: jest.fn(async () => ({})) };
+    (getCollection as any).mockReturnValue(col);
+  });
+
+  it("Reader under the monthly cap consumes one chat ($inc used)", async () => {
+    col.findOne.mockResolvedValue({
+      _id: "sub1",
+      allowed_text_chats: 60,
+      allowed_text_chats_used: 10,
+    });
+    await expect(assertAndConsumeTextChat(USER)).resolves.toBeUndefined();
+    const [, update] = col.updateOne.mock.calls[0];
+    expect(update).toEqual({ $inc: { allowed_text_chats_used: 1 } });
+  });
+
+  it("Reader at the monthly cap is blocked (no consume)", async () => {
+    col.findOne.mockResolvedValue({
+      _id: "sub1",
+      allowed_text_chats: 60,
+      allowed_text_chats_used: 60,
+    });
+    await expect(assertAndConsumeTextChat(USER)).rejects.toThrow(
+      EntitlementLimitError
+    );
+    expect(col.updateOne).not.toHaveBeenCalled();
+  });
+
+  it("an unlimited tier (no stored cap) is a no-op", async () => {
+    col.findOne.mockResolvedValue({
+      _id: "sub1",
+      allowed_text_chats: null,
+      allowed_text_chats_used: 999,
+    });
+    await expect(assertAndConsumeTextChat(USER)).resolves.toBeUndefined();
+    expect(col.updateOne).not.toHaveBeenCalled();
+  });
+
+  it("free Starter at the cap is blocked", async () => {
+    col.findOne
+      .mockResolvedValueOnce(null) // no active subscription
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          _id: "fc1",
+          allowed_text_chats: 5,
+          allowed_text_chats_used: 5,
+        }),
+      });
+    await expect(assertAndConsumeTextChat(USER)).rejects.toThrow(
+      EntitlementLimitError
+    );
+  });
+
+  it("getTextChatMessageCap returns the snapshot cap for a paid Reader", async () => {
+    col.findOne.mockResolvedValue({ entitlements: { textChatMaxMessages: 60 } });
+    await expect(getTextChatMessageCap(USER)).resolves.toBe(60);
+  });
+
+  it("getTextChatMessageCap returns null (unlimited) for Learner / Coach", async () => {
+    col.findOne.mockResolvedValue({
+      entitlements: { textChatMaxMessages: null },
+    });
+    await expect(getTextChatMessageCap(USER)).resolves.toBeNull();
+  });
+
+  it("getTextChatMessageCap falls back to the freemium message cap", async () => {
+    col.findOne.mockResolvedValue(null);
+    await expect(getTextChatMessageCap(USER)).resolves.toBe(20);
   });
 });

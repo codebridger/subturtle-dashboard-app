@@ -5,6 +5,7 @@ import {
   FREE_CREDIT_COLLECTION,
   FLUENT_WAITLIST_COLLECTION,
   FREEMIUM_DURATION_DAYS,
+  FREEMIUM_DEFAULT_TEXT_CHATS,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
@@ -51,6 +52,17 @@ const subscriptionCollection = defineCollection({
       voice_minutes_used: {
         type: Number,
         required: true,
+        default: 0,
+      },
+      // Reader text-chat caps (Council 004 follow-up): monthly chat count seeded
+      // from the tier's Stripe metadata (text_chat_cap) on start/renewal; absent =
+      // unlimited (Learner / Coach). Per-chat message cap is enforced inline.
+      allowed_text_chats: {
+        type: Number,
+        required: false,
+      },
+      allowed_text_chats_used: {
+        type: Number,
         default: 0,
       },
       // Voice-minute top-up packs (Council 004 overage) — one-shot purchases that
@@ -316,6 +328,16 @@ const freeCreaditCollection = defineCollection({
       allowed_lived_sessions_used: {
         type: Number,
         required: true,
+        default: 0,
+      },
+      // Starter text-chat caps (Council 004 follow-up): 5 chats / 30-day window,
+      // each capped at 20 messages (the per-chat cap is enforced inline, no counter).
+      allowed_text_chats: {
+        type: Number,
+        default: FREEMIUM_DEFAULT_TEXT_CHATS,
+      },
+      allowed_text_chats_used: {
+        type: Number,
         default: 0,
       },
       // Starter "taste" of voice (Council 004). Free-tier voice still debits the

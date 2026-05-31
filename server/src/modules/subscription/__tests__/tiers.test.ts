@@ -17,6 +17,7 @@ function ent(overrides: Partial<Entitlements> = {}): Entitlements {
     voiceMinutesGranted: 90,
     saveWordsCap: null,
     textChatCap: null,
+    textChatMaxMessages: null,
     liveSessionsCap: null,
     weeklyInsights: true,
     sessionHistory: true,

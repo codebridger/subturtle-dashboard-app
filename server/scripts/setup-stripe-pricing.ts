@@ -78,7 +78,8 @@ interface TierSpec {
   creditsGranted: number;
   voiceMinutesGranted: number;
   saveWordsCap: string; // "unlimited" or a non-negative integer
-  textChatCap: string;
+  textChatCap: string; // monthly text-chat cap ("unlimited" or an integer)
+  textChatMaxMessages: string; // per-chat message cap ("unlimited" or an integer)
   liveSessionsCap: string;
   weeklyInsights: boolean;
   sessionHistory: boolean;
@@ -111,7 +112,10 @@ const TIER_SPECS: TierSpec[] = [
     creditsGranted: 200_000_000,
     voiceMinutesGranted: 0, // overage packs only
     saveWordsCap: "unlimited",
-    textChatCap: "unlimited",
+    // Reader text chat capped (Council 004 follow-up 2026-05-30): 60 chats / month,
+    // 60 messages / chat — a second upgrade lever toward Learner (unlimited text).
+    textChatCap: "60",
+    textChatMaxMessages: "60",
     liveSessionsCap: "unlimited",
     weeklyInsights: false,
     sessionHistory: false,
@@ -139,6 +143,7 @@ const TIER_SPECS: TierSpec[] = [
     voiceMinutesGranted: 90,
     saveWordsCap: "unlimited",
     textChatCap: "unlimited",
+    textChatMaxMessages: "unlimited",
     liveSessionsCap: "unlimited",
     weeklyInsights: true,
     sessionHistory: true,
@@ -165,6 +170,7 @@ const TIER_SPECS: TierSpec[] = [
     voiceMinutesGranted: 300,
     saveWordsCap: "unlimited",
     textChatCap: "unlimited",
+    textChatMaxMessages: "unlimited",
     liveSessionsCap: "unlimited",
     weeklyInsights: true,
     sessionHistory: true,
@@ -212,6 +218,7 @@ function tierMetadata(spec: TierSpec): Stripe.MetadataParam {
     voice_minutes_granted: String(spec.voiceMinutesGranted),
     save_words_cap: spec.saveWordsCap,
     text_chat_cap: spec.textChatCap,
+    text_chat_max_messages: spec.textChatMaxMessages,
     live_sessions_cap: spec.liveSessionsCap,
     weekly_insights: String(spec.weeklyInsights),
     session_history: String(spec.sessionHistory),

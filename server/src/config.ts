@@ -25,6 +25,10 @@ export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 lived sessions can be cre
 // debits the credit pool (no real minute meter on free) — this counter exists
 // for schema symmetry with paid tiers and the future metering engine.
 export const FREEMIUM_DEFAULT_VOICE_MINUTES = 5;
+// Starter text-chat caps (Council 004 follow-up 2026-05-30): 5 chats / 30-day
+// window, each capped at 20 messages. Reader's caps come from Stripe metadata.
+export const FREEMIUM_DEFAULT_TEXT_CHATS = 5;
+export const FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES = 20;
 export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 
 // Schedule
