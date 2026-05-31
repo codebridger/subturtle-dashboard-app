@@ -25,6 +25,7 @@
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { GoogleGenAI, Modality } from '@google/genai';
+import { useProfileStore } from '~/stores/profile';
 import type {
     LiveServerMessage,
     Session,
@@ -201,6 +202,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             if (seconds > 0) {
                 functionProvider
                     .run({ name: 'debit-voice-minutes', args: { userId: authUser.value?.id, seconds } })
+                    // Re-pull the subscription once the server has recorded the debit so
+                    // the voice-minute balance (meter, banner, session card) updates
+                    // reactively — without this the UI is stale until a page refresh.
+                    .then(() => useProfileStore().fetchSubscription())
                     .catch(() => {
                         /* best-effort metering; never block teardown */
                     });
