@@ -37,6 +37,10 @@ describe("LeitnerService", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
+		// syncScheduledJob() dedupes per-user via this static Set; clear it so each
+		// test starts from an unsynced state.
+		(LeitnerService as any).syncedUsers.clear();
+		mockProfileCollection = undefined;
 		mockCollection = {
 			findOne: jest.fn(),
 			create: jest.fn(),
@@ -158,6 +162,40 @@ describe("LeitnerService", () => {
 					timeZone: undefined,
 				})
 			);
+		});
+	});
+
+	describe("syncScheduledJob fan-out & crash-safety", () => {
+		it("creates the review job only once per user despite getSettings re-entrant sync", async () => {
+			const userId = "fanout-user";
+			// A real system doc makes getSettings() re-enter syncScheduledJob() in the
+			// background — the fan-out that used to spawn racing createJob() calls.
+			mockCollection.findOne.mockResolvedValue({ _id: "sys", userId, settings: { reviewInterval: 1, reviewHour: 9 } });
+			mockProfileCollection = { findOne: jest.fn<any>().mockResolvedValue({ refId: userId }) };
+			(ScheduleService.createJob as jest.Mock<any>).mockResolvedValue(undefined);
+
+			await (LeitnerService as any).syncScheduledJob(userId);
+			// Flush any background re-entrant sync the old code would have fanned out.
+			await new Promise((resolve) => setTimeout(resolve, 0));
+
+			expect(ScheduleService.createJob).toHaveBeenCalledTimes(1);
+		});
+
+		it("does not reject the caller when schedule job creation fails (mirrors the registration crash)", async () => {
+			const userId = "crash-user";
+			mockCollection.findOne.mockResolvedValue(null); // no system yet -> ensureInitialized creates one
+			mockProfileCollection = { findOne: jest.fn<any>().mockResolvedValue(null) };
+
+			const dupErr: any = new Error("E11000 duplicate key error: name_1");
+			dupErr.code = 11000;
+			(ScheduleService.createJob as jest.Mock<any>).mockRejectedValue(dupErr);
+
+			// Before the fix this rejection propagated out of the insert-one auth
+			// trigger as an unhandled rejection and killed the server process.
+			await expect(LeitnerService.ensureInitialized(userId)).resolves.toBeUndefined();
+
+			// The failed sync releases its claim so a later request can retry.
+			expect((LeitnerService as any).syncedUsers.has(userId)).toBe(false);
 		});
 	});
 });

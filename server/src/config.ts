@@ -21,6 +21,14 @@ export const PAYMENT_SESSION_COLLECTION = "payment_session";
 export const FREEMIUM_DEFAULT_CREDITS = 5000000; // 5M credits
 export const FREEMIUM_DEFAULT_SAVE_WORDS = 200; // 200 words / 30-day window (Starter tier)
 export const FREEMIUM_DEFAULT_LIVED_SESSIONS = 3; // 3 lived sessions can be created
+// Starter "taste" of voice: ~5 minutes / 30-day window. Starter voice still
+// debits the credit pool (no real minute meter on free) — this counter exists
+// for schema symmetry with paid tiers and the future metering engine.
+export const FREEMIUM_DEFAULT_VOICE_MINUTES = 5;
+// Starter text-chat caps (Council 004 follow-up 2026-05-30): 5 chats / 30-day
+// window, each capped at 20 messages. Reader's caps come from Stripe metadata.
+export const FREEMIUM_DEFAULT_TEXT_CHATS = 5;
+export const FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES = 20;
 export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 
 // Schedule

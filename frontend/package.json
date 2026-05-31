@@ -52,6 +52,7 @@
         "@google/genai": "^1.52.0",
         "@modular-rest/client": "^1.14.0",
         "@pinia/nuxt": "^0.4.6",
+        "@stripe/stripe-js": "^9.7.0",
         "apexcharts": "^4.4.0",
         "markdown-it": "^14",
         "mixpanel-browser": "^2.66.0",

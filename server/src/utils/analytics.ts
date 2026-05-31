@@ -20,6 +20,9 @@ export const SERVER_ANALYTICS_EVENTS = {
   TRIAL_CONVERTED: "trial-converted",
   TRIAL_CANCELED: "trial-canceled",
   STARTER_AI_EXHAUSTED: "starter-ai-exhausted",
+  // Fired when a Stripe subscription webhook refused to grant because the
+  // product's entitlement metadata was missing/invalid (ADR-004 fail-safe).
+  ENTITLEMENT_GRANT_REFUSED: "entitlement-grant-refused",
 };
 
 /**

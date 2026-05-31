@@ -20,6 +20,16 @@ jest.mock("@modular-rest/server", () => ({
 jest.mock("../../subscription/service", () => ({
   isUserOnFreemium: jest.fn<any>().mockResolvedValue(false),
   updateFreemiumAllocation: jest.fn<any>(),
+  getOrCreateFreemiumAllocation: jest
+    .fn<any>()
+    .mockResolvedValue({ allowed_save_words_used: 0 }),
+}));
+
+// Enforcement is covered in enforcement.test.ts; here the cap resolves to
+// unlimited so the save_words gate never blocks the persistence assertions.
+jest.mock("../../subscription/enforcement", () => ({
+  getEffectiveCap: jest.fn<any>().mockResolvedValue(null),
+  EntitlementLimitError: class EntitlementLimitError extends Error {},
 }));
 
 jest.mock("../triggers", () => ({ phraseBundleTriggers: [] }));

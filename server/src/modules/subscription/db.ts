@@ -5,6 +5,7 @@ import {
   FREE_CREDIT_COLLECTION,
   FLUENT_WAITLIST_COLLECTION,
   FREEMIUM_DURATION_DAYS,
+  FREEMIUM_DEFAULT_TEXT_CHATS,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
@@ -39,6 +40,50 @@ const subscriptionCollection = defineCollection({
         required: true,
         default: 0,
       },
+      // Monthly voice-minute budget (Council 004). Seeded from the tier's Stripe
+      // metadata on create/renewal; reset to 0 used on each new period. The voice
+      // metering engine (debit/check/overage) is a separate workstream — these
+      // are the schema + seeding only.
+      voice_minutes_total: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      voice_minutes_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      // Reader text-chat caps (Council 004 follow-up): monthly chat count seeded
+      // from the tier's Stripe metadata (text_chat_cap) on start/renewal; absent =
+      // unlimited (Learner / Coach). Per-chat message cap is enforced inline.
+      allowed_text_chats: {
+        type: Number,
+        required: false,
+      },
+      allowed_text_chats_used: {
+        type: Number,
+        default: 0,
+      },
+      // Voice-minute top-up packs (Council 004 overage) — one-shot purchases that
+      // extend the voice budget and survive renewal until their 90-day expiry. The
+      // active list + per-pack remaining are derived (service.computeVoiceBalance);
+      // idempotency is keyed on session_id.
+      top_ups: {
+        type: [
+          new Schema(
+            {
+              session_id: { type: String, required: true },
+              pack_size: { type: Number, required: true },
+              minutes: { type: Number, required: true },
+              purchased_at: { type: Date, required: true },
+              expires_at: { type: Date, required: true },
+            },
+            { _id: false }
+          ),
+        ],
+        default: [],
+      },
       status: {
         type: String,
         enum: [
@@ -55,11 +100,12 @@ const subscriptionCollection = defineCollection({
         required: true,
         default: "active",
       },
-      // Pricing-tier ladder (Council 002). Optional: pre-rollout subscriptions
-      // and freemium-derived records may not carry a tier.
+      // Pricing-tier ladder (Council 004: Starter / Reader / Learner / Coach).
+      // Optional: pre-rollout subscriptions and freemium-derived records may not
+      // carry a tier.
       tier: {
         type: String,
-        enum: ["starter", "learner", "fluent"],
+        enum: ["starter", "reader", "learner", "coach"],
         required: false,
       },
       // Billing cadence of the paid subscription.
@@ -86,6 +132,22 @@ const subscriptionCollection = defineCollection({
         default: false,
       },
       payment_meta_data: {
+        type: Object,
+        required: false,
+      },
+      // Idempotency / period marker (ADR-004): the Stripe current_period_end we
+      // last granted (created or refilled) for. Grants apply only for a period
+      // strictly newer than this, so a duplicate or out-of-order webhook cannot
+      // double-grant or regress to an older period.
+      granted_period_end: {
+        type: Date,
+        required: false,
+      },
+      // Entitlement snapshot LOCKED at purchase (ADR-004): the parsed Stripe
+      // product metadata for the current paid period. Re-read from metadata only
+      // on a real period rollover, so a mid-period metadata edit never changes a
+      // customer's current period. Feature gating reads from this snapshot.
+      entitlements: {
         type: Object,
         required: false,
       },
@@ -264,6 +326,28 @@ const freeCreaditCollection = defineCollection({
         required: true,
       },
       allowed_lived_sessions_used: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      // Starter text-chat caps (Council 004 follow-up): 5 chats / 30-day window,
+      // each capped at 20 messages (the per-chat cap is enforced inline, no counter).
+      allowed_text_chats: {
+        type: Number,
+        default: FREEMIUM_DEFAULT_TEXT_CHATS,
+      },
+      allowed_text_chats_used: {
+        type: Number,
+        default: 0,
+      },
+      // Starter "taste" of voice (Council 004). Free-tier voice still debits the
+      // credit pool; this mirrors the paid voice counter for schema symmetry.
+      voice_minutes_total: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      voice_minutes_used: {
         type: Number,
         required: true,
         default: 0,

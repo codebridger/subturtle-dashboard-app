@@ -20,10 +20,27 @@
             </template>
 
             <template #content>
-                <UsageCapBanner />
-                <NuxtPage />
+                <!-- overflow-x-clip contains decorative full-bleed page backgrounds (e.g. blurred blobs positioned past the edge)
+                     so they never trigger a page-wide horizontal scroll; clip (not hidden) leaves vertical scrolling untouched. -->
+                <div class="overflow-x-clip">
+                    <!-- Voice banner stacks above the AI-credits banner (more time-sensitive). -->
+                    <VoiceCapBanner />
+                    <UsageCapBanner />
+                    <NuxtPage />
+                </div>
             </template>
         </DashboardShell>
+
+        <!-- Single global "plan limit reached" modal. The modular-rest interceptor
+             opens it for ANY RPC blocked by a tier limit/lock; no per-page wiring. -->
+        <FreemiumLimitationModal :model-value="tierLimitOpen" :modal-title="t('subscription.tier-limit.title')"
+            :main-message="tierLimitMessage" :sub-message="t('subscription.tier-limit.sub')" icon-name="IconLockDots"
+            :primary-button-label="tierLimitPrimaryLabel" :secondary-button-label="tierLimitSecondaryLabel"
+            :auto-redirect-on-upgrade="false" @upgrade="onTierLimitPrimary" @secondary="onTierLimitSecondary"
+            @update:model-value="(v) => { if (!v) closeTierLimitModal(); }" />
+
+        <!-- Council 004: dedicated 100% voice-cap modal (top-up / use text chat). -->
+        <VoiceCapModal />
 
         <DevOnly>
             <ThemeCustomizer />
@@ -35,9 +52,48 @@
 import { App, DashboardShell, ThemeCustomizer, SidebarMenu, HorizontalMenu } from 'pilotui/shell';
 import type { SidebarItemType, HorizontalMenuItemType } from 'pilotui/types';
 import UsageCapBanner from '~/components/freemium_alerts/UsageCapBanner.vue';
+import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+import VoiceCapBanner from '~/components/VoiceCapBanner.vue';
+import VoiceCapModal from '~/components/VoiceCapModal.vue';
+import { useTierLimitModal } from '~/composables/useTierLimitModal';
 
+const { t, te } = useI18n();
+const { open: tierLimitOpen, feature: tierLimitFeature, closeTierLimitModal } = useTierLimitModal();
 const menuItems = useDashboardNavigatorItems();
 const router = useRouter();
+
+// Feature-specific heading for the global plan-limit modal (falls back to a
+// generic message for any feature without dedicated copy).
+const tierLimitMessage = computed(() => {
+    const feature = tierLimitFeature.value;
+    const key = `subscription.tier-limit.features.${feature}`;
+    return feature && te(key) ? t(key) : t('subscription.tier-limit.message');
+});
+
+// Feature-aware CTAs (Council 004 S17): Reader's text-chat limits get bespoke
+// buttons/actions; every other feature keeps the default labels + "go to plans".
+const tierLimitPrimaryLabel = computed(() => {
+    const k = `subscription.tier-limit.cta.${tierLimitFeature.value}.primary`;
+    return te(k) ? t(k) : t('subscription.tier-limit.primary');
+});
+const tierLimitSecondaryLabel = computed(() => {
+    const k = `subscription.tier-limit.cta.${tierLimitFeature.value}.secondary`;
+    return te(k) ? t(k) : t('subscription.tier-limit.secondary');
+});
+function onTierLimitPrimary() {
+    const feature = tierLimitFeature.value;
+    closeTierLimitModal();
+    if (feature === 'text_chat_messages_per_chat') router.push('/practice/live-session-text');
+    else if (feature === 'text_chat_count') router.push('/settings/subscription?suggest=learner');
+    else router.push('/settings/subscription');
+}
+function onTierLimitSecondary() {
+    const feature = tierLimitFeature.value;
+    closeTierLimitModal();
+    if (feature === 'text_chat_messages_per_chat') router.push('/settings/subscription?suggest=learner');
+    else if (feature === 'text_chat_count') router.push('/settings/subscription');
+    // Other features: the secondary ("Not now") simply closes.
+}
 
 function onMenuItemClicked(item: SidebarItemType | HorizontalMenuItemType) {
     if (item?.to) {

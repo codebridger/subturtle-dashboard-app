@@ -14,7 +14,13 @@
  */
 import { defineFunction, getCollection } from "@modular-rest/server";
 import { GoogleGenAI } from "@google/genai";
-import { checkCreditAllocation, recordUsage } from "../subscription/service";
+import {
+  checkCreditAllocation,
+  recordUsage,
+  assertAndConsumeTextChat,
+  getTextChatMessageCap,
+} from "../subscription/service";
+import { EntitlementLimitError } from "../subscription/enforcement";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../subscription/config";
 import { DATABASE, LIVE_SESSION_TEXT_COLLECTION } from "../../config";
 import {
@@ -31,6 +37,10 @@ import {
   mapUsage,
 } from "./utils";
 import type { TextSessionRecordType, TextTurnInput } from "./types";
+
+// Surface a soft "wrap up soon" flag this many user messages before the per-chat
+// cap (Council 004: e.g. message 51 of a 60-message Reader chat).
+const TEXT_CHAT_WRAP_BUFFER = 9;
 
 function makeDialogId(speaker: "user" | "ai") {
   return `${speaker}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -152,6 +162,11 @@ const createTextSession = defineFunction({
       );
     }
 
+    // Council 004 follow-up: gate a text-chat START against the monthly chat cap
+    // (Reader 60 / Starter 5; Learner / Coach unlimited). Throws TIER_LIMIT_REACHED
+    // and increments the used counter on a successful start.
+    await assertAndConsumeTextChat(userId);
+
     const collection = getCollection(DATABASE, LIVE_SESSION_TEXT_COLLECTION);
 
     const record = await collection.create({
@@ -200,6 +215,26 @@ const textTurn = defineFunction({
       throw new Error(
         `${AI_CREDIT_EXHAUSTED_CODE}: AI features are paused — this month's AI budget is used up.`
       );
+    }
+
+    // Council 004 follow-up: per-chat message cap (Reader 60 / Starter 20; Learner /
+    // Coach unlimited). Count user messages so far; block a new USER turn at the cap
+    // (the chat ends gracefully — a new chat counts against the monthly budget), and
+    // surface a soft "wrap up soon" flag a few messages before it.
+    const messageCap = await getTextChatMessageCap(userId);
+    let wrapUpWarning = false;
+    if (input.kind === "user" && messageCap !== null) {
+      const userMessages = (record.dialogs || []).filter(
+        (d: any) => d.speaker === "user"
+      ).length;
+      if (userMessages >= messageCap) {
+        throw new EntitlementLimitError(
+          "text_chat_messages_per_chat",
+          messageCap,
+          userMessages
+        );
+      }
+      wrapUpWarning = userMessages + 1 >= messageCap - TEXT_CHAT_WRAP_BUFFER;
     }
 
     if (!process.env.GEMINI_API_KEY) {
@@ -286,7 +321,13 @@ const textTurn = defineFunction({
       await collection.updateOne({ _id: sessionId, refId: userId } as any, {
         $set: { contents, usage: totalUsage, ...cachePatch },
       });
-      return { done: false, functionCalls, usage, totalUsage };
+      return {
+        done: false,
+        functionCalls,
+        usage,
+        totalUsage,
+        wrap_up_warning: wrapUpWarning,
+      };
     }
 
     const text = res.text ?? "";
@@ -297,7 +338,13 @@ const textTurn = defineFunction({
     await collection.updateOne({ _id: sessionId, refId: userId } as any, {
       $set: { contents, dialogs, usage: totalUsage, ...cachePatch },
     });
-    return { done: true, text, usage, totalUsage };
+    return {
+      done: true,
+      text,
+      usage,
+      totalUsage,
+      wrap_up_warning: wrapUpWarning,
+    };
   },
 });
 

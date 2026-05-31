@@ -42,6 +42,7 @@
             "upgrade_message": "Upgrade to Learner to save and practice phrases without limits.",
             "free_spots_left": "Free spots left to save phrases",
             "free_sessions_left": "Free live practice sessions left",
+            "free_chats_left": "Free text chats left this month",
             "go_pro": "Upgrade to Learner",
             "upgrade_now": "Upgrade Now",
             "upgrade": "Upgrade",
@@ -52,7 +53,7 @@
         "timer": {
             "remaining_time": "Free session time remaining",
             "time_expired": "Free Session Time Expired",
-            "session_limit_reached": "Your 5-minute free session limit has been reached.",
+            "session_limit_reached": "Your free session time has run out.",
             "upgrade_for_unlimited": "Upgrade to Learner for unlimited session time.",
             "exit_session": "Exit Session"
         }
@@ -200,7 +201,6 @@
         "canceling": "Cancels on {date}",
         "pricing": {
             "annual-toggle": "Save 20% with annual billing",
-            "most-popular": "Most popular",
             "coming-soon": "Coming soon",
             "month": "month",
             "year": "year",
@@ -208,11 +208,23 @@
             "starter-price": "Free, forever. No card needed.",
             "free-plan": "Free plan",
             "current-plan": "Current plan",
-            "learner-cta": "Start 3-day free trial",
-            "learner-subline": "Try free for 3 days. Cancel any time.",
-            "fluent-cta": "Notify me when it's ready",
-            "fluent-notified": "You're on the list ✓",
-            "fluent-helper": "We'll email you as soon as Fluent is available."
+            "free": "Free",
+            "downgrade-free": "Downgrade to Free",
+            "trial-cta": "Start {days}-day free trial",
+            "trial-subline": "Try free for {days} days. Cancel any time.",
+            "choose-plan": "Choose {name}",
+            "continue-free": "Continue with Free",
+            "loading": "Loading plans…",
+            "error": "Plans are temporarily unavailable due to a payment system issue. Please check back soon.",
+            "empty": "No plans available right now."
+        },
+        "checkout": {
+            "title": "Subscribe to {plan}",
+            "loading": "Loading secure checkout…",
+            "pay": "Subscribe",
+            "no-key": "Checkout is not configured (missing Stripe key).",
+            "load-failed": "Couldn't load checkout. Please try again.",
+            "pay-failed": "Payment failed. Please try again."
         },
         "cap-banner": {
             "running-low": "You're running low on AI tools this month.",
@@ -233,6 +245,104 @@
             "sub-message": "Free users get 200 saves per month. To keep saving without limits, go Learner.",
             "primary": "See plans",
             "secondary": "Maybe later"
+        },
+        "tier-limit": {
+            "title": "Upgrade to unlock",
+            "message": "This feature isn't included in your current plan.",
+            "sub": "Upgrade your plan to keep going without limits.",
+            "primary": "See plans",
+            "secondary": "Not now",
+            "features": {
+                "save_words": "You've reached your plan's saved-words limit.",
+                "weekly_insights": "Progress insights are a Learner feature.",
+                "session_history": "Full session history is a Learner feature.",
+                "live_sessions": "You've used all your free live sessions.",
+                "voice_minutes": "You're out of voice minutes on your plan.",
+                "text_chat_count": "You've used your 60 chats this month. For unlimited chat with the AI coach, go Learner.",
+                "text_chat_messages_per_chat": "This chat has reached its message limit. Start a new chat to keep going."
+            },
+            "cta": {
+                "text_chat_count": { "primary": "Start 3-day free trial", "secondary": "See all plans" },
+                "text_chat_messages_per_chat": { "primary": "Start a new chat", "secondary": "Upgrade to Learner" }
+            }
+        },
+        "feature-locked": {
+            "see-all-plans": "See all plans",
+            "session_history": {
+                "title": "Session history is part of Learner.",
+                "body": "Keep a record of every voice and text chat you have with the AI coach. See what you practised, when, and what to revisit.",
+                "cta": "Upgrade to Learner"
+            },
+            "weekly_insights": {
+                "title": "Weekly progress insights is part of Learner.",
+                "body": "See how your study habits change each week — words learned, voice minutes practised, and what to focus on next.",
+                "cta": "Upgrade to Learner"
+            },
+            "voice_chat": {
+                "title": "Voice chat is part of Learner.",
+                "body": "Speak out loud with the AI coach. Best for real speaking practice. Try a 3-day free trial of Learner.",
+                "cta": "Start 3-day free trial"
+            }
+        },
+        "voice-meter": {
+            "headline": "Voice chat",
+            "left": "{n} of {total} minutes left this month",
+            "left-voice": "{n} min left",
+            "low": "Only {n} minutes left this month",
+            "none": "0 minutes left this month",
+            "plus-topup": ", plus {n} top-up minutes",
+            "resets": "Resets on {date}.",
+            "top-up": "Top up minutes"
+        },
+        "this-month": {
+            "header": "This month",
+            "ai-usage": "AI translations & explanations: {n} used"
+        },
+        "starter-usage": {
+            "title": "Free plan",
+            "saved-phrases": "Saved phrases",
+            "text-chats": "Text chats",
+            "live-sessions": "Live sessions",
+            "voice": "Voice minutes"
+        },
+        "text-chat-counter": {
+            "label": "Text chat: {used} of {total} used this month",
+            "find-out-more": "Find out more"
+        },
+        "top-ups": {
+            "title": "Voice top-ups",
+            "description": "Add minutes to your monthly voice budget. Top-ups expire 90 days from purchase.",
+            "add": "Add {minutes} min — {price}",
+            "active-header": "Your active top-ups",
+            "active-line": "{size} min top-up — {left} min left — expires {date}",
+            "empty": "You have no active top-ups.",
+            "picker-title": "Top up voice minutes",
+            "picker-sub": "Add minutes to your account. They stay active for 90 days and never auto-renew.",
+            "minutes": "minutes",
+            "best-value": "Best value",
+            "choose": "Choose {minutes} min",
+            "footer": "Top-ups expire 90 days from purchase.",
+            "added-toast": "Top-up added. You now have {n} voice minutes.",
+            "pending-toast": "Your top-up will appear in a moment. Refresh if you don't see it.",
+            "cancelled-toast": "Top-up didn't go through. Your card was not charged."
+        },
+        "billing-page": {
+            "title": "Billing"
+        },
+        "voice-banner": {
+            "message": "Only {n} of {total} voice minutes left this month.",
+            "reader": "Only {n} voice minutes left on your top-up.",
+            "top-up": "Top up minutes",
+            "upgrade": "Upgrade plan",
+            "dismiss": "Dismiss voice usage warning"
+        },
+        "voice-modal": {
+            "title": "You're out of voice minutes this month.",
+            "body1": "You have 0 of {total} voice minutes left.",
+            "body2": "Add 30 minutes for {price} to keep speaking, or switch to text chat to keep practising.",
+            "add30": "Add 30 min — {price}",
+            "use-text": "Use text chat instead",
+            "see-all": "See all top-up options"
         },
         "cancel-offramp": {
             "title": "Before you go",

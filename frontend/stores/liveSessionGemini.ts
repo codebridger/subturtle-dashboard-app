@@ -25,6 +25,7 @@
 import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { GoogleGenAI, Modality } from '@google/genai';
+import { useProfileStore } from '~/stores/profile';
 import type {
     LiveServerMessage,
     Session,
@@ -127,6 +128,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     // ----- Public actions -----
 
+    // Wall-clock start of the current voice session (spans auto-reconnects). Used
+    // to debit consumed voice minutes once on final teardown; null when idle.
+    let voiceSessionStartedAt: number | null = null;
+
     /**
      * Issue an ephemeral token, persist a session record, set up the audio
      * pipeline, and open the live WebSocket. Resolves once the server has
@@ -174,6 +179,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             toggleMicrophone(false);
 
             sessionStarted.value = true;
+            voiceSessionStartedAt = Date.now();
             return { success: true, session: sessionMeta };
         } catch (error) {
             console.error('Failed to create Gemini live session:', error);
@@ -187,6 +193,25 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
      * Safe to call multiple times.
      */
     function endLiveSession() {
+        // Debit consumed voice minutes once, on final teardown (spans reconnects).
+        // The server rounds seconds up to whole minutes. A session that never
+        // started (e.g. token/grant failed) leaves this null, so nothing is debited.
+        if (voiceSessionStartedAt) {
+            const seconds = (Date.now() - voiceSessionStartedAt) / 1000;
+            voiceSessionStartedAt = null;
+            if (seconds > 0) {
+                functionProvider
+                    .run({ name: 'debit-voice-minutes', args: { userId: authUser.value?.id, seconds } })
+                    // Re-pull the subscription once the server has recorded the debit so
+                    // the voice-minute balance (meter, banner, session card) updates
+                    // reactively — without this the UI is stale until a page refresh.
+                    .then(() => useProfileStore().fetchSubscription())
+                    .catch(() => {
+                        /* best-effort metering; never block teardown */
+                    });
+            }
+        }
+
         if (resumeTimeoutId) {
             clearTimeout(resumeTimeoutId);
             resumeTimeoutId = null;

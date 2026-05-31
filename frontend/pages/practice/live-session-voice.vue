@@ -2,12 +2,12 @@
     <MaterialPracticeToolScaffold :title="setup.request?.title || 'Practice'" :activePhrase="practicedCount"
         :totalPhrases="totalPhrases" :bundleId="''"
         :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
-        :isLoading="!errorMode && !liveSessionStore.isSessionActive" :error-mode="errorMode"
+        :isLoading="!errorMode && !showTimerExpiredModal && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
         <template v-if="selectedPhrases.length">
     <!-- Freemium Timer Section -->
             <FreemiumTimer v-if="profileStore.isFreemium" class="shrink-0" :duration="timerConfig.duration"
-                :label="t('freemium.timer.remaining_time')" @expired="showTimerExpiredModal = true"
+                :label="t('freemium.timer.remaining_time')" @expired="onFreemiumTimeExpired"
                 @warning="handleTimerWarning" />
 
             <!-- Compact phrase cards row -->
@@ -284,9 +284,24 @@ const isTextMode = ref(false);
 const isTextFocused = ref(false);
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
-const timerConfig = {
-    duration: 5 * 60,
-};
+// The session's wall-clock cap is computed SERVER-SIDE (subscription policy:
+// per-session limit ∧ remaining voice minutes) and returned by the ephemeral-
+// token handshake as `voice_session_max_seconds`, so the dashboard and mobile
+// share one source of truth. We SNAPSHOT it once the handshake populates it
+// rather than reading the live store ref directly: teardown nulls `liveSession`,
+// and a reactive fallback would otherwise jump the just-expired timer back to
+// the 5-minute cap behind the "time's up" modal. Falls back to the cap only if
+// an older server omits the field.
+const FREE_SESSION_CAP_SECONDS = 5 * 60;
+const sessionMaxSeconds = ref(FREE_SESSION_CAP_SECONDS);
+watch(
+    () => liveSessionStore.liveSession?.voice_session_max_seconds,
+    (seconds) => {
+        if (typeof seconds === 'number') sessionMaxSeconds.value = seconds;
+    },
+    { immediate: true }
+);
+const timerConfig = computed(() => ({ duration: sessionMaxSeconds.value }));
 
 const isDev = import.meta.env.DEV;
 
@@ -461,6 +476,16 @@ function createLiveSession() {
             errorMode.value = true;
             errorMessage.value = message || t('live-practice.toast.start-failed');
         });
+}
+
+function onFreemiumTimeExpired() {
+    // Stop the clock the instant the free budget runs out. The server debit is
+    // wall-clock and ceil-rounded to whole minutes (a 3:05 session costs 4), so
+    // letting the session linger on the modal would tip into a minute the user
+    // doesn't have. Tearing down debits exactly the elapsed minutes; it's
+    // idempotent, so the modal's follow-up action (upgrade / exit) won't re-debit.
+    liveSessionStore.endLiveSession();
+    showTimerExpiredModal.value = true;
 }
 
 function endLiveSession() {

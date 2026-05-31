@@ -6,7 +6,9 @@ import {
 import { Types } from "mongoose";
 
 import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
-import { TIERS, PublicTierPlan } from "./tiers";
+import { PublicTierPlan } from "./tiers";
+import { getSubscriptionPlansCached } from "./plans";
+import { PaymentAdapterFactory } from "../gateway/adapters";
 import { DATABASE, FLUENT_WAITLIST_COLLECTION } from "../../config";
 
 /**
@@ -31,6 +33,8 @@ const getSubscriptionDetails = defineFunction({
           ...freemiumAllocation,
           tier: "starter",
           is_freemium: true,
+          // Top-ups are a paid-subscription feature; free users never have any.
+          active_top_ups: [],
         };
       } else {
         // Paid subscriptions carry `tier` on the document (post-Council-002).
@@ -51,18 +55,13 @@ const getSubscriptionPlans = defineFunction({
   name: "getSubscriptionPlans",
   permissionTypes: ["anonymous_access"],
   callback: async (_params): Promise<PublicTierPlan[]> => {
-    // Registry-driven — no live Stripe product listing. Dark tiers (Fluent)
-    // are included so the pricing page can render them as "Coming soon".
-    return Object.values(TIERS).map((tier) => ({
-      id: tier.id,
-      status: tier.status,
-      name: tier.userFacingName,
-      tagline: tier.tagline,
-      isPaid: tier.isPaid,
-      featureLabels: tier.featureLabels,
-      aiBudgetLabel: tier.aiBudgetLabel,
-      pricing: tier.amount,
-    }));
+    // Built from live Stripe products (ADR-004), through a TTL cache with a
+    // last-known-good snapshot (real Stripe data). There is no baked-in plan
+    // fallback: if the Stripe adapter can't be acquired AND there is no snapshot,
+    // this throws so the frontend can show a "payment system unavailable" message
+    // rather than rendering invented plan data.
+    const stripe = PaymentAdapterFactory.getStripeAdapter().stripe;
+    return getSubscriptionPlansCached(stripe);
   },
 });
 

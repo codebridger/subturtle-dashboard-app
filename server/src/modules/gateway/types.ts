@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { PaymentProvider } from "./adapters/types";
-import { TierId, Cadence, Currency } from "../subscription/tiers";
+import { TierId, Cadence } from "../subscription/tiers";
 
 export type PaymentStatus = "pending" | "succeeded" | "failed" | "canceled";
 export type SessionStatus = "created" | "completed" | "expired" | "failed";
@@ -32,7 +32,6 @@ export interface PaymentSession {
 export interface CheckoutSessionRequest {
   tierId: TierId;
   cadence: Cadence;
-  currency: Currency;
   successUrl?: string;
   cancelUrl?: string;
   provider?: PaymentProvider; // Optional - defaults to STRIPE if not specified

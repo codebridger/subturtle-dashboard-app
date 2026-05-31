@@ -1,5 +1,45 @@
 This document outlines the design of Subturtle's internal credit-based subscription module. The module serves as a critical component that tracks and manages credit consumption across various services while maintaining a seamless user experience. By operating behind the scenes, it enables controlled resource allocation without exposing limitations directly to users. This system balances business sustainability with quality of service, providing flexible interfaces for other modules to interact with credit management while maintaining clear boundaries of responsibility.
 
+## Tier entitlements: Stripe metadata is the source of truth (ADR-004 / Council 004)
+
+Paid-tier entitlements (credits, voice minutes, feature caps, flags, trial/duration)
+live in **Stripe product metadata**, not in code. `entitlements.ts` is the only place
+that reads and validates that metadata:
+
+- `parseTierMetadata(product)` validates the metadata with a strict zod schema and a
+  `schema_version`; it throws (never guesses) on a missing key, a bad number, an
+  out-of-range credits/voice value, or an unknown version. `resolveEntitlements` /
+  `listTierEntitlements` / `resolveTierCheckout` read through a short-TTL cache.
+- The Stripe webhook grants from the parsed metadata. It snapshots the entitlements
+  onto the subscription document at purchase (`entitlements`) and re-reads them only on
+  a real period rollover — a mid-period metadata edit reaches a customer at their next
+  renewal. Grants are **idempotent** on (Stripe subscription id, `granted_period_end`),
+  so a duplicate or out-of-order webhook cannot double-grant. Invalid metadata is a
+  fail-safe **refusal** (non-2xx so Stripe retries) plus an `entitlement-grant-refused`
+  alert — never a guessed amount or a silent drop to free.
+- `getSubscriptionPlans` is built from the live Stripe products through a TTL cache with
+  a last-known-good snapshot (real Stripe data). There is **no baked-in plan fallback**:
+  if Stripe has never succeeded (cold start + outage) it throws, and the frontend shows a
+  skeleton while loading + a "payment system unavailable" notice on failure — never
+  invented plan data.
+- Checkout uses **one GBP base price** per tier/cadence + Stripe Adaptive Pricing; the
+  customer pays in their local currency but we settle and report in GBP.
+- Display copy for PAID tiers (name = the Stripe product name; `tagline`, `feature_<n>`
+  bullets, `ai_budget_label`, `highlight`, `badge`) also lives in **Stripe metadata** and
+  is parsed leniently in `display.ts` (a copy typo must never block a money grant or 500
+  the pricing page). The only tier defined in code is the **free Starter** (it has no
+  Stripe product): its copy is `STARTER_TIER` in `tiers.ts` and its caps live in
+  `config.ts`. Feature gating reads resolved entitlements (paid) or config (Starter) via
+  `featureCapFor` / `featureAllowedFor`.
+
+New schema fields on the subscription/free_credit collections: `voice_minutes_total`,
+`voice_minutes_used`, plus `granted_period_end` and the `entitlements` snapshot on the
+subscription doc.
+
+**Migration:** with ~zero paid users this is a no-op. The new fields are optional with
+defaults, so any pre-existing document still reads correctly; a pre-existing paid
+subscription picks up its entitlement snapshot + voice budget on its next renewal.
+
 ## System Architecture Overview
 
 The subscription system functions as an internal module within the Subturtle backend application, silently managing credit allocations and usage tracking without exposing limitations to end users. The module provides a clean API for other system components to check balances, record usage, and manage credit allocation.

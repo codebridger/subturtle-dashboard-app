@@ -34,7 +34,6 @@ export async function createCheckoutSession(
       userId,
       tierId: request.tierId,
       cadence: request.cadence,
-      currency: request.currency,
       successUrl: request.successUrl,
       cancelUrl: request.cancelUrl,
     });

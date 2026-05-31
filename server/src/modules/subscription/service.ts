@@ -9,8 +9,15 @@ import {
   FREEMIUM_DEFAULT_SAVE_WORDS,
   FREEMIUM_DURATION_DAYS,
   FREEMIUM_DEFAULT_LIVED_SESSIONS,
+  FREEMIUM_DEFAULT_VOICE_MINUTES,
+  FREEMIUM_DEFAULT_TEXT_CHATS,
+  FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES,
 } from "../../config";
-import { LOW_CREDITS_THRESHOLD, SOFT_CAP_PERCENT } from "./config";
+import {
+  LOW_CREDITS_THRESHOLD,
+  SOFT_CAP_PERCENT,
+  FREE_VOICE_SESSION_MAX_MINUTES,
+} from "./config";
 
 import {
   emitLowCreditsEvent,
@@ -18,8 +25,10 @@ import {
   emitSubscriptionChangeEvent,
   emitSubscriptionExpiredEvent,
 } from "./events";
-import { Subscription, FreeCredit } from "./types";
+import { Subscription, FreeCredit, VoiceTopUp } from "./types";
 import { TierId, Cadence } from "./tiers";
+import { Entitlements } from "./entitlements";
+import { EntitlementLimitError } from "./enforcement";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
@@ -84,6 +93,10 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
       allowed_save_words_used: 0,
       allowed_lived_sessions: FREEMIUM_DEFAULT_LIVED_SESSIONS,
       allowed_lived_sessions_used: 0,
+      allowed_text_chats: FREEMIUM_DEFAULT_TEXT_CHATS,
+      allowed_text_chats_used: 0,
+      voice_minutes_total: FREEMIUM_DEFAULT_VOICE_MINUTES,
+      voice_minutes_used: 0,
     };
 
     freemiumAllocation = await freeCreditCollection
@@ -165,6 +178,381 @@ export async function updateFreemiumAllocation(options: {
   return updatedFreemiumAllocation;
 }
 
+// --- Voice-minute metering (Council 004) ----------------------------------
+// Voice is a metered budget, not a count cap: tiers grant a pool of minutes
+// (free 5 / Reader 0 / Learner 90 / Coach 300) that is debited as voice sessions
+// are used. The budget lives on the active subscription for paid users, else on
+// the freemium allocation — mirroring the AI-credit budget.
+
+interface VoiceBudget {
+  total: number;
+  used: number;
+  remaining: number;
+  scope: "subscription" | "freemium";
+}
+
+/** The effective voice balance after accounting for top-up packs and their 90-day
+ *  expiry. The single `voice_minutes_used` counter is allocated base-budget-first,
+ *  then across non-expired packs oldest-first, so each pack's remaining minutes are
+ *  derived without storing per-pack consumption. Expired packs are excluded. */
+export interface VoiceBalance {
+  base: number;
+  used: number;
+  total: number; // effective total = base grant + non-expired pack minutes
+  remaining: number; // base remaining + non-expired pack remaining
+  activeTopUps: {
+    pack_size: number;
+    minutes_remaining: number;
+    expires_at: Date;
+  }[];
+}
+
+export function computeVoiceBalance(sub: {
+  voice_minutes_total?: number;
+  voice_minutes_used?: number;
+  entitlements?: { voiceMinutesGranted?: number } | null;
+  top_ups?: VoiceTopUp[] | null;
+}): VoiceBalance {
+  // Base = the tier's monthly grant (the locked entitlement snapshot). Fall back to
+  // the stored total for legacy docs predating top-ups / the snapshot.
+  const base =
+    sub.entitlements?.voiceMinutesGranted ?? sub.voice_minutes_total ?? 0;
+  const used = sub.voice_minutes_used ?? 0;
+  const now = Date.now();
+  const packs = (sub.top_ups ?? [])
+    .filter((p) => p && new Date(p.expires_at).getTime() > now)
+    .sort(
+      (a, b) =>
+        new Date(a.purchased_at).getTime() - new Date(b.purchased_at).getTime()
+    );
+
+  const baseRemaining = Math.max(0, base - used);
+  let overflow = Math.max(0, used - base); // usage beyond base spills into packs
+
+  const activeTopUps = packs.map((p) => {
+    const consumed = Math.min(overflow, p.minutes);
+    overflow -= consumed;
+    return {
+      pack_size: p.pack_size,
+      minutes_remaining: p.minutes - consumed,
+      expires_at: p.expires_at,
+    };
+  });
+
+  const packMinutes = packs.reduce((s, p) => s + (p.minutes || 0), 0);
+  const topUpRemaining = activeTopUps.reduce(
+    (s, t) => s + t.minutes_remaining,
+    0
+  );
+
+  return {
+    base,
+    used,
+    total: base + packMinutes,
+    remaining: baseRemaining + topUpRemaining,
+    activeTopUps,
+  };
+}
+
+/** Carry non-expired top-up packs forward across a subscription renewal: each
+ *  surviving pack's REMAINING minutes (this period's consumption folded in) become
+ *  its new `minutes`, expired/empty packs are dropped, and the carried total is
+ *  returned to seed the new period's `voice_minutes_total`. */
+export function carryForwardTopUps(sub: {
+  voice_minutes_total?: number;
+  voice_minutes_used?: number;
+  entitlements?: { voiceMinutesGranted?: number } | null;
+  top_ups?: VoiceTopUp[] | null;
+}): { packs: VoiceTopUp[]; minutes: number } {
+  const now = Date.now();
+  const originals = (sub.top_ups ?? [])
+    .filter((p) => p && new Date(p.expires_at).getTime() > now)
+    .sort(
+      (a, b) =>
+        new Date(a.purchased_at).getTime() - new Date(b.purchased_at).getTime()
+    );
+  // computeVoiceBalance sorts identically, so activeTopUps[i] matches originals[i].
+  const { activeTopUps } = computeVoiceBalance(sub);
+  const packs: VoiceTopUp[] = [];
+  let minutes = 0;
+  originals.forEach((orig, i) => {
+    const remaining = activeTopUps[i]?.minutes_remaining ?? 0;
+    if (remaining > 0) {
+      packs.push({
+        session_id: orig.session_id,
+        pack_size: orig.pack_size,
+        minutes: remaining,
+        purchased_at: orig.purchased_at,
+        expires_at: orig.expires_at,
+      });
+      minutes += remaining;
+    }
+  });
+  return { packs, minutes };
+}
+
+/** Read the user's voice-minute budget from their active subscription, or the
+ *  freemium allocation when there is none. */
+export async function getVoiceBudget(userId: string): Promise<VoiceBudget> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeSubscription = (await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  })) as Subscription | null;
+
+  if (activeSubscription) {
+    // Effective budget includes non-expired top-up packs (expired ones excluded).
+    const { total, used, remaining } = computeVoiceBalance(activeSubscription);
+    return { total, used, remaining, scope: "subscription" };
+  }
+
+  const freemium = await getOrCreateFreemiumAllocation(userId);
+  const total = freemium.voice_minutes_total || 0;
+  const used = freemium.voice_minutes_used || 0;
+  return { total, used, remaining: total - used, scope: "freemium" };
+}
+
+/** Block a voice session when the voice-minute budget is exhausted (or the tier
+ *  grants none, e.g. Reader). Throws the shared EntitlementLimitError. */
+export async function assertVoiceMinutesAvailable(userId: string): Promise<void> {
+  const { total, used, remaining } = await getVoiceBudget(userId);
+  if (remaining <= 0) {
+    throw new EntitlementLimitError("voice_minutes", total, used);
+  }
+}
+
+/** Pure policy: how many wall-clock seconds a single voice session may run given
+ *  a voice budget. Free tier is capped per-session (FREE_VOICE_SESSION_MAX_MINUTES)
+ *  but never beyond its remaining minutes; paid tiers are bounded only by the
+ *  remaining balance. Kept pure so it can be unit-tested without a DB and reused
+ *  by any caller. */
+export function voiceSessionMaxSeconds(budget: {
+  remaining: number;
+  scope: "subscription" | "freemium";
+}): number {
+  const capMinutes =
+    budget.scope === "freemium"
+      ? Math.min(FREE_VOICE_SESSION_MAX_MINUTES, budget.remaining)
+      : budget.remaining;
+  return Math.max(0, capMinutes) * 60;
+}
+
+/** The max duration (seconds) the user's NEXT voice session may run for right now.
+ *  Surfaced by the session-start handshake so every client (dashboard, mobile)
+ *  shares ONE duration policy instead of reimplementing it. The session debit is
+ *  ceil-rounded to whole minutes, so this is also the budget-safe ceiling. */
+export async function getVoiceSessionMaxSeconds(userId: string): Promise<number> {
+  return voiceSessionMaxSeconds(await getVoiceBudget(userId));
+}
+
+/** Debit consumed voice minutes (rounded up) from the active budget when a voice
+ *  session ends. Returns the budget after debit. */
+export async function debitVoiceMinutes(
+  userId: string,
+  minutes: number
+): Promise<VoiceBudget> {
+  const debit = Math.max(0, Math.ceil(minutes || 0));
+  if (debit > 0) {
+    const { scope } = await getVoiceBudget(userId);
+    if (scope === "subscription") {
+      const subscriptionsCollection = getCollection<Subscription>(
+        DATABASE,
+        SUBSCRIPTION_COLLECTION
+      );
+      await subscriptionsCollection.updateOne(
+        {
+          user_id: Types.ObjectId(userId),
+          status: { $nin: ["canceled", "incomplete_expired"] },
+          end_date: { $gte: new Date() },
+        },
+        { $inc: { voice_minutes_used: debit } }
+      );
+    } else {
+      const freemium = await getOrCreateFreemiumAllocation(userId);
+      const freeCreditCollection = getCollection<FreeCredit>(
+        DATABASE,
+        FREE_CREDIT_COLLECTION
+      );
+      await freeCreditCollection.updateOne(
+        { _id: (freemium as any)._id },
+        { $inc: { voice_minutes_used: debit } }
+      );
+    }
+  }
+  return getVoiceBudget(userId);
+}
+
+/**
+ * Apply a one-shot voice-minute top-up pack to the user's ACTIVE subscription
+ * (Council 004 overage). Pushes a 90-day ledger entry and `$inc`s
+ * voice_minutes_total so the budget reflects it immediately. Idempotent on the
+ * Stripe session id — a redelivered webhook never double-grants.
+ */
+export async function addVoiceMinutesPack(props: {
+  userId: string;
+  minutes: number;
+  packSize: number;
+  sessionId: string;
+  expiryDays?: number;
+}): Promise<{
+  success: boolean;
+  applied: boolean;
+  idempotent: boolean;
+  message: string;
+}> {
+  const { userId, minutes, packSize, sessionId, expiryDays = 90 } = props;
+  if (!userId || !sessionId) {
+    return {
+      success: false,
+      applied: false,
+      idempotent: false,
+      message: "userId and sessionId are required",
+    };
+  }
+  if (!(minutes > 0)) {
+    return {
+      success: false,
+      applied: false,
+      idempotent: false,
+      message: "minutes must be positive",
+    };
+  }
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeFilter: any = {
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  };
+
+  const sub = await subscriptionsCollection.findOne(activeFilter);
+  if (!sub) {
+    // Top-ups only apply to an active paid subscription (Reader / Learner / Coach).
+    return {
+      success: false,
+      applied: false,
+      idempotent: false,
+      message: "No active subscription to apply the top-up to",
+    };
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
+
+  // The `session_id != ` guard makes the push idempotent atomically: a redelivered
+  // webhook (same session) matches nothing and modifies zero documents.
+  const res: any = await subscriptionsCollection.updateOne(
+    { ...activeFilter, "top_ups.session_id": { $ne: sessionId } },
+    {
+      $push: {
+        top_ups: {
+          session_id: sessionId,
+          pack_size: packSize,
+          minutes,
+          purchased_at: now,
+          expires_at: expiresAt,
+        },
+      },
+      $inc: { voice_minutes_total: minutes },
+    }
+  );
+
+  const modified = res?.modifiedCount ?? res?.nModified ?? 0;
+  if (modified === 0) {
+    return {
+      success: true,
+      applied: false,
+      idempotent: true,
+      message: "Top-up already applied",
+    };
+  }
+  return {
+    success: true,
+    applied: true,
+    idempotent: false,
+    message: `Granted ${minutes} voice minutes`,
+  };
+}
+
+/**
+ * Gate + consume one text-chat "start" against the monthly chat cap (Council 004
+ * follow-up). Reader is capped (from the entitlement snapshot); Starter from config;
+ * Learner / Coach are unlimited (no-op). Throws TIER_LIMIT_REACHED
+ * ("text_chat_count") at the cap, otherwise atomically increments the used counter.
+ */
+export async function assertAndConsumeTextChat(userId: string): Promise<void> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const active = (await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  } as any)) as Subscription | null;
+
+  if (active) {
+    const cap = active.allowed_text_chats ?? null; // null = unlimited (Learner/Coach)
+    if (cap === null) return;
+    const used = active.allowed_text_chats_used ?? 0;
+    if (used >= cap) {
+      throw new EntitlementLimitError("text_chat_count", cap, used);
+    }
+    await subscriptionsCollection.updateOne(
+      { _id: (active as any)._id },
+      { $inc: { allowed_text_chats_used: 1 } }
+    );
+    return;
+  }
+
+  // Free (Starter).
+  const freemium: any = await getOrCreateFreemiumAllocation(userId);
+  const cap = freemium.allowed_text_chats ?? FREEMIUM_DEFAULT_TEXT_CHATS;
+  const used = freemium.allowed_text_chats_used ?? 0;
+  if (used >= cap) {
+    throw new EntitlementLimitError("text_chat_count", cap, used);
+  }
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+  await freeCreditCollection.updateOne(
+    { _id: freemium._id },
+    { $inc: { allowed_text_chats_used: 1 } }
+  );
+}
+
+/**
+ * The per-chat message cap for the user's tier (null = unlimited). Reader / Starter
+ * are capped; Learner / Coach are not. `text-turn` uses this to end a chat
+ * gracefully at the cap and to surface a soft "wrap up soon" warning just before it.
+ */
+export async function getTextChatMessageCap(
+  userId: string
+): Promise<number | null> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const active = (await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  } as any)) as Subscription | null;
+
+  if (active) {
+    return active.entitlements?.textChatMaxMessages ?? null;
+  }
+  return FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES;
+}
+
 /**
  * Check credit allocation for a user
  */
@@ -238,6 +626,10 @@ export async function addNewSubscriptionWithCredit(props: {
   priceId?: string;
   status?: Subscription["status"];
   trialEndUnixTimestamp?: number;
+  voiceMinutes?: number;
+  entitlements?: Entitlements;
+  grantedPeriodEndUnixTimestamp?: number;
+  stripeSubscriptionId?: string;
 }) {
   const {
     userId,
@@ -251,6 +643,10 @@ export async function addNewSubscriptionWithCredit(props: {
     priceId,
     status = "active",
     trialEndUnixTimestamp,
+    voiceMinutes,
+    entitlements,
+    grantedPeriodEndUnixTimestamp,
+    stripeSubscriptionId,
   } = props;
   const subscriptionsCollection = getCollection<Subscription>(
     DATABASE,
@@ -261,6 +657,33 @@ export async function addNewSubscriptionWithCredit(props: {
     throw new Error(
       "Cannot provide both startDateUnixTimestamp and endDateUnixTimestamp and totalDays"
     );
+  }
+
+  // Idempotency (ADR-004): if this Stripe subscription was already created/granted
+  // for this period (or a newer one), do not create a second doc or re-grant.
+  // Guards against duplicate/out-of-order `customer.subscription.created` events.
+  if (stripeSubscriptionId) {
+    const existing = (await subscriptionsCollection.findOne({
+      "payment_meta_data.stripe.subscription_id": stripeSubscriptionId,
+    })) as Subscription | null;
+    if (existing) {
+      const existingGrantedEnd = existing.granted_period_end
+        ? new Date(existing.granted_period_end).getTime() / 1000
+        : 0;
+      if (
+        !grantedPeriodEndUnixTimestamp ||
+        existingGrantedEnd >= grantedPeriodEndUnixTimestamp
+      ) {
+        return {
+          subscriptionId: existing._id,
+          expirationDate: existing.end_date,
+          creditBalance:
+            (existing.total_credits || 0) - (existing.credits_used || 0),
+          isNewSubscription: false,
+          idempotent: true,
+        };
+      }
+    }
   }
 
   // Deactivate any previous active/trialing subscriptions for the user
@@ -290,6 +713,13 @@ export async function addNewSubscriptionWithCredit(props: {
     end_date: endDate,
     total_credits: creditAmount,
     credits_used: 0,
+    voice_minutes_total: voiceMinutes ?? 0,
+    voice_minutes_used: 0,
+    // Reader text-chat monthly cap from the tier metadata (omitted = unlimited).
+    ...(entitlements?.textChatCap != null && {
+      allowed_text_chats: entitlements.textChatCap,
+    }),
+    allowed_text_chats_used: 0,
     status,
     payment_meta_data: paymentMetaData,
     ...(tier && { tier }),
@@ -298,6 +728,11 @@ export async function addNewSubscriptionWithCredit(props: {
     ...(trialEndUnixTimestamp && {
       trial_end: new Date(trialEndUnixTimestamp * 1000),
     }),
+    // Lock the period marker + entitlement snapshot for this paid period.
+    ...(grantedPeriodEndUnixTimestamp && {
+      granted_period_end: new Date(grantedPeriodEndUnixTimestamp * 1000),
+    }),
+    ...(entitlements && { entitlements }),
   };
 
   const createdSubscription = await subscriptionsCollection.create(
@@ -381,6 +816,8 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
   subscriptionType?: Cadence;
   priceId?: string;
   creditAmount?: number;
+  voiceMinutes?: number;
+  entitlements?: Entitlements;
   trialEndUnixTimestamp?: number;
   cancelAtPeriodEnd?: boolean;
 }) {
@@ -394,6 +831,8 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     subscriptionType,
     priceId,
     creditAmount,
+    voiceMinutes,
+    entitlements,
     trialEndUnixTimestamp,
     cancelAtPeriodEnd,
   } = props;
@@ -422,13 +861,15 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     };
   }
 
-  const currentStart = currentSubscription.start_date.getTime() / 1000;
-  const currentEnd = currentSubscription.end_date.getTime() / 1000;
-  const isSamePeriod =
-    !!startDateUnixTimestamp &&
-    !!endDateUnixTimestamp &&
-    startDateUnixTimestamp === currentStart &&
-    endDateUnixTimestamp === currentEnd;
+  // A new-period grant only when the incoming period_end is strictly newer than
+  // the one we last granted (ADR-004): idempotent on re-delivery, and safe
+  // against out-of-order (older) deliveries that would otherwise regress the
+  // window or double-grant.
+  const lastGrantedEnd = currentSubscription.granted_period_end
+    ? new Date(currentSubscription.granted_period_end).getTime() / 1000
+    : 0;
+  const isNewPeriodGrant =
+    !!endDateUnixTimestamp && endDateUnixTimestamp > lastGrantedEnd;
 
   const update: any = { status };
   if (tier) update.tier = tier;
@@ -439,14 +880,34 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     ? new Date(trialEndUnixTimestamp * 1000)
     : null;
 
-  if (!isSamePeriod) {
-    // Billing period rolled over (renewal, or trial -> first paid period):
-    // move the window and refill the credit budget for the new period.
+  if (isNewPeriodGrant) {
+    // Real period rollover (renewal, or trial -> first paid period): move the
+    // window, RE-READ the entitlement snapshot, and refill the monthly credit +
+    // voice budgets (no rollover). A mid-period metadata edit therefore reaches
+    // a customer only at their next renewal.
     update.start_date = new Date(startDateUnixTimestamp * 1000);
     update.end_date = new Date(endDateUnixTimestamp * 1000);
+    update.granted_period_end = new Date(endDateUnixTimestamp * 1000);
     if (creditAmount !== undefined) {
       update.total_credits = creditAmount;
       update.credits_used = 0;
+    }
+    if (voiceMinutes !== undefined) {
+      // Renewal resets the BASE monthly voice budget; top-up packs survive until
+      // their 90-day expiry. Fold each surviving pack's remaining minutes forward
+      // (this period's consumption reconciled into `minutes`), drop expired/empty
+      // packs, and seed the new period total = base grant + carried-over minutes.
+      const carried = carryForwardTopUps(currentSubscription as any);
+      update.voice_minutes_total = voiceMinutes + carried.minutes;
+      update.voice_minutes_used = 0;
+      update.top_ups = carried.packs;
+    }
+    if (entitlements) {
+      update.entitlements = entitlements;
+      // Reset Reader's text-chat counter and re-seed its cap from the (possibly
+      // updated) metadata on renewal. null cap = unlimited (Learner / Coach).
+      update.allowed_text_chats = entitlements.textChatCap ?? null;
+      update.allowed_text_chats_used = 0;
     }
   }
 
@@ -644,6 +1105,11 @@ export async function getSubscription(userId: string) {
   }
 
   const jsonSubscription = activeSubscription.toObject() as any;
+  // Attach the derived per-pack top-up view (expired excluded); hide the raw ledger.
+  jsonSubscription.active_top_ups = computeVoiceBalance(
+    activeSubscription as any
+  ).activeTopUps;
+  delete jsonSubscription.top_ups;
   const isPaidByStripe =
     activeSubscription.payment_meta_data?.provider == PaymentProvider.STRIPE;
 

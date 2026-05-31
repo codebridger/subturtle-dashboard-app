@@ -12,6 +12,12 @@ const mockCollection = {
 };
 const mockCheckCredit = jest.fn();
 const mockRecordUsage = jest.fn();
+// Council 004 text-chat gates: default to unlimited / no-op so existing turns pass;
+// individual tests override to exercise the caps.
+const mockAssertTextChat = jest.fn(async (..._args: any[]) => undefined);
+const mockTextChatMessageCap = jest.fn(
+  async (..._args: any[]): Promise<number | null> => null
+);
 
 jest.mock("@modular-rest/server", () => ({
   defineFunction: (opts: any) => opts,
@@ -26,6 +32,8 @@ jest.mock("@google/genai", () => ({
 jest.mock("../../subscription/service", () => ({
   checkCreditAllocation: (...args: any[]) => mockCheckCredit(...args),
   recordUsage: (...args: any[]) => mockRecordUsage(...args),
+  assertAndConsumeTextChat: (...args: any[]) => mockAssertTextChat(...args),
+  getTextChatMessageCap: (...args: any[]) => mockTextChatMessageCap(...args),
 }));
 
 // functions.ts uses CommonJS `module.exports.functions`, so require it.
@@ -402,5 +410,116 @@ describe("create-text-session", () => {
     ).rejects.toThrow(/Unsupported text model/);
     expect(mockCheckCredit).not.toHaveBeenCalled();
     expect(mockCollection.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("text-turn — per-chat message cap (Council 004 S16)", () => {
+  beforeAll(() => {
+    process.env.GEMINI_API_KEY = "test-key";
+  });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCheckCredit.mockResolvedValue({ allowedToProceed: true });
+    mockRecordUsage.mockResolvedValue(undefined);
+    mockCollection.updateOne.mockResolvedValue({});
+    mockCachesCreate.mockResolvedValue({ name: "cachedContents/test-cache" });
+    mockGenerateContent.mockResolvedValue({
+      text: "ok",
+      functionCalls: [],
+      usageMetadata: {
+        promptTokenCount: 1,
+        candidatesTokenCount: 1,
+        totalTokenCount: 2,
+      },
+    });
+  });
+
+  const userDialogs = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `u${i}`,
+      content: "x",
+      speaker: "user",
+    }));
+
+  it("blocks a new user turn at the per-chat cap (TIER_LIMIT_REACHED)", async () => {
+    mockTextChatMessageCap.mockResolvedValue(60);
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ dialogs: userDialogs(60) })
+    );
+    await expect(
+      textTurn.callback({
+        userId: "user1",
+        sessionId: "sess1",
+        input: { kind: "user", text: "one more" },
+      })
+    ).rejects.toThrow(/TIER_LIMIT_REACHED.*text_chat_messages_per_chat/);
+    expect(mockGenerateContent).not.toHaveBeenCalled();
+  });
+
+  it("flags wrap_up_warning at the 51st message of a 60-cap chat", async () => {
+    mockTextChatMessageCap.mockResolvedValue(60);
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ dialogs: userDialogs(50) })
+    );
+    const res = await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+    expect(res.done).toBe(true);
+    expect(res.wrap_up_warning).toBe(true);
+  });
+
+  it("does not flag wrap_up_warning before the threshold", async () => {
+    mockTextChatMessageCap.mockResolvedValue(60);
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ dialogs: userDialogs(40) })
+    );
+    const res = await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+    expect(res.wrap_up_warning).toBe(false);
+  });
+
+  it("does not count toolResults turns against the per-chat cap", async () => {
+    mockTextChatMessageCap.mockResolvedValue(60);
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({
+        dialogs: userDialogs(60),
+        contents: [
+          { role: "user", parts: [{ text: "x" }] },
+          {
+            role: "model",
+            parts: [{ functionCall: { name: "activate_phrase", args: {} } }],
+          },
+        ],
+      })
+    );
+    const res = await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: {
+        kind: "toolResults",
+        results: [{ name: "activate_phrase", output: "ok" }],
+      },
+    });
+    expect(res.done).toBe(true);
+    expect(mockGenerateContent).toHaveBeenCalled();
+  });
+
+  it("never gates an unlimited tier (messageCap null)", async () => {
+    mockTextChatMessageCap.mockResolvedValue(null);
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ dialogs: userDialogs(500) })
+    );
+    const res = await textTurn.callback({
+      userId: "user1",
+      sessionId: "sess1",
+      input: { kind: "user", text: "hi" },
+    });
+    expect(res.done).toBe(true);
+    expect(res.wrap_up_warning).toBe(false);
   });
 });

@@ -16,9 +16,11 @@ import {
   isUserOnFreemium,
   getOrCreateFreemiumAllocation,
   updateFreemiumAllocation,
+  assertVoiceMinutesAvailable,
 } from "../../subscription/service";
 import { LIVE_SESSION_MODEL } from "./config";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
+import { EntitlementLimitError } from "../../subscription/enforcement";
 const fetch = require("node-fetch");
 
 interface PracticeSetup {
@@ -75,6 +77,9 @@ export const requestEphemeralToken = defineFunction({
       );
     }
 
+    // Voice is metered per tier: block when the budget is exhausted / not granted.
+    await assertVoiceMinutesAvailable(setup.userId);
+
     const isOnFreemium = await isUserOnFreemium(setup.userId);
     if (isOnFreemium) {
       const freemiumAllocation = await getOrCreateFreemiumAllocation(
@@ -85,8 +90,10 @@ export const requestEphemeralToken = defineFunction({
         freemiumAllocation.allowed_lived_sessions_used >=
         freemiumAllocation.allowed_lived_sessions
       ) {
-        throw new Error(
-          "User has reached the maximum number of allowed lived sessions"
+        throw new EntitlementLimitError(
+          "live_sessions",
+          freemiumAllocation.allowed_lived_sessions,
+          freemiumAllocation.allowed_lived_sessions_used
         );
       }
 

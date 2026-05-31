@@ -18,7 +18,11 @@ export class ScheduleService {
       const jobs = await collection.find({});
       console.log(`[ScheduleService] Initializing ${jobs.length} jobs...`);
       for (const job of jobs) {
-        this.scheduleJobInternal(job as any);
+        // Per-job guard: one malformed/duplicate job must not abort the loop nor
+        // surface as an unhandled rejection that crashes the process on boot.
+        this.scheduleJobInternal(job as any).catch((error) =>
+          console.error(`[ScheduleService] Failed to schedule job ${(job as any)?.name} on init`, error)
+        );
       }
       // Start processing queue in case there are stuck 'queued' jobs from previous sessions
       await this.checkCatchUp(jobs);
@@ -52,7 +56,6 @@ export class ScheduleService {
     } = options;
 
     const collection = await getCollection(DATABASE_SCHEDULE, SCHEDULE_JOB_COLLECTION);
-    const existing = await collection.findOne({ name });
 
     const jobData = {
       name,
@@ -67,19 +70,36 @@ export class ScheduleService {
       timeZone,
     };
 
-    if (existing) {
+    // Idempotent upsert keyed on the unique `name` index. This replaces a racy
+    // findOne-then-create: when several callers raced (e.g. the Leitner review-job
+    // sync fanning out into concurrent calls) they each saw "not found" and inserted,
+    // and the losers threw an E11000 that went unhandled and killed the process.
+    // A duplicate-key error here just means another caller created the same job
+    // first — the desired end state — so we swallow it instead of propagating.
+    try {
       await collection.updateOne(
         { name },
-        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp, timeZone } }
+        { $set: { cronExpression, runAt, functionId, args, executionType, jobType, state: "scheduled", catchUp, timeZone } },
+        { upsert: true }
       );
-      this.cancelJob(name);
-    } else {
-      console.log(`[ScheduleService] Creating new job: ${name}`);
-      await collection.create(jobData);
+    } catch (error) {
+      if (!this.isDuplicateKeyError(error)) throw error;
+      console.warn(`[ScheduleService] Job ${name} already exists (concurrent create); skipping duplicate insert.`);
     }
 
-    this.scheduleJobInternal(jobData);
+    // Fire-and-forget: a failure to register the in-memory timer must not reject
+    // createJob (and so must never bubble into a request flow as a crash).
+    this.scheduleJobInternal(jobData).catch((error) =>
+      console.error(`[ScheduleService] Failed to register in-memory schedule for ${name}`, error)
+    );
     return jobData;
+  }
+
+  // MongoDB raises code 11000 (legacy 11001) on a unique-index violation. Mongoose
+  // surfaces it unchanged on both create and upsert, so this is the single place we
+  // decide "this collision is benign" vs. "this is a real error worth rethrowing".
+  private static isDuplicateKeyError(error: any): boolean {
+    return !!error && (error.code === 11000 || error.code === 11001 || error.codeName === "DuplicateKey");
   }
 
   static cancelJob(name: string) {
