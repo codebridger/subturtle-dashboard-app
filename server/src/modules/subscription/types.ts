@@ -3,6 +3,25 @@ import { PaymentProvider } from "../gateway/adapters";
 import { TierId } from "./tiers";
 import { Entitlements } from "./entitlements";
 
+/** A one-shot voice-minute top-up pack purchased on top of the active subscription
+ *  (Council 004 overage). Stored as a ledger entry on the subscription document. */
+export interface VoiceTopUp {
+  session_id: string; // Stripe checkout session id — idempotency key
+  pack_size: number; // nominal pack size in minutes (30 | 120)
+  // Minutes this pack contributes: == pack_size at purchase, reduced to the surviving
+  // REMAINING when folded forward across a subscription renewal.
+  minutes: number;
+  purchased_at: Date;
+  expires_at: Date; // 90 days from purchase
+}
+
+/** Derived per-pack view returned to the client (expired packs excluded). */
+export interface ActiveTopUp {
+  pack_size: number;
+  minutes_remaining: number;
+  expires_at: Date | string;
+}
+
 export interface Subscription {
   _id?: Types.ObjectId;
   user_id: Types.ObjectId;
@@ -17,6 +36,12 @@ export interface Subscription {
   credits_used: number;
   voice_minutes_total?: number;
   voice_minutes_used?: number;
+  // Voice-minute top-up ledger (Council 004 overage). Survives renewal until each
+  // pack's 90-day expiry; the per-pack remaining + active list are derived.
+  top_ups?: VoiceTopUp[];
+  // Derived (not stored): non-expired packs with per-pack remaining, attached by
+  // getSubscription for the client.
+  active_top_ups?: ActiveTopUp[];
   status:
     | "active"
     | "canceled"

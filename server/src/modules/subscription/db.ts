@@ -53,6 +53,25 @@ const subscriptionCollection = defineCollection({
         required: true,
         default: 0,
       },
+      // Voice-minute top-up packs (Council 004 overage) — one-shot purchases that
+      // extend the voice budget and survive renewal until their 90-day expiry. The
+      // active list + per-pack remaining are derived (service.computeVoiceBalance);
+      // idempotency is keyed on session_id.
+      top_ups: {
+        type: [
+          new Schema(
+            {
+              session_id: { type: String, required: true },
+              pack_size: { type: Number, required: true },
+              minutes: { type: Number, required: true },
+              purchased_at: { type: Date, required: true },
+              expires_at: { type: Date, required: true },
+            },
+            { _id: false }
+          ),
+        ],
+        default: [],
+      },
       status: {
         type: String,
         enum: [

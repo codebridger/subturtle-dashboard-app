@@ -7,6 +7,7 @@ import {
 } from "../../../config";
 import {
   addNewSubscriptionWithCredit,
+  addVoiceMinutesPack,
   cancelSubscriptionByProviderAndSubscriptionId,
   updateSubscriptionStatusByProviderAndSubscriptionId,
 } from "../../subscription/service";
@@ -390,6 +391,14 @@ export class StripeAdapter implements PaymentAdapter {
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object as Stripe.Checkout.Session;
+
+          // One-shot voice top-up packs use mode "payment" (tier subscriptions use
+          // mode "subscription" and grant in customer.subscription.created). Route
+          // them to the top-up grant; everything else keeps the payment-record path.
+          if (session.mode === "payment") {
+            return await this.handleVoiceTopUpCheckout(session);
+          }
+
           const metadata = session.metadata;
 
           // Skip if no metadata (shouldn't happen)
@@ -400,7 +409,6 @@ export class StripeAdapter implements PaymentAdapter {
           // Verify payment and add credits
           await this.verifyPayment(session.id);
           return { success: true, message: "Payment processed successfully" };
-          break;
         }
 
         case "customer.subscription.created": {
@@ -634,6 +642,64 @@ export class StripeAdapter implements PaymentAdapter {
       );
     }
     return { success: false, message };
+  }
+
+  /**
+   * Grant a one-shot voice-minute top-up pack on checkout.session.completed.
+   * The pack product is identified by its Stripe metadata (`kind: "voice_topup"`,
+   * seeded by setup:stripe); the minutes + 90-day expiry come from that metadata —
+   * the source of truth. Idempotent on the checkout session id (the service guards
+   * the ledger), so a redelivered webhook never double-grants.
+   */
+  private async handleVoiceTopUpCheckout(
+    session: Stripe.Checkout.Session
+  ): Promise<{ success: boolean; message: string }> {
+    // Only grant once the one-shot payment actually settled.
+    if (session.payment_status && session.payment_status !== "paid") {
+      return { success: true, message: "Top-up not paid yet; ignored" };
+    }
+
+    // Resolve the purchased product to read its top-up metadata (source of truth).
+    const lineItems = await this.stripe.checkout.sessions.listLineItems(
+      session.id,
+      { expand: ["data.price.product"], limit: 1 }
+    );
+    const product = lineItems.data[0]?.price?.product as
+      | Stripe.Product
+      | undefined;
+    const md =
+      product && typeof product === "object" ? product.metadata : undefined;
+
+    if (!md || md.kind !== "voice_topup") {
+      // A non-top-up one-shot payment — nothing for this handler to do.
+      return { success: true, message: "Non-top-up payment ignored" };
+    }
+
+    const minutes = parseInt(md.voice_minutes || "0", 10);
+    const expiryDays = parseInt(md.pack_expiry_days || "90", 10);
+    if (!minutes) {
+      return {
+        success: false,
+        message: "Top-up product is missing voice_minutes metadata",
+      };
+    }
+
+    const userId =
+      session.metadata?.userId ||
+      (await this.getUserIdForCustomer(session.customer as string));
+    if (!userId) {
+      return { success: false, message: "User not found for top-up" };
+    }
+
+    const result = await addVoiceMinutesPack({
+      userId,
+      minutes,
+      packSize: minutes,
+      sessionId: session.id,
+      expiryDays,
+    });
+
+    return { success: result.success, message: result.message };
   }
 
   public async getSubscriptionDetails(paymentId: string) {

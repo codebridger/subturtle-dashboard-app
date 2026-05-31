@@ -19,7 +19,7 @@ import {
   emitSubscriptionChangeEvent,
   emitSubscriptionExpiredEvent,
 } from "./events";
-import { Subscription, FreeCredit } from "./types";
+import { Subscription, FreeCredit, VoiceTopUp } from "./types";
 import { TierId, Cadence } from "./tiers";
 import { Entitlements } from "./entitlements";
 import { EntitlementLimitError } from "./enforcement";
@@ -183,6 +183,106 @@ interface VoiceBudget {
   scope: "subscription" | "freemium";
 }
 
+/** The effective voice balance after accounting for top-up packs and their 90-day
+ *  expiry. The single `voice_minutes_used` counter is allocated base-budget-first,
+ *  then across non-expired packs oldest-first, so each pack's remaining minutes are
+ *  derived without storing per-pack consumption. Expired packs are excluded. */
+export interface VoiceBalance {
+  base: number;
+  used: number;
+  total: number; // effective total = base grant + non-expired pack minutes
+  remaining: number; // base remaining + non-expired pack remaining
+  activeTopUps: {
+    pack_size: number;
+    minutes_remaining: number;
+    expires_at: Date;
+  }[];
+}
+
+export function computeVoiceBalance(sub: {
+  voice_minutes_total?: number;
+  voice_minutes_used?: number;
+  entitlements?: { voiceMinutesGranted?: number } | null;
+  top_ups?: VoiceTopUp[] | null;
+}): VoiceBalance {
+  // Base = the tier's monthly grant (the locked entitlement snapshot). Fall back to
+  // the stored total for legacy docs predating top-ups / the snapshot.
+  const base =
+    sub.entitlements?.voiceMinutesGranted ?? sub.voice_minutes_total ?? 0;
+  const used = sub.voice_minutes_used ?? 0;
+  const now = Date.now();
+  const packs = (sub.top_ups ?? [])
+    .filter((p) => p && new Date(p.expires_at).getTime() > now)
+    .sort(
+      (a, b) =>
+        new Date(a.purchased_at).getTime() - new Date(b.purchased_at).getTime()
+    );
+
+  const baseRemaining = Math.max(0, base - used);
+  let overflow = Math.max(0, used - base); // usage beyond base spills into packs
+
+  const activeTopUps = packs.map((p) => {
+    const consumed = Math.min(overflow, p.minutes);
+    overflow -= consumed;
+    return {
+      pack_size: p.pack_size,
+      minutes_remaining: p.minutes - consumed,
+      expires_at: p.expires_at,
+    };
+  });
+
+  const packMinutes = packs.reduce((s, p) => s + (p.minutes || 0), 0);
+  const topUpRemaining = activeTopUps.reduce(
+    (s, t) => s + t.minutes_remaining,
+    0
+  );
+
+  return {
+    base,
+    used,
+    total: base + packMinutes,
+    remaining: baseRemaining + topUpRemaining,
+    activeTopUps,
+  };
+}
+
+/** Carry non-expired top-up packs forward across a subscription renewal: each
+ *  surviving pack's REMAINING minutes (this period's consumption folded in) become
+ *  its new `minutes`, expired/empty packs are dropped, and the carried total is
+ *  returned to seed the new period's `voice_minutes_total`. */
+export function carryForwardTopUps(sub: {
+  voice_minutes_total?: number;
+  voice_minutes_used?: number;
+  entitlements?: { voiceMinutesGranted?: number } | null;
+  top_ups?: VoiceTopUp[] | null;
+}): { packs: VoiceTopUp[]; minutes: number } {
+  const now = Date.now();
+  const originals = (sub.top_ups ?? [])
+    .filter((p) => p && new Date(p.expires_at).getTime() > now)
+    .sort(
+      (a, b) =>
+        new Date(a.purchased_at).getTime() - new Date(b.purchased_at).getTime()
+    );
+  // computeVoiceBalance sorts identically, so activeTopUps[i] matches originals[i].
+  const { activeTopUps } = computeVoiceBalance(sub);
+  const packs: VoiceTopUp[] = [];
+  let minutes = 0;
+  originals.forEach((orig, i) => {
+    const remaining = activeTopUps[i]?.minutes_remaining ?? 0;
+    if (remaining > 0) {
+      packs.push({
+        session_id: orig.session_id,
+        pack_size: orig.pack_size,
+        minutes: remaining,
+        purchased_at: orig.purchased_at,
+        expires_at: orig.expires_at,
+      });
+      minutes += remaining;
+    }
+  });
+  return { packs, minutes };
+}
+
 /** Read the user's voice-minute budget from their active subscription, or the
  *  freemium allocation when there is none. */
 export async function getVoiceBudget(userId: string): Promise<VoiceBudget> {
@@ -197,9 +297,9 @@ export async function getVoiceBudget(userId: string): Promise<VoiceBudget> {
   })) as Subscription | null;
 
   if (activeSubscription) {
-    const total = activeSubscription.voice_minutes_total || 0;
-    const used = activeSubscription.voice_minutes_used || 0;
-    return { total, used, remaining: total - used, scope: "subscription" };
+    // Effective budget includes non-expired top-up packs (expired ones excluded).
+    const { total, used, remaining } = computeVoiceBalance(activeSubscription);
+    return { total, used, remaining, scope: "subscription" };
   }
 
   const freemium = await getOrCreateFreemiumAllocation(userId);
@@ -252,6 +352,101 @@ export async function debitVoiceMinutes(
     }
   }
   return getVoiceBudget(userId);
+}
+
+/**
+ * Apply a one-shot voice-minute top-up pack to the user's ACTIVE subscription
+ * (Council 004 overage). Pushes a 90-day ledger entry and `$inc`s
+ * voice_minutes_total so the budget reflects it immediately. Idempotent on the
+ * Stripe session id — a redelivered webhook never double-grants.
+ */
+export async function addVoiceMinutesPack(props: {
+  userId: string;
+  minutes: number;
+  packSize: number;
+  sessionId: string;
+  expiryDays?: number;
+}): Promise<{
+  success: boolean;
+  applied: boolean;
+  idempotent: boolean;
+  message: string;
+}> {
+  const { userId, minutes, packSize, sessionId, expiryDays = 90 } = props;
+  if (!userId || !sessionId) {
+    return {
+      success: false,
+      applied: false,
+      idempotent: false,
+      message: "userId and sessionId are required",
+    };
+  }
+  if (!(minutes > 0)) {
+    return {
+      success: false,
+      applied: false,
+      idempotent: false,
+      message: "minutes must be positive",
+    };
+  }
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeFilter: any = {
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  };
+
+  const sub = await subscriptionsCollection.findOne(activeFilter);
+  if (!sub) {
+    // Top-ups only apply to an active paid subscription (Reader / Learner / Coach).
+    return {
+      success: false,
+      applied: false,
+      idempotent: false,
+      message: "No active subscription to apply the top-up to",
+    };
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
+
+  // The `session_id != ` guard makes the push idempotent atomically: a redelivered
+  // webhook (same session) matches nothing and modifies zero documents.
+  const res: any = await subscriptionsCollection.updateOne(
+    { ...activeFilter, "top_ups.session_id": { $ne: sessionId } },
+    {
+      $push: {
+        top_ups: {
+          session_id: sessionId,
+          pack_size: packSize,
+          minutes,
+          purchased_at: now,
+          expires_at: expiresAt,
+        },
+      },
+      $inc: { voice_minutes_total: minutes },
+    }
+  );
+
+  const modified = res?.modifiedCount ?? res?.nModified ?? 0;
+  if (modified === 0) {
+    return {
+      success: true,
+      applied: false,
+      idempotent: true,
+      message: "Top-up already applied",
+    };
+  }
+  return {
+    success: true,
+    applied: true,
+    idempotent: false,
+    message: `Granted ${minutes} voice minutes`,
+  };
 }
 
 /**
@@ -589,8 +784,14 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
       update.credits_used = 0;
     }
     if (voiceMinutes !== undefined) {
-      update.voice_minutes_total = voiceMinutes;
+      // Renewal resets the BASE monthly voice budget; top-up packs survive until
+      // their 90-day expiry. Fold each surviving pack's remaining minutes forward
+      // (this period's consumption reconciled into `minutes`), drop expired/empty
+      // packs, and seed the new period total = base grant + carried-over minutes.
+      const carried = carryForwardTopUps(currentSubscription as any);
+      update.voice_minutes_total = voiceMinutes + carried.minutes;
       update.voice_minutes_used = 0;
+      update.top_ups = carried.packs;
     }
     if (entitlements) {
       update.entitlements = entitlements;
@@ -791,6 +992,11 @@ export async function getSubscription(userId: string) {
   }
 
   const jsonSubscription = activeSubscription.toObject() as any;
+  // Attach the derived per-pack top-up view (expired excluded); hide the raw ledger.
+  jsonSubscription.active_top_ups = computeVoiceBalance(
+    activeSubscription as any
+  ).activeTopUps;
+  delete jsonSubscription.top_ups;
   const isPaidByStripe =
     activeSubscription.payment_meta_data?.provider == PaymentProvider.STRIPE;
 

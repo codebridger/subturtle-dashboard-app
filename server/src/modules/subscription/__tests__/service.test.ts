@@ -28,6 +28,9 @@ import {
   getVoiceBudget,
   assertVoiceMinutesAvailable,
   debitVoiceMinutes,
+  addVoiceMinutesPack,
+  computeVoiceBalance,
+  carryForwardTopUps,
 } from "../service";
 import { EntitlementLimitError } from "../enforcement";
 import { PaymentProvider } from "../../gateway/adapters";
@@ -259,5 +262,144 @@ describe("updateSubscriptionStatusByProviderAndSubscriptionId — lock at purcha
     expect(set.granted_period_end).toBeUndefined();
     expect(set.status).toBe("active"); // status/flags still synced
     expect(set.cancel_at_period_end).toBe(true);
+  });
+});
+
+// Days from now as a Date (for top-up purchased_at / expires_at).
+const day = (n: number) => new Date(Date.now() + n * 86400e3);
+
+describe("computeVoiceBalance — top-up allocation + 90-day expiry", () => {
+  it("base only, no packs", () => {
+    const b = computeVoiceBalance({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 20,
+      top_ups: [],
+    });
+    expect(b).toMatchObject({ base: 90, used: 20, total: 90, remaining: 70 });
+    expect(b.activeTopUps).toEqual([]);
+  });
+
+  it("adds a non-expired pack to total + remaining", () => {
+    const e1 = day(30);
+    const b = computeVoiceBalance({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 0,
+      top_ups: [
+        { session_id: "s1", pack_size: 30, minutes: 30, purchased_at: day(-1), expires_at: e1 },
+      ],
+    });
+    expect(b.total).toBe(120);
+    expect(b.remaining).toBe(120);
+    expect(b.activeTopUps).toEqual([
+      { pack_size: 30, minutes_remaining: 30, expires_at: e1 },
+    ]);
+  });
+
+  it("allocates usage base-first, then spills into the pack", () => {
+    // base 90, used 100 -> base exhausted, 10 spills into the 30-min pack
+    const b = computeVoiceBalance({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 100,
+      top_ups: [
+        { session_id: "s1", pack_size: 30, minutes: 30, purchased_at: day(-1), expires_at: day(30) },
+      ],
+    });
+    expect(b.remaining).toBe(20); // 0 base + (30 - 10)
+    expect(b.activeTopUps[0].minutes_remaining).toBe(20);
+  });
+
+  it("excludes expired packs from total, remaining, and the active list", () => {
+    const b = computeVoiceBalance({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 0,
+      top_ups: [
+        { session_id: "old", pack_size: 30, minutes: 30, purchased_at: day(-100), expires_at: day(-1) },
+      ],
+    });
+    expect(b.total).toBe(90);
+    expect(b.remaining).toBe(90);
+    expect(b.activeTopUps).toEqual([]);
+  });
+
+  it("consumes packs oldest-first across two packs", () => {
+    // base 90, used 110 -> 20 overflow: older 30-pack takes 20 (10 left), newer 120-pack untouched
+    const e1 = day(80);
+    const e2 = day(88);
+    const b = computeVoiceBalance({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 110,
+      top_ups: [
+        { session_id: "old", pack_size: 30, minutes: 30, purchased_at: day(-10), expires_at: e1 },
+        { session_id: "new", pack_size: 120, minutes: 120, purchased_at: day(-2), expires_at: e2 },
+      ],
+    });
+    expect(b.activeTopUps).toEqual([
+      { pack_size: 30, minutes_remaining: 10, expires_at: e1 },
+      { pack_size: 120, minutes_remaining: 120, expires_at: e2 },
+    ]);
+    expect(b.remaining).toBe(130);
+  });
+});
+
+describe("carryForwardTopUps — renewal survival", () => {
+  it("folds surviving packs' remaining forward and drops expired ones", () => {
+    const e1 = day(40); // survives
+    const r = carryForwardTopUps({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 100, // 10 overflow lands on the surviving pack
+      top_ups: [
+        { session_id: "keep", pack_size: 30, minutes: 30, purchased_at: day(-5), expires_at: e1 },
+        { session_id: "gone", pack_size: 30, minutes: 30, purchased_at: day(-100), expires_at: day(-1) },
+      ],
+    });
+    expect(r.minutes).toBe(20);
+    expect(r.packs).toHaveLength(1);
+    expect(r.packs[0]).toMatchObject({ session_id: "keep", pack_size: 30, minutes: 20, expires_at: e1 });
+  });
+
+  it("drops a fully-consumed pack", () => {
+    const r = carryForwardTopUps({
+      entitlements: { voiceMinutesGranted: 90 },
+      voice_minutes_used: 130, // 40 overflow > the 30-min pack -> consumed
+      top_ups: [
+        { session_id: "x", pack_size: 30, minutes: 30, purchased_at: day(-5), expires_at: day(40) },
+      ],
+    });
+    expect(r.minutes).toBe(0);
+    expect(r.packs).toEqual([]);
+  });
+});
+
+describe("addVoiceMinutesPack — grant + idempotency", () => {
+  let col: any;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    col = { findOne: jest.fn(), updateOne: jest.fn() };
+    (getCollection as any).mockReturnValue(col);
+  });
+
+  it("pushes a ledger entry + $incs voice_minutes_total when applied", async () => {
+    col.findOne.mockResolvedValue({ _id: "sub1" });
+    col.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    const r = await addVoiceMinutesPack({ userId: USER, minutes: 30, packSize: 30, sessionId: "cs_1" });
+    expect(r).toMatchObject({ success: true, applied: true, idempotent: false });
+    const [filter, update] = col.updateOne.mock.calls[0];
+    expect(filter["top_ups.session_id"]).toEqual({ $ne: "cs_1" });
+    expect(update.$inc).toEqual({ voice_minutes_total: 30 });
+    expect(update.$push.top_ups).toMatchObject({ session_id: "cs_1", pack_size: 30, minutes: 30 });
+  });
+
+  it("is idempotent when the session was already applied (no rows modified)", async () => {
+    col.findOne.mockResolvedValue({ _id: "sub1" });
+    col.updateOne.mockResolvedValue({ modifiedCount: 0 });
+    const r = await addVoiceMinutesPack({ userId: USER, minutes: 30, packSize: 30, sessionId: "cs_1" });
+    expect(r).toMatchObject({ success: true, applied: false, idempotent: true });
+  });
+
+  it("refuses when there is no active subscription", async () => {
+    col.findOne.mockResolvedValue(null);
+    const r = await addVoiceMinutesPack({ userId: USER, minutes: 30, packSize: 30, sessionId: "cs_1" });
+    expect(r).toMatchObject({ success: false, applied: false });
+    expect(col.updateOne).not.toHaveBeenCalled();
   });
 });

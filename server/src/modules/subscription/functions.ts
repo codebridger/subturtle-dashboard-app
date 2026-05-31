@@ -33,6 +33,8 @@ const getSubscriptionDetails = defineFunction({
           ...freemiumAllocation,
           tier: "starter",
           is_freemium: true,
+          // Top-ups are a paid-subscription feature; free users never have any.
+          active_top_ups: [],
         };
       } else {
         // Paid subscriptions carry `tier` on the document (post-Council-002).
