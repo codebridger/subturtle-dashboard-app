@@ -29,5 +29,9 @@ export function useVoiceBalance() {
     const usedPct = computed(() => (base.value > 0 ? Math.min(100, Math.round((used.value / base.value) * 100)) : used.value > 0 ? 100 : 0));
     const renewalDate = computed(() => (isFreemium.value ? free.value?.end_date : sub.value?.end_date));
 
-    return { isFreemium, tier, base, used, baseRemaining, topUps, topUpRemaining, remaining, usedPct, renewalDate };
+    // "X of Y voice minutes left this month" — for inline labels (e.g. the session banner).
+    const { t } = useI18n();
+    const leftLabel = computed(() => t('subscription.voice-meter.left-voice', { n: baseRemaining.value, total: base.value }));
+
+    return { isFreemium, tier, base, used, baseRemaining, topUps, topUpRemaining, remaining, usedPct, renewalDate, leftLabel };
 }

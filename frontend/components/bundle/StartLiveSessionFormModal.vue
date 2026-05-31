@@ -12,29 +12,23 @@
         <StartLiveSessionForm v-model="formData" ref="formRef" />
 
         <template #footer>
-            <!-- Freemium: voice-minutes line (voice mode) above the mode-aware limit
-                 card — sessions for voice, text chats for text — plus the upgrade flow.
-                 The -m-5 cancels the footer p-5 so the gradient card reaches the edges. -->
-            <div v-if="profileStore.isFreemium">
-                <div v-if="formData.mode !== 'text'" class="mb-3 px-1">
-                    <VoiceMeter size="sm" />
-                </div>
-                <!-- Full-bleed sides + bottom only; a negative TOP margin would pull
-                     the card up over the voice-minutes line above it. -->
-                <div class="-mx-5 -mb-5">
-                    <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
-                        :main-message="t('freemium.limitation.no_free_spots_left')"
-                        :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
-                        :primary-button-label="t('freemium.limitation.go_pro')"
-                        :secondary-button-label="t('freemium.limitation.continue_with_limits')"
-                        @upgrade="handleConfirmUpgrade">
-                        <template #trigger="{ toggleModal: toggleLimitationModal }">
-                            <FreemiumLimitCard :type="formData.mode === 'text' ? 'textChat' : 'liveSession'"
-                                :action-label="t('live-practice.start')"
-                                @action="startSession" @upgrade="toggleLimitationModal(true)" />
-                        </template>
-                    </FreemiumLimitationModal>
-                </div>
+            <!-- Freemium: full-bleed mode-aware limit card (sessions for voice, text
+                 chats for text). In voice mode the voice minutes are merged into the
+                 card as a sub-line. The -m-5 cancels the footer p-5 so it reaches the edges. -->
+            <div v-if="profileStore.isFreemium" class="-m-5">
+                <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
+                    :main-message="t('freemium.limitation.no_free_spots_left')"
+                    :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
+                    :primary-button-label="t('freemium.limitation.go_pro')"
+                    :secondary-button-label="t('freemium.limitation.continue_with_limits')"
+                    @upgrade="handleConfirmUpgrade">
+                    <template #trigger="{ toggleModal: toggleLimitationModal }">
+                        <FreemiumLimitCard :type="formData.mode === 'text' ? 'textChat' : 'liveSession'"
+                            :sub-info="formData.mode !== 'text' ? voiceLeftLabel : ''"
+                            :action-label="t('live-practice.start')"
+                            @action="startSession" @upgrade="toggleLimitationModal(true)" />
+                    </template>
+                </FreemiumLimitationModal>
             </div>
 
             <!-- Premium: mode-aware balance (voice minutes / Reader text chats) + Start. -->
@@ -58,10 +52,12 @@ import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vu
 import VoiceMeter from '~/components/VoiceMeter.vue';
 import TextChatCounter from '~/components/TextChatCounter.vue';
 import { useProfileStore } from '~/stores/profile';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
 
 const { t } = useI18n();
 const router = useRouter();
 const profileStore = useProfileStore();
+const { leftLabel: voiceLeftLabel } = useVoiceBalance();
 
 const props = defineProps<{
     modelValue: boolean;

@@ -17,12 +17,9 @@
             <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="GEMINI_VOICES" ref="formRef"
                 @start="handleStartLiveSession" />
 
-            <!-- Freemium: voice-minutes line (voice mode) above the mode-aware limit
-                 card — sessions for voice, text chats for text — plus the upgrade flow. -->
+            <!-- Freemium: mode-aware limit card (sessions for voice, text chats for
+                 text). In voice mode the voice minutes are merged in as a sub-line. -->
             <div class="m-4" v-if="profileStore.isFreemium">
-                <div v-if="formData.mode !== 'text'" class="mb-3">
-                    <VoiceMeter size="sm" />
-                </div>
                 <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
                     :main-message="t('freemium.limitation.no_free_spots_left')"
                     :sub-message="t('freemium.limitation.upgrade_to_pro_message')"
@@ -31,6 +28,7 @@
                     @upgrade="handleConfirmUpgrade">
                     <template #trigger="{ toggleModal }">
                         <FreemiumLimitCard :type="formData.mode === 'text' ? 'textChat' : 'liveSession'"
+                            :sub-info="formData.mode !== 'text' ? voiceLeftLabel : ''"
                             :action-label="t('live-practice.start')"
                             @action="startSession" @upgrade="toggleModal(true)" />
                     </template>
@@ -68,7 +66,7 @@ const GEMINI_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Oru
 const router = useRouter();
 const { t } = useI18n();
 const profileStore = useProfileStore();
-const { remaining: voiceRemaining } = useVoiceBalance();
+const { remaining: voiceRemaining, leftLabel: voiceLeftLabel } = useVoiceBalance();
 
 const bundleList = ref<PhraseBundleType[]>([]);
 const filter = ref('');
