@@ -37,6 +37,26 @@ const STARTER_DETAILS = {
     usage_percentage: 0,
 };
 
+// getSubscriptionDetails payload for a paid Learner — drives the active plan card +
+// the "This month" voice meter (S12). base 90, used 30 -> "60 of 90 minutes left".
+const LEARNER_DETAILS = {
+    is_freemium: false,
+    tier: 'learner',
+    label: 'Learner',
+    status: 'active',
+    voice_minutes_total: 90,
+    voice_minutes_used: 30,
+    entitlements: { voiceMinutesGranted: 90 },
+    active_top_ups: [],
+    start_date: '2026-05-12T00:00:00.000Z',
+    end_date: '2026-06-12T00:00:00.000Z',
+    remaining_days: 12,
+    usage_percentage: 20,
+    total_credits: 300000000,
+    credits_used: 60000000,
+    portal_url: 'https://billing.stripe.test/p/session',
+};
+
 // getSubscriptionPlans payload — same shape as server plans.ts buildFromStripe():
 // [Starter (free, from code), Reader, Learner, Coach], GBP base prices. Learner is
 // the highlighted "Most popular" tier with a 3-day trial.
@@ -233,5 +253,24 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
         await expect(page.getByText('£4.49')).toBeVisible();
         await expect(page.getByText('£10.99')).toBeVisible();
         await expect(page.getByText('£24.99')).toBeVisible();
+    });
+
+    test('paid Learner sees the voice meter in the "This month" section', async ({ page }) => {
+        // Override getSubscriptionDetails with a paid Learner (later route wins; the
+        // rest fall through to the free stub registered in beforeEach).
+        await page.route('**/function/run', async (route) => {
+            if (route.request().method() === 'OPTIONS') return preflight(route);
+            const name = (route.request().postDataJSON() || {}).name as string;
+            if (name === 'getSubscriptionDetails') {
+                return respond(route, 200, { status: 'success', data: LEARNER_DETAILS });
+            }
+            return route.fallback();
+        });
+
+        await page.goto('/#/settings/subscription');
+
+        await expect(page.getByRole('heading', { name: 'This month' })).toBeVisible();
+        // The meter sub-line (base 90, used 30) — proves VoiceMeter computed the balance.
+        await expect(page.getByText('60 of 90 minutes left this month', { exact: true })).toBeVisible();
     });
 });

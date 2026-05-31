@@ -32,8 +32,9 @@
                 </FreemiumLimitationModal>
             </div>
 
-            <!-- Premium: Regular start button -->
-            <div class="m-4" v-else>
+            <!-- Premium: voice balance (Council 004 Surface 1) + start button -->
+            <div class="m-4 space-y-3" v-else>
+                <VoiceMeter size="sm" />
                 <Button color="primary" block :disabled="!isFormValid || !formData.bundleId" @click="startSession"
                     :label="t('live-practice.start')" />
             </div>
@@ -50,6 +51,7 @@ import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.t
 import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
+import VoiceMeter from '~/components/VoiceMeter.vue';
 import { useProfileStore } from '~/stores/profile';
 
 const GEMINI_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];

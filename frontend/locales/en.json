@@ -277,6 +277,20 @@
                 "cta": "Start 3-day free trial"
             }
         },
+        "voice-meter": {
+            "headline": "Voice chat",
+            "left": "{n} of {total} minutes left this month",
+            "left-voice": "{n} of {total} voice minutes left this month",
+            "low": "Only {n} minutes left this month",
+            "none": "0 minutes left this month",
+            "plus-topup": ", plus {n} top-up minutes",
+            "resets": "Resets on {date}.",
+            "top-up": "Top up minutes"
+        },
+        "this-month": {
+            "header": "This month",
+            "ai-usage": "AI translations & explanations: {n} used"
+        },
         "cancel-offramp": {
             "title": "Before you go",
             "message": "Stay on Free instead?",

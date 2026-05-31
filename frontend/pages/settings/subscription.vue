@@ -41,6 +41,18 @@
                             <Progress :value="activeSubscriptionData.usage_percentage ?? 0" :max="100" size="md"
                                 color="primary" />
                         </div>
+
+                        <!-- This month: voice balance + renewal (Council 004 Surface 2).
+                             S17 adds the Reader text-chat counter inside this section. -->
+                        <div class="border-t border-gray-100 pt-4 dark:border-gray-700">
+                            <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white-light">
+                                {{ t('subscription.this-month.header') }}
+                            </h3>
+                            <VoiceMeter size="md" @topup="goToTopUps" />
+                            <p v-if="renewsOn" class="mt-3 text-xs text-gray-400">
+                                {{ t('subscription.voice-meter.resets', { date: renewsOn }) }}
+                            </p>
+                        </div>
                     </div>
                 </Card>
 
@@ -251,6 +263,7 @@ import { SwitchBall } from 'pilotui/form';
 import PageHeader from '~/components/common/PageHeader.vue';
 import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
+import VoiceMeter from '~/components/VoiceMeter.vue';
 
 import { ref, computed } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
@@ -292,6 +305,22 @@ const activePlanId = computed<TierId | undefined>(() => activeSubscriptionData.v
 const isTrialing = computed(() => activeSubscriptionData.value?.status === 'trialing');
 const isCanceling = computed(() => !!activeSubscriptionData.value?.cancel_at_period_end);
 const activePlanName = computed(() => activeSubscriptionData.value?.label || t('subscription.title'));
+
+// "Resets on 12 June." — the active period's end (Council 004 Surface 2).
+const renewsOn = computed(() => {
+    const d = activeSubscriptionData.value?.end_date;
+    if (!d) return '';
+    try {
+        return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+    } catch {
+        return '';
+    }
+});
+
+// "Top up minutes" from the voice meter → the /settings/billing top-ups section (S14).
+function goToTopUps() {
+    navigateTo('/settings/billing');
+}
 
 // Embedded Custom Checkout panel state (replaces the hosted redirect). The panel
 // shows the localized price (EUR for EU visitors) via Stripe Adaptive Pricing.
