@@ -1,5 +1,8 @@
 <template>
+    <!-- Cap the panel at 90vh as a flex column so the form area scrolls on small
+         screens while the title + footer (Start button) stay pinned and reachable. -->
     <Modal :modelValue="modelValue" :title="t('live-practice.going-live')"
+        :custom-class="{ panel: 'max-h-[90vh] flex flex-col' }" content-class="min-h-0 flex-1 overflow-y-auto"
         @update:modelValue="$emit('update:modelValue', $event)">
         <template #trigger>
             <Button iconName="IconNotesEdit" :label="t('live-practice.label')"
