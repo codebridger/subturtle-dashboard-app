@@ -36,7 +36,7 @@
                         {{ t('live-session.no-sessions-description') }}
                     </p>
                     <div class="mt-8">
-                        <Button color="primary" iconName="IconPlay" :label="t('live-session.start-first-session')"
+                        <Button color="primary" iconName="IconPlayCircle" :label="t('live-session.start-first-session')"
                             @click="goToBundles" class="shadow-lg shadow-primary/20" />
                     </div>
                 </div>

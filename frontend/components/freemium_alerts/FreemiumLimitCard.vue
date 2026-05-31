@@ -79,7 +79,7 @@ const config = computed(() => {
             usedField: 'allowed_lived_sessions_used',
             totalField: 'allowed_lived_sessions',
             actionLabel: props.actionLabel || t('live-practice.start'),
-            actionIcon: props.actionIcon || 'IconPlay',
+            actionIcon: props.actionIcon || 'IconPlayCircle',
         };
     }
 });
