@@ -97,6 +97,14 @@ With frontend `:3000` and a logged-in user (inject the token in `localStorage`):
   Learner badge "Most popular"; "Start 3-day free trial" on Learner). Prices localize.
 - This layer verifies the *surfaces*; the API layer (§Steps) verifies enforcement.
 
+> **Automated:** §7 is implemented as a hermetic Playwright spec —
+> [`frontend/tests/e2e/specs/subscription-ui.spec.ts`](../../frontend/tests/e2e/specs/subscription-ui.spec.ts).
+> It stubs every backend RPC with `page.route` (freemium snapshot, the two 400
+> `TIER_LIMIT_REACHED` locks, the GBP plans payload), so it needs only the frontend
+> dev server — no backend, Mongo, or Stripe. Run it instead of doing §7 by hand:
+> `cd frontend && yarn test:e2e tests/e2e/specs/subscription-ui.spec.ts`
+> (Playwright boots/reuses `:3000` itself; the dev server needs node ≥18.)
+
 ## §8 — Teardown (always)
 Run **T1**: cancel all the customer's Stripe subs; delete the user's `subscriptions`,
 `free_credits`, `usages`, `stripe_customers`, `phrases`, `phrase_bundles` rows + the
