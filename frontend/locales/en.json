@@ -259,6 +259,24 @@
                 "voice_minutes": "You're out of voice minutes on your plan."
             }
         },
+        "feature-locked": {
+            "see-all-plans": "See all plans",
+            "session_history": {
+                "title": "Session history is part of Learner.",
+                "body": "Keep a record of every voice and text chat you have with the AI coach. See what you practised, when, and what to revisit.",
+                "cta": "Upgrade to Learner"
+            },
+            "weekly_insights": {
+                "title": "Weekly progress insights is part of Learner.",
+                "body": "See how your study habits change each week — words learned, voice minutes practised, and what to focus on next.",
+                "cta": "Upgrade to Learner"
+            },
+            "voice_chat": {
+                "title": "Voice chat is part of Learner.",
+                "body": "Speak out loud with the AI coach. Best for real speaking practice. Try a 3-day free trial of Learner.",
+                "cta": "Start 3-day free trial"
+            }
+        },
         "cancel-offramp": {
             "title": "Before you go",
             "message": "Stay on Free instead?",

@@ -13,20 +13,7 @@
                 overline="LIVE SESSIONS" />
 
             <!-- Locked: full session history is a Learner+ feature (the global upgrade modal also opens). -->
-            <div v-if="locked" class="flex flex-1 flex-col items-center justify-center py-12">
-                <div
-                    class="flex max-w-xl flex-col items-center justify-center rounded-3xl border border-white/20 bg-white/40 p-12 text-center shadow-xl backdrop-blur-md dark:bg-gray-800/40">
-                    <Icon name="IconLockDots" class="h-12 w-12 text-primary" />
-                    <h3 class="mt-6 text-xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ t('subscription.tier-limit.features.session_history') }}
-                    </h3>
-                    <p class="mt-2 text-base text-gray-500 dark:text-gray-400">{{ t('subscription.tier-limit.sub') }}</p>
-                    <div class="mt-8">
-                        <Button color="primary" :label="t('subscription.tier-limit.primary')"
-                            @click="router.push('/settings/subscription')" />
-                    </div>
-                </div>
-            </div>
+            <FeatureLocked v-if="locked" feature-key="session_history" required-tier="learner" />
 
             <!-- Empty State -->
             <div v-else-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center py-12">
@@ -139,6 +126,7 @@
 import { Icon, Button } from 'pilotui/elements';
 import { Pagination } from 'pilotui/complex';
 import PageHeader from '~/components/common/PageHeader.vue';
+import FeatureLocked from '~/components/FeatureLocked.vue';
 import { functionProvider } from '@modular-rest/client';
 import type { LiveSessionRecordType, LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { formatSessionDuration } from '~/utils/duration';

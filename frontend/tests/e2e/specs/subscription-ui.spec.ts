@@ -190,16 +190,23 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
     // children are position:fixed), so it reads as "hidden". Assert visibility on the
     // panel CONTENT scoped within the dialog instead — which also excludes the
     // sessions page's in-page lock panel that repeats the same feature copy.
-    test('/statistic shows the global upgrade modal (weekly_insights locked)', async ({ page }) => {
+    test('/statistic shows the weekly_insights lock panel + global upgrade modal', async ({ page }) => {
         await page.goto('/#/statistic');
 
+        // Shared in-page FeatureLocked panel (S15) — replaces the empty-charts pattern.
+        await expect(page.getByText('Weekly progress insights is part of Learner.')).toBeVisible();
+
+        // Global upgrade modal still fires from the 400 interceptor.
         const dialog = page.getByRole('dialog');
         await expect(dialog.getByText('Upgrade to unlock')).toBeVisible();
         await expect(dialog.getByText('Progress insights are a Learner feature.')).toBeVisible();
     });
 
-    test('/sessions shows the global upgrade modal (session_history locked)', async ({ page }) => {
+    test('/sessions shows the session_history lock panel + global upgrade modal', async ({ page }) => {
         await page.goto('/#/sessions');
+
+        // Shared in-page FeatureLocked panel (S15) — replaces the old bespoke /sessions panel.
+        await expect(page.getByText('Session history is part of Learner.')).toBeVisible();
 
         const dialog = page.getByRole('dialog');
         await expect(dialog.getByText('Upgrade to unlock')).toBeVisible();
