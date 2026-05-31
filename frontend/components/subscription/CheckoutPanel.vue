@@ -139,9 +139,10 @@ async function pay() {
     paying.value = true;
     payError.value = '';
     try {
-        const result = await actions.confirm({
-            returnUrl: `${window.location.origin}/#/payment-success`,
-        });
+        // The Checkout Session already carries `return_url` (set server-side in
+        // createCustomCheckoutSession), so confirm() must NOT pass `returnUrl` too —
+        // Stripe rejects providing both. Redirect-based methods use the session's url.
+        const result = await actions.confirm();
         // Non-redirect payment methods (e.g. card without 3DS) resolve here.
         if (result?.type === 'error') {
             payError.value = result.error?.message || t('subscription.checkout.pay-failed');
