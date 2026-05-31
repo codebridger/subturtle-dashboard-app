@@ -45,7 +45,7 @@ const profileStore = useProfileStore();
 const { t } = useI18n();
 
 const props = defineProps<{
-    type: 'phrase' | 'liveSession';
+    type: 'phrase' | 'liveSession' | 'textChat';
     actionLabel?: string;
     actionIcon?: string;
 }>();
@@ -62,6 +62,15 @@ const config = computed(() => {
             totalField: 'allowed_save_words',
             actionLabel: props.actionLabel || t('bundle.add_phrase'),
             actionIcon: props.actionIcon || 'IconPlus',
+        };
+    } else if (props.type === 'textChat') {
+        return {
+            unitLabel: 'Chats',
+            description: t('freemium.limitation.free_chats_left'),
+            usedField: 'allowed_text_chats_used',
+            totalField: 'allowed_text_chats',
+            actionLabel: props.actionLabel || t('live-practice.start'),
+            actionIcon: props.actionIcon || 'IconNotesEdit',
         };
     } else {
         return {
