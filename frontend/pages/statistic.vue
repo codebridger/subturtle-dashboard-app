@@ -61,6 +61,7 @@
     import PageHeader from '~/components/common/PageHeader.vue';
     import InstallExtensionBanner from '~/components/extension_nudge/InstallExtensionBanner.vue';
     import FeatureLocked from '~/components/FeatureLocked.vue';
+    import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
 
     const { t } = useI18n();
 
@@ -80,6 +81,10 @@
     // weekly_insights gate: flipped when getUserStatistic returns 400 (TIER_LIMIT_REACHED),
     // i.e. the user's tier doesn't include insights — show the shared locked panel.
     const locked = ref(false);
+
+    // weekly_insights renders as an inline FeatureLocked card here, so the global
+    // tier-limit modal defers to it (no double upsell on the same lock).
+    useInlineFeatureLock('weekly_insights');
 
     function getRecentBundles() {
         dataProvider

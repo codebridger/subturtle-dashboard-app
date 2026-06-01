@@ -231,27 +231,25 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
     // children are position:fixed), so it reads as "hidden". Assert visibility on the
     // panel CONTENT scoped within the dialog instead — which also excludes the
     // sessions page's in-page lock panel that repeats the same feature copy.
-    test('/statistic shows the weekly_insights lock panel + global upgrade modal', async ({ page }) => {
+    test('/statistic shows the weekly_insights lock panel, and the global modal defers to it', async ({ page }) => {
         await page.goto('/#/statistic');
 
         // Shared in-page FeatureLocked panel (S15) — replaces the empty-charts pattern.
         await expect(page.getByText('Weekly progress insights is part of Learner.')).toBeVisible();
 
-        // Global upgrade modal still fires from the 400 interceptor.
-        const dialog = page.getByRole('dialog');
-        await expect(dialog.getByText('Upgrade to unlock')).toBeVisible();
-        await expect(dialog.getByText('Progress insights are a Learner feature.')).toBeVisible();
+        // The page owns the upsell inline (useInlineFeatureLock), so the global
+        // tier-limit modal suppresses itself — no double surfacing of the same lock.
+        await expect(page.getByText('Upgrade to unlock')).not.toBeVisible();
     });
 
-    test('/sessions shows the session_history lock panel + global upgrade modal', async ({ page }) => {
+    test('/sessions shows the session_history lock panel, and the global modal defers to it', async ({ page }) => {
         await page.goto('/#/sessions');
 
         // Shared in-page FeatureLocked panel (S15) — replaces the old bespoke /sessions panel.
         await expect(page.getByText('Session history is part of Learner.')).toBeVisible();
 
-        const dialog = page.getByRole('dialog');
-        await expect(dialog.getByText('Upgrade to unlock')).toBeVisible();
-        await expect(dialog.getByText('Full session history is a Learner feature.')).toBeVisible();
+        // The page owns the upsell inline, so the global tier-limit modal defers.
+        await expect(page.getByText('Upgrade to unlock')).not.toBeVisible();
     });
 
     test('/settings/subscription renders four plan cards with GBP base prices', async ({ page }) => {

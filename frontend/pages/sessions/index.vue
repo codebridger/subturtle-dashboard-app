@@ -127,6 +127,7 @@ import { Icon, Button } from 'pilotui/elements';
 import { Pagination } from 'pilotui/complex';
 import PageHeader from '~/components/common/PageHeader.vue';
 import FeatureLocked from '~/components/FeatureLocked.vue';
+import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
 import { functionProvider } from '@modular-rest/client';
 import type { LiveSessionRecordType, LivePracticeSessionSetupType } from '~/types/live-session.type';
 import { formatSessionDuration } from '~/utils/duration';
@@ -146,6 +147,10 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const isLoading = ref(false);
 const locked = ref(false);
+
+// session_history renders as an inline FeatureLocked card on this page, so the
+// global tier-limit modal defers to it (no double upsell on the same lock).
+useInlineFeatureLock('session_history');
 
 const isEmptyState = computed(() => !sessionList.value.length && !isLoading.value && !locked.value);
 
