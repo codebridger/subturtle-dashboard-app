@@ -50,6 +50,8 @@
 // Standalone "start a new session" entry point bound to the Gemini practice page.
 import { Button, Card } from 'pilotui/elements';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import type { LiveSessionRequest } from '~/types/live-session-request';
+import { pickPhraseIds } from '~/utils/livePractice';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
 import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
@@ -146,10 +148,21 @@ function startSession() {
 }
 
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-    const sessionDataBase64 = btoa(JSON.stringify(sessionData));
-    router.push(
-        `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`
-    );
+    // Build the unified request the /practice/live-session dispatcher consumes:
+    // resolve the selection to concrete phrase ids from the chosen bundle and carry
+    // the practice mode, then route through the gate. The old `live-session-<id>`
+    // path matched no route (404) and dropped the mode field entirely. [B2]
+    const bundle = bundleList.value.find((b) => b._id === formData.bundleId);
+    const request: LiveSessionRequest = {
+        aiCharacter: sessionData.aiCharacter,
+        nativeLanguage: sessionData.nativeLanguage,
+        mode: formData.mode,
+        title: bundle?.title,
+        source: { phraseIds: pickPhraseIds(bundle?.phrases ?? [], sessionData) },
+        returnTo: '/sessions/new',
+    };
+    const session = btoa(JSON.stringify(request));
+    router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
 }
 
 function handleConfirmUpgrade() {

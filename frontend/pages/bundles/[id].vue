@@ -170,6 +170,7 @@ import { useLeitnerStore } from '@/stores/leitner';
 import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
+import { pickPhraseIds } from '~/utils/livePractice';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
@@ -240,24 +241,7 @@ function resolveSelectedPhraseIds(
     // The store reverses `phrases` for display; reverse back so range selection
     // maps to the bundle's original phrase order (matching prior behavior).
     const all = [...(bundleStore.bundleDetail?.phrases ?? [])].reverse();
-    const picked: string[] = [];
-
-    if (sessionData.selectionMode === 'random') {
-        const total = sessionData.totalPhrases ?? 1;
-        while (picked.length < total && picked.length < all.length) {
-            const candidate = all[Math.floor(Math.random() * all.length)];
-            if (candidate && !picked.includes(candidate)) picked.push(candidate);
-        }
-    } else {
-        const from = sessionData.fromPhrase ?? 1;
-        const to = sessionData.toPhrase ?? 2;
-        for (let i = from - 1; i <= to - 1; i++) {
-            const candidate = all[i];
-            if (candidate && !picked.includes(candidate)) picked.push(candidate);
-        }
-    }
-
-    return picked;
+    return pickPhraseIds(all, sessionData);
 }
 
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType & { mode?: 'voice' | 'text' }) {
