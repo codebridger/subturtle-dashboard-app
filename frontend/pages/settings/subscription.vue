@@ -48,8 +48,19 @@
                             <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white-light">
                                 {{ t('subscription.this-month.header') }}
                             </h3>
-                            <VoiceMeter size="md" @topup="goToTopUps" />
-                            <TextChatCounter />
+                            <!-- What this plan includes this month: saved phrases, text chats,
+                                 and live sessions — "Unlimited" on most paid tiers, or the limit
+                                 (e.g. Reader's 60 text chats). Voice keeps its own meter below. -->
+                            <div class="mb-3 space-y-2.5">
+                                <div v-for="row in planRows" :key="row.label"
+                                    class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ row.label }}</span>
+                                    <button v-if="row.upsell" type="button" class="font-medium text-primary hover:underline"
+                                        @click="goToChangePlan">{{ row.value }}</button>
+                                    <span v-else class="font-medium text-gray-900 dark:text-gray-100">{{ row.value }}</span>
+                                </div>
+                            </div>
+                            <VoiceMeter v-if="!voiceLockedForReader" size="md" @topup="goToTopUps" />
                             <p v-if="renewsOn" class="mt-3 text-xs text-gray-400">
                                 {{ t('subscription.voice-meter.resets', { date: renewsOn }) }}
                             </p>
@@ -275,7 +286,7 @@ import PageHeader from '~/components/common/PageHeader.vue';
 import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
 import VoiceMeter from '~/components/VoiceMeter.vue';
-import TextChatCounter from '~/components/TextChatCounter.vue';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
 import StarterUsageCard from '~/components/StarterUsageCard.vue';
 
 import { ref, computed } from 'vue';
@@ -319,6 +330,36 @@ const activePlanId = computed<TierId | undefined>(() => activeSubscriptionData.v
 const isTrialing = computed(() => activeSubscriptionData.value?.status === 'trialing');
 const isCanceling = computed(() => !!activeSubscriptionData.value?.cancel_at_period_end);
 const activePlanName = computed(() => activeSubscriptionData.value?.label || t('subscription.title'));
+
+// Voice balance — Reader has no voice budget, so voice live sessions are a Learner+
+// feature; we merge them into one upsell row and hide the meter when it's empty.
+const { tier: voiceTier, used: voiceUsed, topUps: voiceTopUps } = useVoiceBalance();
+
+// A Reader who has never used voice and bought no top-ups has no voice budget at all —
+// "Live sessions: Unlimited" + "Voice: 0 min" would be misleading. In that case we
+// collapse both into a single "Live session → Upgrade to Learner" upsell and hide the
+// (all-zero) VoiceMeter. A topped-up Reader (or Learner / Coach) sees the real rows.
+const voiceLockedForReader = computed(() => voiceTier.value === 'reader' && voiceUsed.value === 0 && voiceTopUps.value.length === 0);
+
+// What the active (paid) plan includes this month: saved phrases, text chats, and
+// live sessions. A null cap on the entitlement snapshot means unlimited; otherwise
+// show used / limit (e.g. Reader's 60 text chats).
+const planRows = computed(() => {
+    const sub = activeSubscriptionData.value as any;
+    const ent = sub?.entitlements || {};
+    const unlimited = t('subscription.this-month.unlimited');
+    const cap = (limit: number | null | undefined, used: number | undefined) => (limit == null ? unlimited : `${used ?? 0} / ${limit}`);
+    const rows: Array<{ label: string; value: string; upsell?: boolean }> = [
+        { label: t('subscription.starter-usage.saved-phrases'), value: cap(ent.saveWordsCap, sub?.allowed_save_words_used) },
+        { label: t('subscription.starter-usage.text-chats'), value: cap(ent.textChatCap, sub?.allowed_text_chats_used) },
+    ];
+    if (voiceLockedForReader.value) {
+        rows.push({ label: t('subscription.this-month.live-session'), value: t('subscription.this-month.upgrade-learner'), upsell: true });
+    } else {
+        rows.push({ label: t('subscription.starter-usage.live-sessions'), value: cap(ent.liveSessionsCap, sub?.allowed_lived_sessions_used) });
+    }
+    return rows;
+});
 
 // "Resets on 12 June." — the active period's end (Council 004 Surface 2).
 const renewsOn = computed(() => {

@@ -297,6 +297,9 @@
         },
         "this-month": {
             "header": "This month",
+            "unlimited": "Unlimited",
+            "live-session": "Live session",
+            "upgrade-learner": "Upgrade to Learner",
             "ai-usage": "AI translations & explanations: {n} used"
         },
         "starter-usage": {
