@@ -221,6 +221,13 @@
                                 <Button v-else-if="activePlanId === plan.id" block color="primary"
                                     :label="t('subscription.manage-subscription')" @click="goToPortal" />
 
+                                <!-- On a DIFFERENT paid plan: deep-link to the portal's plan picker to
+                                     switch (Stripe handles proration). Starting a checkout here would
+                                     stack a second subscription — Council 004 has no in-app stacking. -->
+                                <Button v-else-if="!isFreemium" block outline color="primary"
+                                    :loading="isOpeningChangePlan"
+                                    :label="t('subscription.pricing.change-plan')" @click="goToChangePlan" />
+
                                 <!-- Trial CTA — shown for any tier with a free trial (days from Stripe) -->
                                 <template v-else-if="plan.trialDays > 0">
                                     <Button block color="primary" :loading="isLoading"
@@ -280,6 +287,7 @@ import { analytic } from '~/plugins/mixpanel';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 const { t } = useI18n();
+const route = useRoute();
 const config = useRuntimeConfig();
 const profileStore = useProfileStore();
 
@@ -390,6 +398,10 @@ async function fetchPlans() {
 async function probeLocalCurrency() {
     const pk = config.public.STRIPE_PUBLISHABLE_KEY as string | undefined;
     if (!pk) return;
+    // Paid users can't open a new checkout (the backend blocks stacking), so this
+    // probe — which works by creating a checkout session — would just fail for them.
+    // They change plans via the portal; the cards show the GBP base price.
+    if (!isFreemium.value) return;
     try {
         const cached = sessionStorage.getItem('subturtle.localPricing');
         if (cached) {
@@ -453,7 +465,22 @@ async function probeLocalCurrency() {
 onMounted(async () => {
     await fetchPlans();
     probeLocalCurrency();
+    // Returning from a portal plan change (?plan_changed=1): the
+    // customer.subscription.updated webhook is async, so refetch a few times to
+    // surface the new plan without a manual reload.
+    if (route.query.plan_changed) pollForPlanChange();
 });
+
+async function pollForPlanChange() {
+    for (let i = 0; i < 6; i++) {
+        try {
+            await profileStore.fetchSubscription();
+        } catch {
+            /* ignore */
+        }
+        if (i < 5) await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+}
 
 // Open the embedded Custom Checkout panel for a paid tier at the selected cadence.
 // The localized price (e.g. EUR) is shown in-panel via Stripe Adaptive Pricing —
@@ -486,6 +513,29 @@ async function onCheckoutSuccess() {
 function goToPortal() {
     const url = activeSubscriptionData.value?.portal_url;
     if (url) window.location.href = url;
+}
+
+// "Change plan": deep-link straight to the portal's plan picker (Stripe
+// flow_data.subscription_update) so the user lands on the tier selection rather
+// than the portal home. Falls back to the portal home if the deep link fails.
+const isOpeningChangePlan = ref(false);
+async function goToChangePlan() {
+    isOpeningChangePlan.value = true;
+    try {
+        const { url } = await functionProvider.run<{ url: string }>({
+            name: 'createPortalUpdateSession',
+            args: { userId: profileStore.authUser?.id },
+        });
+        if (url) {
+            window.location.href = url;
+            return;
+        }
+        goToPortal();
+    } catch {
+        goToPortal();
+    } finally {
+        isOpeningChangePlan.value = false;
+    }
 }
 
 // "Downgrade to Free" on the Starter card. Reuse the existing cancel flow: the

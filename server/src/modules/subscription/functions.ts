@@ -5,7 +5,11 @@ import {
 } from "@modular-rest/server";
 import { Types } from "mongoose";
 
-import { getSubscription, getOrCreateFreemiumAllocation } from "./service";
+import {
+  getSubscription,
+  getOrCreateFreemiumAllocation,
+  createSubscriptionUpdatePortalUrl,
+} from "./service";
 import { PublicTierPlan } from "./tiers";
 import { getSubscriptionPlansCached } from "./plans";
 import { PaymentAdapterFactory } from "../gateway/adapters";
@@ -119,9 +123,26 @@ const notifyFluentWaitlist = defineFunction({
   },
 });
 
+/**
+ * Deep-link the user to the Stripe portal's "Update your subscription" plan
+ * picker (Council 004 — change plan instead of stacking a second checkout).
+ */
+const createPortalUpdateSession = defineFunction({
+  name: "createPortalUpdateSession",
+  permissionTypes: ["user_access"],
+  callback: async (params: { userId?: string }) => {
+    const { userId } = params;
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    return { url: await createSubscriptionUpdatePortalUrl(userId) };
+  },
+});
+
 module.exports.functions = [
   getSubscriptionDetails,
   getSubscriptionPlans,
   getFreemiumAllowance,
   notifyFluentWaitlist,
+  createPortalUpdateSession,
 ];

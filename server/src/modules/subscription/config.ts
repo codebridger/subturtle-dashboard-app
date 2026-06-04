@@ -47,3 +47,11 @@ export const AI_CREDIT_EXHAUSTED_CODE = "AI_CREDIT_EXHAUSTED";
  * pulling in enforcement.ts and its server-only deps (mongoose, modular-rest).
  */
 export const TIER_LIMIT_REACHED_CODE = "TIER_LIMIT_REACHED";
+
+/**
+ * Stable code thrown when a user who already has an active paid subscription tries
+ * to start a NEW subscription checkout. Council 004 has no stacking — a second
+ * purchase would create a parallel Stripe subscription (double charge). The
+ * frontend routes such users to the billing portal to change plans instead.
+ */
+export const ALREADY_SUBSCRIBED_CODE = "ALREADY_SUBSCRIBED";

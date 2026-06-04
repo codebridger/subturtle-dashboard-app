@@ -27,6 +27,7 @@ import {
   updateSubscriptionStatusByProviderAndSubscriptionId,
   getVoiceBudget,
   assertVoiceMinutesAvailable,
+  assertNoActiveSubscription,
   voiceSessionMaxSeconds,
   debitVoiceMinutes,
   addVoiceMinutesPack,
@@ -76,6 +77,25 @@ describe("voiceSessionMaxSeconds (pure session-duration policy)", () => {
   it("bounds a paid session only by remaining (no per-session cap)", () => {
     expect(voiceSessionMaxSeconds({ remaining: 90, scope: "subscription" })).toBe(5400);
     expect(voiceSessionMaxSeconds({ remaining: 0, scope: "subscription" })).toBe(0);
+  });
+});
+
+describe("assertNoActiveSubscription (no plan stacking, H3)", () => {
+  let col: any;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    col = { findOne: jest.fn() };
+    (getCollection as any).mockReturnValue(col);
+  });
+
+  it("throws ALREADY_SUBSCRIBED when an active subscription exists", async () => {
+    col.findOne.mockResolvedValue({ _id: "sub_1", tier: "reader" });
+    await expect(assertNoActiveSubscription(USER)).rejects.toThrow(/ALREADY_SUBSCRIBED/);
+  });
+
+  it("resolves (no throw) when there is no active subscription", async () => {
+    col.findOne.mockResolvedValue(null);
+    await expect(assertNoActiveSubscription(USER)).resolves.toBeUndefined();
   });
 });
 
@@ -233,9 +253,10 @@ describe("updateSubscriptionStatusByProviderAndSubscriptionId — lock at purcha
     (getCollection as any).mockReturnValue(col);
   });
 
-  function current(grantedEndUnix: number) {
+  function current(grantedEndUnix: number, priceId = "price_1") {
     return {
       _id: "sub1",
+      price_id: priceId,
       start_date: new Date(1000 * 1000),
       end_date: new Date(2000 * 1000),
       granted_period_end: new Date(grantedEndUnix * 1000),
@@ -288,6 +309,33 @@ describe("updateSubscriptionStatusByProviderAndSubscriptionId — lock at purcha
     expect(set.granted_period_end).toBeUndefined();
     expect(set.status).toBe("active"); // status/flags still synced
     expect(set.cancel_at_period_end).toBe(true);
+  });
+
+  it("re-grants the new tier's budgets on a mid-period plan change (same period, changed price)", async () => {
+    // Upgrade Reader -> Learner via the portal: same billing period (no rollover),
+    // but a different price id, so the new tier's budgets must apply immediately.
+    col.findOne.mockResolvedValue(current(4000, "price_reader"));
+    await updateSubscriptionStatusByProviderAndSubscriptionId({
+      provider: PaymentProvider.STRIPE,
+      subscriptionId: "sub_1",
+      status: "active",
+      startDateUnixTimestamp: 2000,
+      endDateUnixTimestamp: 4000, // SAME period (not newer than granted 4000) ...
+      tier: "learner",
+      subscriptionType: "monthly",
+      priceId: "price_learner", // ... but a DIFFERENT price -> plan change
+      label: "Learner",
+      creditAmount: 300_000_000,
+      voiceMinutes: 90,
+      entitlements,
+    });
+    const set = col.updateOne.mock.calls[0][1].$set;
+    expect(set.tier).toBe("learner");
+    expect(set.total_credits).toBe(300_000_000); // new tier's budgets applied now
+    expect(set.voice_minutes_total).toBe(90);
+    expect(set.voice_minutes_used).toBe(0);
+    expect(set.entitlements).toEqual(entitlements);
+    expect(set["payment_meta_data.stripe.label"]).toBe("Learner"); // card name synced
   });
 });
 
