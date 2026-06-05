@@ -342,21 +342,22 @@ const { tier: voiceTier, used: voiceUsed, topUps: voiceTopUps } = useVoiceBalanc
 const voiceLockedForReader = computed(() => voiceTier.value === 'reader' && voiceUsed.value === 0 && voiceTopUps.value.length === 0);
 
 // What the active (paid) plan includes this month: saved phrases, text chats, and
-// live sessions. A null cap on the entitlement snapshot means unlimited; otherwise
-// show used / limit (e.g. Reader's 60 text chats).
+// live sessions. getSubscriptionDetails carries top-level allowed_* caps + their
+// *_used counters (the same fields the free StarterUsageCard reads); a null/absent
+// cap means unlimited (e.g. Reader's saved phrases, or a Learner's text chats),
+// otherwise show used / limit (e.g. Reader's "23 / 60" text chats).
 const planRows = computed(() => {
     const sub = activeSubscriptionData.value as any;
-    const ent = sub?.entitlements || {};
     const unlimited = t('subscription.this-month.unlimited');
     const cap = (limit: number | null | undefined, used: number | undefined) => (limit == null ? unlimited : `${used ?? 0} / ${limit}`);
     const rows: Array<{ label: string; value: string; upsell?: boolean }> = [
-        { label: t('subscription.starter-usage.saved-phrases'), value: cap(ent.saveWordsCap, sub?.allowed_save_words_used) },
-        { label: t('subscription.starter-usage.text-chats'), value: cap(ent.textChatCap, sub?.allowed_text_chats_used) },
+        { label: t('subscription.starter-usage.saved-phrases'), value: cap(sub?.allowed_save_words, sub?.allowed_save_words_used) },
+        { label: t('subscription.starter-usage.text-chats'), value: cap(sub?.allowed_text_chats, sub?.allowed_text_chats_used) },
     ];
     if (voiceLockedForReader.value) {
         rows.push({ label: t('subscription.this-month.live-session'), value: t('subscription.this-month.upgrade-learner'), upsell: true });
     } else {
-        rows.push({ label: t('subscription.starter-usage.live-sessions'), value: cap(ent.liveSessionsCap, sub?.allowed_lived_sessions_used) });
+        rows.push({ label: t('subscription.starter-usage.live-sessions'), value: cap(sub?.allowed_lived_sessions, sub?.allowed_lived_sessions_used) });
     }
     return rows;
 });
