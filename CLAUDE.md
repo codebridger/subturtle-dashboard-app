@@ -147,6 +147,48 @@ Don't dress a real feature as `refactor`/`chore` (it would skip a release) or in
 - **Yarn only** — both workspaces ship `yarn.lock`. Mixing `npm install` will desync the lockfile.
 - **pilotui `<Button :to="url">` renders a disabled-looking link** — in link mode it emits `<a disabled="false">`, and the `.btn[disabled]` rule fades it (`opacity: 0.6`, `cursor: not-allowed`). For button-styled links, use `@click` with programmatic navigation instead of `:to`.
 
+## Verifying changes in the browser
+
+The UI only logs in via **Google OAuth**, which an automated agent can't drive. To validate a change in a real browser, mint a JWT over the API and inject it into the SPA's `localStorage["token"]` — the `auth` middleware ([frontend/middleware/auth.ts](frontend/middleware/auth.ts)) then validates it via `POST /verify/token` exactly as it would a Google-issued token, so the app is fully "logged in" with **no frontend changes**.
+
+### Driving the browser
+
+A Playwright MCP is committed in [.mcp.json](.mcp.json) (`@playwright/mcp`, headless) — the web-app analog of the extension repo's `chrome-extension-tester-mcp`. It loads at Claude Code startup and exposes `browser_navigate`, `browser_evaluate` (the localStorage injection), `browser_snapshot`, `browser_take_screenshot`, `browser_console_messages`, `browser_network_requests`. (The IDE's built-in preview tools are Playwright-backed too and drive the same loop for quick local checks.)
+
+### Two no-OAuth users
+
+> **Validate with the standard-user token by default.** Reach for the admin token *only* when you're intentionally exercising admin/elevated behavior — the admin is a privileged `administrator` account, not a representative user, so its freemium/tier behavior isn't guaranteed to match a real user's (it may be treated specially now or in the future).
+
+| User | How | Use for |
+| --- | --- | --- |
+| **Standard** *(default)* | `cd server && node scripts/create-standard-user.mjs` — runs the register→login flow (dev code `123456`), prints `{ email, password, token, userId }`. | Normal development — the real freemium experience |
+| **Admin** *(only when intended)* | Auto-provisioned on server boot from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `server/.env` (the framework's `createRest({ adminUser })`, loginable as `type:'user'`); fetch its token with `node scripts/agent-token.mjs`. | Admin/elevated flows you specifically want to test |
+
+### The loop
+
+```bash
+# 1. Server on node 18 (node 22 breaks the Mongoose 5 handshake); frontend on node 22.
+cd server && yarn build && nvm exec 18 node dist/index.js   # :8080  (auto-provisions the admin)
+cd frontend && yarn dev                                      # :3000
+
+# 2. Mint a token. DEFAULT: a standard (freemium) user — test with this token
+#    unless you specifically need admin behavior.
+cd server && node scripts/create-standard-user.mjs   # -> { email, password, token, userId }
+#    Admin token (only when admin/elevated behavior is intentionally under test):
+cd server && node scripts/agent-token.mjs            # -> raw admin JWT on stdout
+cd server && node scripts/agent-token.mjs --inject   # -> localStorage.setItem('token', '<jwt>')
+```
+
+```
+# 3. In the Playwright MCP (or the preview tools):
+browser_navigate  http://localhost:3000                     # redirects to /auth/login (no token yet)
+browser_evaluate  localStorage.setItem('token', '<jwt>')    # localStorage is per-origin — navigate FIRST
+browser_navigate  http://localhost:3000                     # reload -> middleware validates -> dashboard
+browser_take_screenshot
+```
+
+`agent-token.mjs` defaults to the admin creds and tries a plaintext password first, falling back to base64 (an older server build wanted it pre-encoded). For deeper API-level subscription/freemium flows, see [agent-tests/](agent-tests/) — its [_helpers.md](agent-tests/subscription/_helpers.md) P1 is the same register recipe these scripts encode.
+
 ## Testing
 
 - **Frontend unit/component**: Vitest + `@testing-library/vue` ([frontend/vitest.config.ts](frontend/vitest.config.ts), tests under [frontend/tests/unit/](frontend/tests/unit/)).
