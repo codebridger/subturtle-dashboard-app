@@ -170,7 +170,7 @@ import { useLeitnerStore } from '@/stores/leitner';
 import StartLiveSessionFormModal from '~/components/bundle/StartLiveSessionFormModal.vue';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
-import { pickPhraseIds } from '~/utils/livePractice';
+import { pickPhraseIds, encodeSessionRequest } from '~/utils/livePractice';
 import { useProfileStore } from '~/stores/profile';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
@@ -256,7 +256,7 @@ function handleStartLiveSession(sessionData: LivePracticeSessionSetupType & { mo
         returnTo: `/bundles/${id.value}`,
     };
 
-    const session = btoa(JSON.stringify(request));
+    const session = encodeSessionRequest(request);
     router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
 }
 

@@ -51,7 +51,7 @@
 import { Button, Card } from 'pilotui/elements';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
-import { pickPhraseIds } from '~/utils/livePractice';
+import { pickPhraseIds, encodeSessionRequest } from '~/utils/livePractice';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
 import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
@@ -161,7 +161,7 @@ function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
         source: { phraseIds: pickPhraseIds(bundle?.phrases ?? [], sessionData) },
         returnTo: '/sessions/new',
     };
-    const session = btoa(JSON.stringify(request));
+    const session = encodeSessionRequest(request);
     router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
 }
 

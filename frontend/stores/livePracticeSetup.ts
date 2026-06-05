@@ -15,11 +15,12 @@ import { defineStore } from 'pinia';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseType } from '~/types/database.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
+import { decodeSessionRequest } from '~/utils/livePractice';
 
 function parseSessionRequest(raw?: string): LiveSessionRequest | null {
     if (!raw) return null;
     try {
-        return JSON.parse(atob(raw)) as LiveSessionRequest;
+        return decodeSessionRequest(raw);
     } catch {
         return null;
     }

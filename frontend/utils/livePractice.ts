@@ -9,6 +9,26 @@ import type { LiveSessionRequest } from '~/types/live-session-request';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
 
 /**
+ * Serialize a LiveSessionRequest to/from the base64 `?session=` payload. btoa()
+ * only handles Latin-1, but a bundle title can be non-ASCII (Persian / Arabic /
+ * CJK in a language-learning app) and would throw InvalidCharacterError, so we
+ * UTF-8 encode the bytes first. encode/decode MUST stay mirror images; shared so
+ * the bundle page, the Start-New page, and the dispatcher store never drift.
+ */
+export function encodeSessionRequest(request: LiveSessionRequest): string {
+    const bytes = new TextEncoder().encode(JSON.stringify(request));
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+}
+
+export function decodeSessionRequest(raw: string): LiveSessionRequest {
+    const binary = atob(raw);
+    const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes)) as LiveSessionRequest;
+}
+
+/**
  * The AI tutor system prompt. `[nativeLanguage]` and `[phrases]` are filled in
  * by `buildInstructions`. Transport-agnostic on purpose — never mention the
  * microphone or typing here; that belongs in the per-page opening nudge.
