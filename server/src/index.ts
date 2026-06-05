@@ -119,6 +119,16 @@ const app = createRest({
   });
 
   ScheduleService.init();
+
+  // Log whether the Stripe catalog + portal config are in place, so you can tell
+  // from the server logs whether `yarn setup:stripe` still needs to be run.
+  // Fire-and-forget; verifyStripeSetup never throws (the catch is belt-and-braces).
+  const {
+    verifyStripeSetup,
+  } = require("./modules/subscription/stripe-setup-check");
+  verifyStripeSetup().catch((err: any) =>
+    console.warn("[stripe-setup] check failed:", err?.message || err)
+  );
 }).catch((err) => {
   console.error(err);
   process.exit(1);

@@ -1,8 +1,11 @@
 /**
  * Idempotent Stripe pricing setup — Council 004 ladder (GBP base + Adaptive Pricing).
  *
- * Run:  yarn setup:stripe        (uses STRIPE_SECRET_KEY from server/.env)
- * Re-run safely — products/prices are matched by metadata and reused.
+ * Run:  yarn setup:stripe                 (uses STRIPE_SECRET_KEY from server/.env)
+ *       yarn setup:stripe --dry-run       (preview every create/update/archive; writes nothing)
+ *       yarn setup:stripe --confirm-live  (required to mutate a LIVE / sk_live account)
+ * Re-run safely — products / prices / portal config are matched by metadata and
+ * reused; a legacy product is archived only when it has NO active subscriptions.
  *
  * SOURCE OF TRUTH: ADR-004 makes Stripe product metadata the source of truth for
  * tier entitlements. This script WRITES that metadata (the S1 schema) onto each
@@ -25,7 +28,13 @@
  *      Dashboard setting — see MANUAL STEPS); we settle in GBP. No per-currency
  *      prices.
  *   4. Creates/reuses the two one-shot GBP voice top-up packs (30 min, 120 min).
- *   5. Prints the resulting product + price ids for verification.
+ *   5. Creates/reuses the Customer Portal configuration behind the "Change plan"
+ *      flow — pinning the plan-switch ladder to the SAME tier products + GBP
+ *      prices above (plus cancel / payment-method / invoice / customer features),
+ *      so the portal can't offer a plan the catalog lacks and the flow no longer
+ *      depends on the Dashboard default. The backend resolves it live by a
+ *      `managed_by` metadata marker.
+ *   6. Prints the resulting product + price (+ portal config) ids for verification.
  *
  * The backend resolves price ids LIVE from product metadata (checkout + the
  * plans endpoint look the product up by tier_id and read its active GBP price),
@@ -43,6 +52,10 @@
  *   • RESTRICT who can edit product metadata. Under ADR-004 a metadata edit now
  *     GRANTS MONEY (credits / voice minutes) with no code review. Treat Stripe
  *     edit access as production access and review metadata changes like a deploy.
+ *   • Customer Portal legal links: step 5 enables the portal's plan-switch
+ *     feature, but Stripe still needs a privacy-policy + terms URL. If your
+ *     account has no default Branding URLs, set STRIPE_PORTAL_PRIVACY_URL and
+ *     STRIPE_PORTAL_TOS_URL in server/.env; otherwise the account defaults apply.
  *
  * Stripe prices are immutable: if a price with matching metadata exists but its
  * amount/interval differs, a fresh price is created and the stale one archived.
@@ -57,6 +70,12 @@ import {
 import { parseTierDisplay } from "../src/modules/subscription/display";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+
+// CLI flags (forwarded by `yarn setup:stripe <flags>`):
+//   --dry-run       read-only preview; writes nothing to Stripe.
+//   --confirm-live  required guard before mutating a LIVE (sk_live) account.
+const DRY_RUN = process.argv.includes("--dry-run");
+const CONFIRM_LIVE = process.argv.includes("--confirm-live");
 
 type Cadence = "monthly" | "annual";
 const CADENCES: Cadence[] = ["monthly", "annual"];
@@ -206,6 +225,9 @@ const PACK_SPECS: PackSpec[] = [
 
 const KNOWN_TIER_IDS = TIER_SPECS.map((t) => t.tierId);
 const KNOWN_PACK_KEYS = PACK_SPECS.map((p) => p.key);
+// Marker stamped on the Customer Portal configuration so this script can find &
+// reuse it (idempotent) and the backend can resolve it live without pasted ids.
+const PORTAL_CONFIG_MARKER = "setup-stripe-pricing";
 
 /** Build + self-validate a tier product's entitlement + display metadata. */
 function tierMetadata(spec: TierSpec): Stripe.MetadataParam {
@@ -275,6 +297,31 @@ async function listAll<T extends { id: string }>(
   return out;
 }
 
+// Live subscription statuses — a product with a subscription in any of these
+// still has paying (or trialing) customers, so it must not be archived.
+const LIVE_SUB_STATUSES = ["active", "trialing", "past_due", "unpaid"];
+
+/**
+ * True if any active/trialing/past_due/unpaid subscription references a price of
+ * this product. Used to avoid "parking" a product customers are still on —
+ * archiving wouldn't cancel their subs, but it blocks new checkouts and we'd
+ * rather retire such products deliberately, not as a side effect of this script.
+ */
+async function hasActiveSubscriptions(productId: string): Promise<boolean> {
+  const prices = await listAll<Stripe.Price>((p) => stripe.prices.list(p), {
+    product: productId,
+  });
+  for (const price of prices) {
+    const subs = await stripe.subscriptions.list({
+      price: price.id,
+      status: "all",
+      limit: 100,
+    });
+    if (subs.data.some((s) => LIVE_SUB_STATUSES.includes(s.status))) return true;
+  }
+  return false;
+}
+
 async function archiveLegacyProducts(): Promise<void> {
   const products = await listAll<Stripe.Product>(
     (p) => stripe.products.list(p),
@@ -288,6 +335,17 @@ async function archiveLegacyProducts(): Promise<void> {
       !!md.pack_key &&
       KNOWN_PACK_KEYS.includes(md.pack_key);
     if (isCurrentTier || isCurrentPack) continue;
+
+    // Never PARK a product customers are still subscribed to: archiving blocks
+    // NEW checkouts (existing subs keep billing), but we'd rather leave it active
+    // and let an operator retire it deliberately once subscribers have moved off.
+    if (await hasActiveSubscriptions(product.id)) {
+      console.warn(
+        `  skip archive ${product.id} ("${product.name}") — has active subscriptions`
+      );
+      continue;
+    }
+
     console.log(`  archiving legacy product ${product.id} ("${product.name}")`);
     // Archiving the product retires it — its prices become unusable for new
     // checkouts. We deliberately do NOT archive prices individually: Stripe
@@ -419,6 +477,177 @@ async function upsertPackPrice(
   return created.id;
 }
 
+/**
+ * Create/reuse the Customer Portal configuration that powers the "Change plan"
+ * flow (service.createSubscriptionUpdatePortalUrl). It pins the plan-switch
+ * ladder to the SAME tier products + GBP prices this script just built — so the
+ * portal can never offer a tier/price the catalog doesn't have — and turns on the
+ * cancel / payment-method / invoice / customer-update features. Idempotent:
+ * matched and reused by the `managed_by` metadata marker. The backend resolves
+ * this config LIVE by the same marker (no id pasted into code), mirroring how it
+ * resolves prices.
+ *
+ * Stripe needs a privacy-policy + terms URL for the portal; it uses the account's
+ * default Branding URLs unless STRIPE_PORTAL_PRIVACY_URL / STRIPE_PORTAL_TOS_URL
+ * are set, in which case we send those explicitly.
+ */
+async function upsertPortalConfiguration(
+  tierResult: Record<
+    string,
+    { productId: string; prices: Record<Cadence, string> }
+  >
+): Promise<string> {
+  // The ladder customers can switch between in the portal: each tier product with
+  // its monthly + annual GBP prices (Stripe caps this at 10 products).
+  const products = TIER_SPECS.map((spec) => ({
+    product: tierResult[spec.tierId].productId,
+    prices: [
+      tierResult[spec.tierId].prices.monthly,
+      tierResult[spec.tierId].prices.annual,
+    ],
+  }));
+
+  const params: Stripe.BillingPortal.ConfigurationCreateParams = {
+    metadata: { managed_by: PORTAL_CONFIG_MARKER },
+    features: {
+      subscription_update: {
+        enabled: true,
+        default_allowed_updates: ["price"],
+        proration_behavior: "create_prorations",
+        products,
+      },
+      subscription_cancel: { enabled: true },
+      payment_method_update: { enabled: true },
+      invoice_history: { enabled: true },
+      customer_update: {
+        enabled: true,
+        allowed_updates: ["address", "email", "tax_id"],
+      },
+    },
+  };
+
+  // Legal URLs are required only when the account has no default Branding URLs.
+  const businessProfile: Stripe.BillingPortal.ConfigurationCreateParams.BusinessProfile =
+    {};
+  if (process.env.STRIPE_PORTAL_PRIVACY_URL)
+    businessProfile.privacy_policy_url = process.env.STRIPE_PORTAL_PRIVACY_URL;
+  if (process.env.STRIPE_PORTAL_TOS_URL)
+    businessProfile.terms_of_service_url = process.env.STRIPE_PORTAL_TOS_URL;
+  if (Object.keys(businessProfile).length)
+    params.business_profile = businessProfile;
+
+  const existing = await listAll<Stripe.BillingPortal.Configuration>((p) =>
+    stripe.billingPortal.configurations.list(p)
+  );
+  const match = existing.find(
+    (c) => c.metadata?.managed_by === PORTAL_CONFIG_MARKER
+  );
+  if (match) {
+    const updated = await stripe.billingPortal.configurations.update(
+      match.id,
+      params as Stripe.BillingPortal.ConfigurationUpdateParams
+    );
+    console.log(`  reused portal configuration ${updated.id}`);
+    return updated.id;
+  }
+  const created = await stripe.billingPortal.configurations.create(params);
+  console.log(`  created portal configuration ${created.id}`);
+  return created.id;
+}
+
+/**
+ * Read-only preview (--dry-run): reports the create / reuse / archive each step
+ * WOULD take, writing nothing. Lets you eyeball duplicates and — most importantly
+ * — exactly which legacy products would be archived (and which are skipped because
+ * they still have active subscriptions) before touching Stripe.
+ */
+async function printPlan(): Promise<void> {
+  const allProducts = await listAll<Stripe.Product>((p) =>
+    stripe.products.list(p)
+  );
+
+  console.log("Tier products + prices:");
+  for (const spec of TIER_SPECS) {
+    const match = allProducts.find((p) => p.metadata?.tier_id === spec.tierId);
+    console.log(
+      `  ${match ? "reuse " : "CREATE"} product ${spec.name}${
+        match ? ` (${match.id})` : ""
+      }`
+    );
+    if (match) {
+      const prices = await listAll<Stripe.Price>((p) => stripe.prices.list(p), {
+        product: match.id,
+      });
+      for (const cadence of CADENCES) {
+        const interval = CADENCE_TO_INTERVAL[cadence];
+        const exact = prices.find(
+          (pr) =>
+            pr.active &&
+            pr.currency === CURRENCY &&
+            pr.unit_amount === spec.prices[cadence] &&
+            pr.recurring?.interval === interval &&
+            pr.metadata?.cadence === cadence
+        );
+        console.log(
+          `      ${exact ? "reuse " : "CREATE"} ${cadence} GBP price${
+            exact ? ` (${exact.id})` : ""
+          }`
+        );
+      }
+    } else {
+      console.log("      CREATE monthly + annual GBP prices");
+    }
+  }
+
+  console.log("\nVoice top-up packs:");
+  for (const spec of PACK_SPECS) {
+    const match = allProducts.find(
+      (p) =>
+        p.metadata?.kind === "voice_topup" && p.metadata?.pack_key === spec.key
+    );
+    console.log(
+      `  ${match ? "reuse " : "CREATE"} ${spec.name}${
+        match ? ` (${match.id})` : ""
+      }`
+    );
+  }
+
+  console.log("\nLegacy archive:");
+  let archiveCount = 0;
+  for (const product of allProducts) {
+    if (!product.active) continue;
+    const md = product.metadata || {};
+    const isCurrentTier = !!md.tier_id && KNOWN_TIER_IDS.includes(md.tier_id);
+    const isCurrentPack =
+      md.kind === "voice_topup" &&
+      !!md.pack_key &&
+      KNOWN_PACK_KEYS.includes(md.pack_key);
+    if (isCurrentTier || isCurrentPack) continue;
+    archiveCount++;
+    if (await hasActiveSubscriptions(product.id)) {
+      console.log(
+        `  SKIP    ${product.id} ("${product.name}") — has active subscriptions`
+      );
+    } else {
+      console.log(`  ARCHIVE ${product.id} ("${product.name}")`);
+    }
+  }
+  if (archiveCount === 0) console.log("  (nothing to archive)");
+
+  console.log("\nCustomer portal:");
+  const configs = await listAll<Stripe.BillingPortal.Configuration>((p) =>
+    stripe.billingPortal.configurations.list(p)
+  );
+  const portalMatch = configs.find(
+    (c) => c.metadata?.managed_by === PORTAL_CONFIG_MARKER
+  );
+  console.log(
+    `  ${portalMatch ? "reuse " : "CREATE"} portal configuration${
+      portalMatch ? ` (${portalMatch.id})` : ""
+    }`
+  );
+}
+
 async function main(): Promise<void> {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("STRIPE_SECRET_KEY is not set in server/.env");
@@ -426,7 +655,26 @@ async function main(): Promise<void> {
   const mode = process.env.STRIPE_SECRET_KEY.startsWith("sk_live")
     ? "LIVE"
     : "TEST";
-  console.log(`Stripe pricing setup (Council 004, GBP base) - ${mode} mode\n`);
+
+  // Don't let a stray `yarn setup:stripe` mutate PRODUCTION. LIVE writes require
+  // an explicit --confirm-live; --dry-run is always safe (it writes nothing).
+  if (mode === "LIVE" && !DRY_RUN && !CONFIRM_LIVE) {
+    throw new Error(
+      "Refusing to modify LIVE Stripe data. Re-run with --dry-run to preview, or --confirm-live to proceed."
+    );
+  }
+
+  console.log(
+    `Stripe pricing setup (Council 004, GBP base) - ${mode} mode${
+      DRY_RUN ? " [DRY RUN]" : ""
+    }\n`
+  );
+
+  if (DRY_RUN) {
+    await printPlan();
+    console.log("\nDry run complete — no changes written.");
+    return;
+  }
 
   console.log("Archiving legacy products...");
   await archiveLegacyProducts();
@@ -453,6 +701,22 @@ async function main(): Promise<void> {
     packResult[spec.key] = { productId: product.id, priceId };
   }
 
+  console.log(`\nCustomer portal:`);
+  let portalConfigId = "";
+  try {
+    portalConfigId = await upsertPortalConfiguration(tierResult);
+  } catch (err: any) {
+    // Non-fatal — the catalog above is already in place. The backend falls back to
+    // the account's default portal configuration when ours is absent, so "Change
+    // plan" still opens; it just isn't pinned to this ladder until this succeeds.
+    console.warn(
+      `  WARNING: could not set portal configuration: ${err?.message || err}`
+    );
+    console.warn(
+      `  If this is a legal-URL error, set STRIPE_PORTAL_PRIVACY_URL + STRIPE_PORTAL_TOS_URL (or Dashboard Branding URLs) and re-run.`
+    );
+  }
+
   console.log(
     "\n\n=== Council 004 Stripe ids (verification only — backend resolves these live from metadata) ===\n"
   );
@@ -466,10 +730,34 @@ async function main(): Promise<void> {
     const r = packResult[key];
     console.log(`${key}:  product ${r.productId}  price ${r.priceId}`);
   }
+  if (portalConfigId) {
+    console.log(`portal configuration: ${portalConfigId}`);
+  }
 
+  // Everything above is provisioned via the API. These three are account-level
+  // settings the API can't (or shouldn't) flip for you — surface them in the run
+  // report so they're never silently forgotten.
+  console.log("\n\n=== Manual steps (NOT done by this script) ===\n");
   console.log(
-    "\nReminder: enable Adaptive Pricing in the Stripe Dashboard and restrict who can edit product metadata (it now grants money)."
+    "  1. Adaptive Pricing — Dashboard -> Settings -> Payments -> Adaptive Pricing -> On.\n" +
+      "     Lets non-GBP customers see local currency at checkout while we settle in GBP."
   );
+  console.log(
+    "  2. Restrict who can edit product metadata — under ADR-004 a metadata edit GRANTS\n" +
+      "     MONEY (credits / voice minutes). Treat Stripe edit access as production access."
+  );
+  if (portalConfigId) {
+    console.log(
+      "  3. Customer Portal — plan-switching configured automatically (id above). Revisit\n" +
+        "     only to change branding or the privacy / terms URLs."
+    );
+  } else {
+    console.log(
+      "  3. Customer Portal — NOT configured (step 5 failed above). Set STRIPE_PORTAL_PRIVACY_URL\n" +
+        "     + STRIPE_PORTAL_TOS_URL in server/.env and re-run, or enable subscription updates by\n" +
+        "     hand under Dashboard -> Settings -> Billing -> Customer portal."
+    );
+  }
 }
 
 main()

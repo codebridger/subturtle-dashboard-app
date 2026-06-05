@@ -33,6 +33,7 @@ import { EntitlementLimitError } from "./enforcement";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
+import { getManagedPortalConfigId } from "./stripe-setup-check";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -1164,10 +1165,12 @@ export async function getSubscription(userId: string) {
         subscription_id
       );
 
+      const configuration = getManagedPortalConfigId();
       const portalSession =
         await stripeAdapter.stripe.billingPortal.sessions.create({
           customer: subscriptionDetails.customer.toString(),
           return_url: `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`,
+          ...(configuration ? { configuration } : {}),
         });
 
       jsonSubscription["status"] = subscriptionDetails.status;
@@ -1199,9 +1202,11 @@ export async function getSubscription(userId: string) {
  * Create a Stripe Customer Portal session DEEP-LINKED to the "Update your
  * subscription" plan picker (`flow_data.subscription_update`), so a "Change plan"
  * click lands the user straight on the tier selection instead of the portal home.
- * Requires the portal's subscription-update feature to be enabled (Stripe
- * Dashboard). Created lazily on click, so getSubscription doesn't issue a second
- * portal session on every fetch. Throws if the user has no active Stripe sub.
+ * Uses the portal configuration provisioned by scripts/setup-stripe-pricing.ts
+ * (subscription-update enabled, plan ladder pinned); falls back to the account
+ * default if that config is absent. Created lazily on click, so getSubscription
+ * doesn't issue a second portal session on every fetch. Throws if the user has no
+ * active Stripe sub.
  */
 export async function createSubscriptionUpdatePortalUrl(
   userId: string
@@ -1229,10 +1234,12 @@ export async function createSubscriptionUpdatePortalUrl(
   const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
   const details = await stripeAdapter.getSubscriptionDetails(subscription_id);
   const returnUrl = `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`;
+  const configuration = getManagedPortalConfigId();
 
   const session = await stripeAdapter.stripe.billingPortal.sessions.create({
     customer: details.customer.toString(),
     return_url: returnUrl,
+    ...(configuration ? { configuration } : {}),
     flow_data: {
       type: "subscription_update",
       subscription_update: { subscription: subscription_id },
