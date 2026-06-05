@@ -213,6 +213,7 @@
             "trial-cta": "Start {days}-day free trial",
             "trial-subline": "Try free for {days} days. Cancel any time.",
             "choose-plan": "Choose {name}",
+            "change-plan": "Change plan",
             "continue-free": "Continue with Free",
             "loading": "Loading plans…",
             "error": "Plans are temporarily unavailable due to a payment system issue. Please check back soon.",
@@ -296,6 +297,9 @@
         },
         "this-month": {
             "header": "This month",
+            "unlimited": "Unlimited",
+            "live-session": "Live session",
+            "upgrade-learner": "Upgrade to Learner",
             "ai-usage": "AI translations & explanations: {n} used"
         },
         "starter-usage": {

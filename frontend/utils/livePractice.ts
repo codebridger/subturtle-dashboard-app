@@ -6,6 +6,27 @@
  */
 import type { PhraseType } from '~/types/database.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
+import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+
+/**
+ * Serialize a LiveSessionRequest to/from the base64 `?session=` payload. btoa()
+ * only handles Latin-1, but a bundle title can be non-ASCII (Persian / Arabic /
+ * CJK in a language-learning app) and would throw InvalidCharacterError, so we
+ * UTF-8 encode the bytes first. encode/decode MUST stay mirror images; shared so
+ * the bundle page, the Start-New page, and the dispatcher store never drift.
+ */
+export function encodeSessionRequest(request: LiveSessionRequest): string {
+    const bytes = new TextEncoder().encode(JSON.stringify(request));
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+}
+
+export function decodeSessionRequest(raw: string): LiveSessionRequest {
+    const binary = atob(raw);
+    const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes)) as LiveSessionRequest;
+}
 
 /**
  * The AI tutor system prompt. `[nativeLanguage]` and `[phrases]` are filled in
@@ -182,4 +203,34 @@ export function buildPracticeTools(cb: PracticeToolCallbacks) {
             },
         },
     };
+}
+
+/**
+ * Resolve a live-session form selection (a contiguous range or a random sample)
+ * into a concrete, ordered list of phrase ids, given the bundle's phrase ids in
+ * display order. Resolving at the entry point keeps the session pages simple
+ * (they just fetch ids) and makes a random pick stable across a refresh. Shared
+ * by the bundle detail page and the standalone "Start New Session" page so the
+ * two never drift.
+ */
+export function pickPhraseIds(orderedPhraseIds: string[], sel: LivePracticeSessionSetupType): string[] {
+    const all = orderedPhraseIds ?? [];
+    const picked: string[] = [];
+
+    if (sel.selectionMode === 'random') {
+        const total = sel.totalPhrases ?? 1;
+        while (picked.length < total && picked.length < all.length) {
+            const candidate = all[Math.floor(Math.random() * all.length)];
+            if (candidate && !picked.includes(candidate)) picked.push(candidate);
+        }
+    } else {
+        const from = sel.fromPhrase ?? 1;
+        const to = sel.toPhrase ?? 2;
+        for (let i = from - 1; i <= to - 1; i++) {
+            const candidate = all[i];
+            if (candidate && !picked.includes(candidate)) picked.push(candidate);
+        }
+    }
+
+    return picked;
 }

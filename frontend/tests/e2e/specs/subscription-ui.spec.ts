@@ -334,7 +334,7 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
         await expect(page.getByRole('button', { name: 'Upgrade plan' })).toBeVisible();
     });
 
-    test('Reader sees the text-chat counter in the "This month" section', async ({ page }) => {
+    test('Reader sees text-chat usage (used / limit) in the "This month" section', async ({ page }) => {
         await page.route('**/function/run', async (route) => {
             if (route.request().method() === 'OPTIONS') return preflight(route);
             const name = (route.request().postDataJSON() || {}).name as string;
@@ -346,7 +346,10 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
 
         await page.goto('/#/settings/subscription');
 
-        await expect(page.getByText('Text chat: 23 of 60 used this month', { exact: true })).toBeVisible();
+        // The active-plan "This month" card lists each entitlement as a label + used/limit
+        // row; Reader's finite text-chat cap renders as "23 / 60" (saved phrases stay Unlimited).
+        await expect(page.getByText('Text chats', { exact: true })).toBeVisible();
+        await expect(page.getByText('23 / 60', { exact: true })).toBeVisible();
     });
 
     test('Starter (free) user sees a usage card with the free-tier limits', async ({ page }) => {

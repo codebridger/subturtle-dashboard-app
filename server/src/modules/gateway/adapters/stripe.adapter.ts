@@ -571,6 +571,13 @@ export class StripeAdapter implements PaymentAdapter {
           const cadence: Cadence =
             item.price.recurring?.interval === "year" ? "annual" : "monthly";
 
+          // Keep the card label (Stripe product NAME) in sync so an upgrade shows
+          // the new tier's name, not the one captured at creation.
+          const tierLabel =
+            cachedTierName({ priceId }) ||
+            entitlements.tierId.charAt(0).toUpperCase() +
+              entitlements.tierId.slice(1);
+
           const { success, message } =
             await updateSubscriptionStatusByProviderAndSubscriptionId({
               provider: this.provider,
@@ -581,6 +588,7 @@ export class StripeAdapter implements PaymentAdapter {
               tier: entitlements.tierId,
               subscriptionType: cadence,
               priceId,
+              label: tierLabel,
               creditAmount: entitlements.creditsGranted,
               voiceMinutes: entitlements.voiceMinutesGranted,
               entitlements,

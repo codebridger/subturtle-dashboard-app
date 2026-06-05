@@ -7,6 +7,7 @@ import {
 import { CheckoutSessionRequest } from "./types";
 import { PaymentProvider, PaymentAdapterFactory } from "./adapters";
 import { TierId, Cadence } from "../subscription/tiers";
+import { assertNoActiveSubscription } from "../subscription/service";
 
 /**
  * Array of exported functions for the gateway module
@@ -39,6 +40,10 @@ const createPaymentSession = defineFunction({
     if (!userId) {
       throw new Error("User ID is required");
     }
+
+    // No stacking: a user with an active paid plan changes it via the billing
+    // portal, never a second checkout (which would create a parallel sub).
+    await assertNoActiveSubscription(userId);
 
     const request: CheckoutSessionRequest = {
       tierId,
@@ -80,6 +85,11 @@ const createCustomCheckoutSession = defineFunction({
     if (!userId) {
       throw new Error("User ID is required");
     }
+
+    // No stacking: a user with an active paid plan changes it via the billing
+    // portal, never a second checkout (which would create a parallel sub).
+    await assertNoActiveSubscription(userId);
+
     return await PaymentAdapterFactory.getStripeAdapter().createCustomCheckoutSession(
       { userId, tierId, cadence, successUrl }
     );

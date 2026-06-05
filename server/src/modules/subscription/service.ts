@@ -17,6 +17,7 @@ import {
   LOW_CREDITS_THRESHOLD,
   SOFT_CAP_PERCENT,
   FREE_VOICE_SESSION_MAX_MINUTES,
+  ALREADY_SUBSCRIBED_CODE,
 } from "./config";
 
 import {
@@ -32,6 +33,7 @@ import { EntitlementLimitError } from "./enforcement";
 import { CostCalculationInput, calculatorService } from "./calculator";
 import { PaymentAdapterFactory, PaymentProvider } from "../gateway/adapters";
 import Stripe from "stripe";
+import { getManagedPortalConfigId } from "./stripe-setup-check";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -322,6 +324,28 @@ export async function assertVoiceMinutesAvailable(userId: string): Promise<void>
   const { total, used, remaining } = await getVoiceBudget(userId);
   if (remaining <= 0) {
     throw new EntitlementLimitError("voice_minutes", total, used);
+  }
+}
+
+/** Guard a new subscription checkout: a user who already has an active paid plan
+ *  must change it via the billing portal (Stripe handles proration), never stack a
+ *  second subscription (which would double-charge). Throws ALREADY_SUBSCRIBED for
+ *  the gateway checkout entry points; the frontend never reaches it because active
+ *  subs are routed to the portal. Lean existence check (no populate/derivation). */
+export async function assertNoActiveSubscription(userId: string): Promise<void> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const existing = await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  });
+  if (existing) {
+    throw new Error(
+      `${ALREADY_SUBSCRIBED_CODE}: You already have an active plan. Change it from your subscription settings instead of starting a new checkout.`
+    );
   }
 }
 
@@ -815,6 +839,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
   tier?: TierId;
   subscriptionType?: Cadence;
   priceId?: string;
+  label?: string;
   creditAmount?: number;
   voiceMinutes?: number;
   entitlements?: Entitlements;
@@ -830,6 +855,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     tier,
     subscriptionType,
     priceId,
+    label,
     creditAmount,
     voiceMinutes,
     entitlements,
@@ -870,21 +896,30 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     : 0;
   const isNewPeriodGrant =
     !!endDateUnixTimestamp && endDateUnixTimestamp > lastGrantedEnd;
+  // A mid-period plan change (upgrade / downgrade via the billing portal) keeps the
+  // SAME billing period, so isNewPeriodGrant is false — but the NEW tier's budgets
+  // must take effect now, not at the next renewal. Detect it by a changed price id.
+  // Idempotent: a redelivered event sees the already-updated price_id and skips.
+  const isPlanChange = !!priceId && priceId !== currentSubscription.price_id;
 
   const update: any = { status };
   if (tier) update.tier = tier;
   if (subscriptionType) update.subscription_type = subscriptionType;
   if (priceId) update.price_id = priceId;
+  // Keep the card label (the Stripe product NAME) in sync on a plan change, so an
+  // upgrade doesn't keep displaying the old tier's name.
+  if (label) update["payment_meta_data.stripe.label"] = label;
   update.cancel_at_period_end = !!cancelAtPeriodEnd;
   update.trial_end = trialEndUnixTimestamp
     ? new Date(trialEndUnixTimestamp * 1000)
     : null;
 
-  if (isNewPeriodGrant) {
-    // Real period rollover (renewal, or trial -> first paid period): move the
-    // window, RE-READ the entitlement snapshot, and refill the monthly credit +
-    // voice budgets (no rollover). A mid-period metadata edit therefore reaches
-    // a customer only at their next renewal.
+  if (isNewPeriodGrant || isPlanChange) {
+    // Period rollover (renewal / trial -> first paid period) OR a plan change:
+    // move the window (unchanged on a mid-period switch) and RE-READ + apply the
+    // new tier's entitlement snapshot — credit, voice, and text-chat budgets — so
+    // an upgrade's benefits land immediately. A mid-period metadata edit to the
+    // SAME tier still reaches a customer only at their next renewal.
     update.start_date = new Date(startDateUnixTimestamp * 1000);
     update.end_date = new Date(endDateUnixTimestamp * 1000);
     update.granted_period_end = new Date(endDateUnixTimestamp * 1000);
@@ -1130,10 +1165,12 @@ export async function getSubscription(userId: string) {
         subscription_id
       );
 
+      const configuration = getManagedPortalConfigId();
       const portalSession =
         await stripeAdapter.stripe.billingPortal.sessions.create({
           customer: subscriptionDetails.customer.toString(),
           return_url: `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`,
+          ...(configuration ? { configuration } : {}),
         });
 
       jsonSubscription["status"] = subscriptionDetails.status;
@@ -1159,6 +1196,64 @@ export async function getSubscription(userId: string) {
   }
 
   return jsonSubscription;
+}
+
+/**
+ * Create a Stripe Customer Portal session DEEP-LINKED to the "Update your
+ * subscription" plan picker (`flow_data.subscription_update`), so a "Change plan"
+ * click lands the user straight on the tier selection instead of the portal home.
+ * Uses the portal configuration provisioned by scripts/setup-stripe-pricing.ts
+ * (subscription-update enabled, plan ladder pinned); falls back to the account
+ * default if that config is absent. Created lazily on click, so getSubscription
+ * doesn't issue a second portal session on every fetch. Throws if the user has no
+ * active Stripe sub.
+ */
+export async function createSubscriptionUpdatePortalUrl(
+  userId: string
+): Promise<string> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const activeSubscription = await subscriptionsCollection.findOne({
+    user_id: Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  });
+
+  const subscription_id =
+    activeSubscription?.payment_meta_data?.stripe?.subscription_id;
+  if (!subscription_id) {
+    throw new Error("No active Stripe subscription to update");
+  }
+
+  const stripeAdapter = PaymentAdapterFactory.getStripeAdapter();
+  const details = await stripeAdapter.getSubscriptionDetails(subscription_id);
+  const returnUrl = `${process.env.DASHBOARD_BASE_URL}/#/settings/subscription`;
+  const configuration = getManagedPortalConfigId();
+
+  const session = await stripeAdapter.stripe.billingPortal.sessions.create({
+    customer: details.customer.toString(),
+    return_url: returnUrl,
+    ...(configuration ? { configuration } : {}),
+    flow_data: {
+      type: "subscription_update",
+      subscription_update: { subscription: subscription_id },
+      // After confirming the change, return to the dashboard with a flag so the
+      // page polls for the new plan (the customer.subscription.updated webhook is
+      // async) instead of showing the stale tier.
+      after_completion: {
+        type: "redirect",
+        redirect: { return_url: `${returnUrl}?plan_changed=1` },
+      },
+    },
+  });
+
+  return session.url;
 }
 
 /**
