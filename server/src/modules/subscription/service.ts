@@ -884,6 +884,7 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
     return {
       success: false,
       message: "Subscription not found",
+      previousStatus: undefined as Subscription["status"] | undefined,
     };
   }
 
@@ -951,6 +952,11 @@ export async function updateSubscriptionStatusByProviderAndSubscriptionId(props:
   return {
     success: true,
     message: "Subscription updated successfully",
+    // The locally-stored status BEFORE this update is applied. The webhook
+    // layer uses it to fire a one-time `subscription_started` on the first
+    // non-active -> active delivery, and to stay idempotent on redelivery
+    // (a redelivered event sees the record already "active" and won't re-fire).
+    previousStatus: currentSubscription.status as Subscription["status"] | undefined,
   };
 }
 

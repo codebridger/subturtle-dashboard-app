@@ -484,7 +484,7 @@ export class StripeAdapter implements PaymentAdapter {
           //    marking the granted period. A trialing subscription still gets the
           //    full budget so the trial unlocks the tier. Idempotent on
           //    (subscription id, period).
-          await addNewSubscriptionWithCredit({
+          const grant = await addNewSubscriptionWithCredit({
             userId,
             creditAmount: entitlements.creditsGranted,
             voiceMinutes: entitlements.voiceMinutesGranted,
@@ -507,20 +507,25 @@ export class StripeAdapter implements PaymentAdapter {
             },
           });
 
-          // Server-truth lifecycle events: a subscription that starts as
+          // Server-truth lifecycle events — only on a genuinely NEW grant.
+          // A redelivered "created" webhook is idempotent in the DB
+          // (isNewSubscription:false); firing here unconditionally would
+          // double-count it in Mixpanel. A subscription that starts as
           // "trialing" is a trial start; one that starts "active" (no trial,
           // e.g. a returning customer) is a direct paid start.
-          if (subscription.status === "trialing") {
-            trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_STARTED, userId, {
-              cadence,
-              tier: entitlements.tierId,
-            });
-          } else if (subscription.status === "active") {
-            trackServerEvent(
-              SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
-              userId,
-              { cadence, tier: entitlements.tierId, via_trial: false }
-            );
+          if (grant.isNewSubscription) {
+            if (subscription.status === "trialing") {
+              trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_STARTED, userId, {
+                cadence,
+                tier: entitlements.tierId,
+              });
+            } else if (subscription.status === "active") {
+              trackServerEvent(
+                SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
+                userId,
+                { cadence, tier: entitlements.tierId, via_trial: false }
+              );
+            }
           }
 
           return {
@@ -540,12 +545,15 @@ export class StripeAdapter implements PaymentAdapter {
                 status: subscription.status,
               });
 
-            // Every cancel fires the server-truth event; `was_trialing`
-            // separates trial drop-offs from real paid churn.
+            // Fire the server-truth event only when the cancel actually
+            // applied to a subscription we hold (success). A delete webhook for
+            // a subscription not in our DB returns success:false — recording it
+            // would be a phantom cancellation. `was_trialing` separates trial
+            // drop-offs from real paid churn.
             const userId = await this.getUserIdForCustomer(
               subscription.customer as string
             );
-            if (userId) {
+            if (userId && success) {
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED,
                 userId,
@@ -569,7 +577,6 @@ export class StripeAdapter implements PaymentAdapter {
           const subscription = event.data.object as Stripe.Subscription;
           const item = subscription.items.data[0];
           const priceId = item.price.id;
-          const previousAttributes = (event.data as any).previous_attributes;
 
           // Read entitlements from the product metadata so a real period
           // rollover (renewal, or the trial->paid transition) refills the correct
@@ -593,7 +600,7 @@ export class StripeAdapter implements PaymentAdapter {
             entitlements.tierId.charAt(0).toUpperCase() +
               entitlements.tierId.slice(1);
 
-          const { success, message } =
+          const { success, message, previousStatus } =
             await updateSubscriptionStatusByProviderAndSubscriptionId({
               provider: this.provider,
               subscriptionId: subscription.id,
@@ -611,10 +618,17 @@ export class StripeAdapter implements PaymentAdapter {
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             });
 
-          // trial -> paid conversion: the subscription has truly started.
+          // A subscription "starts" the first time it becomes active from a
+          // non-active local state. Driving this off OUR stored prior status
+          // (not Stripe's previous_attributes) makes it idempotent — a
+          // redelivered webhook sees the record already "active" and won't
+          // re-fire — and it covers both start paths:
+          //   trialing   -> active : a trial converted to paid (via_trial: true)
+          //   incomplete -> active : an SCA/3DS paid start clearing (via_trial: false)
           if (
-            previousAttributes?.status === "trialing" &&
-            subscription.status === "active"
+            success &&
+            subscription.status === "active" &&
+            (previousStatus === "trialing" || previousStatus === "incomplete")
           ) {
             const userId = await this.getUserIdForCustomer(
               subscription.customer as string
@@ -623,7 +637,11 @@ export class StripeAdapter implements PaymentAdapter {
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
                 userId,
-                { cadence, tier: entitlements.tierId, via_trial: true }
+                {
+                  cadence,
+                  tier: entitlements.tierId,
+                  via_trial: previousStatus === "trialing",
+                }
               );
             }
           }
