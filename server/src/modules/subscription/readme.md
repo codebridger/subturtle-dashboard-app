@@ -15,7 +15,7 @@ that reads and validates that metadata:
   a real period rollover — a mid-period metadata edit reaches a customer at their next
   renewal. Grants are **idempotent** on (Stripe subscription id, `granted_period_end`),
   so a duplicate or out-of-order webhook cannot double-grant. Invalid metadata is a
-  fail-safe **refusal** (non-2xx so Stripe retries) plus an `entitlement-grant-refused`
+  fail-safe **refusal** (non-2xx so Stripe retries) plus an `entitlement-grant_refused`
   alert — never a guessed amount or a silent drop to free.
 - `getSubscriptionPlans` is built from the live Stripe products through a TTL cache with
   a last-known-good snapshot (real Stripe data). There is **no baked-in plan fallback**:

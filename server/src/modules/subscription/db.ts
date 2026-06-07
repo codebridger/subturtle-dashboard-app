@@ -352,7 +352,7 @@ const freeCreaditCollection = defineCollection({
         required: true,
         default: 0,
       },
-      // One-shot guard: set true after the `starter-ai-exhausted` analytics
+      // One-shot guard: set true after the `starter-ai_exhausted` analytics
       // event fires, so it fires at most once per 30-day allocation window.
       ai_exhausted_flagged: {
         type: Boolean,

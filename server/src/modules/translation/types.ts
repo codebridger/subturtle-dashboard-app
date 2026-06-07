@@ -15,6 +15,9 @@ export interface TranslateWithContextParams {
   sourceLanguage?: string;
   targetLanguage?: string;
   translationType?: "simple" | "detailed";
+  // Caller's user id — only used for the translation_requested analytics
+  // event. Anonymous sessions may omit it.
+  userId?: string;
 }
 
 export interface TranslationAdviceMessage {

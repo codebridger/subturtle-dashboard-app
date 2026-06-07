@@ -532,7 +532,11 @@ function initiateCheckout(tierId: TierId) {
     checkoutTier.value = tierId;
     checkoutPlanName.value = plan?.name || '';
     error.value = '';
-    analytic.track(ANALYTICS_EVENTS.TRIAL_STARTED, { cadence: cadence.value });
+    analytic.track(ANALYTICS_EVENTS.CHECKOUT_OPENED, {
+        tier: tierId,
+        cadence: cadence.value,
+        currency: localCurrency.value || 'GBP',
+    });
     showCheckout.value = true;
 }
 

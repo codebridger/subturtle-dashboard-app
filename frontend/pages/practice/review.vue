@@ -7,6 +7,8 @@
 import { useLeitnerStore } from '~/stores/leitner';
 import { storeToRefs } from 'pinia';
 import LeitnerReviewSession from '~/components/practice/LeitnerReviewSession.vue';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
     // @ts-ignore
@@ -22,6 +24,7 @@ const loading = ref(true);
 const items = computed(() => reviewSessionItems.value);
 
 onMounted(async () => {
+    analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, { deck_type: 'smart_review' });
     loading.value = true;
     await leitnerStore.fetchReviewSession(20);
     loading.value = false;

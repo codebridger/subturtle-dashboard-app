@@ -45,6 +45,8 @@ import { IconButton, Button, Icon } from 'pilotui/elements';
 import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
     // @ts-ignore
@@ -85,6 +87,9 @@ const isNextAvailable = computed(() => {
 const cardLevel = computed<number | undefined>(() => (phrase.value as any)?._leitnerLevel);
 
 onMounted(() => {
+    analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, {
+        deck_type: isLeitnerMode.value ? 'leitner' : 'flashcards',
+    });
     fetchFlashcard();
 });
 

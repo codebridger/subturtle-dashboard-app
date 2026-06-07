@@ -16,13 +16,18 @@ if (token) {
 }
 
 // Mirrors frontend/constants/analyticsEvents.ts for the server-fired events.
+// Naming follows docs/metrics/event-naming.md: [object]_[action], `-` inside a part.
 export const SERVER_ANALYTICS_EVENTS = {
-  TRIAL_CONVERTED: "trial-converted",
-  TRIAL_CANCELED: "trial-canceled",
-  STARTER_AI_EXHAUSTED: "starter-ai-exhausted",
+  // Stripe webhook lifecycle (the roadmap's slim instrumentation set).
+  TRIAL_STARTED: "trial_started", // subscription created with status "trialing"
+  SUBSCRIPTION_STARTED: "subscription_started", // trial converted, or direct paid start — props: { via_trial }
+  SUBSCRIPTION_CANCELED: "subscription_canceled", // any cancel — props: { was_trialing }
+  STARTER_AI_EXHAUSTED: "starter-ai_exhausted",
   // Fired when a Stripe subscription webhook refused to grant because the
   // product's entitlement metadata was missing/invalid (ADR-004 fail-safe).
-  ENTITLEMENT_GRANT_REFUSED: "entitlement-grant-refused",
+  ENTITLEMENT_GRANT_REFUSED: "entitlement-grant_refused",
+  // Fired on every translation API call (doc: backend tracking plan).
+  TRANSLATION_REQUESTED: "translation_requested",
 };
 
 /**

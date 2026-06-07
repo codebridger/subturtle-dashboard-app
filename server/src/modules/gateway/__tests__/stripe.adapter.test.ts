@@ -29,9 +29,10 @@ jest.mock("../../subscription/plans", () => ({
 jest.mock("../../../utils/analytics", () => ({
   trackServerEvent: jest.fn(),
   SERVER_ANALYTICS_EVENTS: {
-    ENTITLEMENT_GRANT_REFUSED: "entitlement-grant-refused",
-    TRIAL_CONVERTED: "trial-converted",
-    TRIAL_CANCELED: "trial-canceled",
+    ENTITLEMENT_GRANT_REFUSED: "entitlement-grant_refused",
+    TRIAL_STARTED: "trial_started",
+    SUBSCRIPTION_STARTED: "subscription_started",
+    SUBSCRIPTION_CANCELED: "subscription_canceled",
   },
 }));
 
@@ -114,9 +115,65 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(res.success).toBe(false); // -> webhook returns non-2xx -> Stripe retries
     expect(addNewSubscriptionWithCredit).not.toHaveBeenCalled(); // never guesses
     expect(trackServerEvent).toHaveBeenCalledWith(
-      "entitlement-grant-refused",
+      "entitlement-grant_refused",
       "u1",
       expect.anything()
+    );
+  });
+
+  it("fires trial_started when a subscription is created as trialing", async () => {
+    (resolveEntitlements as any).mockResolvedValue(entitlements);
+    await adapter.handleWebhook(createdEvent());
+    expect(trackServerEvent).toHaveBeenCalledWith("trial_started", "u1", {
+      cadence: "monthly",
+      tier: "learner",
+    });
+  });
+
+  it("fires subscription_canceled (was_trialing flag) on customer.subscription.deleted", async () => {
+    const event = {
+      type: "customer.subscription.deleted",
+      data: { object: { customer: "cus_1", id: "sub_1", status: "canceled" } },
+    };
+    const res = await adapter.handleWebhook(event);
+    expect(res.success).toBe(true);
+    expect(trackServerEvent).toHaveBeenCalledWith(
+      "subscription_canceled",
+      "u1",
+      { was_trialing: false }
+    );
+  });
+
+  it("fires subscription_started (via_trial) on the trialing -> active transition", async () => {
+    (resolveEntitlements as any).mockResolvedValue(entitlements);
+    const event = {
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          customer: "cus_1",
+          id: "sub_1",
+          status: "active",
+          cancel_at_period_end: false,
+          trial_end: null,
+          items: {
+            data: [
+              {
+                price: { id: "price_1", recurring: { interval: "month" } },
+                current_period_start: 2000,
+                current_period_end: 4000,
+              },
+            ],
+          },
+        },
+        previous_attributes: { status: "trialing" },
+      },
+    };
+    const res = await adapter.handleWebhook(event);
+    expect(res.success).toBe(true);
+    expect(trackServerEvent).toHaveBeenCalledWith(
+      "subscription_started",
+      "u1",
+      { cadence: "monthly", tier: "learner", via_trial: true }
     );
   });
 

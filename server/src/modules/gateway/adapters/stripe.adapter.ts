@@ -507,6 +507,22 @@ export class StripeAdapter implements PaymentAdapter {
             },
           });
 
+          // Server-truth lifecycle events: a subscription that starts as
+          // "trialing" is a trial start; one that starts "active" (no trial,
+          // e.g. a returning customer) is a direct paid start.
+          if (subscription.status === "trialing") {
+            trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_STARTED, userId, {
+              cadence,
+              tier: entitlements.tierId,
+            });
+          } else if (subscription.status === "active") {
+            trackServerEvent(
+              SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
+              userId,
+              { cadence, tier: entitlements.tierId, via_trial: false }
+            );
+          }
+
           return {
             success: true,
             message: "Subscription created successfully",
@@ -524,18 +540,17 @@ export class StripeAdapter implements PaymentAdapter {
                 status: subscription.status,
               });
 
-            // A cancel that happened while still trialing is a trial cancel —
-            // fire the server-truth analytics event.
-            if (wasTrialing) {
-              const userId = await this.getUserIdForCustomer(
-                subscription.customer as string
+            // Every cancel fires the server-truth event; `was_trialing`
+            // separates trial drop-offs from real paid churn.
+            const userId = await this.getUserIdForCustomer(
+              subscription.customer as string
+            );
+            if (userId) {
+              trackServerEvent(
+                SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED,
+                userId,
+                { was_trialing: !!wasTrialing }
               );
-              if (userId) {
-                trackServerEvent(
-                  SERVER_ANALYTICS_EVENTS.TRIAL_CANCELED,
-                  userId
-                );
-              }
             }
 
             return {
@@ -596,7 +611,7 @@ export class StripeAdapter implements PaymentAdapter {
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             });
 
-          // trial -> paid conversion: fire the server-truth analytics event.
+          // trial -> paid conversion: the subscription has truly started.
           if (
             previousAttributes?.status === "trialing" &&
             subscription.status === "active"
@@ -605,10 +620,11 @@ export class StripeAdapter implements PaymentAdapter {
               subscription.customer as string
             );
             if (userId) {
-              trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_CONVERTED, userId, {
-                cadence,
-                tier: entitlements.tierId,
-              });
+              trackServerEvent(
+                SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
+                userId,
+                { cadence, tier: entitlements.tierId, via_trial: true }
+              );
             }
           }
 

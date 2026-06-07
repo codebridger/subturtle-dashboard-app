@@ -802,7 +802,7 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
 
   try {
     // Capture the pre-cancel status so the webhook can tell a trial cancel
-    // apart from a paid cancel (for the trial-canceled analytics event).
+    // apart from a paid cancel (the subscription_canceled event's was_trialing prop).
     const existing = await subscriptionsCollection.findOne(filter);
     const wasTrialing = existing?.status === "trialing";
 
