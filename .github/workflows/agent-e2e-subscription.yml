@@ -79,6 +79,12 @@ jobs:
       # registers its OWN test user and never authenticates as this admin.
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: Test1234!
+      # getSubscription() builds a Stripe billing-portal return_url from this
+      # (`${DASHBOARD_BASE_URL}/#/settings/subscription`). Unset -> the URL is
+      # "undefined/#/..." which Stripe rejects; the non-resource_missing error
+      # re-throws and fails the whole getSubscriptionDetails RPC, so an active
+      # paid tier reads back as "no grant". Any valid absolute URL satisfies it.
+      DASHBOARD_BASE_URL: https://dev.dashboard.subturtle.app
 
     steps:
       - uses: actions/checkout@v4
