@@ -11,5 +11,4 @@ export const ANALYTICS_EVENTS = {
     SUBSCRIPTION_STARTED: 'subscription_started', // server-fired (trial converted, or direct paid start)
     SUBSCRIPTION_CANCELED: 'subscription_canceled', // server-fired, props: { was_trialing }
     STARTER_AI_EXHAUSTED: 'starter-ai_exhausted', // server-fired
-    FLUENT_WAITLIST_SIGNUP: 'fluent-waitlist_signup',
 } as const;
