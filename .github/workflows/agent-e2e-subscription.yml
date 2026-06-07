@@ -72,6 +72,13 @@ jobs:
       GOOGLE_OAUTH_CLIENT_ID_EXTENSION: ci-dummy
       GOOGLE_OAUTH_CLIENT_SECRET: ci-dummy
       MIXPANEL_TOKEN: ci-dummy
+      # modular-rest's createRest() (index.ts adminUser) provisions an admin user
+      # at boot; empty creds make it throw "Invalid email or password for admin
+      # user" and the server never binds to 8080 (wait-on then times out).
+      # Throwaway values for the ephemeral CI DB — the tier-ladder executor
+      # registers its OWN test user and never authenticates as this admin.
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: Test1234!
 
     steps:
       - uses: actions/checkout@v4
