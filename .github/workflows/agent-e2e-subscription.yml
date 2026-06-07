@@ -76,12 +76,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The server RUNTIME needs node 16–18 (node 22 breaks the Mongoose-5
-      # handshake); the executor needs ≥18. node 18 is the intersection — NOT
-      # server/.nvmrc (22, which is only safe for tsc/Jest, not for running the server).
+      # Pin to the repo's canonical node — server/.nvmrc is 22, which is what the
+      # team builds and runs the server on. (This was node 18 originally; that's no
+      # longer viable: @google/genai, the live-session text-mode dependency, declares
+      # engines.node ">=20", so `yarn install --frozen-lockfile` hard-fails the engine
+      # check on 18. 22 satisfies it and matches .nvmrc.)
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: yarn
           cache-dependency-path: server/yarn.lock
 
