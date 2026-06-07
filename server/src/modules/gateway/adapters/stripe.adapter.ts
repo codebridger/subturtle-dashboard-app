@@ -514,6 +514,21 @@ export class StripeAdapter implements PaymentAdapter {
           //    (subscription id, period).
           const { start: periodStart, end: periodEnd } =
             this.periodBoundsUnix(subscription, item);
+          // TEMP DIAG (e2e tier-ladder) — remove once the grant period is fixed.
+          console.log(
+            "[e2e-diag.created] " +
+              JSON.stringify({
+                status: subscription.status,
+                itemEnd: (item as any).current_period_end,
+                subEnd: (subscription as any).current_period_end,
+                bca: (subscription as any).billing_cycle_anchor,
+                startDate: (subscription as any).start_date,
+                periodStart,
+                periodEnd,
+                itemKeys: Object.keys(item || {}),
+                subKeys: Object.keys(subscription || {}),
+              })
+          );
           const grant = await addNewSubscriptionWithCredit({
             userId,
             creditAmount: entitlements.creditsGranted,
