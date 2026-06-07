@@ -414,6 +414,34 @@ export class StripeAdapter implements PaymentAdapter {
   }
 
   /**
+   * Resolve the current billing period bounds (unix seconds) from a subscription
+   * webhook payload, robust to Stripe's API-version drift.
+   *
+   * `current_period_start` / `current_period_end` moved off the Subscription
+   * object and onto the subscription ITEM in API version 2025-03-31.basil. A
+   * webhook event is serialized with the account's API version, which may still
+   * be older (e.g. 2024-10-28.acacia) where these fields live on the
+   * subscription. Read item-first and fall back to the subscription so we always
+   * get a real period regardless of the delivering version.
+   *
+   * This matters because an undefined end flows into `new Date(end * 1000)` ===
+   * `new Date(NaN)` — an Invalid Date that every active-subscription query
+   * (`end_date: { $gte: new Date() }`) silently filters out. The grant would then
+   * persist but never take effect: the webhook returns 200, yet the tier never
+   * applies and it looks like a no-op.
+   */
+  private periodBoundsUnix(
+    subscription: Stripe.Subscription,
+    item: Stripe.SubscriptionItem
+  ): { start: number; end: number } {
+    const sub = subscription as any;
+    return {
+      start: item.current_period_start ?? sub.current_period_start,
+      end: item.current_period_end ?? sub.current_period_end,
+    };
+  }
+
+  /**
    * Handle Stripe webhook events
    */
   async handleWebhook(
@@ -484,13 +512,15 @@ export class StripeAdapter implements PaymentAdapter {
           //    marking the granted period. A trialing subscription still gets the
           //    full budget so the trial unlocks the tier. Idempotent on
           //    (subscription id, period).
+          const { start: periodStart, end: periodEnd } =
+            this.periodBoundsUnix(subscription, item);
           const grant = await addNewSubscriptionWithCredit({
             userId,
             creditAmount: entitlements.creditsGranted,
             voiceMinutes: entitlements.voiceMinutesGranted,
-            startDateUnixTimestamp: item.current_period_start,
-            endDateUnixTimestamp: item.current_period_end,
-            grantedPeriodEndUnixTimestamp: item.current_period_end,
+            startDateUnixTimestamp: periodStart,
+            endDateUnixTimestamp: periodEnd,
+            grantedPeriodEndUnixTimestamp: periodEnd,
             stripeSubscriptionId: subscription.id,
             tier: entitlements.tierId,
             subscriptionType: cadence,
@@ -600,13 +630,15 @@ export class StripeAdapter implements PaymentAdapter {
             entitlements.tierId.charAt(0).toUpperCase() +
               entitlements.tierId.slice(1);
 
+          const { start: periodStart, end: periodEnd } =
+            this.periodBoundsUnix(subscription, item);
           const { success, message, previousStatus } =
             await updateSubscriptionStatusByProviderAndSubscriptionId({
               provider: this.provider,
               subscriptionId: subscription.id,
               status: subscription.status,
-              startDateUnixTimestamp: item.current_period_start,
-              endDateUnixTimestamp: item.current_period_end,
+              startDateUnixTimestamp: periodStart,
+              endDateUnixTimestamp: periodEnd,
               tier: entitlements.tierId,
               subscriptionType: cadence,
               priceId,

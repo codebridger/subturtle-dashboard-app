@@ -11,11 +11,8 @@
  *   cd server && PATH="<node18+ bin>:$PATH" node scripts/e2e-tier-ladder.js
  *
  * NOTE the two repo facts this encodes (and the markdown helpers call out):
- *   - Mongo collections are PLURAL (free_credits, subscriptions, phrase_bundles,
- *     phrases, usages) — Mongoose pluralizes model names. The ONE exception is
- *     `stripe_customer` (SINGULAR): gateway/db.ts registers it with an explicit
- *     `collection: "stripe_customer"`, so the customer↔user mapping the webhook
- *     grant looks up lives there, not in `stripe_customers`.
+ *   - Mongo collections are PLURAL (free_credits, subscriptions, stripe_customers,
+ *     phrase_bundles, phrases, usages) — Mongoose pluralizes model names.
  *   - user_access RPCs need `userId` IN THE ARGS (the framework does not inject it).
  */
 const http = require('http');
@@ -88,7 +85,7 @@ const isLimit = (r, feature) => r.status === 400 && typeof r.body?.message === '
 
     const cust = await stripe.customers.create({ email: EMAIL, metadata: { userId } });
     customer = cust.id;
-    mongo(`db.stripe_customer.deleteMany({user_id:'${userId}'}); db.stripe_customer.insertOne({user_id:'${userId}', customer_id:'${customer}'})`);
+    mongo(`db.stripe_customers.deleteMany({user_id:'${userId}'}); db.stripe_customers.insertOne({user_id:'${userId}', customer_id:'${customer}'})`);
     const pm = await stripe.paymentMethods.attach('pm_card_visa', { customer });
     await stripe.customers.update(customer, { invoice_settings: { default_payment_method: pm.id } });
     check('S1 wired Stripe customer + card', !!customer, customer);
@@ -167,7 +164,7 @@ const isLimit = (r, feature) => r.status === 400 && typeof r.body?.message === '
       }
     } catch {}
     try {
-      if (userId) mongo(`db.subscriptions.deleteMany({user_id:ObjectId('${userId}')});db.free_credits.deleteMany({user_id:ObjectId('${userId}')});db.usages.deleteMany({user_id:ObjectId('${userId}')});db.stripe_customer.deleteMany({user_id:'${userId}'});db.phrases.deleteMany({refId:'${userId}'});db.phrase_bundles.deleteMany({refId:'${userId}'})`);
+      if (userId) mongo(`db.subscriptions.deleteMany({user_id:ObjectId('${userId}')});db.free_credits.deleteMany({user_id:ObjectId('${userId}')});db.usages.deleteMany({user_id:ObjectId('${userId}')});db.stripe_customers.deleteMany({user_id:'${userId}'});db.phrases.deleteMany({refId:'${userId}'});db.phrase_bundles.deleteMany({refId:'${userId}'})`);
       // The auth identity lives in the cms DB (modular-rest), which the user_content-scoped
       // mongo() helper above doesn't reach — clean it via getSiblingDB so the
       // e2e+<ts>@example.com auth rows don't orphan and accumulate across runs.
