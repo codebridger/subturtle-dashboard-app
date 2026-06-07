@@ -24,10 +24,14 @@ const loading = ref(true);
 const items = computed(() => reviewSessionItems.value);
 
 onMounted(async () => {
-    analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, { deck_type: 'smart_review' });
     loading.value = true;
     await leitnerStore.fetchReviewSession(20);
     loading.value = false;
+    // Only count a review that actually has cards (matches bundle-review.vue);
+    // an empty "all caught up" visit is not a started review.
+    if (items.value.length) {
+        analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, { deck_type: 'smart_review' });
+    }
 });
 
 async function handleSubmitResult(phraseId: string, isCorrect: boolean) {
