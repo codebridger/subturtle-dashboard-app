@@ -143,11 +143,10 @@ const TIER_SPECS: TierSpec[] = [
     prices: { monthly: 449, annual: 4299 },
     tagline: "Read, save, and chat with AI about every phrase you meet.",
     featureLabels: [
+      "Everything in Starter",
       "Save as many phrases as you want",
       "60 text chats per month",
       "Unlimited translations",
-      "Unlimited Smart Review",
-      "Voice top-ups when you want them",
     ],
     aiBudgetLabel: "voice top-ups any time",
     highlight: false,
@@ -173,6 +172,7 @@ const TIER_SPECS: TierSpec[] = [
     featureLabels: [
       "Everything in Reader",
       "90 minutes of voice chat a month",
+      "Top up voice minutes any time",
       "Weekly progress insights",
       "Full session history",
     ],
@@ -359,10 +359,19 @@ async function upsertTierProduct(spec: TierSpec): Promise<Stripe.Product> {
   const existing = await listAll<Stripe.Product>((p) => stripe.products.list(p));
   const match = existing.find((p) => p.metadata?.tier_id === spec.tierId);
   if (match) {
+    // Stripe MERGES metadata on update — it never drops keys you omit. A key we
+    // stop emitting (e.g. feature_5 after a tier loses its 5th bullet) would
+    // linger on the product, and the lenient display parser renders EVERY
+    // feature_<n> it finds, so the removed bullet keeps showing. Clear every
+    // existing key to "" first (Stripe deletes empty-valued keys), then overlay
+    // the desired metadata, making this product's metadata authoritative.
+    const authoritative: Record<string, string | number | null> = {};
+    for (const key of Object.keys(match.metadata || {})) authoritative[key] = "";
+    Object.assign(authoritative, metadata);
     const updated = await stripe.products.update(match.id, {
       name: spec.name,
       active: true,
-      metadata,
+      metadata: authoritative,
     });
     console.log(`  reused product ${updated.id} (${spec.name})`);
     return updated;
@@ -570,8 +579,7 @@ async function printPlan(): Promise<void> {
   for (const spec of TIER_SPECS) {
     const match = allProducts.find((p) => p.metadata?.tier_id === spec.tierId);
     console.log(
-      `  ${match ? "reuse " : "CREATE"} product ${spec.name}${
-        match ? ` (${match.id})` : ""
+      `  ${match ? "reuse " : "CREATE"} product ${spec.name}${match ? ` (${match.id})` : ""
       }`
     );
     if (match) {
@@ -589,8 +597,7 @@ async function printPlan(): Promise<void> {
             pr.metadata?.cadence === cadence
         );
         console.log(
-          `      ${exact ? "reuse " : "CREATE"} ${cadence} GBP price${
-            exact ? ` (${exact.id})` : ""
+          `      ${exact ? "reuse " : "CREATE"} ${cadence} GBP price${exact ? ` (${exact.id})` : ""
           }`
         );
       }
@@ -606,8 +613,7 @@ async function printPlan(): Promise<void> {
         p.metadata?.kind === "voice_topup" && p.metadata?.pack_key === spec.key
     );
     console.log(
-      `  ${match ? "reuse " : "CREATE"} ${spec.name}${
-        match ? ` (${match.id})` : ""
+      `  ${match ? "reuse " : "CREATE"} ${spec.name}${match ? ` (${match.id})` : ""
       }`
     );
   }
@@ -642,8 +648,7 @@ async function printPlan(): Promise<void> {
     (c) => c.metadata?.managed_by === PORTAL_CONFIG_MARKER
   );
   console.log(
-    `  ${portalMatch ? "reuse " : "CREATE"} portal configuration${
-      portalMatch ? ` (${portalMatch.id})` : ""
+    `  ${portalMatch ? "reuse " : "CREATE"} portal configuration${portalMatch ? ` (${portalMatch.id})` : ""
     }`
   );
 }
@@ -665,8 +670,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Stripe pricing setup (Council 004, GBP base) - ${mode} mode${
-      DRY_RUN ? " [DRY RUN]" : ""
+    `Stripe pricing setup (Council 004, GBP base) - ${mode} mode${DRY_RUN ? " [DRY RUN]" : ""
     }\n`
   );
 
@@ -740,22 +744,22 @@ async function main(): Promise<void> {
   console.log("\n\n=== Manual steps (NOT done by this script) ===\n");
   console.log(
     "  1. Adaptive Pricing — Dashboard -> Settings -> Payments -> Adaptive Pricing -> On.\n" +
-      "     Lets non-GBP customers see local currency at checkout while we settle in GBP."
+    "     Lets non-GBP customers see local currency at checkout while we settle in GBP."
   );
   console.log(
     "  2. Restrict who can edit product metadata — under ADR-004 a metadata edit GRANTS\n" +
-      "     MONEY (credits / voice minutes). Treat Stripe edit access as production access."
+    "     MONEY (credits / voice minutes). Treat Stripe edit access as production access."
   );
   if (portalConfigId) {
     console.log(
       "  3. Customer Portal — plan-switching configured automatically (id above). Revisit\n" +
-        "     only to change branding or the privacy / terms URLs."
+      "     only to change branding or the privacy / terms URLs."
     );
   } else {
     console.log(
       "  3. Customer Portal — NOT configured (step 5 failed above). Set STRIPE_PORTAL_PRIVACY_URL\n" +
-        "     + STRIPE_PORTAL_TOS_URL in server/.env and re-run, or enable subscription updates by\n" +
-        "     hand under Dashboard -> Settings -> Billing -> Customer portal."
+      "     + STRIPE_PORTAL_TOS_URL in server/.env and re-run, or enable subscription updates by\n" +
+      "     hand under Dashboard -> Settings -> Billing -> Customer portal."
     );
   }
 }
