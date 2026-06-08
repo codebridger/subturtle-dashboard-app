@@ -9,6 +9,7 @@ import {
   LanguageLearningDataSchema,
   TranslationAdviceSchema,
 } from "./schema";
+import { filterChunksToSelection } from "./chunk-filter";
 import { TRANSLATION_MODELS } from "../../utils/openrouter-models";
 
 /**
@@ -81,8 +82,8 @@ export async function getDetailedTranslation({
 
   Phonetic transliteration: spell out how to pronounce the SOURCE-language "phrase" itself (${sourceLanguage} -> read by a ${targetLanguage} speaker), written using the ${targetLanguage} alphabet. Do NOT transliterate the translation. For long selections (~5 words or more), return an empty string for the top-level transliteration and rely on the per-chunk transliterations instead.
 
-  Chunks: inside the user's selection ("phrase"), find the reusable language patterns worth learning (collocations, phrasal verbs, idioms, discourse markers).
-  Rules: at most one chunk per 5-8 words of the selection, hard ceiling of 2 chunks. Each chunk's "text" must appear verbatim inside the selection. For each chunk, also provide: "transliteration" (how to pronounce that chunk, source language, in the ${targetLanguage} alphabet) and "definition" (a short, self-contained explanation of that chunk's meaning and usage, 1-2 sentences, in ${targetLanguage}).
+  Chunks: look ONLY inside the user's selection ("phrase") and find the reusable language patterns worth learning there (collocations, phrasal verbs, idioms, discourse markers). The "context" is provided ONLY to disambiguate the selection's meaning — NEVER take a chunk from the context. A pattern is a valid chunk only if its exact words appear inside the selection itself.
+  Rules: at most one chunk per 5-8 words of the selection, hard ceiling of 2 chunks. Each chunk's "text" must appear verbatim inside the selection (not merely inside the context). For each chunk, also provide: "transliteration" (how to pronounce that chunk, source language, in the ${targetLanguage} alphabet) and "definition" (a short, self-contained explanation of that chunk's meaning and usage, 1-2 sentences, in ${targetLanguage}).
   Return an empty "chunks" array when the selection is under ~5 words, or when the selection is written in a different language than the target learning language.`;
 
   const userPrompt = `
@@ -117,6 +118,11 @@ export async function getDetailedTranslation({
         strict: true,
       });
 
+    // Guardrail: the model occasionally pulls chunks from the surrounding
+    // context instead of the marked text. Chunks must come from the selection
+    // only, so drop any whose text does not appear inside the phrase.
+    result.chunks = filterChunksToSelection(result.chunks, phrase);
+
     // Result is already validated by Zod
     return result;
   } catch (error: unknown) {
@@ -149,7 +155,7 @@ export async function getTranslationAdvice({
 
   Your MAIN job is to answer the user's questions about this phrase: meaning, grammar, usage, nuance, examples, differences between words, etc. Put your answer in "reply".
 
-  Editing the highlighted patterns is a SECONDARY ability. Only return a "chunks" array when the user EXPLICITLY asks to add, remove, or change which patterns are highlighted (e.g. "highlight X", "remove that", "don't include Y"). When you do, each chunk's "text" must appear verbatim in the selection, include its "transliteration" (pronunciation in the ${targetLanguage} alphabet), and you may also add a short "reply" explaining the change.
+  Editing the highlighted patterns is a SECONDARY ability. Only return a "chunks" array when the user EXPLICITLY asks to add, remove, or change which patterns are highlighted (e.g. "highlight X", "remove that", "don't include Y"). When you do, each chunk's "text" must appear verbatim in the selection — NEVER take a chunk from the context — include its "transliteration" (pronunciation in the ${targetLanguage} alphabet), and you may also add a short "reply" explaining the change.
   If the user is just asking a question (even one that mentions a phrase, like "what about 'on the'?"), answer it in "reply" and DO NOT change the chunks.`;
 
   // Maintain the conversation: replay prior turns so the model has context.
@@ -179,6 +185,12 @@ export async function getTranslationAdvice({
         schemaName: "translation_advice",
         strict: true,
       });
+
+    // Same guardrail as the save flow: any chunks the advisor proposes must
+    // come from the marked text, not the surrounding context.
+    if (result.chunks) {
+      result.chunks = filterChunksToSelection(result.chunks, phrase);
+    }
 
     return result;
   } catch (error: unknown) {
