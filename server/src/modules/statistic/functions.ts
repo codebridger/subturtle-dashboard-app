@@ -2,6 +2,7 @@ import date from "date-and-time";
 import { defineFunction, getCollection } from "@modular-rest/server";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
+import { assertFeatureEnabled } from "../subscription/enforcement";
 
 interface UserStatistic {
   totalPhrases: number;
@@ -32,6 +33,9 @@ const getUserStatistic = defineFunction({
   callback: async ({
     userId,
   }: GetUserStatisticParams): Promise<UserStatistic> => {
+    // Progress insights are a Learner+ entitlement (weekly_insights).
+    await assertFeatureEnabled(userId, "weekly_insights");
+
     const phraseModel = getCollection(DATABASE, PHRASE_COLLECTION);
     const bundleModel = getCollection(DATABASE, BUNDLE_COLLECTION);
 
@@ -54,6 +58,9 @@ const generateChartDataForInsertionRatio = defineFunction({
     database,
     collection,
   }: GenerateChartDataParams): Promise<ChartDataPoint[]> => {
+    // Progress insights are a Learner+ entitlement (weekly_insights).
+    await assertFeatureEnabled(userId, "weekly_insights");
+
     const collectionModel = getCollection(database, collection);
 
     const startDate = date.addDays(new Date(), -days);

@@ -79,23 +79,27 @@ definePageMeta({
     middleware: ['auth'],
 });
 
-// Fetch session details with dialogs
+// Fetch session details with dialogs. Voice and text sessions live in separate
+// collections (Mongo _ids don't collide), so try the voice collection first and
+// fall back to the text collection.
 const fetchSession = async () => {
-    try {
-        const response = await dataProvider.findOne<LiveSessionRecordType>({
-            database: DATABASE.USER_CONTENT,
-            collection: COLLECTIONS.LIVE_SESSION,
-            query: {
-                _id: route.params.id as string,
-                refId: authUser.value?.id,
-            },
-        });
-        session.value = response;
-    } catch (error) {
-        console.error('Error fetching session:', error);
-    } finally {
-        loading.value = false;
+    const query = { _id: route.params.id as string, refId: authUser.value?.id };
+    for (const collection of [COLLECTIONS.LIVE_SESSION, COLLECTIONS.LIVE_SESSION_TEXT]) {
+        try {
+            const response = await dataProvider.findOne<LiveSessionRecordType>({
+                database: DATABASE.USER_CONTENT,
+                collection,
+                query,
+            });
+            if (response) {
+                session.value = response;
+                break;
+            }
+        } catch {
+            /* not in this collection — try the next */
+        }
     }
+    loading.value = false;
 };
 
 onMounted(fetchSession);

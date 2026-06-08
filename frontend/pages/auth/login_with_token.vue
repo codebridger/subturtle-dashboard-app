@@ -5,6 +5,8 @@ import { authentication } from '@modular-rest/client';
 import { useRoute, useRouter } from 'vue-router';
 import { useProfileStore } from '~/stores/profile';
 import { toastError } from 'pilotui/toast';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +23,9 @@ onMounted(() => {
             .loginWithToken(token, true)
             .then(profileStore.bootstrap)
             .then(() => {
+                // Explicit login (Google OAuth return) — session restores on
+                // app start do not pass through this page.
+                analytic.track(ANALYTICS_EVENTS.USER_LOGGED_IN);
                 // Defense-in-depth: re-save the user token after bootstrap.
                 // External actors (chrome extension content scripts, other tabs
                 // mid-anonymous flow) can overwrite localStorage.token between

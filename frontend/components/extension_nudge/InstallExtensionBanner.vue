@@ -26,7 +26,7 @@
                     <Button
                         color="primary"
                         size="md"
-                        iconName="IconPlay"
+                        iconName="IconPlayCircle"
                         :label="t('extension.nudge.cta')"
                         @click="install"
                         class="border-none bg-gradient-to-r from-pink-500 to-purple-600 shadow-md transition-all duration-300 hover:from-pink-600 hover:to-purple-700 hover:shadow-lg"

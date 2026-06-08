@@ -17,7 +17,8 @@
             <StartLiveSessionForm class="m-4" v-model="formData" :voice-options="GEMINI_VOICES" ref="formRef"
                 @start="handleStartLiveSession" />
 
-            <!-- Freemium: Show freemium limit card -->
+            <!-- Freemium: mode-aware limit card (sessions for voice, text chats for
+                 text). In voice mode the voice minutes are merged in as a sub-line. -->
             <div class="m-4" v-if="profileStore.isFreemium">
                 <FreemiumLimitationModal :modal-title="t('freemium.limitation.title')"
                     :main-message="t('freemium.limitation.no_free_spots_left')"
@@ -26,14 +27,18 @@
                     :secondary-button-label="t('freemium.limitation.continue_with_limits')"
                     @upgrade="handleConfirmUpgrade">
                     <template #trigger="{ toggleModal }">
-                        <FreemiumLimitCard type="liveSession" :action-label="t('live-practice.start')"
+                        <FreemiumLimitCard :type="formData.mode === 'text' ? 'textChat' : 'liveSession'"
+                            :sub-info="formData.mode !== 'text' ? voiceLeftLabel : ''"
+                            :action-label="t('live-practice.start')"
                             @action="startSession" @upgrade="toggleModal(true)" />
                     </template>
                 </FreemiumLimitationModal>
             </div>
 
-            <!-- Premium: Regular start button -->
-            <div class="m-4" v-else>
+            <!-- Premium: mode-aware balance (voice minutes / Reader text chats) + start. -->
+            <div class="m-4 space-y-3" v-else>
+                <VoiceMeter v-if="formData.mode !== 'text'" size="sm" />
+                <TextChatCounter v-else />
                 <Button color="primary" block :disabled="!isFormValid || !formData.bundleId" @click="startSession"
                     :label="t('live-practice.start')" />
             </div>
@@ -45,18 +50,25 @@
 // Standalone "start a new session" entry point bound to the Gemini practice page.
 import { Button, Card } from 'pilotui/elements';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import type { LiveSessionRequest } from '~/types/live-session-request';
+import { pickPhraseIds, encodeSessionRequest } from '~/utils/livePractice';
 import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
 import StartLiveSessionForm from '~/components/bundle/StartLiveSessionForm.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumLimitCard from '~/components/freemium_alerts/FreemiumLimitCard.vue';
+import VoiceMeter from '~/components/VoiceMeter.vue';
+import TextChatCounter from '~/components/TextChatCounter.vue';
 import { useProfileStore } from '~/stores/profile';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
+import { openVoiceCapModal } from '~/composables/useVoiceCapModal';
 
 const GEMINI_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
 
 const router = useRouter();
 const { t } = useI18n();
 const profileStore = useProfileStore();
+const { remaining: voiceRemaining, leftLabel: voiceLeftLabel } = useVoiceBalance();
 
 const bundleList = ref<PhraseBundleType[]>([]);
 const filter = ref('');
@@ -99,6 +111,7 @@ const formData = reactive({
     toPhrase: '10',
     totalPhrases: '10',
     nativeLanguage: 'auto',
+    mode: 'voice' as 'voice' | 'text',
 });
 
 const isFormValid = computed(() => {
@@ -110,6 +123,13 @@ const isFormValid = computed(() => {
 
 function startSession() {
     if (!isFormValid.value || !formData.bundleId) return;
+
+    // Council 004: a paid user out of voice minutes gets the dedicated voice-cap
+    // modal (top-up / use text chat) — voice mode only, never for a text session.
+    if (!profileStore.isFreemium && formData.mode !== 'text' && voiceRemaining.value <= 0) {
+        openVoiceCapModal();
+        return;
+    }
 
     const sessionData: LivePracticeSessionSetupType = {
         aiCharacter: formData.aiCharacter,
@@ -128,10 +148,21 @@ function startSession() {
 }
 
 function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-    const sessionDataBase64 = btoa(JSON.stringify(sessionData));
-    router.push(
-        `/practice/live-session-${formData.bundleId}?sessionData=${sessionDataBase64}`
-    );
+    // Build the unified request the /practice/live-session dispatcher consumes:
+    // resolve the selection to concrete phrase ids from the chosen bundle and carry
+    // the practice mode, then route through the gate. The old `live-session-<id>`
+    // path matched no route (404) and dropped the mode field entirely. [B2]
+    const bundle = bundleList.value.find((b) => b._id === formData.bundleId);
+    const request: LiveSessionRequest = {
+        aiCharacter: sessionData.aiCharacter,
+        nativeLanguage: sessionData.nativeLanguage,
+        mode: formData.mode,
+        title: bundle?.title,
+        source: { phraseIds: pickPhraseIds(bundle?.phrases ?? [], sessionData) },
+        returnTo: '/sessions/new',
+    };
+    const session = encodeSessionRequest(request);
+    router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
 }
 
 function handleConfirmUpgrade() {

@@ -17,6 +17,8 @@ import {
   isUserOnFreemium,
   getOrCreateFreemiumAllocation,
   updateFreemiumAllocation,
+  assertVoiceMinutesAvailable,
+  getVoiceSessionMaxSeconds,
 } from "../../subscription/service";
 import {
   GEMINI_LIVE_SESSION_MODEL,
@@ -24,6 +26,7 @@ import {
   GEMINI_NEW_SESSION_TTL_MS,
 } from "./config";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
+import { EntitlementLimitError } from "../../subscription/enforcement";
 import { GeminiLiveSessionType } from "./types";
 
 interface GeminiPracticeSetup {
@@ -71,6 +74,11 @@ export const requestGeminiEphemeralToken = defineFunction({
       );
     }
 
+    // Voice is metered per tier (free 5 / Reader 0 / Learner 90 / Coach 300):
+    // block when the voice-minute budget is exhausted or the tier grants none.
+    // Resumes still consume from the same budget.
+    await assertVoiceMinutesAvailable(userId);
+
     const isOnFreemium = await isUserOnFreemium(userId);
     if (isOnFreemium && !isResume) {
       const freemiumAllocation = await getOrCreateFreemiumAllocation(userId);
@@ -79,8 +87,10 @@ export const requestGeminiEphemeralToken = defineFunction({
         freemiumAllocation.allowed_lived_sessions_used >=
         freemiumAllocation.allowed_lived_sessions
       ) {
-        throw new Error(
-          "User has reached the maximum number of allowed lived sessions"
+        throw new EntitlementLimitError(
+          "live_sessions",
+          freemiumAllocation.allowed_lived_sessions,
+          freemiumAllocation.allowed_lived_sessions_used
         );
       }
 
@@ -144,12 +154,18 @@ export const requestGeminiEphemeralToken = defineFunction({
 
       const expiresAtSec = Math.floor((now + GEMINI_TOKEN_TTL_MS) / 1000);
 
+      // Budget-derived cap on this session's wall-clock length, returned so the
+      // client's in-session timer enforces it. The policy lives server-side (the
+      // subscription service) so the dashboard and mobile stay in lockstep.
+      const voiceSessionMaxSeconds = await getVoiceSessionMaxSeconds(userId);
+
       const session: GeminiLiveSessionType = {
         model: GEMINI_LIVE_SESSION_MODEL,
         voice: voiceName,
         instructions,
         modalities: ["AUDIO"],
         expires_at: expiresAtSec,
+        voice_session_max_seconds: voiceSessionMaxSeconds,
         client_secret: {
           value: tokenValue,
           expires_at: expiresAtSec,

@@ -1,1 +1,7 @@
 .DS_Store
+
+# Local Claude Code tooling state (machine-specific, not for the repo)
+.claude/
+
+# Agent E2E run reports (the specs are tracked; the generated run logs are not)
+agent-tests/_runs/

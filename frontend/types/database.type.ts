@@ -12,6 +12,7 @@ export const COLLECTIONS = {
     PHRASE_BUNDLE: 'phrase_bundle',
     PROFILE: 'profile',
     LIVE_SESSION: 'live_session',
+    LIVE_SESSION_TEXT: 'live_session_text',
     LEITNER_SYSTEM: 'leitner_system',
     BOARD_ACTIVITY: 'board_activity',
 };

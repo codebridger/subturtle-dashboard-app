@@ -41,8 +41,35 @@
                             <Progress :value="activeSubscriptionData.usage_percentage ?? 0" :max="100" size="md"
                                 color="primary" />
                         </div>
+
+                        <!-- This month: voice balance + renewal (Council 004 Surface 2).
+                             S17 adds the Reader text-chat counter inside this section. -->
+                        <div class="border-t border-gray-100 pt-4 dark:border-gray-700">
+                            <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white-light">
+                                {{ t('subscription.this-month.header') }}
+                            </h3>
+                            <!-- What this plan includes this month: saved phrases, text chats,
+                                 and live sessions — "Unlimited" on most paid tiers, or the limit
+                                 (e.g. Reader's 60 text chats). Voice keeps its own meter below. -->
+                            <div class="mb-3 space-y-2.5">
+                                <div v-for="row in planRows" :key="row.label"
+                                    class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ row.label }}</span>
+                                    <button v-if="row.upsell" type="button" class="font-medium text-primary hover:underline"
+                                        @click="goToChangePlan">{{ row.value }}</button>
+                                    <span v-else class="font-medium text-gray-900 dark:text-gray-100">{{ row.value }}</span>
+                                </div>
+                            </div>
+                            <VoiceMeter v-if="!voiceLockedForReader" size="md" @topup="goToTopUps" />
+                            <p v-if="renewsOn" class="mt-3 text-xs text-gray-400">
+                                {{ t('subscription.voice-meter.resets', { date: renewsOn }) }}
+                            </p>
+                        </div>
                     </div>
                 </Card>
+
+                <!-- Starter (free) usage card — mirrors the paid active-plan card. -->
+                <StarterUsageCard />
 
                 <!-- AI usage — internal metering (Dev Only) -->
                 <Card v-if="config.public.isNotProduction" class="w-full rounded-lg border border-gray-100 shadow-sm">
@@ -99,53 +126,66 @@
                     </div>
                 </Card>
 
-                <!-- Billing cadence + currency controls -->
-                <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+                <!-- Billing cadence toggle (GBP base; Stripe localizes at checkout) -->
+                <div class="flex items-center justify-center">
                     <SwitchBall id="cadence-toggle" v-model="isAnnual" color="primary"
                         :label="t('subscription.pricing.annual-toggle')" sublabel="" />
-                    <div class="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-[#1b2e4b]">
-                        <button v-for="c in currencies" :key="c" type="button"
-                            class="px-3 py-1.5 text-sm font-medium transition-colors" :class="currency === c
-                                ? 'bg-primary text-white'
-                                : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-[#0e1726] dark:text-white-dark'"
-                            @click="currency = c">
-                            {{ c.toUpperCase() }}
-                        </button>
-                    </div>
                 </div>
 
-                <!-- Pricing Cards -->
-                <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                <!-- Pricing Cards (Starter / Reader / Learner / Coach) — paid tiers built
+                     live from Stripe, free Starter from code. While loading, show skeleton
+                     cards (not a spinner) so the layout is stable; if Stripe can't provide
+                     plans, show a calm notice. -->
+                <div v-if="isLoadingPlans" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                    <Card v-for="n in 4" :key="n"
+                        class="relative flex h-full w-full flex-col rounded-lg border border-[#e0e6ed] shadow-none dark:border-[#1b2e4b]">
+                        <div class="flex flex-grow flex-col p-5">
+                            <div class="h-6 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                            <div class="mt-2 h-4 w-44 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                            <div class="mt-4 h-8 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                            <ul class="my-6 flex-grow space-y-3">
+                                <li v-for="i in 4" :key="i"
+                                    class="h-4 w-full animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></li>
+                            </ul>
+                            <div class="mt-auto h-10 w-full animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                        </div>
+                    </Card>
+                </div>
+                <div v-else-if="plansError"
+                    class="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-400">
+                    {{ t('subscription.pricing.error') }}
+                </div>
+                <div v-else-if="!paidPlans.length" class="py-12 text-center text-gray-500">
+                    {{ t('subscription.pricing.empty') }}
+                </div>
+                <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
                     <Card v-for="plan in plans" :key="plan.id"
                         class="relative flex h-full w-full flex-col rounded-lg border shadow-none transition-all duration-300"
-                        :class="plan.id === 'learner'
+                        :class="plan.highlight
                             ? 'border-primary ring-1 ring-primary/30'
                             : 'border-[#e0e6ed] dark:border-[#1b2e4b]'">
-                        <!-- Most popular badge -->
-                        <span v-if="plan.id === 'learner'"
+                        <!-- Ribbon badge (e.g. "Most popular") — text from Stripe metadata -->
+                        <span v-if="plan.badge"
                             class="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
-                            {{ t('subscription.pricing.most-popular') }}
+                            {{ plan.badge }}
                         </span>
 
                         <div class="flex flex-grow flex-col p-5">
                             <!-- Name + tagline -->
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-xl font-bold text-gray-900 dark:text-white-light">{{ plan.name }}</h3>
-                                <span v-if="plan.status === 'dark'"
-                                    class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-[#1b2e4b] dark:text-white-dark">
-                                    {{ t('subscription.pricing.coming-soon') }}
-                                </span>
-                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white-light">{{ plan.name }}</h3>
                             <p class="mt-1 min-h-[2.5rem] text-sm text-gray-500">{{ plan.tagline }}</p>
 
-                            <!-- Price line -->
+                            <!-- Price line. Paid: skeleton while the local currency is probed
+                                 (Adaptive Pricing) so the GBP base doesn't flash, then the
+                                 localized price. Free Starter: always "Free". -->
                             <div class="mt-4 min-h-[3.5rem]">
-                                <template v-if="!plan.isPaid">
-                                    <p class="text-lg font-semibold text-gray-900 dark:text-white-light">
-                                        {{ t('subscription.pricing.starter-price') }}
-                                    </p>
+                                <template v-if="plan.isPaid && isProbingCurrency">
+                                    <div class="h-8 w-28 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]"></div>
+                                    <div v-if="isAnnual"
+                                        class="mt-1.5 h-3 w-24 animate-pulse rounded bg-gray-200 dark:bg-[#1b2e4b]">
+                                    </div>
                                 </template>
-                                <template v-else>
+                                <template v-else-if="plan.isPaid">
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
                                         {{ formatAmount(plan, cadence) }}
                                         <span class="text-sm font-medium text-gray-500">
@@ -157,6 +197,12 @@
                                         {{ t('subscription.pricing.or-monthly', { price: formatAmount(plan, 'monthly') })
                                         }}
                                     </p>
+                                </template>
+                                <template v-else>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white-light">
+                                        {{ t('subscription.pricing.free') }}
+                                    </p>
+                                    <p class="text-xs text-gray-400">{{ t('subscription.pricing.starter-price') }}</p>
                                 </template>
                             </div>
 
@@ -171,33 +217,42 @@
 
                             <!-- CTA -->
                             <div class="mt-auto">
-                                <!-- Starter (free) — no actionable CTA -->
-                                <Button v-if="!plan.isPaid" block disabled
-                                    :label="isFreemium ? t('subscription.pricing.current-plan') : t('subscription.pricing.free-plan')" />
-
-                                <!-- Learner — the single primary CTA -->
-                                <template v-else-if="plan.id === 'learner'">
-                                    <Button v-if="activePlanId === 'learner'" block color="primary"
-                                        :label="t('subscription.manage-subscription')" @click="goToPortal" />
-                                    <template v-else>
-                                        <Button block color="primary" :loading="isLoading"
-                                            :label="t('subscription.pricing.learner-cta')"
-                                            @click="initiateCheckout('learner')" />
-                                        <p class="mt-2 text-center text-xs text-gray-400">
-                                            {{ t('subscription.pricing.learner-subline') }}
-                                        </p>
-                                    </template>
+                                <!-- Free Starter: current-level indicator for free users,
+                                     "Downgrade to Free" for users on a paid tier. -->
+                                <template v-if="plan.id === 'starter'">
+                                    <div v-if="isFreemium"
+                                        class="rounded-md bg-gray-100 py-2.5 text-center text-sm font-medium text-gray-500 dark:bg-[#1b2e4b] dark:text-white-dark">
+                                        {{ t('subscription.pricing.current-plan') }}
+                                    </div>
+                                    <Button v-else block outline color="primary"
+                                        :label="t('subscription.pricing.downgrade-free')" @click="downgradeToFree" />
                                 </template>
 
-                                <!-- Fluent — dark / coming soon -->
-                                <template v-else>
-                                    <Button block outline color="secondary" :disabled="fluentNotified"
-                                        :label="fluentNotified ? t('subscription.pricing.fluent-notified') : t('subscription.pricing.fluent-cta')"
-                                        @click="notifyFluent" />
+                                <!-- Already on this paid plan -->
+                                <Button v-else-if="activePlanId === plan.id" block color="primary"
+                                    :label="t('subscription.manage-subscription')" @click="goToPortal" />
+
+                                <!-- On a DIFFERENT paid plan: deep-link to the portal's plan picker to
+                                     switch (Stripe handles proration). Starting a checkout here would
+                                     stack a second subscription — Council 004 has no in-app stacking. -->
+                                <Button v-else-if="!isFreemium" block outline color="primary"
+                                    :loading="isOpeningChangePlan"
+                                    :label="t('subscription.pricing.change-plan')" @click="goToChangePlan" />
+
+                                <!-- Trial CTA — shown for any tier with a free trial (days from Stripe) -->
+                                <template v-else-if="plan.trialDays > 0">
+                                    <Button block color="primary" :loading="isLoading"
+                                        :label="t('subscription.pricing.trial-cta', { days: plan.trialDays })"
+                                        @click="initiateCheckout(plan.id)" />
                                     <p class="mt-2 text-center text-xs text-gray-400">
-                                        {{ t('subscription.pricing.fluent-helper') }}
+                                        {{ t('subscription.pricing.trial-subline', { days: plan.trialDays }) }}
                                     </p>
                                 </template>
+
+                                <!-- Reader / Coach -->
+                                <Button v-else block outline color="primary" :loading="isLoading"
+                                    :label="t('subscription.pricing.choose-plan', { name: plan.name })"
+                                    @click="initiateCheckout(plan.id)" />
                             </div>
                         </div>
                     </Card>
@@ -215,6 +270,10 @@
                     :primary-button-label="t('subscription.cancel-offramp.stay')"
                     :secondary-button-label="t('subscription.cancel-offramp.continue')"
                     :auto-redirect-on-upgrade="false" @secondary="goToPortal" />
+
+                <!-- Embedded Custom Checkout (localized price via Adaptive Pricing) -->
+                <CheckoutPanel v-if="showCheckout && checkoutTier" :tier-id="checkoutTier" :cadence="cadence"
+                    :plan-name="checkoutPlanName" @close="showCheckout = false" @success="onCheckoutSuccess" />
             </div>
         </div>
     </div>
@@ -225,15 +284,21 @@ import { Card, Button, Progress, Icon } from 'pilotui/elements';
 import { SwitchBall } from 'pilotui/form';
 import PageHeader from '~/components/common/PageHeader.vue';
 import LimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
+import CheckoutPanel from '~/components/subscription/CheckoutPanel.vue';
+import VoiceMeter from '~/components/VoiceMeter.vue';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
+import StarterUsageCard from '~/components/StarterUsageCard.vue';
 
 import { ref, computed } from 'vue';
+import { loadStripe } from '@stripe/stripe-js';
 import { functionProvider } from '@modular-rest/client';
-import type { PublicTierPlan, Cadence, Currency, TierId } from '~/types/tiers';
+import type { PublicTierPlan, Cadence, TierId } from '~/types/tiers';
 import { useProfileStore } from '~/stores/profile';
 import { analytic } from '~/plugins/mixpanel';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 const { t } = useI18n();
+const route = useRoute();
 const config = useRuntimeConfig();
 const profileStore = useProfileStore();
 
@@ -246,15 +311,18 @@ definePageMeta({
 
 const isLoading = ref(false);
 const isResetLoading = ref(false);
+const isLoadingPlans = ref(false);
 const error = ref('');
+const plansError = ref(false);
 const plans = ref<PublicTierPlan[]>([]);
 
 const isAnnual = ref(false);
 const cadence = computed<Cadence>(() => (isAnnual.value ? 'annual' : 'monthly'));
-const currencies: Currency[] = ['usd', 'eur', 'gbp'];
-const currency = ref<Currency>('usd');
-const fluentNotified = ref(false);
 const showCancelOffRamp = ref(false);
+
+// Council 004: three paid cards (Reader / Learner / Coach) come from the backend;
+// Starter is the "Continue with Free" link below them.
+const paidPlans = computed(() => plans.value.filter((p) => p.isPaid));
 
 const activeSubscriptionData = computed(() => profileStore.activeSubscription);
 const isFreemium = computed(() => profileStore.isFreemium);
@@ -263,91 +331,225 @@ const isTrialing = computed(() => activeSubscriptionData.value?.status === 'tria
 const isCanceling = computed(() => !!activeSubscriptionData.value?.cancel_at_period_end);
 const activePlanName = computed(() => activeSubscriptionData.value?.label || t('subscription.title'));
 
-interface CheckoutResponse {
-    sessionId: string;
-    url: string;
-    expiresAt: string;
+// Voice balance — Reader has no voice budget, so voice live sessions are a Learner+
+// feature; we merge them into one upsell row and hide the meter when it's empty.
+const { tier: voiceTier, used: voiceUsed, topUps: voiceTopUps } = useVoiceBalance();
+
+// A Reader who has never used voice and bought no top-ups has no voice budget at all —
+// "Live sessions: Unlimited" + "Voice: 0 min" would be misleading. In that case we
+// collapse both into a single "Live session → Upgrade to Learner" upsell and hide the
+// (all-zero) VoiceMeter. A topped-up Reader (or Learner / Coach) sees the real rows.
+const voiceLockedForReader = computed(() => voiceTier.value === 'reader' && voiceUsed.value === 0 && voiceTopUps.value.length === 0);
+
+// What the active (paid) plan includes this month: saved phrases, text chats, and
+// live sessions. getSubscriptionDetails carries top-level allowed_* caps + their
+// *_used counters (the same fields the free StarterUsageCard reads); a null/absent
+// cap means unlimited (e.g. Reader's saved phrases, or a Learner's text chats),
+// otherwise show used / limit (e.g. Reader's "23 / 60" text chats).
+const planRows = computed(() => {
+    const sub = activeSubscriptionData.value as any;
+    const unlimited = t('subscription.this-month.unlimited');
+    const cap = (limit: number | null | undefined, used: number | undefined) => (limit == null ? unlimited : `${used ?? 0} / ${limit}`);
+    const rows: Array<{ label: string; value: string; upsell?: boolean }> = [
+        { label: t('subscription.starter-usage.saved-phrases'), value: cap(sub?.allowed_save_words, sub?.allowed_save_words_used) },
+        { label: t('subscription.starter-usage.text-chats'), value: cap(sub?.allowed_text_chats, sub?.allowed_text_chats_used) },
+    ];
+    if (voiceLockedForReader.value) {
+        rows.push({ label: t('subscription.this-month.live-session'), value: t('subscription.this-month.upgrade-learner'), upsell: true });
+    } else {
+        rows.push({ label: t('subscription.starter-usage.live-sessions'), value: cap(sub?.allowed_lived_sessions, sub?.allowed_lived_sessions_used) });
+    }
+    return rows;
+});
+
+// "Resets on 12 June." — the active period's end (Council 004 Surface 2).
+const renewsOn = computed(() => {
+    const d = activeSubscriptionData.value?.end_date;
+    if (!d) return '';
+    try {
+        return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+    } catch {
+        return '';
+    }
+});
+
+// "Top up minutes" from the voice meter → the /settings/billing top-ups section (S14).
+function goToTopUps() {
+    navigateTo('/settings/billing');
 }
 
-const currencySymbols: Record<Currency, string> = { usd: '$', eur: '€', gbp: '£' };
+// Embedded Custom Checkout panel state (replaces the hosted redirect). The panel
+// shows the localized price (EUR for EU visitors) via Stripe Adaptive Pricing.
+const showCheckout = ref(false);
+const checkoutTier = ref<TierId | null>(null);
+const checkoutPlanName = ref('');
 
+// Adaptive Pricing: probe the visitor's local currency + GBP conversion rate once
+// (via one Stripe session), then display the cards in that currency. Falls back
+// to the GBP base when unavailable / not localized.
+const localCurrency = ref<string | null>(null);
+const fxRate = ref<number | null>(null);
+
+// True only while the local currency is being probed over the network (cache
+// miss). Drives the price skeleton so the GBP base price doesn't flash before
+// the localized one arrives. Stays false for cache hits and when there is no
+// publishable key — those resolve to a price synchronously, no skeleton needed.
+const isProbingCurrency = ref(false);
+
+// Display the price in the visitor's local currency (e.g. EUR) when Adaptive
+// Pricing localizes it; otherwise the GBP base price.
 function formatAmount(plan: PublicTierPlan, cad: Cadence): string {
-    const amount = plan.pricing?.[cad]?.[currency.value];
-    if (amount == null) return '';
-    return `${currencySymbols[currency.value]}${amount.toFixed(2)}`;
+    const gbp = plan.pricing?.[cad]?.gbp;
+    if (gbp == null) return '';
+    if (localCurrency.value && fxRate.value) {
+        try {
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: localCurrency.value,
+            }).format(gbp * fxRate.value);
+        } catch {
+            /* unknown currency code — fall through to GBP */
+        }
+    }
+    return `£${gbp.toFixed(2)}`;
 }
 
 function formatDate(d: string | Date | undefined): string {
     return d ? new Date(d).toLocaleDateString() : '';
 }
 
-function fetchPlans() {
-    return functionProvider
-        .run<PublicTierPlan[]>({
+async function fetchPlans() {
+    isLoadingPlans.value = true;
+    plansError.value = false;
+    try {
+        plans.value = await functionProvider.run<PublicTierPlan[]>({
             name: 'getSubscriptionPlans',
             args: {},
-        })
-        .then((res) => {
-            plans.value = res;
-        });
-}
-
-onMounted(() => {
-    fetchPlans();
-});
-
-// Initiate Stripe checkout for a paid tier at the selected cadence/currency.
-async function initiateCheckout(tierId: TierId) {
-    isLoading.value = true;
-    error.value = '';
-
-    try {
-        const baseUrl = window.location.origin;
-        const successUrl = `${baseUrl}/#/payment-success`;
-        const cancelUrl = `${baseUrl}/#/payment-canceled`;
-
-        const response = await functionProvider.run<CheckoutResponse>({
-            name: 'createPaymentSession',
-            args: {
-                tierId,
-                cadence: cadence.value,
-                currency: currency.value,
-                successUrl,
-                cancelUrl,
-                userId: profileStore.authUser?.id,
-            },
-        });
-
-        if (response && response.url) {
-            analytic.track(ANALYTICS_EVENTS.TRIAL_STARTED, {
-                cadence: cadence.value,
-                currency: currency.value,
-            });
-            window.location.href = response.url;
-        } else {
-            throw new Error(t('subscription.checkout-failed'));
-        }
-    } catch (err: any) {
-        error.value = err.message || t('subscription.unexpected-error');
-        console.error('Checkout error:', err);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-// Fluent ships dark — capture latent demand. Optimistically acknowledges in
-// the UI, then persists to the waitlist and fires the analytics event.
-async function notifyFluent() {
-    fluentNotified.value = true;
-    analytic.track(ANALYTICS_EVENTS.FLUENT_WAITLIST_SIGNUP);
-    try {
-        await functionProvider.run({
-            name: 'notifyFluentWaitlist',
-            args: { userId: profileStore.authUser?.id },
         });
     } catch (err) {
-        console.error('Fluent waitlist signup failed:', err);
+        plansError.value = true;
+        console.error('Failed to load subscription plans:', err);
+    } finally {
+        isLoadingPlans.value = false;
     }
+}
+
+// Probe the visitor's local currency + conversion rate via one Stripe Checkout
+// Elements session (the only client-side way Stripe exposes the localized amount).
+// Cached per browser session so it costs one session, not one per page load.
+async function probeLocalCurrency() {
+    const pk = config.public.STRIPE_PUBLISHABLE_KEY as string | undefined;
+    if (!pk) return;
+    // Paid users can't open a new checkout (the backend blocks stacking), so this
+    // probe — which works by creating a checkout session — would just fail for them.
+    // They change plans via the portal; the cards show the GBP base price.
+    if (!isFreemium.value) return;
+    try {
+        const cached = sessionStorage.getItem('subturtle.localPricing');
+        if (cached) {
+            const c = JSON.parse(cached);
+            if (c.currency && c.fxRate) {
+                localCurrency.value = c.currency;
+                fxRate.value = c.fxRate;
+                return;
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+    const probe = paidPlans.value.find((p) => p.id === 'reader') || paidPlans.value[0];
+    const gbp = probe?.pricing?.monthly?.gbp;
+    if (!probe || gbp == null) return;
+    isProbingCurrency.value = true;
+    try {
+        const { clientSecret } = await functionProvider.run<{ clientSecret: string }>({
+            name: 'createCustomCheckoutSession',
+            args: {
+                tierId: probe.id,
+                cadence: 'monthly',
+                userId: profileStore.authUser?.id,
+                successUrl: `${window.location.origin}/#/payment-success`,
+            },
+        });
+        const stripe = await loadStripe(pk);
+        if (!stripe) return;
+        const sdk = (stripe as any).initCheckoutElementsSdk({ clientSecret, adaptivePricing: { allowed: true } });
+        const res = await sdk.loadActions();
+        if (res.type !== 'success') return;
+        const session = res.actions.getSession();
+        // Only localize when Stripe actually presents a non-GBP currency.
+        if (!session.currency || session.currency === 'gbp') return;
+        // Prefer Stripe's TRUE conversion rate (currencyOptions[].currencyConversion.fxRate)
+        // so every card matches checkout exactly; deriving a rate from one tier's
+        // already-rounded amount drifts by a cent. Fall back to that derivation.
+        const opt = (session.currencyOptions || []).find((o: any) => o?.currencyConversion?.fxRate);
+        const minor = session?.lineItems?.[0]?.unitAmount?.minorUnitsAmount;
+        const rate = opt
+            ? parseFloat(opt.currencyConversion.fxRate)
+            : minor
+            ? minor / (gbp * 100)
+            : null;
+        if (!rate) return;
+        localCurrency.value = session.currency;
+        fxRate.value = rate;
+        try {
+            sessionStorage.setItem('subturtle.localPricing', JSON.stringify({ currency: session.currency, fxRate: rate }));
+        } catch {
+            /* ignore */
+        }
+    } catch (err) {
+        console.error('Local pricing probe failed (showing GBP):', err);
+    } finally {
+        isProbingCurrency.value = false;
+    }
+}
+
+onMounted(async () => {
+    await fetchPlans();
+    probeLocalCurrency();
+    // Returning from a portal plan change (?plan_changed=1): the
+    // customer.subscription.updated webhook is async, so refetch a few times to
+    // surface the new plan without a manual reload.
+    if (route.query.plan_changed) pollForPlanChange();
+});
+
+async function pollForPlanChange() {
+    for (let i = 0; i < 6; i++) {
+        try {
+            await profileStore.fetchSubscription();
+        } catch {
+            /* ignore */
+        }
+        if (i < 5) await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+}
+
+// Open the embedded Custom Checkout panel for a paid tier at the selected cadence.
+// The localized price (e.g. EUR) is shown in-panel via Stripe Adaptive Pricing —
+// no redirect.
+function initiateCheckout(tierId: TierId) {
+    const plan = paidPlans.value.find((p) => p.id === tierId);
+    checkoutTier.value = tierId;
+    checkoutPlanName.value = plan?.name || '';
+    error.value = '';
+    analytic.track(ANALYTICS_EVENTS.CHECKOUT_OPENED, {
+        tier: tierId,
+        cadence: cadence.value,
+        currency: localCurrency.value || 'GBP',
+    });
+    showCheckout.value = true;
+}
+
+// After a successful in-panel payment: refresh the subscription and land on the
+// success page (the webhook grants entitlements from metadata server-side).
+async function onCheckoutSuccess() {
+    showCheckout.value = false;
+    try {
+        await profileStore.fetchSubscription();
+    } catch {
+        /* ignore */
+    }
+    window.location.href = `${window.location.origin}/#/payment-success`;
 }
 
 // Hands the user to Stripe's hosted billing portal — payment method, invoices,
@@ -357,6 +559,40 @@ async function notifyFluent() {
 function goToPortal() {
     const url = activeSubscriptionData.value?.portal_url;
     if (url) window.location.href = url;
+}
+
+// "Change plan": deep-link straight to the portal's plan picker (Stripe
+// flow_data.subscription_update) so the user lands on the tier selection rather
+// than the portal home. Falls back to the portal home if the deep link fails.
+const isOpeningChangePlan = ref(false);
+async function goToChangePlan() {
+    isOpeningChangePlan.value = true;
+    try {
+        const { url } = await functionProvider.run<{ url: string }>({
+            name: 'createPortalUpdateSession',
+            args: { userId: profileStore.authUser?.id },
+        });
+        if (url) {
+            window.location.href = url;
+            return;
+        }
+        goToPortal();
+    } catch {
+        goToPortal();
+    } finally {
+        isOpeningChangePlan.value = false;
+    }
+}
+
+// "Downgrade to Free" on the Starter card. Reuse the existing cancel flow: the
+// off-ramp interstitial for trialing users, the Stripe billing portal for active
+// paid users (where the cancellation that reverts them to Starter is confirmed).
+function downgradeToFree() {
+    if (isTrialing.value) {
+        showCancelOffRamp.value = true;
+    } else {
+        goToPortal();
+    }
 }
 
 async function handleProfileReset() {

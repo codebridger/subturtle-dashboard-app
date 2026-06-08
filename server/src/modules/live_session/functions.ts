@@ -19,10 +19,15 @@ import {
   TokenUsageType,
   GeminiLiveSessionType,
 } from "./types";
-import { DATABASE, LIVE_SESSION_COLLECTION } from "../../config";
+import {
+  DATABASE,
+  LIVE_SESSION_COLLECTION,
+  LIVE_SESSION_TEXT_COLLECTION,
+} from "../../config";
+import { assertFeatureEnabled } from "../subscription/enforcement";
 import { extractCostCalculationInput } from "./openai/utils";
 import { extractGeminiCostCalculationInput } from "./gemini/utils";
-import { recordUsage } from "../subscription/service";
+import { recordUsage, debitVoiceMinutes } from "../subscription/service";
 import { LIVE_SESSION_MODEL } from "./openai/config";
 import { GEMINI_LIVE_SESSION_MODEL } from "./gemini/config";
 import { requestEphemeralToken } from "./openai/functions";
@@ -151,6 +156,69 @@ const updateLiveSession = defineFunction({
 });
 
 /**
+ * List the user's past live sessions (voice + text, merged, newest first).
+ * Full session history is a Learner+ entitlement (session_history) — free/Reader
+ * are locked out and get a structured EntitlementLimitError so the frontend can
+ * show an upgrade prompt instead of the list. Replaces the client-side dataProvider
+ * list so the gate is enforced server-side.
+ */
+const listLiveSessions = defineFunction({
+  name: "list-live-sessions",
+  permissionTypes: ["user_access"],
+  callback: async function (context: {
+    userId: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { userId, page = 0, limit = 20 } = context;
+    await assertFeatureEnabled(userId, "session_history");
+
+    const window = (page + 1) * limit;
+    const voiceCol = getCollection<LiveSessionRecordType>(
+      DATABASE,
+      LIVE_SESSION_COLLECTION
+    );
+    const textCol = getCollection<any>(DATABASE, LIVE_SESSION_TEXT_COLLECTION);
+    const [voice, text, voiceCount, textCount] = await Promise.all([
+      voiceCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
+      textCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
+      voiceCol.countDocuments({ refId: userId }),
+      textCol.countDocuments({ refId: userId }),
+    ]);
+    const merged = [...(voice as any[]), ...(text as any[])].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const total = voiceCount + textCount;
+    return {
+      items: merged.slice(page * limit, window),
+      page,
+      limit,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      hasMore: (page + 1) * limit < total,
+    };
+  },
+});
+
+/**
+ * Debit consumed voice minutes from the user's budget when a voice session ends.
+ * The client reports the elapsed audio time in seconds; the server rounds up to
+ * whole minutes and decrements the active budget (subscription or freemium).
+ * Returns the updated budget so the client can reflect remaining minutes. The
+ * pre-session gate (request-*-ephemeral-token) blocks once this hits zero.
+ */
+const debitVoiceMinutesFn = defineFunction({
+  name: "debit-voice-minutes",
+  permissionTypes: ["user_access"],
+  callback: async function (context: { userId: string; seconds: number }) {
+    const { userId, seconds } = context;
+    const minutes = (Number(seconds) || 0) / 60;
+    return debitVoiceMinutes(userId, minutes);
+  },
+});
+
+/**
  * Returns the AI-coach voice list (single source of truth in `./voices`) so the
  * dashboard and extension render an identical picker. Static data; gated on
  * `user_access` only because every caller is already authenticated.
@@ -168,5 +236,7 @@ module.exports.functions = [
   requestGeminiEphemeralToken,
   createLiveSession,
   updateLiveSession,
+  debitVoiceMinutesFn,
+  listLiveSessions,
   getLiveSessionVoices,
 ];

@@ -9,9 +9,14 @@
                     <Icon name="IconLockDots" class="h-4 w-4 text-purple-700 dark:text-purple-200" />
                 </div>
                 <div class="flex-1">
-                    <div
-                        class="bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-sm font-semibold text-transparent dark:from-purple-300 dark:to-blue-300">
-                        {{ usedCount }}/{{ totalCount }} {{ unitLabel }}
+                    <!-- Count + optional inline metric (e.g. voice minutes) on the top row. -->
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-sm font-semibold text-transparent dark:from-purple-300 dark:to-blue-300">
+                            {{ usedCount }}/{{ totalCount }} {{ unitLabel }}
+                        </div>
+                        <span v-if="subInfo"
+                            class="rounded-full bg-purple-200/70 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-800/60 dark:text-purple-200">{{ subInfo }}</span>
                     </div>
                     <div class="text-xs text-purple-600 dark:text-purple-300">{{ description }}</div>
                 </div>
@@ -45,9 +50,11 @@ const profileStore = useProfileStore();
 const { t } = useI18n();
 
 const props = defineProps<{
-    type: 'phrase' | 'liveSession';
+    type: 'phrase' | 'liveSession' | 'textChat';
     actionLabel?: string;
     actionIcon?: string;
+    // Optional secondary line under the description (e.g. voice minutes left).
+    subInfo?: string;
 }>();
 
 const freemiumAllocation = computed(() => profileStore.freemiumAllocation);
@@ -63,6 +70,15 @@ const config = computed(() => {
             actionLabel: props.actionLabel || t('bundle.add_phrase'),
             actionIcon: props.actionIcon || 'IconPlus',
         };
+    } else if (props.type === 'textChat') {
+        return {
+            unitLabel: 'Chats',
+            description: t('freemium.limitation.free_chats_left'),
+            usedField: 'allowed_text_chats_used',
+            totalField: 'allowed_text_chats',
+            actionLabel: props.actionLabel || t('live-practice.start'),
+            actionIcon: props.actionIcon || 'IconNotesEdit',
+        };
     } else {
         return {
             unitLabel: 'Sessions',
@@ -70,7 +86,7 @@ const config = computed(() => {
             usedField: 'allowed_lived_sessions_used',
             totalField: 'allowed_lived_sessions',
             actionLabel: props.actionLabel || t('live-practice.start'),
-            actionIcon: props.actionIcon || 'IconPlay',
+            actionIcon: props.actionIcon || 'IconPlayCircle',
         };
     }
 });

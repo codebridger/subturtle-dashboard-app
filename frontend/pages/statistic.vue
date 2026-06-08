@@ -9,7 +9,7 @@
 
             <PageHeader :title="t('statistic.your-statistic')" overline="ANALYTICS" />
 
-            <section class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
+            <section v-if="!locked" class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
                 <Card class="col-span-1 rounded-md shadow-none lg:col-span-3">
                     <WidgetActivityChartOverview title="Your last 7 days" />
                 </Card>
@@ -39,6 +39,10 @@
                     </div>
                 </Card>
             </section>
+
+            <!-- weekly_insights is a Learner+ feature; free/Reader see the shared locked panel, not empty charts. -->
+            <FeatureLocked v-if="locked" feature-key="weekly_insights" required-tier="learner" />
+
             <section>
                 <h1 class="text-lg font-bold">{{ t('statistic.recent') }}</h1>
                 <div class="grid w-full grid-cols-2 gap-4 lg:grid-cols-3">
@@ -56,6 +60,8 @@
     import { Card, IconButton } from 'pilotui/elements';
     import PageHeader from '~/components/common/PageHeader.vue';
     import InstallExtensionBanner from '~/components/extension_nudge/InstallExtensionBanner.vue';
+    import FeatureLocked from '~/components/FeatureLocked.vue';
+    import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
 
     const { t } = useI18n();
 
@@ -71,6 +77,14 @@
         totalPhrases: 0,
         totalBundles: 0,
     });
+
+    // weekly_insights gate: flipped when getUserStatistic returns 400 (TIER_LIMIT_REACHED),
+    // i.e. the user's tier doesn't include insights — show the shared locked panel.
+    const locked = ref(false);
+
+    // weekly_insights renders as an inline FeatureLocked card here, so the global
+    // tier-limit modal defers to it (no double upsell on the same lock).
+    useInlineFeatureLock('weekly_insights');
 
     function getRecentBundles() {
         dataProvider
@@ -102,6 +116,10 @@
             })
             .then((data) => {
                 statistics.value = data;
+            })
+            .catch(() => {
+                // A tier lock (or any failure) hides the empty charts behind FeatureLocked.
+                locked.value = true;
             });
     }
 

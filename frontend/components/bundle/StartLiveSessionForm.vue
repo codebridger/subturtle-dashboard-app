@@ -1,7 +1,32 @@
 <template>
     <div class="space-y-6">
-        <!-- AI Character Selection -->
+        <!-- Conversation mode: voice (audio Live API) vs text-only -->
         <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('live-practice.mode.label') }}
+            </label>
+            <div class="flex rounded-md bg-gray-100 p-1 dark:bg-gray-700">
+                <button type="button" @click="formData.mode = 'voice'" :class="[
+                    'flex-1 rounded-md py-2 text-center text-sm',
+                    formData.mode !== 'text'
+                        ? 'bg-white font-medium text-gray-900 shadow dark:bg-gray-600 dark:text-white'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+                ]">
+                    {{ t('live-practice.mode.voice') }}
+                </button>
+                <button type="button" @click="formData.mode = 'text'" :class="[
+                    'flex-1 rounded-md py-2 text-center text-sm',
+                    formData.mode === 'text'
+                        ? 'bg-white font-medium text-gray-900 shadow dark:bg-gray-600 dark:text-white'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+                ]">
+                    {{ t('live-practice.mode.text') }}
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Character Selection — voice only (text mode has no spoken voice) -->
+        <div v-if="formData.mode !== 'text'">
             <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {{ t('live-practice.ai-character') }}
             </label>
@@ -101,6 +126,7 @@ const props = defineProps<{
         toPhrase: string;
         totalPhrases: string;
         nativeLanguage: string;
+        mode?: 'voice' | 'text';
     };
     // Omitted by the bundle Gemini flow → voices are fetched from the server so
     // the picker matches the extension. The OpenAI/Gemini `StartNew` variants

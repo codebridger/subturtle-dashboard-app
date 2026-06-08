@@ -3,7 +3,12 @@ import { DATABASE, PHRASE_COLLECTION, BUNDLE_COLLECTION } from "../../config";
 import {
   isUserOnFreemium,
   updateFreemiumAllocation,
+  getOrCreateFreemiumAllocation,
 } from "../subscription/service";
+import {
+  getEffectiveCap,
+  EntitlementLimitError,
+} from "../subscription/enforcement";
 
 // Import the PhraseSchema type from the database module
 import { PhraseSchema } from "./db";
@@ -184,6 +189,18 @@ const createPhrase = defineFunction({
       // Use existing phrase
       phraseId = existingPhrase._id;
     } else {
+      // Enforce the saved-words cap BEFORE creating a new phrase (free: 200 per
+      // window; paid tiers: unlimited). Reusing an existing phrase doc above does
+      // not count against the cap, so the check only guards genuinely new saves.
+      const saveWordsCap = await getEffectiveCap(refId, "save_words");
+      if (saveWordsCap !== null) {
+        const allocation = await getOrCreateFreemiumAllocation(refId);
+        const used = allocation?.allowed_save_words_used ?? 0;
+        if (used >= saveWordsCap) {
+          throw new EntitlementLimitError("save_words", saveWordsCap, used);
+        }
+      }
+
       // Create new phrase document based on type
       const newPhraseDoc: any = {
         phrase: phrase.trim(),

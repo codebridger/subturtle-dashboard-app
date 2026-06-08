@@ -7,6 +7,8 @@
 import { useLeitnerStore } from '~/stores/leitner';
 import { storeToRefs } from 'pinia';
 import LeitnerReviewSession from '~/components/practice/LeitnerReviewSession.vue';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
     // @ts-ignore
@@ -25,6 +27,11 @@ onMounted(async () => {
     loading.value = true;
     await leitnerStore.fetchReviewSession(20);
     loading.value = false;
+    // Only count a review that actually has cards (matches bundle-review.vue);
+    // an empty "all caught up" visit is not a started review.
+    if (items.value.length) {
+        analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, { deck_type: 'smart_review' });
+    }
 });
 
 async function handleSubmitResult(phraseId: string, isCorrect: boolean) {

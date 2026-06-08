@@ -1,5 +1,7 @@
 import { GlobalOptions, authentication } from '@modular-rest/client';
 import axios from 'axios';
+import { TIER_LIMIT_REACHED_CODE } from '~/types/tiers';
+import { openTierLimitModal } from '~/composables/useTierLimitModal';
 
 export default defineNuxtPlugin(() => {
     const config = useRuntimeConfig();
@@ -31,6 +33,17 @@ export default defineNuxtPlugin(() => {
                 if (!onLoginRoute) {
                     router.replace('/auth/login');
                 }
+            }
+
+            // Any RPC blocked by a tier limit/lock (HTTP 400 with a
+            // TIER_LIMIT_REACHED message) opens the single global upgrade modal —
+            // no per-page wiring. The feature name in the message tailors the copy.
+            const data = error?.response?.data;
+            const message = (data && (data.message || data.error)) || '';
+            if (typeof message === 'string' && message.includes(TIER_LIMIT_REACHED_CODE)) {
+                const match = /TIER_LIMIT_REACHED:\s*"?([a-z_]+)"?/i.exec(message);
+                // Module-level singleton — no Pinia/Vue context needed here.
+                openTierLimitModal(match?.[1] || '');
             }
 
             return Promise.reject(error);

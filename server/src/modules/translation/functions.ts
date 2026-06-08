@@ -6,6 +6,10 @@ import {
 } from "./service";
 import { TranslateWithContextParams, TranslationAdviceParams } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
+import {
+  trackServerEvent,
+  SERVER_ANALYTICS_EVENTS,
+} from "../../utils/analytics";
 
 /**
  * Function to translate a phrase with its context
@@ -28,6 +32,19 @@ const translateWithContext = defineFunction({
     if (sourceLanguage.toLowerCase() === "auto") {
       sourceLanguage = "";
     }
+
+    // Server-truth usage event (docs/metrics: Backend Tracking Plan). Fired on
+    // every request, before the call, so failures are counted too — the error
+    // rate is word-detail-page_translation-error / translation_requested.
+    trackServerEvent(
+      SERVER_ANALYTICS_EVENTS.TRANSLATION_REQUESTED,
+      params.userId || "anonymous",
+      {
+        translation_type: translationType,
+        source_lang: sourceLanguage || "auto",
+        target_lang: targetLanguage,
+      }
+    );
 
     try {
       if (translationType === "detailed") {

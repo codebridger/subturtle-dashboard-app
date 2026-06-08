@@ -13,6 +13,10 @@ COPY /frontend/ .
 # Copy just that module so the relative import resolves during `yarn generate`.
 COPY /server/src/modules/subscription /server/src/modules/subscription
 
+# frontend/types/live-session-text.type.ts re-exports from
+# ../../server/src/modules/live_session_text — copy it so generate resolves it.
+COPY /server/src/modules/live_session_text /server/src/modules/live_session_text
+
 RUN yarn generate
 
 FROM node:22.17.1-alpine

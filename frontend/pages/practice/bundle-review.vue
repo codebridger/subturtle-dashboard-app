@@ -7,6 +7,8 @@
 import { useLeitnerStore } from '~/stores/leitner';
 import { storeToRefs } from 'pinia';
 import LeitnerReviewSession from '~/components/practice/LeitnerReviewSession.vue';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
 	// @ts-ignore
@@ -28,6 +30,7 @@ onMounted(async () => {
 		return;
 	}
 
+	analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, { deck_type: 'bundle_review' });
 	loading.value = true;
 	await leitnerStore.fetchCustomReviewSession(pendingBundleReviewIds.value);
 	loading.value = false;

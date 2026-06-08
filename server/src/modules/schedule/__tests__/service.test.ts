@@ -71,8 +71,7 @@ describe("ScheduleService", () => {
 	});
 
 	describe("createJob", () => {
-		it("should create a new job if it doesn't exist", async () => {
-			mockCollection.findOne.mockResolvedValue(null);
+		it("should upsert a job keyed on its unique name", async () => {
 			const options = {
 				cronExpression: "* * * * *",
 				functionId: "test-fn",
@@ -83,16 +82,17 @@ describe("ScheduleService", () => {
 
 			await ScheduleService.createJob("new-job", "test-fn", options);
 
-			expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({
-				name: "new-job",
-				functionId: "test-fn",
-				state: "scheduled",
-			}));
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ name: "new-job" },
+				{ $set: expect.objectContaining({ functionId: "test-fn", state: "scheduled" }) },
+				{ upsert: true }
+			);
+			// Idempotent upsert replaces the old findOne-then-create branch entirely.
+			expect(mockCollection.create).not.toHaveBeenCalled();
 			expect(schedule.scheduleJob).toHaveBeenCalled();
 		});
 
-		it("should update an existing job", async () => {
-			mockCollection.findOne.mockResolvedValue({ name: "existing-job" });
+		it("should update an existing job in place via the same upsert", async () => {
 			const options = {
 				cronExpression: "0 0 * * *",
 				functionId: "updated-fn",
@@ -102,13 +102,13 @@ describe("ScheduleService", () => {
 
 			expect(mockCollection.updateOne).toHaveBeenCalledWith(
 				{ name: "existing-job" },
-				expect.objectContaining({ $set: expect.not.objectContaining({ status: "active" }) })
+				expect.objectContaining({ $set: expect.objectContaining({ functionId: "updated-fn" }) }),
+				{ upsert: true }
 			);
 			expect(schedule.scheduleJob).toHaveBeenCalled();
 		});
 
 		it("should save timezone to database", async () => {
-			mockCollection.findOne.mockResolvedValue(null);
 			const options = {
 				cronExpression: "* * * * *",
 				functionId: "test-fn",
@@ -117,10 +117,34 @@ describe("ScheduleService", () => {
 
 			await ScheduleService.createJob("tz-create-job", "test-fn", options);
 
-			expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({
-				name: "tz-create-job",
-				timeZone: "Asia/Tokyo"
-			}));
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ name: "tz-create-job" },
+				expect.objectContaining({ $set: expect.objectContaining({ timeZone: "Asia/Tokyo" }) }),
+				{ upsert: true }
+			);
+		});
+
+		it("should be idempotent: swallow an E11000 from a concurrent create instead of throwing", async () => {
+			// Two callers can race on a not-yet-existing doc; the loser's upsert
+			// still hits the unique index. This used to crash the process.
+			const dupErr: any = new Error("E11000 duplicate key error collection: ... index: name_1");
+			dupErr.code = 11000;
+			mockCollection.updateOne.mockRejectedValueOnce(dupErr);
+
+			await expect(
+				ScheduleService.createJob("dup-job", "test-fn", { cronExpression: "* * * * *" })
+			).resolves.toBeDefined();
+
+			// The job already exists, so the in-memory timer is still registered.
+			expect(schedule.scheduleJob).toHaveBeenCalled();
+		});
+
+		it("should rethrow non-duplicate database errors", async () => {
+			mockCollection.updateOne.mockRejectedValueOnce(new Error("connection lost"));
+
+			await expect(
+				ScheduleService.createJob("err-job", "test-fn", { cronExpression: "* * * * *" })
+			).rejects.toThrow("connection lost");
 		});
 	});
 

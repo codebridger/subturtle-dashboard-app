@@ -45,6 +45,8 @@ import { IconButton, Button, Icon } from 'pilotui/elements';
 import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
+import { analytic } from '~/plugins/mixpanel';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
     // @ts-ignore
@@ -84,8 +86,15 @@ const isNextAvailable = computed(() => {
 // (undefined otherwise → recognition card). FlashCard derives everything else from the phrase.
 const cardLevel = computed<number | undefined>(() => (phrase.value as any)?._leitnerLevel);
 
-onMounted(() => {
-    fetchFlashcard();
+onMounted(async () => {
+    await fetchFlashcard();
+    // Only count a review that actually loaded cards (matches the other review
+    // pages); a failed or empty load is not a started review.
+    if (totalPhrases.value > 0) {
+        analytic.track(ANALYTICS_EVENTS.FLASHCARD_REVIEW_STARTED, {
+            deck_type: isLeitnerMode.value ? 'leitner' : 'flashcards',
+        });
+    }
 });
 
 function endFlashcardSession() {
@@ -99,7 +108,7 @@ function endFlashcardSession() {
 
 function fetchFlashcard() {
     if (isLeitnerMode.value) {
-        functionProvider.run({
+        return functionProvider.run({
             name: 'get-review-bundle',
             args: { userId: authUser.value?.id }
         }).then((res: any) => {
@@ -123,10 +132,9 @@ function fetchFlashcard() {
         }).catch(err => {
             console.error(err);
         });
-        return;
     }
 
-    dataProvider
+    return dataProvider
         .findOne<PopulatedPhraseBundleType>({
             database: DATABASE.USER_CONTENT,
             collection: COLLECTIONS.PHRASE_BUNDLE,
