@@ -125,6 +125,19 @@ Modules are discovered dynamically by the modular-rest framework. Entry point: [
 - **i18n**: strings in [frontend/locales/en.json](frontend/locales/en.json) — only English is wired up today.
 - **UI components**: prefer **pilotui** (in-house Vue 3 + Tailwind library) before hand-rolling. Components are organized by category path (`pilotui/elements`, `pilotui/form`, `pilotui/shell`, etc.), use the `CL` prefix (e.g. `<CLButton>`), and require wrapping the app in `AppRoot` for theming. Registered in [frontend/plugins/component-library.ts](frontend/plugins/component-library.ts). **LLM-friendly docs**: <https://codebridger.github.io/lib-vue-components/llm.md> — fetch when adding or editing UI to see component APIs.
 
+## Branching
+
+**Every task gets its own feature branch — never commit task work directly to `dev` or `main`.** Follow the ClickUp branch convention used across the repo:
+
+```
+CU-<taskId>_<Short-Task-Title-Dashed>_<Author-Name>
+```
+
+e.g. `CU-86ext1gpf_Make-subscription-tiers-Stripe-metadata-driven-adaptive-pricing-Council-004-rollout_Navid-Shad`. The `<taskId>` is the ClickUp custom id (the `CU-…` shown on the task), the title is the task name with spaces → dashes, and the author is the assignee.
+
+- Branch off the latest `dev`; open a **PR into `dev`**. `dev` reaches `main` via the long-running `dev → main` PR — so a task only needs the one PR into `dev`.
+- **Footgun:** if you create the branch with `git switch -c <branch> origin/dev`, Git sets its upstream to `origin/dev`, and a plain `git push` (or a Git-client "sync") then lands the commits **straight on `dev`** instead of a new remote branch. Create it without that tracking and publish it explicitly: `git switch -c <branch>` then `git push -u origin <branch>` (or `--no-track` when branching off `origin/dev`).
+
 ## Commits & versioning
 
 This repo uses **semantic versioning**, and commit titles follow **Conventional Commits** so the type prefix maps to the intended `vMAJOR.MINOR.PATCH` bump. Pick the type by the change's real impact, not by habit:
