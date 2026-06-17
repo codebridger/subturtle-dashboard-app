@@ -21,6 +21,17 @@ subturtle-dashboard-app/
 └── Dockerfile         # Docker configuration
 ```
 
+## 🔗 Sibling Repositories
+
+SubTurtle is split across several repositories. These siblings interact with the dashboard and may need to be cloned (or branched) locally to develop and test a cross-repo change end to end:
+
+| Repo          | Purpose                                                                                              | Repository                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Extension** | Browser extension — the learn-by-subtitle capture surface. Shares the same `@modular-rest` backend. | [codebridger/subturtle-extension-apps](https://github.com/codebridger/subturtle-extension-apps) |
+| **PilotUI**   | In-house Vue 3 + Tailwind component library (`pilotui`) consumed by the frontend.                    | [codebridger/pilotui](https://github.com/codebridger/pilotui)                           |
+
+To work across repositories, clone the sibling next to this one (or reuse an existing local clone), create a feature branch on the sibling for any experimental change, run it locally, and point your dashboard branch at it. Keep dashboard-driven experiments on the sibling's feature branch — don't commit them to the sibling's `dev`/`main`.
+
 ## 🚀 Technology Stack
 
 ### Frontend

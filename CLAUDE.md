@@ -11,6 +11,23 @@ SubTurtle Dashboard App — a language-learning dashboard for SubTurtle (learn-b
 | Production | <https://dashboard.subturtle.app> |
 | Development | <https://dev.dashboard.subturtle.app> |
 
+## Sibling repositories
+
+SubTurtle spans several repos. Two siblings interact directly with this dashboard and often have to be touched to develop or test a dashboard change end to end:
+
+| Repo | Purpose | GitHub | Typical local path |
+| --- | --- | --- | --- |
+| **subturtle-extension-apps** | Browser extension — the learn-by-subtitle capture surface. Talks to the same `@modular-rest` backend protocol, and enforces the identical Conventional-Commits → semver mapping (via `semantic-release`). | <https://github.com/codebridger/subturtle-extension-apps> | `../subturtle-extension-apps` |
+| **pilotui** | In-house Vue 3 + Tailwind component library — the `pilotui` npm dependency the frontend consumes (`CL`-prefixed components). LLM docs: <https://codebridger.github.io/lib-vue-components/llm.md> | <https://github.com/codebridger/pilotui> | `../../lib-vue-components` |
+
+### Working across siblings
+
+When a dashboard task depends on, or breaks, a sibling — e.g. a backend RPC the extension also calls, or a `pilotui` component that needs a fix before the dashboard can consume it — pull the sibling in locally so you can build and test the dashboard branch against it:
+
+1. **Search locally first.** The siblings are usually already cloned next to this repo (see *Typical local path* above — the extension is a direct sibling; `pilotui` is checked out as `lib-vue-components`, whose `package.json` name is `pilotui`). Check those paths before cloning.
+2. **Clone (download) it if missing.** `git clone <GitHub URL>` into a sibling directory, then `yarn install`.
+3. **Branch the sibling — never mutate its main line.** To exercise the cross-repo change, create a feature branch on the sibling using the same `CU-<taskId>_…` convention as [Branching](#branching), make your edits there, and run it locally (`yarn dev` / `yarn build`; for `pilotui`, build and `yarn link` it into `frontend/`). This lets you verify the dashboard's main branch work against the live sibling. **Keep dashboard-driven, experimental changes on the sibling's feature branch** — don't commit them onto the sibling's `dev`/`main`; only land them through that sibling's own PR flow if they're genuinely intended.
+
 ## Repo layout
 
 ```
