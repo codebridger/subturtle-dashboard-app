@@ -39,6 +39,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Gate the release: a push to main/dev with failing unit tests must not
+      # cut a version. (E2E is omitted here — it needs Playwright browsers and
+      # a live backend; PRs already run the full suite via test.yml.)
+      - name: Unit tests
+        run: yarn test
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
