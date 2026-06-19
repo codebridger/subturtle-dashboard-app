@@ -29,6 +29,10 @@
                     <NuxtPage />
                 </div>
             </template>
+
+            <template #footer>
+                <PartialAppVersionFooter />
+            </template>
         </DashboardShell>
 
         <!-- Single global "plan limit reached" modal. The modular-rest interceptor

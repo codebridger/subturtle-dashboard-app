@@ -1,4 +1,7 @@
 {
+    "app": {
+        "version": "Version {version}"
+    },
     "bundle": {
         "nav": "Phrase Bundles",
         "list": "Bundle List",
