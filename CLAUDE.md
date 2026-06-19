@@ -166,6 +166,8 @@ This repo uses **semantic versioning**, and commit titles follow **Conventional 
 
 Don't dress a real feature as `refactor`/`chore` (it would skip a release) or inflate a refactor into `feat` (it over-bumps). If you squash-merge a PR, the **PR title** becomes the commit message, so it must follow the same convention.
 
+**Link the ClickUp task:** when the work has a task id, append it as `#<taskId>` to the commit subject — and to the **PR title** so it survives a squash-merge — e.g. `feat: show dashboard version in a global footer #86exqazkq`. Use the bare id (not the `CU-` branch prefix). The type prefix still drives the version bump; the `#<taskId>` just keeps `git log` greppable and linkable back to ClickUp.
+
 > Release automation is **not** wired up in this repo yet (no `semantic-release`, no tags, `server/package.json` is `0.0.0`) — the convention currently records the *intended* bump. The sibling **subturtle-extension-apps** repo enforces the identical mapping automatically via `semantic-release`.
 
 ## Gotchas
