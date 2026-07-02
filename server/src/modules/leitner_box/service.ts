@@ -1,4 +1,4 @@
-import { LeitnerItem } from "./db";
+import { LeitnerItem, ReviewItem } from "./db";
 import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
@@ -26,6 +26,19 @@ export class LeitnerService {
   private static async getSystem(userId: string): Promise<LeitnerSystemDoc | null> {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
     return (await col.findOne({ userId })) as unknown as LeitnerSystemDoc;
+  }
+
+  /**
+   * Text of the phrase's primary chunk for the L3+ fill-in: the highest-`confidence`
+   * chunk, tie-broken by earliest (the strict `>` keeps the earlier chunk on ties).
+   * Returns `null` when the phrase has no chunks so the renderer falls back to the
+   * recognition card. Read-path only — no schema change.
+   */
+  private static pickConfirmedChunk(phrase: any): string | null {
+    const chunks = phrase?.chunks;
+    if (!Array.isArray(chunks) || chunks.length === 0) return null;
+    const best = chunks.reduce((a: any, b: any) => ((b?.confidence ?? 0) > (a?.confidence ?? 0) ? b : a));
+    return best?.text ?? null;
   }
 
   public static readonly DEFAULT_SETTINGS = {
@@ -114,13 +127,15 @@ export class LeitnerService {
     const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
 
     // Join
-    return selectedItems.map((item: LeitnerItem) => {
-      const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+    return selectedItems.map((item: LeitnerItem): ReviewItem => {
+      const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
       return {
         ...item,
-        phrase
+        phrase,
+        confirmed_chunk: this.pickConfirmedChunk(phrase),
+        source_sentence: phrase?.context ?? null,
       }
-    }).filter((item: any) => item.phrase);
+    }).filter((item: ReviewItem) => item.phrase);
   }
 
   static async getCustomReviewItems(userId: string, phraseIds: string[]) {
@@ -145,14 +160,16 @@ export class LeitnerService {
     const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
 
     return selectedItems
-      .map((item: LeitnerItem) => {
-        const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+      .map((item: LeitnerItem): ReviewItem => {
+        const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
         return {
           ...item,
           phrase,
+          confirmed_chunk: this.pickConfirmedChunk(phrase),
+          source_sentence: phrase?.context ?? null,
         };
       })
-      .filter((item: any) => item.phrase);
+      .filter((item: ReviewItem) => item.phrase);
   }
 
   static async getDueCount(userId: string): Promise<number> {
