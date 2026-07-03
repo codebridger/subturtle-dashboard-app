@@ -7,6 +7,10 @@ export interface LeitnerItem {
   nextReviewDate: Date;
   lastAttemptDate: Date;
   consecutiveIncorrect: number;
+  // Whether this card had a real first-encounter (Pool encode) session before
+  // reaching Leitner. `false` when it was promoted by the silent 7-day age-out.
+  // Kept separate from `boxLevel` so "aged into L1 unlearned" stays distinguishable.
+  encountered?: boolean;
 }
 
 /**
@@ -61,6 +65,7 @@ const leitnerSystemSchema = new Schema<LeitnerSystem>(
           nextReviewDate: { type: Date, required: true },
           lastAttemptDate: { type: Date, required: true },
           consecutiveIncorrect: { type: Number, default: 0 },
+          encountered: { type: Boolean, default: false },
         },
       ],
       default: [],
