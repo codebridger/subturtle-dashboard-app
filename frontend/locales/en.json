@@ -266,8 +266,14 @@
                 "text_chat_messages_per_chat": "This chat has reached its message limit. Start a new chat to keep going."
             },
             "cta": {
-                "text_chat_count": { "primary": "Start 3-day free trial", "secondary": "See all plans" },
-                "text_chat_messages_per_chat": { "primary": "Start a new chat", "secondary": "Upgrade to Learner" }
+                "text_chat_count": {
+                    "primary": "Start 3-day free trial",
+                    "secondary": "See all plans"
+                },
+                "text_chat_messages_per_chat": {
+                    "primary": "Start a new chat",
+                    "secondary": "Upgrade to Learner"
+                }
             }
         },
         "feature-locked": {
@@ -368,7 +374,7 @@
     },
     "practice": {
         "nav": "Practice",
-        "title": "Practice"
+        "title": "Study"
     },
     "activities": {
         "title": "Activities"
@@ -450,8 +456,15 @@
         "recent-lectures": "Recent AI Lectures",
         "view-all": "View All"
     },
+    "preferences": {
+        "eyebrow": "Preferences",
+        "title": "Study settings",
+        "subtitle": "Tune how new words are encoded and how you review them over time.",
+        "nav": "Study Settings"
+    },
     "pool": {
         "title": "New words to encode",
+        "tab": "Pool",
         "module_label": "Encode Queue",
         "card_small": "{count} new words from yesterday's videos · ~{mins} min",
         "card_medium": "{count} words to encode · ~{mins} min · do the first {chunk} today?",
