@@ -1,3 +1,10 @@
+# [1.0.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-07-03)
+
+
+### Features
+
+* **pool:** Pool encode queue, Forgot×2 routing, age-out, and board/settings surfaces [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exnxp4t [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exnxpez ([f6ebc1d](https://github.com/codebridger/subturtle-dashboard-app/commit/f6ebc1d585cc317e24f2f4ce628a838c1847d46c)), closes [#86exnxp4t](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxp4t) [#86exnxpez](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxpez)
+
 # [1.0.0-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-07-03)
 
 
