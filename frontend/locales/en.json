@@ -567,6 +567,10 @@
         "start_activity": "Start Activity",
         "back_to_board": "Back to Board"
     },
+    "leitner_session": {
+        "completed_title": "Review Session Completed!",
+        "save_failed": "Failed to save progress. Please try again."
+    },
     "extension": {
         "nudge": {
             "title": "Install the Subturtle extension",
