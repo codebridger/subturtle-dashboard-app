@@ -1,3 +1,10 @@
+# [1.0.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-07-04)
+
+
+### Bug Fixes
+
+* **leitner:** use real review RPCs and replace end-of-session alert with pilotui modal [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exnxphy ([9543401](https://github.com/codebridger/subturtle-dashboard-app/commit/954340138c5b92b61811187926d81f4045e108ef)), closes [#86exnxphy](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxphy)
+
 # [1.0.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-07-03)
 
 
