@@ -505,6 +505,12 @@ async function probeLocalCurrency() {
 }
 
 onMounted(async () => {
+    // Trial-to-paid funnel entry. The auto page-view can't carry attribution, so
+    // fire an explicit event with the surface the user arrived from (?from=...);
+    // default to 'settings' for direct/nav visits.
+    analytic.track(ANALYTICS_EVENTS.PRICING_PAGE_VIEWED, {
+        from_surface: (route.query.from as string) || 'settings',
+    });
     await fetchPlans();
     probeLocalCurrency();
     // Returning from a portal plan change (?plan_changed=1): the
