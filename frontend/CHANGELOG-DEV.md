@@ -1,3 +1,15 @@
+# [1.0.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-07-10)
+
+
+### Bug Fixes
+
+* guard pricing-page_viewed track so a token-less Mixpanel can't abort the subscription page mount [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exkh107 ([71cf5e0](https://github.com/codebridger/subturtle-dashboard-app/commit/71cf5e0fe5975fce202b583de6168a438ce08dd5)), closes [#86exkh107](https://github.com/codebridger/subturtle-dashboard-app/issues/86exkh107)
+
+
+### Features
+
+* wire account_created, first-save & pricing-page analytics + enrich Stripe lifecycle events [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exkh107 ([5f49c7c](https://github.com/codebridger/subturtle-dashboard-app/commit/5f49c7ca5fdb6a47fd44d125bcd4085144896cc5)), closes [#86exkh107](https://github.com/codebridger/subturtle-dashboard-app/issues/86exkh107)
+
 # [1.0.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-07-04)
 
 
