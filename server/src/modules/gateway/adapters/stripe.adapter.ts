@@ -518,12 +518,19 @@ export class StripeAdapter implements PaymentAdapter {
               trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_STARTED, userId, {
                 cadence,
                 tier: entitlements.tierId,
+                currency: subscription.currency,
               });
             } else if (subscription.status === "active") {
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
                 userId,
-                { cadence, tier: entitlements.tierId, via_trial: false }
+                {
+                  cadence,
+                  tier: entitlements.tierId,
+                  currency: subscription.currency,
+                  subscription_id: subscription.id,
+                  via_trial: false,
+                }
               );
             }
           }
@@ -538,7 +545,7 @@ export class StripeAdapter implements PaymentAdapter {
           const subscription = event.data.object as Stripe.Subscription;
 
           try {
-            const { success, message, wasTrialing } =
+            const { success, message, wasTrialing, tier } =
               await cancelSubscriptionByProviderAndSubscriptionId({
                 provider: this.provider,
                 subscriptionId: subscription.id,
@@ -554,10 +561,42 @@ export class StripeAdapter implements PaymentAdapter {
               subscription.customer as string
             );
             if (userId && success) {
+              // Lifetime value = sum of the succeeded payments recorded for this
+              // subscription. Stored `amount` is in major units (see verifyPayment),
+              // so ×100 → integer cents. Best-effort: a lookup failure must not
+              // block the churn event.
+              let lifetimeValueCents = 0;
+              try {
+                const paymentCollection = getCollection(
+                  DATABASE,
+                  PAYMENT_COLLECTION
+                );
+                const payments = (await paymentCollection.find({
+                  "provider_data.subscription_id": subscription.id,
+                  status: "succeeded",
+                })) as any[];
+                const total = (payments || []).reduce(
+                  (sum, p) => sum + (Number(p.amount) || 0),
+                  0
+                );
+                lifetimeValueCents = Math.round(total * 100);
+              } catch (ltvErr) {
+                console.error(
+                  "[analytics] failed to compute lifetime value for cancel",
+                  ltvErr
+                );
+              }
+
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED,
                 userId,
-                { was_trialing: !!wasTrialing }
+                {
+                  was_trialing: !!wasTrialing,
+                  tier,
+                  lifetime_value_cents: lifetimeValueCents,
+                  cancel_reason:
+                    subscription.cancellation_details?.reason || undefined,
+                }
               );
             }
 
@@ -640,6 +679,8 @@ export class StripeAdapter implements PaymentAdapter {
                 {
                   cadence,
                   tier: entitlements.tierId,
+                  currency: subscription.currency,
+                  subscription_id: subscription.id,
                   via_trial: previousStatus === "trialing",
                 }
               );

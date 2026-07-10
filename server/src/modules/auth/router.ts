@@ -3,6 +3,7 @@ import { reply, userManager } from "@modular-rest/server";
 import { google } from "googleapis";
 import { updateUserProfile } from "../profile/service";
 import { LeitnerService } from "../leitner_box/service";
+import { trackServerEvent, SERVER_ANALYTICS_EVENTS } from "../../utils/analytics";
 
 const name = "auth";
 const auth = new Router();
@@ -122,6 +123,13 @@ auth.get("/google/code-login", async (ctx) => {
   if (!registeredUser) {
     try {
       userId = await userManager.registerUser({ email });
+      // Activation funnel entry: first successful OAuth exchange for a brand-new
+      // account. Server-truth so it fires once, on the genuine new-user branch.
+      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, userId as string, {
+        signup_provider: "google",
+        oauth_timezone: timeZone || undefined,
+        referrer: redirectUrl || undefined,
+      });
     } catch (error) {
       ctx.throw(
         500,
@@ -187,7 +195,14 @@ auth.get("/google/access-token-login", async (ctx) => {
 
   if (!registeredUser) {
     try {
-      await userManager.registerUser({ email: googleEmail });
+      const newUserId = await userManager.registerUser({ email: googleEmail });
+      // Activation funnel entry for accounts created via the extension's Google
+      // token. No timezone/referrer on this path, so only the provider is known.
+      trackServerEvent(
+        SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED,
+        newUserId as string,
+        { signup_provider: "google" }
+      );
     } catch (error) {
       ctx.throw(
         500,
