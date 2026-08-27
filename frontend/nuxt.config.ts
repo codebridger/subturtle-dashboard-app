@@ -28,6 +28,17 @@ export default defineNuxtConfig({
         ssr: {
             noExternal: ['pilotui'],
         },
+        // subturtle-ui lives at ../ui and is linked in, so Vite has to be allowed to read
+        // outside the app root. It ships prebuilt ESM, so pre-bundling it only adds a stale
+        // copy between `yarn dev` here and `yarn dev` (build --watch) there.
+        optimizeDeps: {
+            exclude: ['subturtle-ui'],
+        },
+        server: {
+            fs: {
+                allow: ['..'],
+            },
+        },
     },
 
     app: {
@@ -50,13 +61,13 @@ export default defineNuxtConfig({
                 { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
                 {
                     rel: 'stylesheet',
-                    href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
+                    href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap',
                 },
             ],
         },
     },
 
-    css: ['pilotui/style.css', '~/assets/css/app.css'],
+    css: ['pilotui/style.css', '~/assets/css/app.css', 'subturtle-ui/style.css'],
 
     postcss: {
         plugins: {
@@ -90,6 +101,6 @@ export default defineNuxtConfig({
 
     // Make sure your build options are properly set
     build: {
-        transpile: ['@tiny-ideas-lr/lib-vue-components', 'mixpanel-browser'],
+        transpile: ['mixpanel-browser'],
     },
 });
