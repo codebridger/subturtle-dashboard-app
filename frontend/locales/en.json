@@ -1,4 +1,7 @@
 {
+    "app": {
+        "version": "Version {version}"
+    },
     "bundle": {
         "nav": "Phrase bundles",
         "list": "Bundle List",
@@ -407,7 +410,7 @@
     },
     "practice": {
         "nav": "Practice",
-        "title": "Practice"
+        "title": "Study"
     },
     "activities": {
         "title": "Activities"
@@ -489,6 +492,37 @@
         "recent-lectures": "Recent AI Lectures",
         "view-all": "View All"
     },
+    "preferences": {
+        "eyebrow": "Preferences",
+        "title": "Study settings",
+        "subtitle": "Tune how new words are encoded and how you review them over time.",
+        "nav": "Study Settings"
+    },
+    "pool": {
+        "title": "New words to encode",
+        "tab": "Pool",
+        "module_label": "Encode Queue",
+        "card_small": "{count} new words from yesterday's videos · ~{mins} min",
+        "card_medium": "{count} words to encode · ~{mins} min · do the first {chunk} today?",
+        "card_large": "{count} words waiting · do {chunk} now, the rest are aging",
+        "start": "Start",
+        "do_next": "Do the next {chunk}",
+        "reveal": "Reveal",
+        "next": "Next",
+        "finish": "Finish",
+        "session_complete": "Nicely done — those words are on their way to review.",
+        "settings": "Pool Settings",
+        "settings_desc": "New saved words wait in the Pool for a first-encounter session before joining Smart Review.",
+        "age_cutoff": "Age cut-off",
+        "age_cutoff_desc": "Words older than this are moved into Smart Review automatically.",
+        "chunk_size": "Chunk size",
+        "chunk_size_desc": "How many words 'Do the next' works through at a time.",
+        "daily_review_time": "Daily review time",
+        "daily_review_time_desc": "When your daily reminder is scheduled (shared with Smart Review).",
+        "save": "Save",
+        "saved_ok": "Pool settings saved",
+        "save_failed": "Failed to save Pool settings"
+    },
     "smart_review": {
         "title": "Smart Review",
         "settings": "Smart Review Settings",
@@ -568,6 +602,10 @@
         "activity_ready": "Ready to start",
         "start_activity": "Start Activity",
         "back_to_board": "Back to Board"
+    },
+    "leitner_session": {
+        "completed_title": "Review Session Completed!",
+        "save_failed": "Failed to save progress. Please try again."
     },
     "extension": {
         "nudge": {

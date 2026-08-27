@@ -1,3 +1,5 @@
+import { version as APP_VERSION } from './package.json';
+
 export default defineNuxtConfig({
     compatibilityDate: '2024-10-13',
     devtools: { enabled: true },
@@ -17,6 +19,8 @@ export default defineNuxtConfig({
             MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
             chromeWebStoreUrl: process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL || 'https://chromewebstore.google.com/detail/PLACEHOLDER',
             STRIPE_PUBLISHABLE_KEY: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+            // Baked in at build time from package.json (owned by semantic-release).
+            APP_VERSION,
         },
     },
 

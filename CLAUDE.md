@@ -166,7 +166,9 @@ This repo uses **semantic versioning**, and commit titles follow **Conventional 
 
 Don't dress a real feature as `refactor`/`chore` (it would skip a release) or inflate a refactor into `feat` (it over-bumps). If you squash-merge a PR, the **PR title** becomes the commit message, so it must follow the same convention.
 
-> Release automation is **not** wired up in this repo yet (no `semantic-release`, no tags, `server/package.json` is `0.0.0`) — the convention currently records the *intended* bump. The sibling **subturtle-extension-apps** repo enforces the identical mapping automatically via `semantic-release`.
+**Link the ClickUp task:** when the work has a task id, append it as `#<taskId>` to the commit subject — and to the **PR title** so it survives a squash-merge — e.g. `feat: show dashboard version in a global footer #86exqazkq`. Use the bare id (not the `CU-` branch prefix). The type prefix still drives the version bump; the `#<taskId>` just keeps `git log` greppable and linkable back to ClickUp.
+
+> Release automation is wired up for the **frontend** via `semantic-release` ([frontend/release.config.cjs](frontend/release.config.cjs), [.github/workflows/release.yml](.github/workflows/release.yml)) — it owns the version in [frontend/package.json](frontend/package.json) and cuts a tagged release on pushes to `dev`/`main` that contain releasable commits. The **server** has no release pipeline yet (`server/package.json` stays `0.0.0`). The sibling **subturtle-extension-apps** repo enforces the identical mapping via its own `semantic-release` setup.
 
 ## Gotchas
 

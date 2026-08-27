@@ -66,7 +66,14 @@ describe("LeitnerService", () => {
 
 			const settings = await LeitnerService.getSettings("user1");
 
-			expect(settings).toEqual(LeitnerService.DEFAULT_SETTINGS);
+			// getSettings now also surfaces the profile-backed Pool settings (defaults
+			// when the profile has none). reviewHour/reviewInterval are already in
+			// DEFAULT_SETTINGS; timeZone:undefined is ignored by toEqual.
+			expect(settings).toEqual({
+				...LeitnerService.DEFAULT_SETTINGS,
+				poolAgeCutoffDays: 7,
+				poolChunkSize: 10,
+			});
 		});
 
 		it("should return stored settings for an existing user", async () => {
@@ -81,7 +88,15 @@ describe("LeitnerService", () => {
 
 			const settings = await LeitnerService.getSettings("user1");
 
-			expect(settings).toEqual(storedSettings);
+			// Box mechanics come from the stored Leitner settings; review time + Pool
+			// settings are merged in from the profile (defaults here — no profile doc).
+			expect(settings).toEqual({
+				...storedSettings,
+				reviewHour: 9,
+				reviewInterval: 1,
+				poolAgeCutoffDays: 7,
+				poolChunkSize: 10,
+			});
 		});
 	});
 
@@ -121,9 +136,10 @@ describe("LeitnerService", () => {
 				.mockResolvedValueOnce({ _id: "sys1", userId, settings }) // First call
 				.mockResolvedValueOnce({ _id: "sys1", userId, settings: { ...settings, reviewHour: 10 } }); // Second call
 
-			// Mock profile with timezone
+			// Mock profile with timezone (reviewHour/reviewInterval now persist here).
 			mockProfileCollection = {
 				findOne: jest.fn<any>().mockResolvedValue({ refId: userId, timeZone }),
+				updateOne: jest.fn<any>().mockResolvedValue({}),
 			};
 
 			// We use updateSettings to trigger syncScheduledJob since it's private
@@ -151,6 +167,7 @@ describe("LeitnerService", () => {
 			// Mock profile WITHOUT timezone
 			mockProfileCollection = {
 				findOne: jest.fn<any>().mockResolvedValue({ refId: userId }),
+				updateOne: jest.fn<any>().mockResolvedValue({}),
 			};
 
 			await LeitnerService.updateSettings(userId, { reviewHour: 10 });

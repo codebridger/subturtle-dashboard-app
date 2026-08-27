@@ -820,12 +820,15 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
       success: true,
       message: "Subscription canceled successfully",
       wasTrialing,
+      // Surface the canceled tier for the subscription_canceled analytics event.
+      tier: existing?.tier,
     };
   } catch (error: any) {
     return {
       success: false,
       message: error.message || "Failed to cancel subscription",
       wasTrialing: false,
+      tier: undefined,
     };
   }
 }

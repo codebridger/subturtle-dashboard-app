@@ -39,6 +39,10 @@
                     <VoiceCapBanner />
                     <UsageCapBanner />
                     <NuxtPage />
+                    <!-- pilotui's DashboardShell had a dedicated #footer slot "right below of
+                         the content"; StAppShell has no footer, so the global version footer
+                         goes at the end of the content column, which renders identically. -->
+                    <PartialAppVersionFooter />
                 </div>
             </StAppShell>
         </div>

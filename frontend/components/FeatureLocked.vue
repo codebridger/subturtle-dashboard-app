@@ -63,9 +63,9 @@
 
     // Primary CTA pre-selects the required tier on the pricing page; secondary lists all.
     function goUpgrade() {
-        router.push(`/settings/subscription?suggest=${props.requiredTier}`);
+        router.push(`/settings/subscription?suggest=${props.requiredTier}&from=cap-hit-banner`);
     }
     function goToPlans() {
-        router.push('/settings/subscription');
+        router.push('/settings/subscription?from=cap-hit-banner');
     }
 </script>

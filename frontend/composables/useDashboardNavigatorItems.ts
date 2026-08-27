@@ -49,7 +49,7 @@ export const useDashboardNavigatorItems = (badges?: MaybeRefOrGetter<DashboardNa
                         badge: badge.board || null,
                     },
                     { id: 'bundles', label: t('bundle.nav'), icon: 'solar:notebook-bold-duotone' },
-                    { id: 'prefs', label: t('nav.review-settings'), icon: 'solar:settings-bold-duotone' },
+                    { id: 'prefs', label: t('preferences.nav'), icon: 'solar:settings-bold-duotone' },
                 ],
             },
             {

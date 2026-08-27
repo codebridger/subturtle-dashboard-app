@@ -1,5 +1,7 @@
 {
     "private": true,
+    "name": "subturtle-dashboard",
+    "version": "1.0.0-dev.5",
     "type": "module",
     "scripts": {
         "build": "nuxt build",
@@ -18,7 +20,9 @@
         "test:coverage:watch": "vitest --coverage",
         "test:watch": "vitest --watch",
         "test:ui": "vitest --ui",
-        "test:ui:run": "vitest --ui --run"
+        "test:ui:run": "vitest --ui --run",
+        "release": "semantic-release",
+        "release:dry": "semantic-release --dry-run --no-ci"
     },
     "devDependencies": {
         "@cssninja/nuxt-toaster": "^0.3.12",
@@ -29,6 +33,8 @@
         "@pinia/testing": "^1.0.2",
         "@playwright/test": "^1.54.1",
         "@rollup/plugin-alias": "^3.1.9",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1",
         "@tailwindcss/forms": "^0.5.3",
         "@tailwindcss/typography": "^0.5.7",
         "@testing-library/vue": "^8.1.0",
@@ -43,6 +49,7 @@
         "prettier": "^2.8.0",
         "prettier-plugin-tailwindcss": "^0.2.0",
         "sass-embedded": "^1.83.4",
+        "semantic-release": "^25.0.3",
         "tailwindcss": "^3.4.1",
         "typescript": "^4.6.4",
         "vitest": "^1.0.0",

@@ -70,6 +70,7 @@ function createdEvent() {
         customer: "cus_1",
         id: "sub_1",
         status: "trialing",
+        currency: "gbp",
         trial_end: 1234,
         items: {
           data: [
@@ -92,6 +93,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     jest.spyOn(console, "error").mockImplementation(() => {});
     (getCollection as any).mockReturnValue({
       findOne: jest.fn(async () => ({ user_id: "u1" })), // stripe_customer -> userId
+      find: jest.fn(async () => []), // payment records for lifetime-value (default: none)
     });
     adapter = new StripeAdapter("sk_test_dummy");
   });
@@ -131,6 +133,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(trackServerEvent).toHaveBeenCalledWith("trial_started", "u1", {
       cadence: "monthly",
       tier: "learner",
+      currency: "gbp",
     });
   });
 
@@ -144,7 +147,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(trackServerEvent).toHaveBeenCalledWith(
       "subscription_canceled",
       "u1",
-      { was_trialing: false }
+      { was_trialing: false, lifetime_value_cents: 0 }
     );
   });
 
@@ -164,6 +167,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
           customer: "cus_1",
           id: "sub_1",
           status: "active",
+          currency: "gbp",
           cancel_at_period_end: false,
           trial_end: null,
           items: {
@@ -184,7 +188,13 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(trackServerEvent).toHaveBeenCalledWith(
       "subscription_started",
       "u1",
-      { cadence: "monthly", tier: "learner", via_trial: true }
+      {
+        cadence: "monthly",
+        tier: "learner",
+        currency: "gbp",
+        subscription_id: "sub_1",
+        via_trial: true,
+      }
     );
   });
 
@@ -238,6 +248,8 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(trackServerEvent).toHaveBeenCalledWith("subscription_started", "u1", {
       cadence: "monthly",
       tier: "learner",
+      currency: "gbp",
+      subscription_id: "sub_1",
       via_trial: false,
     });
   });
@@ -277,6 +289,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
           customer: "cus_1",
           id: "sub_1",
           status: "active",
+          currency: "gbp",
           cancel_at_period_end: false,
           trial_end: null,
           items: {
@@ -296,6 +309,8 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(trackServerEvent).toHaveBeenCalledWith("subscription_started", "u1", {
       cadence: "monthly",
       tier: "learner",
+      currency: "gbp",
+      subscription_id: "sub_1",
       via_trial: false,
     });
   });
@@ -313,6 +328,39 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     await adapter.handleWebhook(event);
     expect(trackServerEvent).toHaveBeenCalledWith("subscription_canceled", "u1", {
       was_trialing: true,
+      lifetime_value_cents: 0,
+    });
+  });
+
+  it("enriches subscription_canceled with tier, lifetime value (cents), and reason", async () => {
+    (cancelSubscriptionByProviderAndSubscriptionId as any).mockResolvedValueOnce({
+      success: true,
+      message: "ok",
+      wasTrialing: false,
+      tier: "learner",
+    });
+    // Two succeeded payments at 4.49 + 4.49 (major units) -> 898 cents.
+    (getCollection as any).mockReturnValue({
+      findOne: jest.fn(async () => ({ user_id: "u1" })),
+      find: jest.fn(async () => [{ amount: 4.49 }, { amount: 4.49 }]),
+    });
+    const event = {
+      type: "customer.subscription.deleted",
+      data: {
+        object: {
+          customer: "cus_1",
+          id: "sub_1",
+          status: "canceled",
+          cancellation_details: { reason: "cancellation_requested" },
+        },
+      },
+    };
+    await adapter.handleWebhook(event);
+    expect(trackServerEvent).toHaveBeenCalledWith("subscription_canceled", "u1", {
+      was_trialing: false,
+      tier: "learner",
+      lifetime_value_cents: 898,
+      cancel_reason: "cancellation_requested",
     });
   });
 

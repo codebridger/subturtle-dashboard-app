@@ -41,6 +41,6 @@
 
     // At the cap, point the user at Learner's unlimited text chat.
     function findOutMore() {
-        router.push('/settings/subscription?suggest=learner');
+        router.push('/settings/subscription?suggest=learner&from=cap-hit-banner');
     }
 </script>

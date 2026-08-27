@@ -18,6 +18,9 @@ if (token) {
 // Mirrors frontend/constants/analyticsEvents.ts for the server-fired events.
 // Naming follows docs/metrics/event-naming.md: [object]_[action], `-` inside a part.
 export const SERVER_ANALYTICS_EVENTS = {
+  // Activation funnel (server-truth signals the client can't see reliably).
+  ACCOUNT_CREATED: "account_created", // first successful OAuth exchange for a new account
+  PHRASE_SAVED_FIRST_TIME: "phrase_saved_first-time", // user's first-ever phrase save (any surface)
   // Stripe webhook lifecycle (the roadmap's slim instrumentation set).
   TRIAL_STARTED: "trial_started", // subscription created with status "trialing"
   SUBSCRIPTION_STARTED: "subscription_started", // trial converted, or direct paid start — props: { via_trial }

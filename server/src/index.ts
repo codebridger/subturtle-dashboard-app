@@ -112,13 +112,29 @@ const app = createRest({
     ScheduleService,
   } = require("./modules/schedule/service");
   const { LeitnerService } = require("./modules/leitner_box/service");
+  const { PoolService } = require("./modules/pool/service");
 
   ScheduleService.register("generate-daily-bundles", async (args: any) => {
     console.log("[Schedule] Running generate-daily-bundles...");
     await LeitnerService.generateDailyBundles();
   });
 
+  // Daily Pool age-out: promote pooled phrases past each user's cut-off into L1.
+  ScheduleService.register("pool-age-out", async () => {
+    console.log("[Schedule] Running pool-age-out...");
+    await PoolService.ageOutAllUsers();
+  });
+
   ScheduleService.init();
+
+  // Ensure the daily Pool age-out sweep exists (idempotent upsert keyed on job
+  // name). Cron is interpreted in server-local time; the sweep is safe to run more
+  // than once a day because PoolService.promote is idempotent.
+  ScheduleService.createJob("pool-age-out", "pool-age-out", {
+    cronExpression: "0 3 * * *",
+    jobType: "recurrent",
+    catchUp: true,
+  }).catch((err: any) => console.error("[Schedule] Failed to create pool-age-out job", err));
 
   // Log whether the Stripe catalog + portal config are in place, so you can tell
   // from the server logs whether `yarn setup:stripe` still needs to be run.

@@ -37,6 +37,6 @@ const state = computed<'hidden' | 'warning' | 'paused'>(() => {
 });
 
 function goToPlans() {
-    router.push('/settings/subscription');
+    router.push('/settings/subscription?from=cap-hit-banner');
 }
 </script>

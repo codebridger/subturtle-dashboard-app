@@ -31,6 +31,12 @@
                 </div>
             </div>
 
+            <!-- Pool encode queue — self-contained, shows only when the pool is non-empty.
+                 Sits alongside the activity cards regardless of board-activity state. -->
+            <div v-if="!loading" class="mb-10 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+                <PoolCard />
+            </div>
+
             <!-- Loading State -->
             <div v-if="loading" class="flex flex-col items-center justify-center py-32 gap-6">
                 <div class="relative">
@@ -52,7 +58,7 @@
             </div>
 
             <!-- Empty State -->
-            <div v-else-if="activities.length === 0" class="max-w-3xl mx-auto">
+            <div v-else-if="activities.length === 0 && poolCount === 0" class="max-w-3xl mx-auto">
                 <Card
                     class="relative group flex flex-col items-center justify-center py-24 px-10 text-center bg-white/40 dark:bg-gray-800/40 backdrop-blur-2xl border-2 border-dashed border-gray-200/60 dark:border-gray-700/60 rounded-[3rem] overflow-hidden shadow-2xl shadow-gray-200/20 dark:shadow-none transition-all duration-700 hover:border-primary/30">
                     <!-- Subtle background glow for empty state -->
@@ -185,6 +191,7 @@
 
 <script setup lang="ts">
 import { useLeitnerStore } from '~/stores/leitner';
+import { usePoolStore } from '~/stores/pool';
 import { type BoardActivityType } from '~/types/database.type';
 import { storeToRefs } from 'pinia';
 import { Card, Button, Icon } from 'pilotui/elements';
@@ -192,7 +199,9 @@ import { Card, Button, Icon } from 'pilotui/elements';
 const { t } = useI18n();
 const router = useRouter();
 const leitnerStore = useLeitnerStore();
+const poolStore = usePoolStore();
 const { boardActivities } = storeToRefs(leitnerStore);
+const { poolCount } = storeToRefs(poolStore);
 
 const loading = ref(true);
 
@@ -207,7 +216,7 @@ definePageMeta({
 onMounted(async () => {
     loading.value = true;
     try {
-        await leitnerStore.fetchBoard();
+        await Promise.all([leitnerStore.fetchBoard(), poolStore.fetchPool()]);
     } catch (e) {
         console.error('Failed to fetch board:', e);
     } finally {

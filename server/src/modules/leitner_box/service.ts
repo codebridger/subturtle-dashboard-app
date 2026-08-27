@@ -1,4 +1,4 @@
-import { LeitnerItem } from "./db";
+import { LeitnerItem, ReviewItem } from "./db";
 import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
@@ -28,6 +28,29 @@ export class LeitnerService {
     return (await col.findOne({ userId })) as unknown as LeitnerSystemDoc;
   }
 
+  /**
+   * Text of the phrase's primary chunk for the L3+ fill-in: the highest-`confidence`
+   * chunk, tie-broken by earliest (the strict `>` keeps the earlier chunk on ties).
+   * Returns `null` when the phrase has no chunks so the renderer falls back to the
+   * recognition card. Read-path only — no schema change.
+   */
+  private static pickConfirmedChunk(phrase: any): string | null {
+    const chunks = phrase?.chunks;
+    if (!Array.isArray(chunks) || chunks.length === 0) return null;
+    const best = chunks.reduce((a: any, b: any) => ((b?.confidence ?? 0) > (a?.confidence ?? 0) ? b : a));
+    return best?.text ?? null;
+  }
+
+  /** Coerce to an integer in [min, max]; throw on anything out of range. Guards the
+   *  Pool/review settings so a bad value can't break the age-out sweep or the cron. */
+  private static validateInt(value: number, min: number, max: number, field: string): number {
+    const n = Math.trunc(Number(value));
+    if (!Number.isFinite(n) || n < min || n > max) {
+      throw new Error(`${field} must be an integer between ${min} and ${max}`);
+    }
+    return n;
+  }
+
   public static readonly DEFAULT_SETTINGS = {
     dailyLimit: 20,
     totalBoxes: 5,
@@ -54,8 +77,16 @@ export class LeitnerService {
     const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
     const profile = await profileCol.findOne({ refId: userId }) as any;
 
+    // reviewHour/reviewInterval now live on the profile. Read profile-first, then
+    // fall back to the (legacy) Leitner-system value, then the default — so users
+    // whose values haven't been backfilled yet keep working. The Pool settings are
+    // profile-only (no Leitner fallback exists).
     return {
       ...settings,
+      reviewHour: profile?.reviewHour ?? settings.reviewHour ?? this.DEFAULT_SETTINGS.reviewHour,
+      reviewInterval: profile?.reviewInterval ?? settings.reviewInterval ?? this.DEFAULT_SETTINGS.reviewInterval,
+      poolAgeCutoffDays: profile?.poolAgeCutoffDays ?? 7,
+      poolChunkSize: profile?.poolChunkSize ?? 10,
       timeZone: profile?.timeZone
     };
   }
@@ -114,13 +145,15 @@ export class LeitnerService {
     const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
 
     // Join
-    return selectedItems.map((item: LeitnerItem) => {
-      const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+    return selectedItems.map((item: LeitnerItem): ReviewItem => {
+      const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
       return {
         ...item,
-        phrase
+        phrase,
+        confirmed_chunk: this.pickConfirmedChunk(phrase),
+        source_sentence: phrase?.context ?? null,
       }
-    }).filter((item: any) => item.phrase);
+    }).filter((item: ReviewItem) => item.phrase);
   }
 
   static async getCustomReviewItems(userId: string, phraseIds: string[]) {
@@ -145,14 +178,16 @@ export class LeitnerService {
     const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
 
     return selectedItems
-      .map((item: LeitnerItem) => {
-        const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+      .map((item: LeitnerItem): ReviewItem => {
+        const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
         return {
           ...item,
           phrase,
+          confirmed_chunk: this.pickConfirmedChunk(phrase),
+          source_sentence: phrase?.context ?? null,
         };
       })
-      .filter((item: any) => item.phrase);
+      .filter((item: ReviewItem) => item.phrase);
   }
 
   static async getDueCount(userId: string): Promise<number> {
@@ -212,20 +247,33 @@ export class LeitnerService {
         }
       }
 
-      const nextDate = this.calculateNextDate(nextBox, system.settings.boxIntervals);
+      // Forgot x2 at L1 -> Pool. A card stuck at L1 that is marked Forgot twice in a
+      // row is pulled out of the Leitner queue and re-pooled for another
+      // first-encounter pass (fresh pooled_at). Strictly L1 AND >= 2 consecutive
+      // Forgots; a Learned in between resets the counter (nextConsecutiveIncorrect = 0
+      // above), so it never fires on Forgot/Learned/Forgot. Higher boxes demote
+      // normally. We skip the box $set but still run the board-refresh tail below.
+      if (!isCorrect && item.boxLevel === 1 && nextConsecutiveIncorrect >= 2) {
+        await this.removePhraseFromBox(userId, phraseId);
+        // Lazy require avoids the pool <-> leitner_box import cycle (see PoolService.promote).
+        const { PoolService } = require("../pool/service");
+        await PoolService.add(userId, phraseId);
+      } else {
+        const nextDate = this.calculateNextDate(nextBox, system.settings.boxIntervals);
 
-      const updateField = `items.${itemIndex}`;
-      await col.updateOne(
-        { _id: system._id },
-        {
-          $set: {
-            [`${updateField}.boxLevel`]: nextBox,
-            [`${updateField}.nextReviewDate`]: nextDate,
-            [`${updateField}.lastAttemptDate`]: now,
-            [`${updateField}.consecutiveIncorrect`]: nextConsecutiveIncorrect
+        const updateField = `items.${itemIndex}`;
+        await col.updateOne(
+          { _id: system._id },
+          {
+            $set: {
+              [`${updateField}.boxLevel`]: nextBox,
+              [`${updateField}.nextReviewDate`]: nextDate,
+              [`${updateField}.lastAttemptDate`]: now,
+              [`${updateField}.consecutiveIncorrect`]: nextConsecutiveIncorrect
+            }
           }
-        }
-      );
+        );
+      }
     }
 
     // Sync Board State after review
@@ -264,14 +312,18 @@ export class LeitnerService {
       this.syncScheduledJob(userId).catch(e => console.error(`[LeitnerService] Async job sync failed for ${userId}:`, e));
     }
 
+    // Return the profile-merged settings (reviewHour/reviewInterval + pool fields now
+    // live on the profile) so the settings UI shows the authoritative values.
+    const settings = await this.getSettings(userId);
+
     return {
-      settings: system.settings,
+      settings,
       distribution,
       totalItems: system.items.length
     };
   }
 
-  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean; reviewInterval?: number; reviewHour?: number }): Promise<void> {
+  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean; reviewInterval?: number; reviewHour?: number; poolAgeCutoffDays?: number; poolChunkSize?: number }): Promise<void> {
     const system = await this.getSystem(userId);
     if (!system) {
       await this.ensureInitialized(userId);
@@ -280,19 +332,39 @@ export class LeitnerService {
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
 
+    // Box-mechanics settings stay on the Leitner system doc.
     const updatePayload: any = {};
     if (settings.dailyLimit) updatePayload["settings.dailyLimit"] = settings.dailyLimit;
     if (settings.totalBoxes) updatePayload["settings.totalBoxes"] = settings.totalBoxes;
     if (settings.boxIntervals) updatePayload["settings.boxIntervals"] = settings.boxIntervals;
     if (settings.boxQuotas) updatePayload["settings.boxQuotas"] = settings.boxQuotas;
     if (typeof settings.autoEntry === "boolean") updatePayload["settings.autoEntry"] = settings.autoEntry;
-    updatePayload["settings.reviewInterval"] = settings.reviewInterval || system.settings.reviewInterval || 1;
-    updatePayload["settings.reviewHour"] = settings.reviewHour !== undefined ? settings.reviewHour : (system.settings.reviewHour !== undefined ? system.settings.reviewHour : 9);
 
-    await col.updateOne({ _id: system._id }, { $set: updatePayload });
+    if (Object.keys(updatePayload).length > 0) {
+      await col.updateOne({ _id: system._id }, { $set: updatePayload });
+    }
+
+    // reviewHour/reviewInterval + the Pool settings live on the profile doc.
+    const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
+    const profilePayload: any = {};
+    if (settings.reviewInterval !== undefined) {
+      profilePayload.reviewInterval = this.validateInt(settings.reviewInterval, 1, 365, "reviewInterval");
+    }
+    if (settings.reviewHour !== undefined) {
+      profilePayload.reviewHour = this.validateInt(settings.reviewHour, 0, 23, "reviewHour");
+    }
+    if (settings.poolAgeCutoffDays !== undefined) {
+      profilePayload.poolAgeCutoffDays = this.validateInt(settings.poolAgeCutoffDays, 1, 90, "poolAgeCutoffDays");
+    }
+    if (settings.poolChunkSize !== undefined) {
+      profilePayload.poolChunkSize = this.validateInt(settings.poolChunkSize, 1, 100, "poolChunkSize");
+    }
+    if (Object.keys(profilePayload).length > 0) {
+      await profileCol.updateOne({ refId: userId }, { $set: profilePayload }, { upsert: true });
+    }
 
     // Sync schedule if interval or hour changed
-    if (settings.reviewInterval || settings.reviewHour !== undefined) {
+    if (settings.reviewInterval !== undefined || settings.reviewHour !== undefined) {
       this.syncedUsers.delete(userId.toString()); // Force re-sync
       await this.syncScheduledJob(userId);
     }
@@ -354,11 +426,16 @@ export class LeitnerService {
     );
   }
 
-  static async addPhraseToBox(userId: string, phraseId: string, initialBox: number = 1): Promise<void> {
+  static async addPhraseToBox(
+    userId: string,
+    phraseId: string,
+    initialBox: number = 1,
+    opts: { onlyIfAbsent?: boolean; encountered?: boolean } = {}
+  ): Promise<void> {
     const system = await this.getSystem(userId);
     if (!system) {
       await this.ensureInitialized(userId);
-      return this.addPhraseToBox(userId, phraseId, initialBox);
+      return this.addPhraseToBox(userId, phraseId, initialBox, opts);
     }
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
@@ -367,6 +444,12 @@ export class LeitnerService {
     const now = new Date();
 
     if (itemIndex >= 0) {
+      // `onlyIfAbsent` makes this a no-op when the card is already in Leitner — the
+      // idempotency that keeps PoolService.promote crash-safe (an interrupted
+      // promote leaves a harmless duplicate, and the next age-out sweep re-runs
+      // without moving/resetting the card).
+      if (opts.onlyIfAbsent) return;
+
       // Move existing item
       const updateField = `items.${itemIndex}`;
       await col.updateOne(
@@ -386,7 +469,8 @@ export class LeitnerService {
         boxLevel: initialBox,
         nextReviewDate: now,
         lastAttemptDate: now,
-        consecutiveIncorrect: 0
+        consecutiveIncorrect: 0,
+        encountered: opts.encountered ?? false,
       };
 
       await col.updateOne(
