@@ -26,8 +26,8 @@
   ],
   "scripts": {
     "icons": "node scripts/build-icons.mjs",
-    "build": "yarn icons && vue-tsc --noEmit -p tsconfig.build.json && vite build",
-    "dev": "yarn icons && vite build --watch",
+    "build": "vue-tsc --noEmit -p tsconfig.build.json && vite build",
+    "dev": "vite build --watch",
     "typecheck": "vue-tsc --noEmit -p tsconfig.build.json"
   },
   "peerDependencies": {
