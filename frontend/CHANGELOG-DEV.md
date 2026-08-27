@@ -1,3 +1,16 @@
+# [1.0.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-08-27)
+
+
+### Bug Fixes
+
+* **build:** build subturtle-ui wherever the frontend is installed ([f3204ff](https://github.com/codebridger/subturtle-dashboard-app/commit/f3204ff52079c02fea5247ddc0fe3ff277b88a94))
+* **ui:** give StAppShell a mobile drawer, and follow the redesigned lock copy ([44e5e54](https://github.com/codebridger/subturtle-dashboard-app/commit/44e5e5450f47c36e80f2f4ef2a1d4bf19d0e2258))
+
+
+### Features
+
+* **ui:** add subturtle-ui design system, new app shell and progress screen ([871957e](https://github.com/codebridger/subturtle-dashboard-app/commit/871957ecbb2e29e7d9562a044a966ca61627c098)), closes [#f91e5a](https://github.com/codebridger/subturtle-dashboard-app/issues/f91e5a)
+
 # [1.0.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-07-10)
 
 
