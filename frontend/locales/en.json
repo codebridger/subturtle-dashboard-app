@@ -3,7 +3,7 @@
         "version": "Version {version}"
     },
     "bundle": {
-        "nav": "Phrase Bundles",
+        "nav": "Phrase bundles",
         "list": "Bundle List",
         "detail": "Bundle Detail",
         "add_phrase": "Add Phrase",
@@ -62,12 +62,48 @@
         }
     },
     "statistic": {
-        "your-statistic": "Your Statistic",
+        "your-statistic": "Your progress",
         "recent": "Recent",
         "quick-states": {
             "label": "Your quick stats",
             "total-phrases": "Phrases",
             "total-bundles": "Bundles"
+        },
+        "overline": "Analytics",
+        "subtitle": "Here's how the week went.",
+        "install-extension": "Install extension",
+        "start-review": "Start review",
+        "chart": {
+            "title": "Your last 7 days",
+            "subtitle": "Phrases saved each day",
+            "delta": "{delta}% vs last week"
+        },
+        "tiles": {
+            "phrases": "Phrases saved",
+            "streak": "Day streak",
+            "due": "Due today"
+        },
+        "bundles": {
+            "title": "Your bundles",
+            "see-all": "See all {count}",
+            "go": "Go to bundles"
+        },
+        "empty": {
+            "chart": {
+                "title": "Your week starts with one phrase",
+                "description": "Save a word or line from YouTube, Netflix, or any page and it shows up here the same day.",
+                "cta": "Get the extension"
+            },
+            "bundles": {
+                "title": "No bundles yet",
+                "description": "Bundles are small sets of phrases. Your first one appears the moment you save something."
+            }
+        },
+        "locked": {
+            "title": "Weekly insights are a Learner feature",
+            "description": "You'll see the days you kept the streak alive, what you saved, and how much of it stuck — week by week.",
+            "upgrade": "Upgrade to Learner",
+            "later": "Maybe later"
         }
     },
     "flashcard-tool": {
@@ -385,7 +421,7 @@
         "start-session": "Start Session",
         "start-first-session": "Start Your First Session",
         "6-months-expiry": "Each session will expire in 6 months",
-        "session-history": "Session History",
+        "session-history": "Session history",
         "session-details": "Session Details",
         "dialogs": "dialogs",
         "your-sessions": "Your Sessions",
@@ -578,5 +614,12 @@
             "cta": "Install for Chrome",
             "dismiss": "Dismiss"
         }
+    },
+    "nav": {
+        "overview": "Overview",
+        "your-progress": "Your progress",
+        "todays-board": "Today's board",
+        "start-a-session": "Start a session",
+        "account": "Account"
     }
 }

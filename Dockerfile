@@ -2,6 +2,11 @@ FROM node:22.17.1-alpine as build-stage
 
 WORKDIR /app
 
+# subturtle-ui is a link:../ui dependency whose dist/ is not committed, so the library's
+# source has to be in the image and gets built by frontend's postinstall. The path must stay
+# ../ui relative to this WORKDIR.
+COPY /ui /ui
+
 COPY /frontend/package.json ./
 COPY /frontend/yarn.lock ./
 COPY /frontend/.npmrc ./
