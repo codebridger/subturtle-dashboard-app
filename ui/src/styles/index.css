@@ -1,0 +1,57 @@
+/* Google Fonts must be the first statement in the file, or browsers drop it. */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+
+/*
+ * Deliberately NOT a reset. Preflight is off (see tailwind.config.cjs) so the library never
+ * restyles a host page's elements. This one rule is the exception: every component's layout
+ * math assumes border-box. Both current consumers already set it via their own preflight —
+ * it is repeated so the library also works in a page with no reset at all, such as an
+ * extension content script.
+ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/*
+ * Helper classes for CONSUMERS, written as plain CSS rather than inside `@layer components`.
+ * Tailwind purges its own layers against this package's `content` globs, which only cover
+ * src/ — a class used solely in a consuming app would be stripped from the shipped stylesheet.
+ * They sit before `@tailwind utilities` so utility classes still override them.
+ */
+
+/* The rose eyebrow label that sits above page and section titles across the product. */
+.st-overline {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--text-2xs);
+    font-weight: 800;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: rgb(var(--color-primary));
+}
+
+.st-overline::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgb(var(--color-primary));
+}
+
+/*
+ * Shared focus ring. The design system has no focus treatment at all — every control in this
+ * library opts into this one so the components are keyboard-usable.
+ */
+.st-focus-ring:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring-focus);
+}
+
+@tailwind utilities;

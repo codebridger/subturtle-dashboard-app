@@ -1,0 +1,49 @@
+{
+  "name": "subturtle-ui",
+  "version": "0.1.0",
+  "description": "Subturtle design system \u2014 Vue 3 component library shared by the dashboard and the browser extension.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "tailwind-tokens.cjs"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./tailwind-tokens": "./tailwind-tokens.cjs"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "icons": "node scripts/build-icons.mjs",
+    "build": "yarn icons && vue-tsc --noEmit -p tsconfig.build.json && vite build",
+    "dev": "yarn icons && vite build --watch",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@iconify/json": "^2.2.319",
+    "@types/node": "^26.4.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vite-plugin-dts": "^4.3.0",
+    "vue": "^3.5.12",
+    "vue-tsc": "^2.1.10"
+  }
+}
