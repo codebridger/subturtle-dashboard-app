@@ -34,6 +34,7 @@ const ICONS = [
     'solar:download-minimalistic-bold',
     'solar:fire-bold',
     'solar:fire-bold-duotone',
+    'solar:hamburger-menu-linear',
     'solar:history-2-bold-duotone',
     'solar:layers-minimalistic-bold-duotone',
     'solar:lock-keyhole-minimalistic-bold-duotone',

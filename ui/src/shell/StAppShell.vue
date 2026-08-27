@@ -4,8 +4,20 @@
         :data-rail="collapsed ? 'collapsed' : 'expanded'"
         :style="{ '--sidebar-w': collapsed ? COLLAPSED_W : undefined }"
     >
+        <!--
+            Below md the sidebar is an off-canvas drawer. Left in flow it would eat 272px of a
+            375px viewport, squeezing the content column to a sliver that clips its own
+            children — they stay in the DOM but measure as hidden.
+        -->
+        <div
+            v-if="drawerOpen"
+            class="st-fixed st-inset-0 st-z-overlay st-bg-ink-950/40 md:st-hidden"
+            @click="drawerOpen = false"
+        />
+
         <aside
-            class="st-relative st-flex st-flex-col st-shrink-0 st-w-sidebar st-h-full st-bg-card st-border-r st-border-subtle st-px-4 st-py-5 st-transition-[width] st-duration-base st-ease-out"
+            class="st-fixed st-inset-y-0 st-left-0 st-z-overlay st-w-[17rem] md:st-relative md:st-inset-auto md:st-z-auto md:st-w-sidebar md:st-translate-x-0 st-flex st-flex-col st-shrink-0 st-h-full st-bg-card st-border-r st-border-subtle st-px-4 st-py-5 st-transition-transform st-duration-base st-ease-out md:st-transition-[width]"
+            :class="drawerOpen ? 'st-translate-x-0' : '-st-translate-x-full'"
         >
             <div class="st-flex st-items-center st-gap-[10px] st-px-2 st-pt-1 st-pb-[22px]" :class="collapsed ? 'st-justify-center' : ''">
                 <img v-if="logoSrc" :src="logoSrc" alt="" class="st-w-[34px] st-h-[34px] st-shrink-0" />
@@ -17,12 +29,12 @@
                 </span>
             </div>
 
-            <StSidebarNav :groups="nav" :active="active" :collapsed="collapsed" @navigate="$emit('navigate', $event)" />
+            <StSidebarNav :groups="nav" :active="active" :collapsed="collapsed" @navigate="onNavigate" />
 
             <button
                 v-if="collapsible"
                 type="button"
-                class="st-absolute st-top-[76px] -st-right-[14px] st-z-20 st-flex st-items-center st-justify-center st-w-7 st-h-7 st-p-0 st-rounded-circle st-border st-border-subtle st-bg-card st-shadow-sm st-text-muted st-cursor-pointer st-focus-ring hover:st-text-body"
+                class="st-absolute st-top-[76px] -st-right-[14px] st-z-20 st-hidden md:st-flex st-items-center st-justify-center st-w-7 st-h-7 st-p-0 st-rounded-circle st-border st-border-subtle st-bg-card st-shadow-sm st-text-muted st-cursor-pointer st-focus-ring hover:st-text-body"
                 :aria-label="collapsed ? 'Expand menu' : 'Collapse menu'"
                 :title="collapsed ? 'Expand menu' : 'Collapse menu'"
                 :aria-expanded="!collapsed"
@@ -38,11 +50,21 @@
 
         <div class="st-flex-1 st-flex st-flex-col st-min-w-0 st-overflow-hidden">
             <header
-                class="st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-8 st-border-b st-border-subtle st-bg-page/80 st-backdrop-blur-[8px]"
+                class="st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-bg-page/80 st-backdrop-blur-[8px]"
             >
-                <span class="st-text-md st-font-extrabold st-text-strong st-min-w-0 st-truncate">
-                    <slot name="title" />
-                </span>
+                <div class="st-flex st-items-center st-gap-3 st-min-w-0">
+                    <button
+                        type="button"
+                        class="st-flex md:st-hidden st-items-center st-justify-center st-w-9 st-h-9 st-shrink-0 st-rounded-md st-border-none st-bg-transparent st-text-body st-cursor-pointer st-focus-ring hover:st-bg-ink-100"
+                        aria-label="Open menu"
+                        @click="drawerOpen = true"
+                    >
+                        <StIcon name="solar:hamburger-menu-linear" :size="22" />
+                    </button>
+                    <span class="st-text-md st-font-extrabold st-text-strong st-min-w-0 st-truncate">
+                        <slot name="title" />
+                    </span>
+                </div>
                 <div class="st-flex st-items-center st-gap-3 st-shrink-0">
                     <slot name="header-right" />
                 </div>
@@ -61,7 +83,7 @@
                     />
                 </template>
 
-                <div class="st-relative st-mx-auto st-px-8 st-pt-8 st-pb-16" :style="{ maxWidth }">
+                <div class="st-relative st-mx-auto st-px-4 st-pt-6 st-pb-16 md:st-px-8 md:st-pt-8" :style="{ maxWidth }">
                     <slot />
                 </div>
             </main>
@@ -70,6 +92,7 @@
 </template>
 
 <script setup lang="ts">
+    import { ref } from 'vue';
     import StIcon from '../icon/StIcon.vue';
     import StSidebarNav from './StSidebarNav.vue';
     import type { StNavGroup } from '../types';
@@ -103,5 +126,13 @@
         }
     );
 
-    defineEmits<{ navigate: [string]; 'update:collapsed': [boolean] }>();
+    const emit = defineEmits<{ navigate: [string]; 'update:collapsed': [boolean] }>();
+
+    /** Off-canvas drawer, below md only. Transient UI, so the shell owns it. */
+    const drawerOpen = ref(false);
+
+    function onNavigate(id: string) {
+        drawerOpen.value = false;
+        emit('navigate', id);
+    }
 </script>
