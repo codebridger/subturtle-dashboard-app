@@ -18,18 +18,22 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 
-/** Every icon the shell and the Progress screen use. Keep sorted by set, then name. */
+/** Every icon the shell, the Progress screen and the Login screen use. Keep sorted by set, then name. */
 const ICONS = [
+    'logos:google-icon',
     'solar:add-circle-bold',
     'solar:alt-arrow-left-linear',
     'solar:alt-arrow-right-linear',
     'solar:arrow-down-bold',
+    'solar:arrow-right-bold',
     'solar:arrow-right-linear',
     'solar:arrow-up-bold',
     'solar:bookmark-bold-duotone',
     'solar:chart-2-bold-duotone',
+    'solar:clock-circle-bold',
     'solar:crown-bold',
     'solar:crown-bold-duotone',
+    'solar:danger-triangle-bold',
     'solar:documents-bold-duotone',
     'solar:download-minimalistic-bold',
     'solar:fire-bold',
@@ -39,6 +43,7 @@ const ICONS = [
     'solar:layers-minimalistic-bold-duotone',
     'solar:lock-keyhole-minimalistic-bold-duotone',
     'solar:microphone-3-bold-duotone',
+    'solar:moon-sleep-bold-duotone',
     'solar:notebook-bold-duotone',
     'solar:play-bold',
     'solar:rocket-2-bold-duotone',

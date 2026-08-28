@@ -4,7 +4,6 @@
 import { authentication } from '@modular-rest/client';
 import { useRoute, useRouter } from 'vue-router';
 import { useProfileStore } from '~/stores/profile';
-import { toastError } from 'pilotui/toast';
 import { analytic } from '~/plugins/mixpanel';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
@@ -59,9 +58,10 @@ onMounted(() => {
                     router.push('/');
                 }
             })
-            .catch((error) => {
-                toastError(error.error || 'Unable to login with token', { position: 'top-end' });
-                router.push('/auth/login');
+            .catch(() => {
+                // The login screen owns the failure copy now (`notice=failed`) — a toast on a
+                // page that immediately navigates away was easy to miss.
+                router.push({ path: '/auth/login', query: { notice: 'failed' } });
             });
     }
 });

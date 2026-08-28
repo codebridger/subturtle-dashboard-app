@@ -31,7 +31,9 @@ export default defineNuxtPlugin(() => {
 
                 const onLoginRoute = window.location.hash.startsWith('#/auth/login');
                 if (!onLoginRoute) {
-                    router.replace('/auth/login');
+                    // `notice=expired` makes the login screen explain the bounce instead of
+                    // appearing for no visible reason.
+                    router.replace({ path: '/auth/login', query: { notice: 'expired' } });
                 }
             }
 

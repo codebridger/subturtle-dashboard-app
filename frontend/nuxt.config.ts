@@ -18,6 +18,10 @@ export default defineNuxtConfig({
             MIXPANEL_PROJECT_TOKEN: process.env.NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN,
             MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
             chromeWebStoreUrl: process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL || 'https://chromewebstore.google.com/detail/PLACEHOLDER',
+            // Login-screen footer. Unset by default so the links are simply omitted rather
+            // than shipped pointing at a page that may not exist yet.
+            termsUrl: process.env.NUXT_PUBLIC_TERMS_URL || '',
+            privacyUrl: process.env.NUXT_PUBLIC_PRIVACY_URL || '',
             STRIPE_PUBLISHABLE_KEY: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
             // Baked in at build time from package.json (owned by semantic-release).
             APP_VERSION,
