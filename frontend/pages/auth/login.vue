@@ -1,5 +1,21 @@
 <template>
-    <div class="relative flex h-full w-full items-center overflow-hidden">
+    <!--
+        This page renders inside `layouts/auth.vue`, which is still pilotui and contributes no
+        height, background or type of its own — so the screen establishes all three here. It is
+        exactly the viewport and clips its own overflow, because the board preview is positioned
+        past the right edge.
+    -->
+    <div class="relative flex h-[100dvh] w-full items-center overflow-hidden bg-st-page font-st-sans text-st-body">
+        <!-- Ambient brand wash. Purely decorative, and behind everything. -->
+        <span
+            aria-hidden="true"
+            class="pointer-events-none absolute -right-[220px] -top-[320px] h-[820px] w-[820px] rounded-full bg-[radial-gradient(circle,rgb(var(--rose-500)/0.09),transparent_62%)]"
+        />
+        <span
+            aria-hidden="true"
+            class="pointer-events-none absolute -bottom-[260px] -left-[180px] h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgb(var(--jade-500)/0.08),transparent_62%)]"
+        />
+
         <!-- Sign-in column. Below lg it centres and the decorative half is dropped, but the
              344px form width is kept so the button never stretches on a tablet. -->
         <div
@@ -131,7 +147,7 @@
     const runtimeConfig = useRuntimeConfig();
 
     definePageMeta({
-        layout: 'auth-redesign',
+        layout: 'auth',
     });
 
     /**
