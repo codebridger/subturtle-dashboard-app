@@ -2,7 +2,8 @@
     <!--
         Auth frame for screens already migrated to subturtle-ui. Deliberately free of pilotui:
         no <App> provider, no blue screen_loader, no useAppStore. `auth.vue` stays as-is for the
-        auth screens still on the old library.
+        auth screens still on the old library, and should give this one its name once the last
+        of them is migrated.
 
         The page fills the viewport exactly and clips its own overflow, because the login screen's
         board preview is positioned past the right edge.

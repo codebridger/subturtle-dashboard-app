@@ -25,9 +25,9 @@
             </p>
 
             <div class="mt-[30px] w-full lg:w-[344px]">
-                <StInlineNotice v-if="notice === 'expired'" color="warning" class="mb-5" :message="t('auth.notice.expired')" />
+                <InlineNotice v-if="notice === 'expired'" color="warning" class="mb-5" :message="t('auth.notice.expired')" />
 
-                <StInlineNotice
+                <InlineNotice
                     v-else-if="notice === 'failed'"
                     color="danger"
                     class="mb-5"
@@ -118,7 +118,7 @@
     import { computed, onMounted, ref } from 'vue';
     import { StButton, StIcon } from 'subturtle-ui';
     import { authentication } from '@modular-rest/client';
-    import StInlineNotice from '~/components/common/StInlineNotice.vue';
+    import InlineNotice from '~/components/common/InlineNotice.vue';
     import LoginBoardPreview from '~/components/auth/LoginBoardPreview.vue';
     import { activeNavId, useDashboardNavigatorItems } from '~/composables/useDashboardNavigatorItems';
 
@@ -131,7 +131,7 @@
     const runtimeConfig = useRuntimeConfig();
 
     definePageMeta({
-        layout: 'st-auth',
+        layout: 'auth-redesign',
     });
 
     /**
