@@ -153,7 +153,31 @@ CU-<taskId>_<Short-Task-Title-Dashed>_<Author-Name>
 e.g. `CU-86ext1gpf_Make-subscription-tiers-Stripe-metadata-driven-adaptive-pricing-Council-004-rollout_Navid-Shad`. The `<taskId>` is the ClickUp custom id (the `CU-…` shown on the task), the title is the task name with spaces → dashes, and the author is the assignee.
 
 - Branch off the latest `dev`; open a **PR into `dev`**. `dev` reaches `main` via the long-running `dev → main` PR — so a task only needs the one PR into `dev`.
+- 🚧 **`main` is frozen for the duration of the UI migration. Do not merge `dev → main`.** The redesign lands one screen at a time (see [Design system migration](#design-system-migration)), so `dev` carries a deliberately half-migrated UI: screens already rebuilt on `subturtle-ui` sit beside screens still on pilotui, and dark mode is light-only on the migrated ones. Shipping that to production would put a visibly inconsistent app in front of users. The standing `dev → main` PR was closed for this reason; open a fresh one once the last screen is migrated and pilotui is removed.
 - **Footgun:** if you create the branch with `git switch -c <branch> origin/dev`, Git sets its upstream to `origin/dev`, and a plain `git push` (or a Git-client "sync") then lands the commits **straight on `dev`** instead of a new remote branch. Create it without that tracking and publish it explicitly: `git switch -c <branch>` then `git push -u origin <branch>` (or `--no-track` when branching off `origin/dev`).
+
+## Design system migration
+
+The UI is being rebuilt on **`subturtle-ui`** (`ui/`), an in-house Vue 3 component library
+carrying Subturtle's real brand, replacing **pilotui** — a generic admin theme whose blue
+`#4361ee` palette was never ours. See [ui/README.md](ui/README.md).
+
+The redesign lands **one screen per PR** onto the long-running `new-design` branch, which is
+promoted to `dev` in batches. While it is in progress:
+
+- **`main` is frozen** — see the note under [Branching](#branching). Nothing ships to
+  production until every screen is migrated.
+- **pilotui stays installed** and is still required. Removing it is blocked on more than
+  components: `pilotui/style.css` supplies global classes the app markup uses directly
+  (`panel`, `btn`, `form-input`, `badge`, `animate__*`, `screen_loader`, `main-section`),
+  plus `pilotui/toast` and `useAppStore` from `pilotui/store`. Un-migrated screens render
+  inside the new shell and keep working.
+- **Dark mode is light-only on migrated surfaces.** The theme switcher stays and
+  `:root.dark` is scaffolded but empty, so toggling dark leaves migrated screens light while
+  pilotui ones go dark. Deliberate; dark lands as its own milestone.
+- `subturtle-ui` is a `link:../ui` dependency whose `dist/` is not committed, so the
+  frontend's `postinstall` builds it. Any context that installs the frontend needs `ui/`
+  present — the Dockerfile copies it in.
 
 ## Commits & versioning
 

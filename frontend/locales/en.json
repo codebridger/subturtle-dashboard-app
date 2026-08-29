@@ -402,11 +402,52 @@
         }
     },
     "auth": {
-        "signin_with_google": "SIGN IN WITH GOOGLE",
+        "signin_with_google": "Sign in with Google",
         "login_page": "Login Page",
-        "signin": "Sign In",
+        "signin": "Sign in",
         "signup": "Sign Up",
-        "signin_subtitle": "Sign in with Google to get started"
+        "signin_subtitle": "Sign in with Google to get started",
+        "heading-back": "Heading back to where you left off",
+        "no-account": "Don't have an account ?",
+        "no-account-cta": "Just sign in and you will get a new account.",
+        "chrome-extension": "Chrome extension",
+        "waiting": {
+            "label": "Waiting for Google\u2026",
+            "hint": "A Google window should have opened. Nothing there?",
+            "retry": "Open it again"
+        },
+        "returning": {
+            "title": "Signing you in\u2026",
+            "subtitle": "Taking you to your dashboard."
+        },
+        "notice": {
+            "expired": "Your session ended, so we brought you here. Nothing you saved was lost.",
+            "failed": {
+                "title": "That didn't go through",
+                "message": "The Google window closed before you finished. Nothing was saved \u2014 try once more."
+            }
+        },
+        "preview": {
+            "today": "Today",
+            "board-title": "Today's board",
+            "board-subtitle": "Two things today, about ten minutes. Day 9 of your streak.",
+            "due-today": "Due today",
+            "due": "Due",
+            "review-title": "Smart Review",
+            "review-body": "12 phrases from levels 1 to 3. Cloze cards start at level 3.",
+            "start-review": "Start review",
+            "time-left": "3 min left",
+            "session-title": "Live session",
+            "session-body": "Say this week's phrases out loud with Coach. Money Heist \u2014 s1e4.",
+            "start-session": "Start session",
+            "resting-title": "Resting",
+            "resting-body": "Levels 4 and 5 are asleep. Their next cards land on Thursday.",
+            "optional": "Optional practice",
+            "phrase-1": "Je n'en reviens pas",
+            "phrase-1-translation": "I can't believe it",
+            "phrase-2": "\u00c7a vaut le coup",
+            "phrase-2-translation": "It's worth it"
+        }
     },
     "practice": {
         "nav": "Practice",
