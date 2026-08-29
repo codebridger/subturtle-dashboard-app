@@ -1,3 +1,10 @@
+# [1.0.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2026-08-29)
+
+
+### Features
+
+* **ui:** rebuild the login screen on subturtle-ui ([3883d91](https://github.com/codebridger/subturtle-dashboard-app/commit/3883d91c23aa0ea6c6832aeef0bc19516bef9342))
+
 # [1.0.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-08-27)
 
 
