@@ -1,9 +1,10 @@
-import { LeitnerItem } from "./db";
+import { LeitnerItem, ReviewItem } from "./db";
 import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
 import { ScheduleService } from "../schedule/service";
+import { pickPrimaryChunkText } from "../../utils/chunk";
 
 // Helper type since modular-rest types are opaque sometimes
 type LeitnerSystemDoc = Document & {
@@ -114,13 +115,15 @@ export class LeitnerService {
     const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
 
     // Join
-    return selectedItems.map((item: LeitnerItem) => {
-      const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+    return selectedItems.map((item: LeitnerItem): ReviewItem => {
+      const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
       return {
         ...item,
-        phrase
+        phrase,
+        confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
+        source_sentence: phrase?.context ?? null,
       }
-    }).filter((item: any) => item.phrase);
+    }).filter((item: ReviewItem) => item.phrase);
   }
 
   static async getCustomReviewItems(userId: string, phraseIds: string[]) {
@@ -145,14 +148,16 @@ export class LeitnerService {
     const phrases = await phraseCollection.find({ _id: { $in: phraseIds } });
 
     return selectedItems
-      .map((item: LeitnerItem) => {
-        const phrase = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
+      .map((item: LeitnerItem): ReviewItem => {
+        const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
         return {
           ...item,
           phrase,
+          confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
+          source_sentence: phrase?.context ?? null,
         };
       })
-      .filter((item: any) => item.phrase);
+      .filter((item: ReviewItem) => item.phrase);
   }
 
   static async getDueCount(userId: string): Promise<number> {

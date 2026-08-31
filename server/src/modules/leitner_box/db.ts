@@ -9,6 +9,21 @@ export interface LeitnerItem {
   consecutiveIncorrect: number;
 }
 
+/**
+ * A due/custom review item as returned by the review RPCs. Extends the stored
+ * {@link LeitnerItem} with the joined phrase document plus the two flat fields the
+ * L3+ fill-in card needs:
+ * - `confirmed_chunk` — text of the phrase's primary chunk (highest `confidence`,
+ *   tie-break earliest), or `null` when the phrase has no chunks (renderer falls
+ *   back to the recognition card).
+ * - `source_sentence` — the phrase's `context` (kept whole), or `null` when absent.
+ */
+export interface ReviewItem extends LeitnerItem {
+  phrase: any;
+  confirmed_chunk: string | null;
+  source_sentence: string | null;
+}
+
 export interface LeitnerSystem {
   userId: string;
   settings: {
