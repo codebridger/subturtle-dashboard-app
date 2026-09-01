@@ -7,16 +7,21 @@
             <StSkeleton v-for="n in 2" :key="n" class="h-[104px]" />
         </div>
 
-        <template v-else>
-            <!-- Due today. One card per board activity — the design's three fixed cards are demo
-                 data; the board only ever returns the types the server actually raised. PoolCard
-                 sits in the same grid and renders nothing when the pool is empty. -->
-            <section v-if="activities.length || poolCount">
+        <!-- Populated: "Due today" and "Optional practice" travel together — the design gates both
+             on the same `listShow`, so neither appears beside the caught-up card. -->
+        <template v-else-if="activities.length || poolCount">
+            <!-- One card per board activity — the design's three fixed cards are demo data; the
+                 board only ever returns the types the server actually raised. PoolCard sits in the
+                 same grid and renders nothing when the pool is empty. -->
+            <section>
                 <h2 class="mb-[14px] text-st-2xs font-extrabold uppercase tracking-st-caps text-st-faint">
                     {{ t('board.due_today') }}
                 </h2>
 
-                <div class="grid gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+                <!-- items-start, not the design's implicit stretch: PoolCard is still the pilotui
+                     card and is roughly twice a design card's height, so stretching would inflate
+                     every sibling to match it. Revisit when PoolCard migrates. -->
+                <div class="grid items-start gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
                     <StCard v-for="activity in activities" :key="activity._id" class="flex flex-col">
                         <div class="mb-5 flex items-start justify-between gap-3">
                             <span
@@ -52,16 +57,6 @@
                 </div>
             </section>
 
-            <StCard v-else padding="none">
-                <StEmptyState icon="solar:check-circle-bold-duotone" color="accent" :title="t('board.empty.title')" :description="t('board.empty.description')">
-                    <template #action>
-                        <StButton variant="outline" color="primary" icon="solar:notebook-bold" @click="router.push('/bundles')">
-                            {{ t('board.empty.cta') }}
-                        </StButton>
-                    </template>
-                </StEmptyState>
-            </StCard>
-
             <!-- Optional practice. The design shows three tiles; only Flashcards has a route that
                  works as an entry point, so it is the only one kept — see the PR notes. -->
             <section>
@@ -69,7 +64,7 @@
                     {{ t('board.optional_practice') }}
                 </h2>
 
-                <div class="grid gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+                <div class="grid items-start gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
                     <StCard class="flex flex-col">
                         <span class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-st-md bg-st-info-soft text-st-sky-600">
                             <StIcon name="solar:card-2-bold-duotone" :size="26" />
@@ -89,6 +84,16 @@
                 </div>
             </section>
         </template>
+
+        <StCard v-else padding="none">
+            <StEmptyState icon="solar:check-circle-bold-duotone" color="accent" :title="t('board.empty.title')" :description="t('board.empty.description')">
+                <template #action>
+                    <StButton variant="outline" color="primary" icon="solar:notebook-bold" @click="router.push('/bundles')">
+                        {{ t('board.empty.cta') }}
+                    </StButton>
+                </template>
+            </StEmptyState>
+        </StCard>
     </div>
 </template>
 
