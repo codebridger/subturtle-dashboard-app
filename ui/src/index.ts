@@ -21,6 +21,7 @@ export { default as StIconButton } from './elements/StIconButton.vue';
 export { default as StInput } from './elements/StInput.vue';
 export { default as StModal } from './elements/StModal.vue';
 export { default as StSkeleton } from './elements/StSkeleton.vue';
+export { default as StSwitch } from './elements/StSwitch.vue';
 export { default as StTextarea } from './elements/StTextarea.vue';
 export { default as StThemeSwitcher } from './elements/StThemeSwitcher.vue';
 
