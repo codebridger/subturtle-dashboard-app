@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 
-/** Every icon the shell, the Progress screen and the Login screen use. Keep sorted by set, then name. */
+/** Every icon the shell, the Progress screen, the Login screen and the profile menu use. Keep sorted by set, then name. */
 const ICONS = [
     'logos:google-icon',
     'solar:add-circle-bold',
@@ -33,6 +33,7 @@ const ICONS = [
     'solar:clock-circle-bold',
     'solar:crown-bold',
     'solar:crown-bold-duotone',
+    'solar:crown-linear',
     'solar:danger-triangle-bold',
     'solar:documents-bold-duotone',
     'solar:download-minimalistic-bold',
@@ -42,12 +43,18 @@ const ICONS = [
     'solar:history-2-bold-duotone',
     'solar:layers-minimalistic-bold-duotone',
     'solar:lock-keyhole-minimalistic-bold-duotone',
+    'solar:logout-2-linear',
     'solar:microphone-3-bold-duotone',
+    'solar:monitor-linear',
+    'solar:moon-linear',
     'solar:moon-sleep-bold-duotone',
     'solar:notebook-bold-duotone',
     'solar:play-bold',
     'solar:rocket-2-bold-duotone',
     'solar:settings-bold-duotone',
+    'solar:settings-linear',
+    'solar:sun-2-linear',
+    'solar:user-linear',
 ];
 
 const setCache = new Map();

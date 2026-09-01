@@ -78,7 +78,34 @@ export default defineNuxtConfig({
 
     plugins: ['~/plugins/mixpanel.ts'],
 
-    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
+    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster', '@nuxtjs/color-mode'],
+
+    /**
+     * The theme layer for the `st-` design system. `classSuffix: ''` makes the module write a bare
+     * `class="light"` / `class="dark"` on <html> — subturtle-ui re-points its tokens under
+     * `html.dark`, and both Tailwind builds are `darkMode: 'class'`, so one class drives everything.
+     *
+     * The module also injects a blocking pre-paint script into the SPA shell's <head>, which is what
+     * keeps a hard reload from flashing the wrong theme. `system` is resolved in that script from
+     * `prefers-color-scheme`, so it is flash-free too; useAppTheme() keeps it following live
+     * afterwards.
+     *
+     * pilotui writes its own theme to localStorage under `theme`, so this uses a distinct key rather
+     * than fighting it over one entry — plugins/theme.client.ts mirrors this preference into
+     * pilotui's store.
+     *
+     * `disableTransition: false` turns OFF the module's own cross-fade guard (it injects an
+     * anonymous <style> element). We do the same job with an `html.theme-switching` class in
+     * plugins/theme.client.ts, whose rule ships in subturtle-ui's stylesheet — one mechanism,
+     * inspectable in devtools. Do not re-enable it; the two would stack.
+     */
+    colorMode: {
+        classSuffix: '',
+        preference: 'system',
+        fallback: 'light',
+        storageKey: 'subturtle.theme',
+        disableTransition: false,
+    },
 
     i18n: {
         locales: [{ code: 'en', file: 'en.json' }],
