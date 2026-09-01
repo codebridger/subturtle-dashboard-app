@@ -1,9 +1,10 @@
 <template>
     <!--
         <App> is pilotui's theme/RTL provider. It stays until the last pilotui-era page is
-        migrated: every un-migrated screen's components still read their theming from it, and
-        the header's theme switcher drives it. StAppShell replaces only the chrome
-        (DashboardShell + SidebarMenu + HorizontalMenu).
+        migrated: every un-migrated screen's components still read their theming from it.
+        It no longer DRIVES the theme, though — @nuxtjs/color-mode owns the preference now and
+        plugins/theme.client.ts mirrors it into pilotui's store, so this only follows.
+        StAppShell replaces only the chrome (DashboardShell + SidebarMenu + HorizontalMenu).
     -->
     <App>
         <!-- StAppShell fills its container and scrolls internally, so it needs a container
@@ -27,9 +28,11 @@
                     </span>
                 </template>
 
+                <!-- Plan pill, then the account menu — the theme switch now lives inside the
+                     menu's Appearance row, so there is no separate switcher up here. -->
                 <template #header-right>
-                    <PartialThemeSwitcher class="scale-75" />
-                    <PartialProfileButton />
+                    <StPlanPill v-if="planLabel" :label="planLabel" />
+                    <PartialProfileMenu />
                 </template>
 
                 <!-- overflow-x-clip contains decorative full-bleed page backgrounds (e.g. blurred blobs positioned past the edge)
@@ -76,7 +79,8 @@
 
 <script setup lang="ts">
 import { App, ThemeCustomizer } from 'pilotui/shell';
-import { StAppShell, StIcon } from 'subturtle-ui';
+import { StAppShell, StIcon, StPlanPill } from 'subturtle-ui';
+import { useProfileStore } from '~/stores/profile';
 import UsageCapBanner from '~/components/freemium_alerts/UsageCapBanner.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import VoiceCapBanner from '~/components/VoiceCapBanner.vue';
@@ -90,6 +94,13 @@ const { open: tierLimitOpen, feature: tierLimitFeature, closeTierLimitModal } = 
 const router = useRouter();
 const route = useRoute();
 const leitner = useLeitnerStore();
+const profileStore = useProfileStore();
+
+// Hidden until the subscription resolves, rather than flashing a wrong plan for a beat.
+const planLabel = computed(() => {
+    if (profileStore.isSubscriptionFetching) return null;
+    return profileStore.isFreemium ? 'Free' : profileStore.activeSubscription?.label || null;
+});
 
 const RAIL_KEY = 'subturtle.rail';
 const railCollapsed = ref(false);

@@ -662,5 +662,18 @@
         "todays-board": "Today's board",
         "start-a-session": "Start a session",
         "account": "Account"
+    },
+    "account": {
+        "menu": "Account menu",
+        "study-settings": "Study settings",
+        "subscription": "Subscription",
+        "sign-out": "Sign out",
+        "saves": "{used} / {total} saves"
+    },
+    "appearance": {
+        "label": "Appearance",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
     }
 }

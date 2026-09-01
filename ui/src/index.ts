@@ -22,10 +22,12 @@ export { default as StSkeleton } from './elements/StSkeleton.vue';
 
 // Brand
 export { default as StBundleCard } from './brand/StBundleCard.vue';
+export { default as StPlanPill } from './brand/StPlanPill.vue';
 export { default as StStatTile } from './brand/StStatTile.vue';
 
 // Shell
 export { default as StAppShell } from './shell/StAppShell.vue';
+export { default as StProfileMenu } from './shell/StProfileMenu.vue';
 export { default as StSidebarNav } from './shell/StSidebarNav.vue';
 
-export type { StNavGroup, StNavItem, StTone, StSize, StPadding, StElevation } from './types';
+export type { StNavGroup, StNavItem, StProfileMenuItem, StTheme, StTone, StSize, StPadding, StElevation } from './types';

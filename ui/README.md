@@ -119,13 +119,32 @@ yarn dev     # rebuild on change, for a linked consumer
 
 | Group | |
 | --- | --- |
-| Shell | `StAppShell`, `StSidebarNav` |
+| Shell | `StAppShell`, `StSidebarNav`, `StProfileMenu` |
 | Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StIcon` |
-| Brand | `StStatTile`, `StBundleCard` |
+| Brand | `StStatTile`, `StBundleCard`, `StPlanPill` |
 
-This is the set the app shell and the Progress screen need. The rest of the design system
-(`Input`, `Tag`, `Switch`, `ProgressBar`, `SegmentedControl`, `Tabs`, `Modal`, `Toast`,
-`PhraseCard`, `Flashcard`, `LevelPip`, `PlanCard`) lands as each remaining screen is migrated.
+This is the set the app shell, the Progress screen and the Login screen need. The rest of the
+design system (`Input`, `Tag`, `Switch`, `ProgressBar`, `SegmentedControl`, `Tabs`, `Modal`,
+`Toast`, `PhraseCard`, `Flashcard`, `LevelPip`, `PlanCard`) lands as each remaining screen is
+migrated.
+
+### `StProfileMenu`
+
+The account dropdown, shared by the dashboard topbar and the extension popup. Two things about it
+are not stylistic preferences:
+
+- **The panel is teleported to `<body>` and positioned `fixed`** against the trigger rect,
+  re-placed on `resize` and on **capture-phase** `scroll` (so scrolling `StAppShell`'s inner
+  `<main>` counts). The topbar sets `backdrop-filter`, which bleeds its blur under an
+  absolutely-positioned descendant and washes the panel out. The design prototype hit this and
+  fixes it the same way.
+- **`themeSwitch` adds a non-closing Appearance row** — a `role="radiogroup"` of three icon-only
+  segments. It emits `update:theme` and leaves the menu open so the user watches the page repaint
+  behind it. It is hand-rolled rather than built on a `SegmentedControl` because that component is
+  not ported yet, and because the library may not depend on `pilotui`.
+
+The component holds no router, store or i18n coupling — `items` is a plain array carrying the
+caller's own handlers, and every visible string comes in through `labels`.
 
 Three things were deliberately added rather than ported, because the source components are React
 files styled entirely with inline style objects and cannot express them: nav-item hover states,
