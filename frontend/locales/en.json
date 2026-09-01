@@ -453,9 +453,6 @@
         "nav": "Practice",
         "title": "Study"
     },
-    "activities": {
-        "title": "Activities"
-    },
     "live-session": {
         "no-sessions": "No Sessions Yet",
         "no-sessions-description": "You haven't started any practice sessions yet. Start a live session from a phrase bundle to practice your language skills and come back here to see your session history.",
@@ -636,13 +633,30 @@
         "select_phrase": "Select Phrase"
     },
     "board": {
-        "no_activities": "No activities right now",
         "all_caught_up": "You are all caught up! Check back later.",
         "due": "Due",
         "items_due": "{count} items due for review",
         "activity_ready": "Ready to start",
         "start_activity": "Start Activity",
-        "back_to_board": "Back to Board"
+        "back_to_board": "Back to Board",
+        "overline": "Today",
+        "title": "Today's board",
+        "subtitle": "Your reviews for today, and a few optional ways to practice.",
+        "due_today": "Due today",
+        "optional_practice": "Optional practice",
+        "start_review": "Start review",
+        "empty": {
+            "title": "You're all caught up",
+            "description": "Nothing is due right now. Check back later, or save a few new phrases while you watch.",
+            "cta": "Browse bundles"
+        },
+        "practice": {
+            "flashcards": {
+                "title": "Flashcards",
+                "description": "Free practice on any bundle. Doesn't move levels.",
+                "cta": "Open"
+            }
+        }
     },
     "leitner_session": {
         "completed_title": "Review Session Completed!",
