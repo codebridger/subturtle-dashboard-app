@@ -4,11 +4,6 @@
         :data-rail="collapsed ? 'collapsed' : 'expanded'"
         :style="{ '--sidebar-w': collapsed ? COLLAPSED_W : undefined }"
     >
-        <!--
-            Below md the sidebar is an off-canvas drawer. Left in flow it would eat 272px of a
-            375px viewport, squeezing the content column to a sliver that clips its own
-            children — they stay in the DOM but measure as hidden.
-        -->
         <div
             v-if="drawerOpen"
             class="st-fixed st-inset-0 st-z-overlay st-bg-ink-950/40 md:st-hidden"
@@ -50,7 +45,7 @@
 
         <div class="st-flex-1 st-flex st-flex-col st-min-w-0 st-overflow-hidden">
             <header
-                class="st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-bg-page/80 st-backdrop-blur-[8px]"
+                class="st-relative st-z-sticky st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-bg-page/80 st-backdrop-blur-[8px]"
             >
                 <div class="st-flex st-items-center st-gap-3 st-min-w-0">
                     <button
@@ -69,10 +64,6 @@
                     <slot name="header-right" />
                 </div>
             </header>
-
-<!-- overflow-x must be clipped, not visible: the ambient blobs are positioned past the
-                 right edge, and a scrolling box cannot keep overflow-x visible — it would silently
-                 become auto and add a horizontal scrollbar. -->
             <main class="st-flex-1 st-overflow-y-auto st-overflow-x-clip st-relative">
                 <template v-if="ambient">
                     <div
