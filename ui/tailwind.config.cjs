@@ -62,6 +62,9 @@ module.exports = {
                 faint: c('--text-faint'),
                 link: c('--text-link'),
                 'on-dark': c('--text-on-dark'),
+                // The readable pairing for `bg-inverse`: it is the page colour, so it flips
+                // with the surface instead of being a literal that only works in one theme.
+                page: c('--surface-page'),
             },
             backgroundColor: {
                 page: c('--surface-page'),
@@ -69,11 +72,17 @@ module.exports = {
                 sunken: c('--surface-sunken'),
                 raised: c('--surface-raised'),
                 inverse: c('--surface-inverse'),
+                // Scrims and image-overlay pills. NOT `ink-950` — that ramp inverts in dark,
+                // so a scrim written against it would turn into a white veil.
+                overlay: c('--surface-overlay'),
             },
             borderColor: {
                 DEFAULT: c('--border-subtle'),
                 subtle: c('--border-subtle'),
                 strong: c('--border-strong'),
+                // For rings that punch a component out of whatever it sits on (the avatar's).
+                // `white` would be a literal, and literal white is only ever ink on a rose CTA.
+                card: c('--surface-card'),
             },
             fontFamily: {
                 sans: 'var(--font-sans)',

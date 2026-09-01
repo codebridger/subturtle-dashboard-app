@@ -1,0 +1,172 @@
+/* ============================================================
+   Subturtle — theme layer (dark).
+
+   Ported from the design handoff's `theme-tokens.css`. Loaded from index.css
+   immediately after tokens.css, which is the whole mechanism: this file re-points the
+   SAME token names under `html.dark`, so every component already styled with
+   var(--surface-card) / var(--text-body) / var(--ink-100) themes itself with no edits.
+
+   ONE DELIBERATE DIFFERENCE FROM THE HANDOFF FILE — and it is not optional. The handoff
+   writes colours as hex; tokens.css stores them as space-separated RGB channels so
+   Tailwind can compose `rgb(var(--token) / <alpha-value>)`. Shipping the hex verbatim
+   would emit `rgb(#211b28 / 1)` and silently break every `st-` colour utility in dark.
+   The VALUES below are the handoff's, converted channel-for-channel; the two tokens
+   tokens.css documents as finished colours (--ring-focus) or as caller-alpha channels
+   (--surface-overlay) keep their documented form.
+
+   The handoff's translucent tints (rgba(249,30,90,.18) and friends) cannot survive that
+   conversion — a channel token has no room for its own alpha. They are pre-composited
+   against --surface-card (#211b28), the surface they overwhelmingly appear on. The
+   original rgba is kept in a comment beside each so the intent is auditable.
+
+   Two flips make old components theme correctly, per the handoff:
+     1. The --ink-* ramp is INVERTED (ink-50 = darkest). Components use ink-100 as a hover
+        wash and ink-150/200 as hairlines; inverting keeps those roles intact.
+     2. --rose-700 / --jade-700 become LIGHT tints — components use them as "text on a
+        soft brand tint" (avatar initials, plan pill, streak pill), so they have to flip
+        to stay legible.
+
+   --white is NOT re-pointed. It means "ink on a rose CTA". Never use it as a surface;
+   use --surface-card.
+   ============================================================ */
+
+html.dark {
+    color-scheme: dark;
+
+    /* ---- Neutrals: inverted warm mauve ramp ---------------- */
+    --ink-50: 34 28 41; /* #221c29 */
+    --ink-100: 42 35 50; /* #2a2332 — row hover wash */
+    --ink-150: 50 42 59; /* #322a3b — divider hairline */
+    --ink-200: 58 49 68; /* #3a3144 — subtle border */
+    --ink-300: 75 65 87; /* #4b4157 */
+    --ink-400: 108 97 121; /* #6c6179 */
+    --ink-500: 157 147 169; /* #9d93a9 — muted text, 5.9:1 on --surface-card */
+    --ink-600: 184 175 194; /* #b8afc2 */
+    --ink-700: 207 200 215; /* #cfc8d7 */
+    --ink-800: 229 224 234; /* #e5e0ea — body text, 13.1:1 */
+    --ink-900: 241 237 244; /* #f1edf4 */
+    --ink-950: 250 248 251; /* #faf8fb — strong text */
+    --paper: 22 18 25; /* #161219 */
+
+    /* ---- Brand ------------------------------------------- */
+    --color-primary: 255 47 102; /* #ff2f66 — +2% lift so rose holds on dark */
+    --color-primary-hover: 255 69 119; /* #ff4577 */
+    --color-primary-press: 227 11 75; /* #e30b4b */
+    --color-primary-soft: 72 28 49; /* rgba(249,30,90,.18) over --surface-card */
+    --color-primary-tint: 55 27 45; /* rgba(249,30,90,.10) over --surface-card */
+    --color-on-primary: var(--white);
+    --rose-700: 255 179 200; /* #ffb3c8 — now "text on rose soft" */
+    --rose-800: 255 143 174; /* #ff8fae */
+    --rose-200: 106 18 49; /* #6a1231 — ::selection background */
+
+    --color-accent: 34 199 149; /* #22c795 */
+    --color-accent-hover: 52 205 156; /* #34cd9c */
+    --color-accent-soft: 31 55 57; /* rgba(20,180,133,.18) over --surface-card */
+    --color-accent-tint: 32 42 49; /* rgba(20,180,133,.10) over --surface-card */
+    --jade-700: 110 226 185; /* #6ee2b9 — "text on jade soft" */
+
+    /* ---- Text -------------------------------------------- */
+    --text-strong: var(--ink-950);
+    --text-body: var(--ink-800);
+    --text-muted: var(--ink-500);
+    --text-faint: var(--ink-400);
+    --text-on-dark: var(--white);
+    --text-link: 255 143 174; /* #ff8fae */
+
+    /* ---- Surfaces ---------------------------------------- */
+    --surface-page: 22 18 25; /* #161219 */
+    --surface-card: 33 27 40; /* #211b28 */
+    --surface-sunken: 27 22 32; /* #1b1620 */
+    --surface-raised: 42 35 49; /* #2a2331 */
+    --surface-inverse: 250 248 251; /* #faf8fb */
+    /* Channels, so callers pick their own alpha. The handoff's rgba(8,5,10,.66) is that
+       alpha applied at the call site; scrims here ask for their own. */
+    --surface-overlay: 8 5 10;
+
+    /* ---- Borders & rings --------------------------------- */
+    --border-subtle: 58 49 68; /* #3a3144 */
+    --border-default: 75 65 87; /* #4b4157 */
+    --border-strong: 108 97 121; /* #6c6179 */
+    /* A finished color, not channels — it is dropped straight into box-shadow. */
+    --ring-focus: rgb(255 47 102 / 0.45);
+
+    /* ---- Status ------------------------------------------ */
+    --color-success: 34 199 149; /* #22c795 */
+    --color-success-soft: 31 55 57; /* rgba(20,180,133,.18) over --surface-card */
+    --color-warning: 247 185 85; /* #f7b955 */
+    --color-warning-soft: 71 52 39; /* rgba(245,165,36,.18) over --surface-card */
+    --color-danger: 255 107 107; /* #ff6b6b */
+    --color-danger-soft: 69 40 51; /* rgba(255,107,107,.16) over --surface-card */
+    --color-info: 76 178 245; /* #4cb2f5 */
+    --color-info-soft: 33 50 76; /* rgba(31,156,240,.18) over --surface-card */
+
+    /* ---- Shadows: the warm light tint reads as nothing on dark ---- */
+    --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.45), 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 14px rgb(0 0 0 / 0.48), 0 2px 4px rgb(0 0 0 / 0.32);
+    --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.55), 0 4px 12px rgb(0 0 0 / 0.38);
+    --shadow-xl: 0 28px 60px rgb(0 0 0 / 0.62), 0 10px 20px rgb(0 0 0 / 0.4);
+    --shadow-primary: 0 8px 22px rgb(249 30 90 / 0.38);
+    --shadow-accent: 0 8px 22px rgb(20 180 133 / 0.34);
+    --shadow-inset: inset 0 1px 2px rgb(0 0 0 / 0.45);
+
+    /* Repo-local additions (not in the handoff), both covering audit items whose only
+       per-theme difference is an alpha the markup cannot express as a token otherwise:
+       the ambient blobs "drop to ~3% in dark", and the topbar's backdrop-filter wants a
+       translucent --surface-card (the handoff's rgba(33,27,40,.72)). */
+    --blob-alpha: 0.03;
+    --surface-topbar: rgb(33 27 40 / 0.72);
+
+    /* ---- The -600 steps, same flip, same reason ------------
+       The handoff flips --rose-700 / --jade-700 because components use them as "text on a
+       soft brand tint". This codebase uses the -600 steps in exactly that role too, and the
+       handoff's audit did not enumerate them: StIconButton's soft variants
+       (st-text-rose-600 / st-text-jade-600), StBadge's soft variants (st-text-red-600,
+       st-text-amber-600, st-text-sky-600), the Progress lock tile and LoginBoardPreview.
+       Left unflipped they keep their light values and fail the handoff's own contrast bar —
+       measured #e30b4b on --color-primary-soft is 2.8:1, under the 3:1 it requires for icons.
+
+       Every value here is one the handoff already supplies for the adjacent step or the
+       status colour, reused rather than invented:
+         --rose-600  = the handoff's --rose-800 / --text-link  (#ff8fae), 6.2:1 on rose soft
+         --jade-600  = the handoff's --color-accent-hover      (#34cd9c), 5.9:1 on jade soft
+         --red-600 / --amber-600 / --sky-600 = the handoff's --color-danger / -warning / -info
+
+       NOTE for review: --red-600 on --color-danger-soft measures 4.4:1, marginally under AA
+       for the 11px badge label. Flagged rather than substituted — picking a different red
+       is a design call, not an implementation one. */
+    --rose-600: 255 143 174; /* #ff8fae */
+    --jade-600: 52 205 156; /* #34cd9c */
+    --red-600: 255 107 107; /* #ff6b6b */
+    --amber-600: 247 185 85; /* #f7b955 */
+    --sky-600: 76 178 245; /* #4cb2f5 */
+}
+
+/* Elevated dark surfaces get a 1px top highlight instead of a heavier shadow — keeps the
+   friendly, soft feel. */
+html.dark .st-elevated,
+html.dark [data-elevated] {
+    box-shadow: var(--shadow-lg), inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+/* Themed images/illustrations: dim by 8% so nothing glares. */
+html.dark img:not([data-no-dim]) {
+    filter: brightness(0.94);
+}
+
+/* No transition on the theme flip itself — only on hover/press — otherwise the whole page
+   cross-fades and feels laggy. The consumer adds this class for one frame around a change
+   (in the dashboard, plugins/theme.client.ts). Deliberately un-namespaced: it has to reach
+   the host app's own markup, not just `st-` components. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+    transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -72,9 +72,26 @@ composes them as `rgb(var(--token) / <alpha-value>)`. That is what makes opacity
 (`st-bg-primary/5`, the ambient background blobs) and what a dark theme will hook into. Write raw
 CSS against them as `rgb(var(--rose-500))`.
 
-`:root.dark` is scaffolded and empty. The design system ships light values only, and the product
-keeps its theme switcher, so dark currently leaves anything built on this library in its light
-palette. Adding dark means redefining the semantic aliases there — no component should change.
+`src/styles/theme-tokens.css` is the dark half, imported straight after `tokens.css`. It re-points
+the **same token names** under `html.dark`, so a component already written against
+`var(--surface-card)` / `var(--text-body)` / `var(--ink-100)` themes itself with no edits — that is
+the whole mechanism, and it is why nothing in `src/` carries a `dark:` variant.
+
+Two flips in that file are load-bearing, and both look wrong until you know the role they protect:
+
+- **The `--ink-*` ramp inverts** — `--ink-50` is the darkest step in dark. Components use `ink-100`
+  as a hover wash and `ink-150`/`ink-200` as hairlines; inverting is what preserves those roles.
+  The corollary is that `ink-800`/`ink-900` can no longer be used as a *dark fill* (it would become
+  a light fill); `bg-inverse` + `text-page` is the pair for that.
+- **`--rose-700` / `--jade-700` (and the `-600` steps) become light tints** — they are used as
+  "text on a soft brand tint", so they flip to stay legible.
+
+`--white` is deliberately *not* re-pointed. It means "ink on a rose CTA". Never use it as a
+surface; use `--surface-card`.
+
+Consumers must also add `class="theme-switching"` to `<html>` for the one frame around a change —
+the stylesheet kills transitions while it is set, otherwise the whole page cross-fades. See the
+dashboard's `plugins/theme.client.ts`.
 
 ### Icons
 

@@ -23,7 +23,7 @@
             <span
                 v-if="sourceLang && targetLang"
                 class="st-relative st-inline-flex st-items-center st-gap-[6px] st-px-[10px] st-py-1 st-rounded-pill st-text-white st-text-2xs st-font-extrabold st-tracking-wide st-backdrop-blur-[4px]"
-                :class="$slots.cover ? 'st-bg-ink-950/55' : 'st-bg-white/25'"
+                :class="$slots.cover ? 'st-bg-overlay/55' : 'st-bg-white/25'"
             >
                 {{ sourceLang }}
                 <StIcon name="solar:arrow-right-linear" :size="12" />

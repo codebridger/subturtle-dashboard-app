@@ -1,7 +1,7 @@
 <template>
     <span class="st-relative st-inline-flex st-shrink-0" :style="{ width: `${dim}px`, height: `${dim}px` }">
         <span
-            class="st-flex st-items-center st-justify-center st-overflow-hidden st-rounded-circle st-font-sans st-font-extrabold st-text-rose-700 st-border-[1.5px] st-border-white st-shadow-xs"
+            class="st-flex st-items-center st-justify-center st-overflow-hidden st-rounded-circle st-font-sans st-font-extrabold st-text-rose-700 st-border-[1.5px] st-border-card st-shadow-xs"
             :class="src ? 'st-bg-ink-100' : 'st-bg-primary-soft'"
             :style="{ width: `${dim}px`, height: `${dim}px`, fontSize: `${dim * 0.38}px` }"
         >
@@ -10,7 +10,7 @@
         </span>
         <span
             v-if="online"
-            class="st-absolute st-right-0 st-bottom-0 st-rounded-circle st-bg-accent st-border-2 st-border-white"
+            class="st-absolute st-right-0 st-bottom-0 st-rounded-circle st-bg-accent st-border-2 st-border-card"
             :style="{ width: `${dim * 0.28}px`, height: `${dim * 0.28}px` }"
         />
     </span>

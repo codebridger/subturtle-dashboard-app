@@ -99,6 +99,13 @@
     /* A finished color, not channels — it is dropped straight into box-shadow. */
     --ring-focus: rgb(249 30 90 / 0.35);
 
+    /* Opacity of the ambient page blobs. A token because it is the one thing that differs
+       between themes there — dark drops to 3% so they don't glow (see theme-tokens.css). */
+    --blob-alpha: 0.05;
+    /* Finished colors: the topbar is translucent over its own scroll content, so the alpha
+       is part of the value and differs per theme. */
+    --surface-topbar: rgb(248 245 247 / 0.8);
+
     --color-success: var(--jade-500);
     --color-success-soft: var(--jade-100);
     --color-warning: var(--amber-500);

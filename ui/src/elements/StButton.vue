@@ -56,7 +56,9 @@
         solid: {
             primary: 'st-bg-primary hover:st-bg-primary-hover st-text-primary-on st-border-[1.5px] st-border-transparent st-shadow-primary',
             accent: 'st-bg-accent hover:st-bg-accent-hover st-text-accent-on st-border-[1.5px] st-border-transparent st-shadow-accent',
-            neutral: 'st-bg-ink-900 hover:st-bg-ink-950 st-text-white st-border-[1.5px] st-border-transparent st-shadow-sm',
+            // `bg-inverse`, not the ink ramp: ink inverts in dark, so an ink-900 fill with
+            // white text would become a near-white fill with white text.
+            neutral: 'st-bg-inverse hover:st-opacity-90 st-text-page st-border-[1.5px] st-border-transparent st-shadow-sm',
             danger: 'st-bg-danger hover:st-bg-red-600 st-text-white st-border-[1.5px] st-border-transparent st-shadow-sm',
         },
         soft: {

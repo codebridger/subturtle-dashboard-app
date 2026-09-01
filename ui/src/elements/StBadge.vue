@@ -36,7 +36,9 @@
     const SOLID: Record<BadgeColor, string> = {
         primary: 'st-bg-primary st-text-white',
         accent: 'st-bg-accent st-text-white',
-        neutral: 'st-bg-ink-800 st-text-white',
+        // `bg-inverse`, not `bg-ink-800`: the ink ramp inverts in dark, so an ink-800 chip
+        // with white text would become a near-white chip with white text.
+        neutral: 'st-bg-inverse st-text-page',
         warning: 'st-bg-warning st-text-white',
         danger: 'st-bg-danger st-text-white',
         info: 'st-bg-info st-text-white',

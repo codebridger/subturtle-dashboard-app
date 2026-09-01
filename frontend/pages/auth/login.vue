@@ -8,14 +8,18 @@
     <div class="relative flex h-[100dvh] w-full items-center overflow-hidden bg-st-page font-st-sans text-st-body">
         <!-- Ambient brand wash, purely decorative and behind everything. A radial gradient is
              the one thing the `st-` token namespace cannot express, so it reads the custom
-             properties directly. -->
+             properties directly. The alpha is scaled off --blob-alpha (5% light / 3% dark) so
+             these follow the same "blobs drop in dark" rule as the app shell's, at the stronger
+             weight this screen is drawn at. -->
         <span
             aria-hidden="true"
-            class="pointer-events-none absolute -right-[220px] -top-[320px] h-[820px] w-[820px] rounded-full bg-[radial-gradient(circle,rgb(var(--rose-500)/0.09),transparent_62%)]"
+            class="pointer-events-none absolute -right-[220px] -top-[320px] h-[820px] w-[820px] rounded-full"
+            :style="{ background: 'radial-gradient(circle, rgb(var(--rose-500) / calc(var(--blob-alpha) * 1.8)), transparent 62%)' }"
         />
         <span
             aria-hidden="true"
-            class="pointer-events-none absolute -bottom-[260px] -left-[180px] h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgb(var(--jade-500)/0.08),transparent_62%)]"
+            class="pointer-events-none absolute -bottom-[260px] -left-[180px] h-[620px] w-[620px] rounded-full"
+            :style="{ background: 'radial-gradient(circle, rgb(var(--jade-500) / calc(var(--blob-alpha) * 1.6)), transparent 62%)' }"
         />
 
         <!-- Sign-in column. Below xl it centres and the decorative half is dropped (see

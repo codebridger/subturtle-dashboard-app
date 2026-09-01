@@ -1,6 +1,8 @@
 /* Google Fonts must be the first statement in the file, or browsers drop it. */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import './tokens.css';
+/* MUST come after tokens.css — it re-points the same names under `html.dark`. */
+@import './theme-tokens.css';
 
 @tailwind base;
 @tailwind components;
@@ -52,23 +54,6 @@
 .st-focus-ring:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--ring-focus);
-}
-
-/*
- * Theme-switch guard. Nearly every surface in this library animates its colours, so flipping the
- * palette would otherwise cross-fade the whole page one property at a time — dozens of independent
- * transitions, each landing on a different frame. The consumer adds this class to <html> for the
- * single frame in which the palette swaps (see the dashboard's plugins/theme.client.ts) so the page
- * simply repaints in the new theme.
- *
- * Deliberately un-namespaced and unprefixed: it has to reach the host app's own markup too, not
- * just `st-` components.
- */
-html.theme-switching,
-html.theme-switching *,
-html.theme-switching *::before,
-html.theme-switching *::after {
-    transition: none !important;
 }
 
 @tailwind utilities;
