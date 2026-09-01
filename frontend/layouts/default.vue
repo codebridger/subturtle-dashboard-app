@@ -29,7 +29,7 @@
                 </template>
 
                 <template #header-right>
-                    <PartialThemeSwitch />
+                    <PartialThemeSwitcher />
                     <PartialProfileMenu />
                 </template>
 

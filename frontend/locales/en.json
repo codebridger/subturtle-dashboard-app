@@ -670,10 +670,11 @@
         "sign-out": "Sign out",
         "saves": "{used} / {total} saves"
     },
-    "appearance": {
-        "label": "Appearance",
+    "theme": {
         "light": "Light",
         "dark": "Dark",
-        "system": "System"
+        "system": "System",
+        "resolved": "{mode} \u00b7 {resolved}",
+        "aria": "Theme: {current}. Switch to {next}."
     }
 }

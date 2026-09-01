@@ -19,7 +19,7 @@ export { default as StCard } from './elements/StCard.vue';
 export { default as StEmptyState } from './elements/StEmptyState.vue';
 export { default as StIconButton } from './elements/StIconButton.vue';
 export { default as StSkeleton } from './elements/StSkeleton.vue';
-export { default as StThemeSwitch } from './elements/StThemeSwitch.vue';
+export { default as StThemeSwitcher } from './elements/StThemeSwitcher.vue';
 
 // Brand
 export { default as StBundleCard } from './brand/StBundleCard.vue';

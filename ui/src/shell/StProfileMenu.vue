@@ -47,44 +47,26 @@
                     </div>
                 </div>
 
-                <template v-for="(entry, i) in entries" :key="i">
-                    <!-- Appearance: a row, but not a menuitem — nothing about it is clickable, so
-                         it takes no hover wash and no roving focus. The radiogroup inside is its
-                         own focus stop, reachable by Tab or by arrowing onto it. -->
-                    <div v-if="entry.kind === 'appearance'" class="st-flex st-min-h-[44px] st-items-center st-gap-3 st-px-3">
-                        <StIcon name="solar:sun-2-linear" :size="20" class="st-shrink-0 st-text-muted" />
-                        <span class="st-min-w-0 st-flex-1 st-truncate st-text-base st-font-bold st-text-body">{{ labels.appearance }}</span>
-                        <!-- Selecting deliberately does not close the menu: the point is to watch
-                             the page repaint behind it. -->
-                        <StThemeSwitch :model-value="theme" :labels="labels" @update:model-value="$emit('update:theme', $event)" />
-                    </div>
-
-                    <template v-else>
-                        <div v-if="entry.item.dividerBefore" class="st-mx-2 st-my-1.5 st-h-px st-bg-ink-150" />
-                        <button
-                            :ref="(el) => setItemRef(el, entry.index)"
-                            role="menuitem"
-                            type="button"
-                            tabindex="-1"
-                            class="st-flex st-w-full st-box-border st-min-h-[44px] st-cursor-pointer st-items-center st-gap-3 st-rounded-md st-border-none st-bg-transparent st-px-3 st-text-left st-font-sans st-text-base st-font-bold st-outline-none st-transition-colors st-duration-fast st-ease-out"
-                            :class="
-                                entry.item.danger
-                                    ? 'st-text-danger hover:st-bg-danger-soft focus-visible:st-bg-danger-soft'
-                                    : 'st-text-body hover:st-bg-ink-100 focus-visible:st-bg-ink-100'
-                            "
-                            @click="activate(entry.item)"
-                            @focus="focusIndex = entry.index"
-                        >
-                            <StIcon
-                                :name="entry.item.icon"
-                                :size="20"
-                                class="st-shrink-0"
-                                :class="entry.item.danger ? 'st-text-danger' : 'st-text-muted'"
-                            />
-                            <span class="st-min-w-0 st-flex-1 st-truncate">{{ entry.item.label }}</span>
-                            <span v-if="entry.item.meta" class="st-shrink-0 st-text-xs st-font-bold st-text-faint">{{ entry.item.meta }}</span>
-                        </button>
-                    </template>
+                <template v-for="(item, index) in items" :key="index">
+                    <div v-if="item.dividerBefore" class="st-mx-2 st-my-1.5 st-h-px st-bg-ink-150" />
+                    <button
+                        :ref="(el) => setItemRef(el, index)"
+                        role="menuitem"
+                        type="button"
+                        tabindex="-1"
+                        class="st-flex st-w-full st-box-border st-min-h-[44px] st-cursor-pointer st-items-center st-gap-3 st-rounded-md st-border-none st-bg-transparent st-px-3 st-text-left st-font-sans st-text-base st-font-bold st-outline-none st-transition-colors st-duration-fast st-ease-out"
+                        :class="
+                            item.danger
+                                ? 'st-text-danger hover:st-bg-danger-soft focus-visible:st-bg-danger-soft'
+                                : 'st-text-body hover:st-bg-ink-100 focus-visible:st-bg-ink-100'
+                        "
+                        @click="activate(item)"
+                        @focus="focusIndex = index"
+                    >
+                        <StIcon :name="item.icon" :size="20" class="st-shrink-0" :class="item.danger ? 'st-text-danger' : 'st-text-muted'" />
+                        <span class="st-min-w-0 st-flex-1 st-truncate">{{ item.label }}</span>
+                        <span v-if="item.meta" class="st-shrink-0 st-text-xs st-font-bold st-text-faint">{{ item.meta }}</span>
+                    </button>
                 </template>
             </div>
         </Teleport>
@@ -94,9 +76,8 @@
 <script setup lang="ts">
     import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
     import StAvatar from '../elements/StAvatar.vue';
-    import StThemeSwitch from '../elements/StThemeSwitch.vue';
     import StIcon from '../icon/StIcon.vue';
-    import type { StProfileMenuItem, StTheme } from '../types';
+    import type { StProfileMenuItem } from '../types';
 
     const props = withDefaults(
         defineProps<{
@@ -112,15 +93,12 @@
             /** v-model:open. Leave undefined to let the component own its own state. */
             open?: boolean;
             defaultOpen?: boolean;
-            /** Renders the non-closing Appearance row above the sign-out divider. */
-            themeSwitch?: boolean;
-            theme?: StTheme;
             /**
              * Every user-visible string. The library has no i18n of its own — it ships to two
              * apps with different setups — so the consumer passes translations in and the
              * defaults keep it usable standalone.
              */
-            labels?: Partial<Record<'menu' | 'appearance' | StTheme, string>>;
+            labels?: Partial<Record<'menu', string>>;
         }>(),
         {
             name: '',
@@ -137,9 +115,9 @@
         }
     );
 
-    const emit = defineEmits<{ 'update:open': [boolean]; 'update:theme': [StTheme] }>();
+    const emit = defineEmits<{ 'update:open': [boolean] }>();
 
-    const DEFAULT_LABELS = { menu: 'Account menu', appearance: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' };
+    const DEFAULT_LABELS = { menu: 'Account menu' };
     const labels = computed(() => ({ ...DEFAULT_LABELS, ...(props.labels ?? {}) }));
 
     const wrapRef = ref<HTMLElement | null>(null);
@@ -159,19 +137,6 @@
             if (props.open === undefined) uncontrolled.value = v;
             emit('update:open', v);
         },
-    });
-
-    /** Rows in render order, with the Appearance row spliced in above the sign-out divider. */
-    const entries = computed(() => {
-        const list: ({ kind: 'item'; item: StProfileMenuItem; index: number } | { kind: 'appearance' })[] = [];
-        const dividerAt = props.items.findIndex((it) => it.dividerBefore);
-        const appearanceAt = dividerAt === -1 ? props.items.length : dividerAt;
-        props.items.forEach((item, index) => {
-            if (props.themeSwitch && index === appearanceAt) list.push({ kind: 'appearance' });
-            list.push({ kind: 'item', item, index });
-        });
-        if (props.themeSwitch && appearanceAt === props.items.length) list.push({ kind: 'appearance' });
-        return list;
     });
 
     function setItemRef(el: unknown, index: number) {

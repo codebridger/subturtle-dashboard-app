@@ -22,6 +22,14 @@
             :style="{ background: 'radial-gradient(circle, rgb(var(--jade-500) / calc(var(--blob-alpha) * 1.6)), transparent 62%)' }"
         />
 
+        <!-- No shell on this screen, so the switcher is placed by hand at the design's offsets.
+             Positioned via a WRAPPER, not by passing classes to the component: its root already
+             carries `st-relative`, and subturtle-ui's stylesheet loads after the app's, so an
+             `absolute` handed down as a fall-through class loses the specificity tie. -->
+        <div class="absolute right-[26px] top-[22px] z-[3]">
+            <PartialThemeSwitcher />
+        </div>
+
         <!-- Sign-in column. Below xl it centres and the decorative half is dropped (see
              LoginBoardPreview for why xl), but the 344px form width is kept so the button never
              stretches across a tablet. -->

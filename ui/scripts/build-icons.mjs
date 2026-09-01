@@ -45,15 +45,15 @@ const ICONS = [
     'solar:lock-keyhole-minimalistic-bold-duotone',
     'solar:logout-2-linear',
     'solar:microphone-3-bold-duotone',
-    'solar:monitor-linear',
-    'solar:moon-linear',
+    'solar:monitor-bold-duotone',
+    'solar:moon-bold-duotone',
     'solar:moon-sleep-bold-duotone',
     'solar:notebook-bold-duotone',
     'solar:play-bold',
     'solar:rocket-2-bold-duotone',
     'solar:settings-bold-duotone',
     'solar:settings-linear',
-    'solar:sun-2-linear',
+    'solar:sun-2-bold-duotone',
     'solar:user-linear',
 ];
 

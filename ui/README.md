@@ -89,6 +89,9 @@ Two flips in that file are load-bearing, and both look wrong until you know the 
 `--white` is deliberately *not* re-pointed. It means "ink on a rose CTA". Never use it as a
 surface; use `--surface-card`.
 
+The theme is applied as **`data-theme="light" | "dark"` on `<html>`** (both Tailwind builds use
+`darkMode: ['selector', '[data-theme="dark"]']`).
+
 Consumers must also add `class="theme-switching"` to `<html>` for the one frame around a change —
 the stylesheet kills transitions while it is set, otherwise the whole page cross-fades. See the
 dashboard's `plugins/theme.client.ts`.
@@ -120,13 +123,28 @@ yarn dev     # rebuild on change, for a linked consumer
 | Group | |
 | --- | --- |
 | Shell | `StAppShell`, `StSidebarNav`, `StProfileMenu` |
-| Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StThemeSwitch`, `StIcon` |
+| Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StThemeSwitcher`, `StIcon` |
 | Brand | `StStatTile`, `StBundleCard` |
 
 This is the set the app shell, the Progress screen and the Login screen need. The rest of the
 design system (`Input`, `Tag`, `Switch`, `ProgressBar`, `SegmentedControl`, `Tabs`, `Modal`,
 `Toast`, `PhraseCard`, `Flashcard`, `LevelPip`, `PlanCard`) lands as each remaining screen is
 migrated.
+
+### `StThemeSwitcher`
+
+One round icon button that cycles Light → Dark → System. It can run standalone — persisting to
+`persistKey` and writing `data-theme` itself — or controlled via `v-model` with `persist-key=""`
+and `:apply="false"`, which is what a host that already owns the theme (the dashboard, through
+`@nuxtjs/color-mode`) must pass so the two do not both write the attribute.
+
+`labels.aria` and `labels.resolved` are **formatters**, not patterns. Handing a translated pattern
+like `t('theme.aria')` over instead looks correct and silently isn't: vue-i18n interpolates the
+placeholders on the way out, so `{current}` / `{next}` arrive already blanked.
+
+Positioning it is done by a **wrapper element**, not by passing layout classes down. Its root
+carries `st-relative`, and `dist/style.css` loads after the host's own Tailwind, so an `absolute`
+passed as a fall-through class loses the specificity tie.
 
 ### `StProfileMenu`
 
@@ -138,10 +156,8 @@ are not stylistic preferences:
   `<main>` counts). The topbar sets `backdrop-filter`, which bleeds its blur under an
   absolutely-positioned descendant and washes the panel out. The design prototype hit this and
   fixes it the same way.
-- **`themeSwitch` adds a non-closing Appearance row**, rendering `StThemeSwitch`. It emits
-  `update:theme` and leaves the menu open so the user watches the page repaint behind it. The
-  dashboard does not use it — it puts `StThemeSwitch` directly in the topbar instead — but the row
-  stays for consumers that want the switch inside the menu.
+There is no Appearance row: the design system ships `StThemeSwitcher` as a dedicated topbar
+control, so the menu keeps its four rows.
 
 The component holds no router, store or i18n coupling — `items` is a plain array carrying the
 caller's own handlers, and every visible string comes in through `labels`.

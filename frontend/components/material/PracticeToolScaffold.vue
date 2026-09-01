@@ -19,7 +19,11 @@
                     <h1 class="text-sm text-gray-800">{{ title }}</h1>
                 </div>
 
-                <div>
+                <!-- This session bar is the only chrome these screens have, so the theme control
+                     is placed by hand: immediately left of End session, 10px gap. The scaffold is
+                     shared by every practice tool, so wiring it here covers all of them. -->
+                <div class="flex items-center gap-[10px]">
+                    <PartialThemeSwitcher />
                     <Button class="scale-50 md:scale-100" rounded="md" size="md" iconName="IconX" @click="endSession" />
                 </div>
             </Card>
