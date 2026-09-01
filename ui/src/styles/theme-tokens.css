@@ -1,9 +1,25 @@
 /* ============================================================
    Subturtle — theme layer (dark).
 
-   Ported from the design handoff's `theme-tokens.css`. Loaded from index.css
+   ⚠️ SUPERSEDED, AND STILL HERE ON PURPOSE.
+
+   The design system now ships `subturtle-theme.css` (its own tokens/dark.css plus three
+   patches), and THAT is the file this one has to be replaced by, wholesale. It was not
+   available when this was written, so the palette below is the earlier profile-menu
+   handoff's. The two genuinely disagree, so do not reconcile them by hand:
+
+     - ramps here invert step-for-step; there they invert around their MID-step, with
+       --rose-500 / --jade-500 keeping their exact brand values
+     - --paper #161219 here, #15111a there; --surface-card #211b28 here, #1e1826 there
+     - --white is NOT re-pointed here, but IS #1e1826 there ("the card neutral")
+
+   That last one reverses the meaning of --white, so the literal-white audit already done
+   in the components (`st-text-on-brand`, see tailwind.config.cjs) is correct for BOTH and
+   should survive the swap. Everything else in this file is placeholder-accurate only.
+
+   Loaded from index.css
    immediately after tokens.css, which is the whole mechanism: this file re-points the
-   SAME token names under `html.dark`, so every component already styled with
+   SAME token names under `html[data-theme='dark']`, so every component already styled with
    var(--surface-card) / var(--text-body) / var(--ink-100) themes itself with no edits.
 
    ONE DELIBERATE DIFFERENCE FROM THE HANDOFF FILE — and it is not optional. The handoff
@@ -26,11 +42,13 @@
         soft brand tint" (avatar initials, plan pill, streak pill), so they have to flip
         to stay legible.
 
-   --white is NOT re-pointed. It means "ink on a rose CTA". Never use it as a surface;
+   --white is NOT re-pointed in THIS file. Under subturtle-theme.css it becomes the card
+   neutral, which is why nothing that means literal white may say var(--white) any more —
+   those now say `st-*-on-brand`, a hard #fff. Never use --white as a surface either way;
    use --surface-card.
    ============================================================ */
 
-html.dark {
+html[data-theme='dark'] {
     color-scheme: dark;
 
     /* ---- Neutrals: inverted warm mauve ramp ---------------- */
@@ -54,7 +72,10 @@ html.dark {
     --color-primary-press: 227 11 75; /* #e30b4b */
     --color-primary-soft: 72 28 49; /* rgba(249,30,90,.18) over --surface-card */
     --color-primary-tint: 55 27 45; /* rgba(249,30,90,.10) over --surface-card */
-    --color-on-primary: var(--white);
+    /* Explicit literals, NOT var(--white): subturtle-theme.css redeclares --white as the card
+       neutral, and an alias declared at :root has already resolved by the time we get here. */
+    --color-on-primary: 255 255 255;
+    --color-on-accent: 255 255 255;
     --rose-700: 255 179 200; /* #ffb3c8 — now "text on rose soft" */
     --rose-800: 255 143 174; /* #ff8fae */
     --rose-200: 106 18 49; /* #6a1231 — ::selection background */
@@ -70,7 +91,7 @@ html.dark {
     --text-body: var(--ink-800);
     --text-muted: var(--ink-500);
     --text-faint: var(--ink-400);
-    --text-on-dark: var(--white);
+    --text-on-dark: 255 255 255;
     --text-link: 255 143 174; /* #ff8fae */
 
     /* ---- Surfaces ---------------------------------------- */
@@ -144,13 +165,13 @@ html.dark {
 
 /* Elevated dark surfaces get a 1px top highlight instead of a heavier shadow — keeps the
    friendly, soft feel. */
-html.dark .st-elevated,
-html.dark [data-elevated] {
+html[data-theme='dark'] .st-elevated,
+html[data-theme='dark'] [data-elevated] {
     box-shadow: var(--shadow-lg), inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
 /* Themed images/illustrations: dim by 8% so nothing glares. */
-html.dark img:not([data-no-dim]) {
+html[data-theme='dark'] img:not([data-no-dim]) {
     filter: brightness(0.94);
 }
 

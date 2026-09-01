@@ -22,8 +22,8 @@
             -->
             <span
                 v-if="sourceLang && targetLang"
-                class="st-relative st-inline-flex st-items-center st-gap-[6px] st-px-[10px] st-py-1 st-rounded-pill st-text-white st-text-2xs st-font-extrabold st-tracking-wide st-backdrop-blur-[4px]"
-                :class="$slots.cover ? 'st-bg-overlay/55' : 'st-bg-white/25'"
+                class="st-relative st-inline-flex st-items-center st-gap-[6px] st-px-[10px] st-py-1 st-rounded-pill st-text-on-brand st-text-2xs st-font-extrabold st-tracking-wide st-backdrop-blur-[4px]"
+                :class="$slots.cover ? 'st-bg-overlay/55' : 'st-bg-on-brand/25'"
             >
                 {{ sourceLang }}
                 <StIcon name="solar:arrow-right-linear" :size="12" />
@@ -35,7 +35,7 @@
                 v-if="!$slots.cover"
                 name="solar:notebook-bold-duotone"
                 :size="40"
-                class="st-text-white/45"
+                class="st-text-on-brand/45"
             />
         </div>
 

@@ -172,13 +172,17 @@ promoted to `dev` in batches. While it is in progress:
   (`panel`, `btn`, `form-input`, `badge`, `animate__*`, `screen_loader`, `main-section`),
   plus `pilotui/toast` and `useAppStore` from `pilotui/store`. Un-migrated screens render
   inside the new shell and keep working.
-- **Dark mode is real on `st-` surfaces.** `ui/src/styles/theme-tokens.css` re-points the
-  design tokens under `html.dark`, and `@nuxtjs/color-mode` owns the preference (Light /
-  Dark / System, `classSuffix: ''`, pre-paint script, no flash). The switch lives in the
-  profile menu's Appearance row, not in the topbar. Un-migrated pilotui screens keep their
-  own `dark:` behaviour — `plugins/theme.client.ts` mirrors the preference into pilotui's
-  store so the two never disagree, but they are not styled to match and will not be until
-  each screen migrates.
+- **Dark mode is real on `st-` surfaces.** The theme is applied as
+  `data-theme="light" | "dark"` on `<html>`; both Tailwind builds use
+  `darkMode: ['selector', '[data-theme="dark"]']`, and `@nuxtjs/color-mode` owns the
+  preference (Light / Dark / System, `subturtle:theme`, pre-paint script, no flash). The
+  control is `StThemeSwitcher` in the topbar — there is no Appearance row in the profile
+  menu. Un-migrated pilotui screens keep their own `dark:` behaviour; the module also keeps
+  writing the `.dark` class and `plugins/theme.client.ts` mirrors the preference into
+  pilotui's store, so the two never disagree, but they are not styled to match and will not
+  be until each screen migrates.
+  ⚠️ `ui/src/styles/theme-tokens.css` still holds the EARLIER handoff's palette. The design
+  system's own `subturtle-theme.css` supersedes it wholesale — see the banner in that file.
 - `subturtle-ui` is a `link:../ui` dependency whose `dist/` is not committed, so the
   frontend's `postinstall` builds it. Any context that installs the frontend needs `ui/`
   present — the Dockerfile copies it in.

@@ -59,7 +59,7 @@
             // `bg-inverse`, not the ink ramp: ink inverts in dark, so an ink-900 fill with
             // white text would become a near-white fill with white text.
             neutral: 'st-bg-inverse hover:st-opacity-90 st-text-page st-border-[1.5px] st-border-transparent st-shadow-sm',
-            danger: 'st-bg-danger hover:st-bg-red-600 st-text-white st-border-[1.5px] st-border-transparent st-shadow-sm',
+            danger: 'st-bg-danger hover:st-bg-red-600 st-text-on-brand st-border-[1.5px] st-border-transparent st-shadow-sm',
         },
         soft: {
             primary: 'st-bg-primary-tint hover:st-bg-primary-soft st-text-rose-700 st-border-[1.5px] st-border-transparent',

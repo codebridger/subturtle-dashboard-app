@@ -81,9 +81,9 @@ export default defineNuxtConfig({
     modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster', '@nuxtjs/color-mode'],
 
     /**
-     * The theme layer for the `st-` design system. `classSuffix: ''` makes the module write a bare
-     * `class="light"` / `class="dark"` on <html> — subturtle-ui re-points its tokens under
-     * `html.dark`, and both Tailwind builds are `darkMode: 'class'`, so one class drives everything.
+     * The theme layer for the `st-` design system. The module stamps BOTH a `data-theme` attribute
+     * and a bare `light`/`dark` class on <html>; subturtle-ui re-points its tokens under
+     * `html[data-theme='dark']` and both Tailwind builds select on the same attribute.
      *
      * The module also injects a blocking pre-paint script into the SPA shell's <head>, which is what
      * keeps a hard reload from flashing the wrong theme. `system` is resolved in that script from
@@ -100,10 +100,18 @@ export default defineNuxtConfig({
      * inspectable in devtools. Do not re-enable it; the two would stack.
      */
     colorMode: {
+        // `dataValue` is what makes the module write data-theme="light|dark" on <html> — the
+        // application mechanism the design system specifies, and what both Tailwind builds now
+        // select on. The pre-paint script sets it too, which is what keeps a hard reload from
+        // flashing the wrong theme, `system` included.
+        dataValue: 'theme',
+        // The class is ALSO kept. pilotui's compiled CSS and every un-migrated screen's `dark:`
+        // classes were built against `.dark`, so dropping it would take those screens' dark mode
+        // with it. Migrated `st-` surfaces read data-theme; the two agree at all times.
         classSuffix: '',
         preference: 'system',
         fallback: 'light',
-        storageKey: 'subturtle.theme',
+        storageKey: 'subturtle:theme',
         disableTransition: false,
     },
 

@@ -17,7 +17,7 @@ const scale = (name, steps) => Object.fromEntries(steps.map((s) => [String(s), c
 
 module.exports = {
     prefix: 'st-',
-    darkMode: 'class',
+    darkMode: ['selector', '[data-theme="dark"]'],
     content: ['./src/**/*.{vue,ts}'],
     corePlugins: { preflight: false },
     theme: {
@@ -26,6 +26,12 @@ module.exports = {
             current: 'currentColor',
             inherit: 'inherit',
             white: c('--white'),
+            // Literal #fff, immune to theming. The design system's dark layer redeclares
+            // --white as the CARD NEUTRAL (#1e1826), so `white` is no longer a safe way to
+            // say "ink on a rose CTA" — that meaning lives here instead. Anything sitting on
+            // a brand or status fill uses `on-brand`; anything that is a SURFACE uses
+            // `bg-card`. Never `white` for either.
+            'on-brand': '#fff',
             paper: c('--paper'),
             rose: scale('rose', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]),
             jade: scale('jade', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]),
