@@ -28,10 +28,8 @@
                     </span>
                 </template>
 
-                <!-- Plan pill, then the account menu — the theme switch now lives inside the
-                     menu's Appearance row, so there is no separate switcher up here. -->
                 <template #header-right>
-                    <StPlanPill v-if="planLabel" :label="planLabel" />
+                    <PartialThemeSwitch />
                     <PartialProfileMenu />
                 </template>
 
@@ -79,8 +77,7 @@
 
 <script setup lang="ts">
 import { App, ThemeCustomizer } from 'pilotui/shell';
-import { StAppShell, StIcon, StPlanPill } from 'subturtle-ui';
-import { useProfileStore } from '~/stores/profile';
+import { StAppShell, StIcon } from 'subturtle-ui';
 import UsageCapBanner from '~/components/freemium_alerts/UsageCapBanner.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import VoiceCapBanner from '~/components/VoiceCapBanner.vue';
@@ -94,13 +91,6 @@ const { open: tierLimitOpen, feature: tierLimitFeature, closeTierLimitModal } = 
 const router = useRouter();
 const route = useRoute();
 const leitner = useLeitnerStore();
-const profileStore = useProfileStore();
-
-// Hidden until the subscription resolves, rather than flashing a wrong plan for a beat.
-const planLabel = computed(() => {
-    if (profileStore.isSubscriptionFetching) return null;
-    return profileStore.isFreemium ? 'Free' : profileStore.activeSubscription?.label || null;
-});
 
 const RAIL_KEY = 'subturtle.rail';
 const railCollapsed = ref(false);

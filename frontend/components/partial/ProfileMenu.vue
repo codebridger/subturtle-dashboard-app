@@ -8,10 +8,7 @@
             :plan="planLabel"
             :items="items"
             :width="296"
-            theme-switch
-            :theme="theme"
             :labels="labels"
-            @update:theme="theme = $event"
         >
             <template #trigger>
                 <StAvatar :name="profileStore.userDetail?.name ?? ''" :src="profileStore.profilePicture || undefined" size="md" online />
@@ -56,7 +53,6 @@
     const route = useRoute();
     const profileStore = useProfileStore();
     const { isFreemium, baseRemaining } = useVoiceBalance();
-    const { theme } = useAppTheme();
 
     const open = ref(false);
     const showSignOutModal = ref(false);
@@ -68,13 +64,9 @@
         () => (open.value = false)
     );
 
-    const labels = computed(() => ({
-        menu: t('account.menu'),
-        appearance: t('appearance.label'),
-        light: t('appearance.light'),
-        dark: t('appearance.dark'),
-        system: t('appearance.system'),
-    }));
+    // The appearance strings moved out with the switch — it now sits in the topbar
+    // (PartialThemeSwitch) rather than in an Appearance row here.
+    const labels = computed(() => ({ menu: t('account.menu') }));
 
     const planLabel = computed(() => {
         if (profileStore.isSubscriptionFetching) return undefined;

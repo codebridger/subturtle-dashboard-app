@@ -174,9 +174,11 @@ export const useProfileStore = defineStore('profile', () => {
                 const gPicture = profile?.gPicture;
                 const knownFailed = !!(userId && gPicture && isPictureMarkedFailed(userId, gPicture));
 
-                // If we already know this URL is broken, strip it before exposing the profile
-                // to Vue — that way ProfileButton never renders the doomed <img :src>.
-                userDetail.value = knownFailed ? { ...profile, gPicture: '' } : profile;
+                // `knownFailed` means the CANVAS CACHE of this URL failed before, not that the URL
+                // is undisplayable — see the note in the catch below. So the profile is exposed
+                // with gPicture intact either way, and only the re-encode is skipped; StAvatar
+                // falls back to initials if the <img> itself actually errors.
+                userDetail.value = profile;
 
                 if (userId && gPicture && !knownFailed) {
                     const cached = readCachedPicture(userId);
@@ -187,13 +189,18 @@ export const useProfileStore = defineStore('profile', () => {
                         // UI falls back to gPicture URL until the encode completes.
                         profilePictureBase64.value = '';
                         downloadAndCachePicture(userId, gPicture).catch(() => {
-                            // The CORS image fetch failed — remember this URL is broken so we
-                            // don't keep retrying, and drop gPicture from local state so
-                            // renderers fall through to the placeholder.
+                            // The caching fetch failed — remember that, so we don't re-attempt the
+                            // encode on every load.
+                            //
+                            // But do NOT strip gPicture. This path draws the image to a canvas and
+                            // calls toDataURL(), which is the only reason it needs `crossOrigin`,
+                            // and so the usual failure here is a CORS one. A plain <img src> needs
+                            // no CORS whatsoever — the browser renders that URL fine. Dropping
+                            // gPicture on a CORS error therefore hid a perfectly displayable
+                            // avatar behind the initials fallback. A genuinely dead URL is caught
+                            // where it belongs, by the <img> itself: StAvatar falls back to
+                            // initials on its error event.
                             markPictureFailed(userId, gPicture);
-                            if (userDetail.value && userDetail.value.gPicture === gPicture) {
-                                userDetail.value = { ...userDetail.value, gPicture: '' };
-                            }
                         });
                     }
                 } else {

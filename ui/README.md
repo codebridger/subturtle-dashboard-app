@@ -120,8 +120,8 @@ yarn dev     # rebuild on change, for a linked consumer
 | Group | |
 | --- | --- |
 | Shell | `StAppShell`, `StSidebarNav`, `StProfileMenu` |
-| Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StIcon` |
-| Brand | `StStatTile`, `StBundleCard`, `StPlanPill` |
+| Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StThemeSwitch`, `StIcon` |
+| Brand | `StStatTile`, `StBundleCard` |
 
 This is the set the app shell, the Progress screen and the Login screen need. The rest of the
 design system (`Input`, `Tag`, `Switch`, `ProgressBar`, `SegmentedControl`, `Tabs`, `Modal`,
@@ -138,10 +138,10 @@ are not stylistic preferences:
   `<main>` counts). The topbar sets `backdrop-filter`, which bleeds its blur under an
   absolutely-positioned descendant and washes the panel out. The design prototype hit this and
   fixes it the same way.
-- **`themeSwitch` adds a non-closing Appearance row** — a `role="radiogroup"` of three icon-only
-  segments. It emits `update:theme` and leaves the menu open so the user watches the page repaint
-  behind it. It is hand-rolled rather than built on a `SegmentedControl` because that component is
-  not ported yet, and because the library may not depend on `pilotui`.
+- **`themeSwitch` adds a non-closing Appearance row**, rendering `StThemeSwitch`. It emits
+  `update:theme` and leaves the menu open so the user watches the page repaint behind it. The
+  dashboard does not use it — it puts `StThemeSwitch` directly in the topbar instead — but the row
+  stays for consumers that want the switch inside the menu.
 
 The component holds no router, store or i18n coupling — `items` is a plain array carrying the
 caller's own handlers, and every visible string comes in through `labels`.

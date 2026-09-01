@@ -54,27 +54,9 @@
                     <div v-if="entry.kind === 'appearance'" class="st-flex st-min-h-[44px] st-items-center st-gap-3 st-px-3">
                         <StIcon name="solar:sun-2-linear" :size="20" class="st-shrink-0 st-text-muted" />
                         <span class="st-min-w-0 st-flex-1 st-truncate st-text-base st-font-bold st-text-body">{{ labels.appearance }}</span>
-                        <div
-                            role="radiogroup"
-                            :aria-label="labels.appearance"
-                            class="st-flex st-h-7 st-shrink-0 st-items-center st-rounded-pill st-bg-sunken st-p-0.5"
-                        >
-                            <button
-                                v-for="opt in THEME_OPTIONS"
-                                :key="opt.value"
-                                type="button"
-                                role="radio"
-                                :aria-checked="theme === opt.value"
-                                :aria-label="labels[opt.value]"
-                                :tabindex="theme === opt.value ? 0 : -1"
-                                class="st-inline-flex st-h-6 st-w-8 st-cursor-pointer st-items-center st-justify-center st-rounded-pill st-border-none st-p-0 st-transition-colors st-duration-fast st-ease-out"
-                                :class="theme === opt.value ? 'st-bg-card st-text-primary st-shadow-xs' : 'st-bg-transparent st-text-faint hover:st-text-muted'"
-                                @click="selectTheme(opt.value)"
-                                @keydown="onSegmentKeydown($event, opt.value)"
-                            >
-                                <StIcon :name="opt.icon" :size="16" />
-                            </button>
-                        </div>
+                        <!-- Selecting deliberately does not close the menu: the point is to watch
+                             the page repaint behind it. -->
+                        <StThemeSwitch :model-value="theme" :labels="labels" @update:model-value="$emit('update:theme', $event)" />
                     </div>
 
                     <template v-else>
@@ -112,14 +94,9 @@
 <script setup lang="ts">
     import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
     import StAvatar from '../elements/StAvatar.vue';
+    import StThemeSwitch from '../elements/StThemeSwitch.vue';
     import StIcon from '../icon/StIcon.vue';
     import type { StProfileMenuItem, StTheme } from '../types';
-
-    const THEME_OPTIONS: { value: StTheme; icon: string }[] = [
-        { value: 'light', icon: 'solar:sun-2-linear' },
-        { value: 'dark', icon: 'solar:moon-linear' },
-        { value: 'system', icon: 'solar:monitor-linear' },
-    ];
 
     const props = withDefaults(
         defineProps<{
@@ -277,11 +254,6 @@
         close(false);
     }
 
-    function selectTheme(value: StTheme) {
-        // Deliberately does not close: the point is to watch the page repaint behind the menu.
-        emit('update:theme', value);
-    }
-
     /** Roving focus over the menuitems, wrapping at both ends. */
     function moveFocus(step: number) {
         const focusable = props.items.map((_, i) => i).filter((i) => itemRefs.value[i]);
@@ -313,14 +285,4 @@
         }
     }
 
-    function onSegmentKeydown(e: KeyboardEvent, value: StTheme) {
-        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-        // Left/Right stay inside the radiogroup; Up/Down fall through to onKeydown and leave it.
-        e.preventDefault();
-        e.stopPropagation();
-        const at = THEME_OPTIONS.findIndex((o) => o.value === value);
-        const next = THEME_OPTIONS[(at + (e.key === 'ArrowRight' ? 1 : -1) + THEME_OPTIONS.length) % THEME_OPTIONS.length];
-        emit('update:theme', next.value);
-        nextTick(() => (panelRef.value?.querySelector('[role="radio"][aria-checked="true"]') as HTMLElement | null)?.focus());
-    }
 </script>
