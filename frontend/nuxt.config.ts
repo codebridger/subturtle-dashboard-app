@@ -94,10 +94,12 @@ export default defineNuxtConfig({
      * than fighting it over one entry — plugins/theme.client.ts mirrors this preference into
      * pilotui's store.
      *
-     * `disableTransition: false` turns OFF the module's own cross-fade guard (it injects an
-     * anonymous <style> element). We do the same job with an `html.theme-switching` class in
-     * plugins/theme.client.ts, whose rule ships in subturtle-ui's stylesheet — one mechanism,
-     * inspectable in devtools. Do not re-enable it; the two would stack.
+     * `disableTransition: false` is the module's own default, kept explicit so nobody turns it on.
+     * At `true` the module suppresses the cross-fade itself by injecting an anonymous <style>
+     * element; at `false` it leaves transitions alone, which is what we want, because
+     * plugins/theme.client.ts already does that job with an `html.theme-switching` class whose
+     * rule ships in subturtle-ui's stylesheet. One mechanism, and one that is inspectable in
+     * devtools. Setting this to `true` would stack a second, invisible one on top.
      */
     colorMode: {
         // `dataValue` is what makes the module write data-theme="light|dark" on <html> — the

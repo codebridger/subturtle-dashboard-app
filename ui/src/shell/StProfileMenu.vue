@@ -104,7 +104,6 @@
             name: '',
             align: 'right',
             width: 284,
-            theme: 'system',
             // Inlined rather than referencing a const: a withDefaults factory is hoisted out of
             // the setup scope, so it cannot close over anything declared here.
             items: () => [
