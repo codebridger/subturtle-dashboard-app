@@ -18,10 +18,9 @@
                     {{ t('board.due_today') }}
                 </h2>
 
-                <!-- items-start, not the design's implicit stretch: PoolCard is still the pilotui
-                     card and is roughly twice a design card's height, so stretching would inflate
-                     every sibling to match it. Revisit when PoolCard migrates. -->
-                <div class="grid items-start gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+                <!-- Cards stretch (the design's default) so every `mt-auto` footer lands on the
+                     same baseline across the row. -->
+                <div class="grid gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
                     <StCard v-for="activity in activities" :key="activity._id" class="flex flex-col">
                         <div class="mb-5 flex items-start justify-between gap-3">
                             <span

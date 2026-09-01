@@ -43,6 +43,7 @@ const ICONS = [
     'solar:fire-bold-duotone',
     'solar:hamburger-menu-linear',
     'solar:history-2-bold-duotone',
+    'solar:inbox-in-bold-duotone',
     'solar:layers-minimalistic-bold-duotone',
     'solar:lock-keyhole-minimalistic-bold-duotone',
     'solar:logout-2-linear',
