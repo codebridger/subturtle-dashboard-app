@@ -1,112 +1,142 @@
 <template>
-    <Modal :title="t('bundle.add_new.title')">
-        <template #trigger="{ toggleModal }">
-            <Button color="primary" rounded="lg" class="w-full" @click="openForm(toggleModal)" iconName="IconPlus"
-                :label="t('bundle.add_new.action_add_new')" />
-        </template>
+    <StButton :variant="variant" color="primary" icon="solar:add-circle-bold" @click="openForm">
+        {{ t('bundle.add_new.action_add_new') }}
+    </StButton>
 
-        <template #default>
-            <div class="flex flex-col space-y-2 p-4">
-                <Input :placeholder="t('bundle.add_new.title_placeholder')" v-model="title" :error="!!error"
-                    :error-message="error || ''" />
-                <TextArea :placeholder="t('bundle.add_new.desc_placeholder')" v-model="description" :error="!!error"
-                    :error-message="error || ''" />
-            </div>
-        </template>
+    <StModal
+        :open="isOpen"
+        size="sm"
+        :title="t('bundle.add_new.title')"
+        :description="t('bundle.add_new.description')"
+        :dismissible="!isPending"
+        @close="closeForm"
+    >
+        <form class="flex flex-col gap-4" @submit.prevent="createBundle">
+            <StInput
+                v-model="title"
+                :label="t('bundle.add_new.title_label')"
+                :placeholder="t('bundle.add_new.title_placeholder')"
+                :error="errors.title || submitError"
+                autofocus
+            />
+            <StTextarea
+                v-model="description"
+                :label="t('bundle.add_new.desc_label')"
+                :optional-label="t('bundle.add_new.desc_optional')"
+                :placeholder="t('bundle.add_new.desc_placeholder')"
+                :error="errors.description"
+            />
+            <!-- Enter submits; the visible button lives in the modal's actions slot, outside this form. -->
+            <button type="submit" class="hidden" />
+        </form>
 
-        <template #footer="{ toggleModal }">
-            <!-- Footer -->
-            <div class="flex justify-end space-x-2">
-                <Button @click="closeForm(toggleModal)" :label="t('bundle.add_new.action_cancel')" />
-                <Button color="primary" @click="createBundle(toggleModal)" :loading="isPending" :disabled="!isValidForm"
-                    :label="t('bundle.add_new.action_create')" />
-            </div>
+        <template #actions>
+            <StButton variant="ghost" color="neutral" :disabled="isPending" @click="closeForm">
+                {{ t('bundle.add_new.action_cancel') }}
+            </StButton>
+            <StButton color="primary" :disabled="!isValidForm || isPending" @click="createBundle">
+                {{ t('bundle.add_new.action_create') }}
+            </StButton>
         </template>
-    </Modal>
+    </StModal>
 </template>
 
 <script setup lang="ts">
-import { Button, Input, TextArea, Modal } from 'pilotui';
-import { dataProvider } from '@modular-rest/client';
-import { useForm } from 'vee-validate';
-import * as yup from 'yup';
-import { COLLECTIONS, DATABASE } from '~/types/database.type';
-import { analytic } from '~/plugins/mixpanel';
-const { t } = useI18n();
+    import { StButton, StInput, StModal, StTextarea } from 'subturtle-ui';
+    import { dataProvider } from '@modular-rest/client';
+    import { useForm } from 'vee-validate';
+    import * as yup from 'yup';
+    import { COLLECTIONS, DATABASE } from '~/types/database.type';
+    import { analytic } from '~/plugins/mixpanel';
+    const { t } = useI18n();
 
-const router = useRouter();
+    const router = useRouter();
 
-const error = ref<string | null>(null);
-const isPending = ref(false);
+    withDefaults(defineProps<{ variant?: 'solid' | 'outline' }>(), { variant: 'solid' });
 
-const { errors, values, defineField, resetForm } = useForm({
-    validationSchema: yup.object({
-        title: yup.string().required(t('bundle.add_new.title_required')),
-        description: yup.string().max(130, t('bundle.add_new.desc_max')),
-    }),
-});
+    const isOpen = ref(false);
+    const isPending = ref(false);
 
-const [title] = defineField('title', values.title);
-const [description] = defineField('description', values.description);
+    // Server-side rejection shown on the Name field. The toast below is the briefed feedback, but
+    // pilotui's toaster resolves a `TairoToaster` component this app never registers, so it renders
+    // nothing — without this the duplicate-title case would fail silently.
+    const submitError = ref('');
 
-const isValidForm = computed(() => {
-    return title.value?.length && Object.keys(errors.value).length === 0;
-});
+    const { errors, values, defineField, resetForm } = useForm({
+        validationSchema: yup.object({
+            title: yup.string().required(t('bundle.add_new.title_required')),
+            description: yup.string().max(130, t('bundle.add_new.desc_max')),
+        }),
+    });
 
-function closeForm(toggleModal: (state: boolean) => void) {
-    toggleModal(false);
-}
+    const [title] = defineField('title', values.title);
+    const [description] = defineField('description', values.description);
 
-function openForm(toggleModal: (state: boolean) => void) {
-    resetForm();
-    toggleModal(true);
-}
+    const isValidForm = computed(() => {
+        return title.value?.length && Object.keys(errors.value).length === 0;
+    });
 
-function createBundle(toggleModal: (state: boolean) => void) {
-    if (!isValidForm) return;
+    function closeForm() {
+        if (isPending.value) return;
+        isOpen.value = false;
+    }
 
-    isPending.value = true;
+    function openForm() {
+        resetForm();
+        submitError.value = '';
+        isOpen.value = true;
+    }
 
-    dataProvider
-        .insertOne({
-            database: DATABASE.USER_CONTENT,
-            collection: COLLECTIONS.PHRASE_BUNDLE,
-            doc: {
-                title: title.value,
-                desc: description.value,
-                refId: authUser.value?.id,
-            },
-        })
-        .then(({ _id }) => {
-            analytic.track('phrase-bundle_created');
+    function createBundle() {
+        if (!isValidForm.value || isPending.value) return;
 
-            isPending.value = false;
-            toggleModal(false);
-            router.push({ path: '/bundles/' + _id });
-        })
-        .catch(({ error }) => {
-            isPending.value = false;
+        isPending.value = true;
+        submitError.value = '';
 
-            if (error.includes('duplicate key error')) {
-                return toastError({
-                    title: t('bundle.add_new.duplicate_title'),
-                    message: t('bundle.add_new.duplicate_title_desc'),
-                });
-            } else {
-                toastError({
-                    title: t('bundle.add_new.error'),
-                    message: error,
-                });
-            }
-        });
-}
+        dataProvider
+            .insertOne({
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE_BUNDLE,
+                doc: {
+                    title: title.value,
+                    desc: description.value,
+                    refId: authUser.value?.id,
+                },
+            })
+            .then(({ _id }) => {
+                // Analytics is best-effort: with no Mixpanel token (CI, e2e, local dev) track()
+                // throws, and an unguarded call here lands in the .catch below — so a bundle that
+                // was created fine reported an error and never navigated. Same guard as the
+                // subscription page's pricing-page_viewed.
+                try {
+                    analytic.track('phrase-bundle_created');
+                } catch (e) {
+                    console.error('Failed to track phrase-bundle_created:', e);
+                }
+
+                isPending.value = false;
+                isOpen.value = false;
+                router.push({ path: '/bundles/' + _id });
+            })
+            .catch((err) => {
+                isPending.value = false;
+
+                // Rejections from the data provider carry `{ error }`; anything else (a thrown
+                // TypeError, a network failure) does not, and blind destructuring hid the real one.
+                const error: string = typeof err?.error === 'string' ? err.error : String(err?.message || err);
+
+                if (error.includes('duplicate key error')) {
+                    submitError.value = t('bundle.add_new.duplicate_title_desc');
+                    return toastError({
+                        title: t('bundle.add_new.duplicate_title'),
+                        message: t('bundle.add_new.duplicate_title_desc'),
+                    });
+                } else {
+                    toastError({
+                        title: t('bundle.add_new.error'),
+                        message: error,
+                    });
+                }
+            });
+    }
 </script>
-
-<style>
-[role='dialog'] {
-    /* 
-    decrease the z-index of the modal to avoid overlapping with toast
-   */
-    z-index: 199 !important;
-}
-</style>

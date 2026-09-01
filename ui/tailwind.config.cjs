@@ -85,6 +85,7 @@ module.exports = {
             borderColor: {
                 DEFAULT: c('--border-subtle'),
                 subtle: c('--border-subtle'),
+                default: c('--border-default'),
                 strong: c('--border-strong'),
                 // For rings that punch a component out of whatever it sits on (the avatar's).
                 // `white` would be a literal, and literal white is only ever ink on a rose CTA.

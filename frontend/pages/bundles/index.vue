@@ -1,135 +1,150 @@
 <template>
-    <div class="relative min-h-screen">
-        <!-- Decorative Background Elements -->
-        <div
-            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none">
+    <div class="flex flex-col gap-[22px]">
+        <StPageHeader :title="t('bundle.list_title')" :overline="t('bundle.collection_label')" :subtitle="subtitle">
+            <template #actions>
+                <StInput v-model="filter" :placeholder="t('bundle.filter_bundles')" icon="solar:magnifer-linear" class="w-[240px]" />
+                <BundleAddNew />
+            </template>
+        </StPageHeader>
+
+        <!-- Loading: six card placeholders, so the grid keeps its shape while the first page lands. -->
+        <div v-if="isLoading && !bundleList.length" class="grid grid-cols-1 gap-[14px] sm:grid-cols-2 lg:grid-cols-3">
+            <StSkeleton v-for="n in 6" :key="n" class="h-[190px]" />
         </div>
-        <div
-            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
 
-        <!-- Standard Container -->
-        <div class="container relative mx-auto px-6 py-16 max-w-7xl">
-            <!-- Standard Header Block -->
-            <PageHeader :overline="t('bundle.collection_label', 'LIBRARY')"
-                :title="t('bundle.list_title', 'Your bundles')"
-                :subtitle="t('bundle.list_subtitle', 'Manage and practice your language collections.')">
-                <template #actions>
-                    <div class="w-full md:w-64">
-                        <Input iconName="IconSearch" v-model="filter" :placeholder="t('bundle.filter_bundles')"
-                            :error="!!error" :error-message="error || ''" class="bg-white/50 backdrop-blur-sm" />
-                    </div>
-                    <div>
-                        <BundleAddNew />
-                    </div>
-                </template>
-            </PageHeader>
-
-            <!-- Empty State -->
-            <div v-if="isEmptyState" class="flex flex-1 flex-col items-center justify-center py-20">
-                <div
-                    class="relative flex max-w-xl flex-col items-center justify-center rounded-3xl border border-white/20 bg-white/40 p-12 text-center shadow-xl backdrop-blur-md dark:bg-gray-800/40">
-                    <!-- Decorative blob for empty state -->
-                    <div
-                        class="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 blur-2xl">
-                    </div>
-
-                    <img class="mx-auto h-48 w-auto dark:hidden"
-                        src="/assets/images/illustrations/placeholders/flat/placeholder-search-3.svg"
-                        alt="No bundles available" />
-                    <img class="mx-auto hidden h-48 w-auto dark:block"
-                        src="/assets/images/illustrations/placeholders/flat/placeholder-search-3-dark.svg"
-                        alt="No bundles available" />
-                    <h3 class="mt-6 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                        {{ t('bundle.no-bundles') }}
-                    </h3>
-                    <p class="mt-3 text-base text-gray-500 dark:text-gray-400">
-                        {{ t('bundle.no-bundles-description') }}
-                    </p>
-                    <div class="mt-8">
-                        <BundleAddNew />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Grid section -->
-            <section v-else class="grid w-full grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                <template v-for="bundle of bundleList" :key="bundle._id">
-                    <BundleGenerativeCard :bundle="bundle" />
-                </template>
+        <template v-else-if="bundleList.length">
+            <section class="grid grid-cols-1 gap-[14px] sm:grid-cols-2 lg:grid-cols-3">
+                <BundleGenerativeCard v-for="bundle of bundleList" :key="bundle._id" :bundle="bundle" />
             </section>
 
-            <!-- Pagination -->
-            <div v-if="pagination && !isEmptyState" class="mt-12 flex justify-center">
-                <Pagination v-model="controller.pagination.page" :totalPages="controller.pagination.pages"
-                    @change-page="controller.fetchPage($event)" />
+            <div class="flex items-center justify-center gap-4 pt-1.5">
+                <span class="text-st-sm font-semibold text-st-faint">
+                    {{ t('bundle.showing_count', { shown: bundleList.length, total: totalBundles }) }}
+                </span>
+                <StButton v-if="hasMore" variant="outline" color="neutral" :disabled="isLoading" @click="loadMore">
+                    {{ t('bundle.load_more') }}
+                </StButton>
             </div>
-        </div>
+        </template>
+
+        <!-- No match for the active filter. Distinct from an empty library: the fix is to clear the
+             filter, not to create a bundle. -->
+        <StCard v-else-if="filter" padding="none">
+            <StEmptyState
+                icon="solar:magnifer-linear"
+                color="neutral"
+                :title="t('bundle.no-matches', { filter })"
+                :description="t('bundle.no-matches-description')"
+            >
+                <template #action>
+                    <StButton variant="outline" color="primary" @click="filter = ''">{{ t('bundle.clear_filter') }}</StButton>
+                </template>
+            </StEmptyState>
+        </StCard>
+
+        <StCard v-else padding="none">
+            <StEmptyState icon="solar:notebook-bold-duotone" color="neutral" :title="t('bundle.no-bundles')" :description="t('bundle.no-bundles-description')">
+                <template #action>
+                    <BundleAddNew variant="outline" />
+                </template>
+            </StEmptyState>
+        </StCard>
     </div>
 </template>
 
 <script setup lang="ts">
-import { Input, Pagination } from 'pilotui';
-import PageHeader from '~/components/common/PageHeader.vue';
-import { dataProvider } from '@modular-rest/client';
-import type { PaginationType } from '@modular-rest/client/dist/types/types';
-import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
+    import { dataProvider } from '@modular-rest/client';
+    import type { PaginationType } from '@modular-rest/client/dist/types/types';
+    import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
+    import { StButton, StCard, StEmptyState, StInput, StSkeleton } from 'subturtle-ui';
+    import StPageHeader from '~/components/common/StPageHeader.vue';
 
-const { t } = useI18n();
+    const { t } = useI18n();
 
-const error = ref<string | null>(null);
+    definePageMeta({
+        layout: 'default',
+        title: () => t('bundle.list'),
+        // @ts-ignore
+        middleware: ['auth'],
+    });
 
-definePageMeta({
-    layout: 'default',
-    title: () => t('bundle.list'),
-    // @ts-ignore
-    middleware: ['auth'],
-});
+    const filter = ref('');
+    const perPage = ref(20);
+    const bundleList = ref<PhraseBundleType[]>([]);
+    const pagination = ref<PaginationType | null>(null);
+    const isLoading = ref(false);
 
-const filter = ref('');
-const perPage = ref(20);
-const bundleList = ref<PhraseBundleType[]>([]);
-const pagination = ref<PaginationType | null>(null);
-const isLoading = ref(false);
-const isEmptyState = computed(() => !bundleList.value.length && !isLoading.value);
+    // Size of the whole library, refreshed only on unfiltered fetches. The subtitle describes the
+    // library, so it must not follow the filter — "0 bundles. Practise any of them from here."
+    // under a non-matching filter is not what the header is saying.
+    const libraryTotal = ref(0);
 
-const controller = dataProvider.list<PhraseBundleType>(
-    {
-        database: DATABASE.USER_CONTENT,
-        collection: COLLECTIONS.PHRASE_BUNDLE,
-        query: {
-            refId: authUser.value?.id,
-            title: {
-                $regex: filter.value,
-                $options: 'i',
+    // Size of the CURRENT result set (filtered or not) — what "Showing X of Y" and Load more read.
+    const totalBundles = computed(() => pagination.value?.total ?? bundleList.value.length);
+    const hasMore = computed(() => bundleList.value.length < totalBundles.value);
+
+    // The design's "14 bundles, 342 phrases" needs a phrase total across ALL bundles; only the
+    // loaded page carries phrase arrays, so the count would be wrong on every page but the last.
+    const subtitle = computed(() => t('bundle.list_subtitle', libraryTotal.value));
+
+    /**
+     * Rebuilt per fetch: the query has to read the CURRENT filter. The previous version built the
+     * controller once at setup, which captured `filter.value` as '' forever — typing in the filter
+     * box re-rendered nothing.
+     */
+    function buildController(page: number) {
+        return dataProvider.list<PhraseBundleType>(
+            {
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE_BUNDLE,
+                query: {
+                    refId: authUser.value?.id,
+                    title: {
+                        $regex: filter.value,
+                        $options: 'i',
+                    },
+                },
+                options: {
+                    sort: {
+                        _id: -1,
+                    },
+                },
             },
-        },
-        options: {
-            sort: {
-                _id: -1,
-            },
-        },
-    },
-    {
-        limit: perPage.value,
-        page: 1,
-        onFetched: (data) => {
-            bundleList.value = data;
+            { limit: perPage.value, page }
+        );
+    }
+
+    async function fetchPage(page: number, append = false) {
+        isLoading.value = true;
+        try {
+            const controller = buildController(page);
+            await controller.updatePagination();
+            // Assigned from the returned rows, not the `onFetched` hook: that hook does not fire
+            // for an empty result, which left the previous list on screen under a filter that
+            // matches nothing ("Showing 4 of 0").
+            const rows = (await controller.fetchPage(page)) ?? [];
+            bundleList.value = append ? [...bundleList.value, ...rows] : rows;
             pagination.value = controller.pagination;
-        },
+            if (!filter.value) libraryTotal.value = controller.pagination.total;
+        } catch (e) {
+            console.error('Failed to fetch bundles:', e);
+        } finally {
+            isLoading.value = false;
+        }
     }
-);
 
-onMounted(async () => {
-    isLoading.value = true;
-
-    try {
-        // update pagination
-        await controller.updatePagination();
-        // fetch first page
-        await controller.fetchPage(1);
-    } catch (error) {
-        isLoading.value = false;
+    function loadMore() {
+        fetchPage((pagination.value?.page ?? 1) + 1, true);
     }
-});
+
+    // Debounced so a keystroke isn't a request; always back to page 1, since the result set changes.
+    let filterTimer: ReturnType<typeof setTimeout> | undefined;
+    watch(filter, () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(() => fetchPage(1), 300);
+    });
+
+    onBeforeUnmount(() => clearTimeout(filterTimer));
+
+    onMounted(() => fetchPage(1));
 </script>
