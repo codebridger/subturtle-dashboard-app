@@ -199,7 +199,16 @@
             "tap-label": "Tap to talk",
             "hands-free-tooltip": "Hands-free: keep the microphone open for the whole session.",
             "hands-free-label": "Hands-free"
-        }
+        },
+        "coach": {
+            "title": "Your coach",
+            "subtitle-voice": "Pick the voice you want to hear.",
+            "subtitle-text": "A text session is written only — no voice to pick."
+        },
+        "phrases": {
+            "title": "Phrases this session"
+        },
+        "pick-randomly": "Pick randomly instead"
     },
     "subscription": {
         "title": "Subscription",
@@ -492,7 +501,30 @@
         "total-tokens": "Total Tokens",
         "total-cost": "Total Cost (USD)",
         "duration": "Duration",
-        "start-new-session": "Start New Session"
+        "start-new-session": "Start New Session",
+        "overline": "LIVE SESSIONS",
+        "start-new-subtitle": "Pick a bundle, choose a coach, and talk your phrases into memory.",
+        "no-bundles": {
+            "title": "No bundles to practise yet",
+            "description": "A live session runs on a phrase bundle. Save a few phrases from YouTube, Netflix or any page and one will be waiting here."
+        },
+        "pick-bundle": {
+            "title": "Pick a bundle",
+            "subtitle": "The coach will practise the phrases inside it with you.",
+            "phrase-count": "{count} phrase | {count} phrases",
+            "scope-recent": "Recent",
+            "scope-all": "All"
+        },
+        "summary": {
+            "title": "Your session",
+            "bundle": "Bundle",
+            "fallback": "Falls back to",
+            "phrases": "Phrases",
+            "random-count": "{n} at random",
+            "free-sessions": "Free sessions",
+            "free-chats": "Free text chats",
+            "pick-first": "Pick a bundle to start."
+        }
     },
     "profile": {
         "profile": "Profile",

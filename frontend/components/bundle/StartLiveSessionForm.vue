@@ -1,215 +1,188 @@
 <template>
-    <div class="space-y-6">
-        <!-- Conversation mode: voice (audio Live API) vs text-only -->
-        <div>
-            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ t('live-practice.mode.label') }}
-            </label>
-            <div class="flex rounded-md bg-gray-100 p-1 dark:bg-gray-700">
-                <button type="button" @click="formData.mode = 'voice'" :class="[
-                    'flex-1 rounded-md py-2 text-center text-sm',
-                    formData.mode !== 'text'
-                        ? 'bg-white font-medium text-gray-900 shadow dark:bg-gray-600 dark:text-white'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                ]">
-                    {{ t('live-practice.mode.voice') }}
-                </button>
-                <button type="button" @click="formData.mode = 'text'" :class="[
-                    'flex-1 rounded-md py-2 text-center text-sm',
-                    formData.mode === 'text'
-                        ? 'bg-white font-medium text-gray-900 shadow dark:bg-gray-600 dark:text-white'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                ]">
-                    {{ t('live-practice.mode.text') }}
-                </button>
-            </div>
-        </div>
-
-        <!-- AI Character Selection — voice only (text mode has no spoken voice) -->
-        <div v-if="formData.mode !== 'text'">
-            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ t('live-practice.ai-character') }}
-            </label>
-            <VoicePicker v-model="formData.aiCharacter" :voices="resolvedVoices" />
-        </div>
-
-        <!-- Native Language Selection -->
-        <div>
-            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ t('live-practice.native-language') }}
-            </label>
-            <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                {{ t('live-practice.native-language-hint') }}
-            </p>
-            <select v-model="formData.nativeLanguage"
-                class="focus:border-primary-500 focus:ring-primary-500 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <option value="auto">{{ t('live-practice.native-language-auto') }}</option>
-                <option v-for="lang in SUPPORTED_LANGUAGES" :key="lang.code" :value="lang.title">
-                    {{ lang.title }}
-                </option>
-            </select>
-        </div>
-
-        <!-- Selection Tabs -->
-        <div>
-            <div class="mb-2 flex rounded-md bg-gray-100 p-1 dark:bg-gray-700">
-                <button @click="formData.selectionMode = 'selection'" :class="[
-                    'flex-1 rounded-md py-2 text-center text-sm',
-                    formData.selectionMode === 'selection'
-                        ? 'bg-white font-medium text-gray-900 shadow dark:bg-gray-600 dark:text-white'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                ]">
-                    {{ t('live-practice.selection') }}
-                </button>
-                <button @click="formData.selectionMode = 'random'" :class="[
-                    'flex-1 rounded-md py-2 text-center text-sm',
-                    formData.selectionMode === 'random'
-                        ? 'bg-white font-medium text-gray-900 shadow dark:bg-gray-600 dark:text-white'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                ]">
-                    {{ t('live-practice.random') }}
-                </button>
-            </div>
-
-            <!-- Selection mode options -->
-            <div v-if="formData.selectionMode === 'selection'" class="space-y-4">
-                <div class="flex space-x-4">
-                    <div class="flex-1">
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {{ t('live-practice.from-phrase') }}
-                        </label>
-                        <Input v-model="formData.fromPhrase" type="number" min="1" :max="formData.toPhrase"
-                            class="w-full" />
-                    </div>
-                    <div class="flex-1">
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {{ t('live-practice.to-phrase') }}
-                        </label>
-                        <Input v-model="formData.toPhrase" type="number" :min="formData.fromPhrase" class="w-full" />
-                    </div>
-                </div>
-                <p v-if="selectionError" class="text-sm text-red-500">
-                    {{ selectionError }}
-                </p>
-            </div>
-
-            <!-- Random mode options -->
-            <div v-else class="space-y-4">
+    <div class="flex flex-col gap-6">
+        <!-- Coach: the mode picks the transport, the grid picks the voice. The mode control
+             sits in this section's header, where the design puts it in the card header. -->
+        <section>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ t('live-practice.total-phrases') }}
-                    </label>
-                    <Input v-model="formData.totalPhrases" type="number" min="1" max="30" class="w-full" />
+                    <h3 class="font-st-display text-st-md font-black tracking-st-tight text-st-strong">{{ t('live-practice.coach.title') }}</h3>
+                    <p class="mt-0.5 text-st-sm font-semibold text-st-muted">
+                        {{ formData.mode === 'text' ? t('live-practice.coach.subtitle-text') : t('live-practice.coach.subtitle-voice') }}
+                    </p>
                 </div>
-                <p v-if="randomError" class="text-sm text-red-500">
-                    {{ randomError }}
-                </p>
+
+                <StSegmentedControl
+                    :model-value="formData.mode === 'text' ? 'text' : 'voice'"
+                    :options="modeOptions"
+                    size="sm"
+                    @update:model-value="(v) => (formData.mode = v as 'voice' | 'text')"
+                />
             </div>
-        </div>
+
+            <!-- Voice only — a text session has no spoken voice. -->
+            <VoicePicker v-if="formData.mode !== 'text'" v-model="formData.aiCharacter" :voices="resolvedVoices" />
+        </section>
+
+        <!-- Explanation language. "Auto" lets the coach take it from the bundle's translations. -->
+        <section>
+            <label class="block">
+                <span class="mb-1 block text-st-sm font-bold text-st-body">{{ t('live-practice.native-language') }}</span>
+                <span class="mb-2 block text-st-xs font-semibold leading-[1.45] text-st-muted [text-wrap:pretty]">
+                    {{ t('live-practice.native-language-hint') }}
+                </span>
+                <span class="relative block">
+                    <StIcon name="solar:global-linear" :size="18" class="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-st-faint" />
+                    <select
+                        v-model="formData.nativeLanguage"
+                        class="st-focus-ring h-11 w-full appearance-none rounded-st-md border-[1.5px] border-st-ink-300 bg-st-card pl-[42px] pr-10 font-st-sans text-st-sm font-medium text-st-strong transition duration-150 ease-out focus:border-st-primary"
+                    >
+                        <option value="auto">{{ t('live-practice.native-language-auto') }}</option>
+                        <option v-for="lang in SUPPORTED_LANGUAGES" :key="lang.code" :value="lang.title">{{ lang.title }}</option>
+                    </select>
+                    <StIcon
+                        name="solar:alt-arrow-down-linear"
+                        :size="18"
+                        class="pointer-events-none absolute right-[14px] top-1/2 -translate-y-1/2 text-st-faint"
+                    />
+                </span>
+            </label>
+        </section>
+
+        <!-- Which phrases. A contiguous range by default; the switch swaps in a random sample.
+             The design shows only the range, so Random is a quiet toggle, not a second tab. -->
+        <section>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <h3 class="font-st-display text-st-md font-black tracking-st-tight text-st-strong">{{ t('live-practice.phrases.title') }}</h3>
+                <StSwitch
+                    :model-value="formData.selectionMode === 'random'"
+                    size="sm"
+                    :label="t('live-practice.pick-randomly')"
+                    @update:model-value="(on) => (formData.selectionMode = on ? 'random' : 'selection')"
+                />
+            </div>
+
+            <div v-if="formData.selectionMode === 'selection'" class="flex gap-3">
+                <StInput v-model="formData.fromPhrase" type="number" min="1" :max="formData.toPhrase" :label="t('live-practice.from-phrase')" class="flex-1" />
+                <StInput v-model="formData.toPhrase" type="number" :min="formData.fromPhrase" :label="t('live-practice.to-phrase')" class="flex-1" />
+            </div>
+
+            <StInput v-else v-model="formData.totalPhrases" type="number" min="1" max="30" :label="t('live-practice.total-phrases')" />
+
+            <p v-if="activeError" class="mt-2 flex items-center gap-1.5 text-st-xs font-bold text-st-danger">
+                <StIcon name="solar:danger-triangle-bold" :size="14" class="flex-none" />
+                {{ activeError }}
+            </p>
+        </section>
     </div>
 </template>
 
 <script setup lang="ts">
-import { Input } from 'pilotui';
-import { SUPPORTED_LANGUAGES } from '~/utils/languages.static';
-import VoicePicker from '~/components/live/VoicePicker.vue';
-import { useLiveSessionVoices } from '~/composables/useLiveSessionVoices';
-import type { CoachVoice } from '~/types/live-session.type';
+    import { computed } from 'vue';
+    import { StIcon, StInput, StSegmentedControl, StSwitch } from 'subturtle-ui';
+    import { SUPPORTED_LANGUAGES } from '~/utils/languages.static';
+    import VoicePicker from '~/components/live/VoicePicker.vue';
+    import { useLiveSessionVoices } from '~/composables/useLiveSessionVoices';
+    import type { CoachVoice } from '~/types/live-session.type';
 
-const { t } = useI18n();
+    const { t } = useI18n();
 
-const props = defineProps<{
-    modelValue: {
-        aiCharacter: string;
-        selectionMode: 'selection' | 'random';
-        fromPhrase: string;
-        toPhrase: string;
-        totalPhrases: string;
-        nativeLanguage: string;
-        mode?: 'voice' | 'text';
-    };
-    // Omitted by the bundle Gemini flow → voices are fetched from the server so
-    // the picker matches the extension. The OpenAI/Gemini `StartNew` variants
-    // still pass their own name lists.
-    voiceOptions?: (string | CoachVoice)[];
-}>();
-
-const emit = defineEmits<{
-    'update:modelValue': [
-        value: {
+    const props = defineProps<{
+        modelValue: {
             aiCharacter: string;
             selectionMode: 'selection' | 'random';
             fromPhrase: string;
             toPhrase: string;
             totalPhrases: string;
             nativeLanguage: string;
+            mode?: 'voice' | 'text';
+        };
+        // Omitted by the bundle Gemini flow → voices are fetched from the server so
+        // the picker matches the extension. The OpenAI/Gemini `StartNew` variants
+        // still pass their own name lists.
+        voiceOptions?: (string | CoachVoice)[];
+    }>();
+
+    const emit = defineEmits<{
+        'update:modelValue': [
+            value: {
+                aiCharacter: string;
+                selectionMode: 'selection' | 'random';
+                fromPhrase: string;
+                toPhrase: string;
+                totalPhrases: string;
+                nativeLanguage: string;
+            }
+        ];
+    }>();
+
+    const { voices: serverVoices, ensureLoaded } = useLiveSessionVoices();
+
+    onMounted(() => {
+        if (!props.voiceOptions) ensureLoaded();
+    });
+
+    // Use the explicit list when provided (StartNew variants); otherwise the
+    // server-backed list fetched above.
+    const resolvedVoices = computed<(string | CoachVoice)[]>(() => (props.voiceOptions && props.voiceOptions.length ? props.voiceOptions : serverVoices.value));
+
+    const modeOptions = computed(() => [
+        { value: 'voice', label: t('live-practice.mode.voice'), icon: 'solar:microphone-3-bold' },
+        { value: 'text', label: t('live-practice.mode.text'), icon: 'solar:chat-round-line-bold' },
+    ]);
+
+    const formData = computed({
+        get: () => props.modelValue,
+        set: (value) => emit('update:modelValue', value),
+    });
+
+    const selectionError = computed(() => {
+        if (formData.value.selectionMode !== 'selection') return '';
+
+        const fromPhrase = parseInt(formData.value.fromPhrase) || 0;
+        const toPhrase = parseInt(formData.value.toPhrase) || 0;
+        const total = toPhrase - fromPhrase + 1;
+
+        if (total > 30) {
+            return t('live-practice.max-30-phrases-error');
         }
-    ];
-}>();
 
-const { voices: serverVoices, ensureLoaded } = useLiveSessionVoices();
+        if (fromPhrase < 1 || toPhrase < 1) {
+            return t('live-practice.positive-numbers-required');
+        }
 
-onMounted(() => {
-    if (!props.voiceOptions) ensureLoaded();
-});
+        if (fromPhrase > toPhrase) {
+            return t('live-practice.from-less-than-to-error');
+        }
 
-// Use the explicit list when provided (StartNew variants); otherwise the
-// server-backed list fetched above.
-const resolvedVoices = computed<(string | CoachVoice)[]>(() =>
-    props.voiceOptions && props.voiceOptions.length
-        ? props.voiceOptions
-        : serverVoices.value
-);
+        return '';
+    });
 
-const formData = computed({
-    get: () => props.modelValue,
-    set: (value) => emit('update:modelValue', value),
-});
+    const randomError = computed(() => {
+        if (formData.value.selectionMode !== 'random') return '';
 
-const selectionError = computed(() => {
-    if (formData.value.selectionMode !== 'selection') return '';
+        const totalPhrases = parseInt(formData.value.totalPhrases) || 0;
 
-    const fromPhrase = parseInt(formData.value.fromPhrase) || 0;
-    const toPhrase = parseInt(formData.value.toPhrase) || 0;
-    const total = toPhrase - fromPhrase + 1;
+        if (!totalPhrases) {
+            return t('live-practice.total-phrases-required');
+        }
 
-    if (total > 30) {
-        return t('live-practice.max-30-phrases-error');
-    }
+        if (totalPhrases > 30) {
+            return t('live-practice.max-30-phrases-error');
+        }
 
-    if (fromPhrase < 1 || toPhrase < 1) {
-        return t('live-practice.positive-numbers-required');
-    }
+        if (totalPhrases < 1) {
+            return t('live-practice.positive-numbers-required');
+        }
 
-    if (fromPhrase > toPhrase) {
-        return t('live-practice.from-less-than-to-error');
-    }
+        return '';
+    });
 
-    return '';
-});
+    // Exactly one of the two can be non-empty (each returns '' outside its own mode), so the
+    // single message line under the inputs always carries the one that applies.
+    const activeError = computed(() => selectionError.value || randomError.value);
 
-const randomError = computed(() => {
-    if (formData.value.selectionMode !== 'random') return '';
-
-    const totalPhrases = parseInt(formData.value.totalPhrases) || 0;
-
-    if (!totalPhrases) {
-        return t('live-practice.total-phrases-required');
-    }
-
-    if (totalPhrases > 30) {
-        return t('live-practice.max-30-phrases-error');
-    }
-
-    if (totalPhrases < 1) {
-        return t('live-practice.positive-numbers-required');
-    }
-
-    return '';
-});
-
-defineExpose({
-    selectionError,
-    randomError,
-});
+    defineExpose({
+        selectionError,
+        randomError,
+    });
 </script>

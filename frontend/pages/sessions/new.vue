@@ -1,30 +1,32 @@
 <template>
-    <div class="relative min-h-screen">
-        <!-- Decorative Background Elements -->
-        <div
-            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
-        <div
-            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
+    <div class="flex flex-col gap-[22px]">
+        <StPageHeader :title="t('live-session.start-new-session')" :overline="t('live-session.overline')" :subtitle="t('live-session.start-new-subtitle')">
+            <template #actions>
+                <StButton variant="outline" color="neutral" icon="solar:history-2-bold-duotone" @click="goToHistory">
+                    {{ t('live-session.session-history') }}
+                </StButton>
+            </template>
+        </StPageHeader>
 
-        <div class="container relative mx-auto px-6 py-16 max-w-7xl">
-            <PageHeader :title="t('live-session.start-new-session')"
-                :breadcrumbs="[{ label: t('live-session.your-sessions'), to: '/sessions' }, { label: t('live-session.start-new-session') }]" />
-
-            <section>
-                <LiveSessionGeminiStartNew />
-            </section>
-        </div>
+        <LiveSessionGeminiStartNew />
     </div>
 </template>
 
 <script setup lang="ts">
-const { t } = useI18n();
-import PageHeader from '~/components/common/PageHeader.vue';
-definePageMeta({
-    layout: 'default',
-    title: () => t('live-session.start-new-session'),
-    middleware: ['auth'],
-});
+    import { StButton } from 'subturtle-ui';
+    import StPageHeader from '~/components/common/StPageHeader.vue';
+
+    const { t } = useI18n();
+    const router = useRouter();
+
+    definePageMeta({
+        layout: 'default',
+        title: () => t('live-session.start-new-session'),
+        // @ts-ignore
+        middleware: ['auth'],
+    });
+
+    function goToHistory() {
+        router.push('/sessions');
+    }
 </script>
