@@ -204,6 +204,7 @@
     "subscription": {
         "title": "Subscription",
         "subscription-plans": "Subscription Plans",
+        "overline": "Membership",
         "plans-price-details": "Plans & Price Details",
         "invoice-date": "Invoice Date:",
         "due-date": "Due Date:",
@@ -268,7 +269,16 @@
             "continue-free": "Continue with Free",
             "loading": "Loading plans…",
             "error": "Plans are temporarily unavailable due to a payment system issue. Please check back soon.",
-            "empty": "No plans available right now."
+            "empty": "No plans available right now.",
+            "popular": "Popular",
+            "current": "Current",
+            "trial": "Trial",
+            "canceling": "Canceling",
+            "billed-yearly": "Billed yearly. Save 20%.",
+            "billed-monthly": "Billed monthly.",
+            "footnote": "Stripe shows your local currency at checkout. Switch or cancel any time.",
+            "error-title": "Plans unavailable",
+            "empty-title": "No plans yet"
         },
         "checkout": {
             "title": "Subscribe to {plan}",
@@ -360,7 +370,6 @@
             "ai-usage": "AI translations & explanations: {n} used"
         },
         "starter-usage": {
-            "title": "Free plan",
             "saved-phrases": "Saved phrases",
             "text-chats": "Text chats",
             "live-sessions": "Live sessions",
@@ -424,19 +433,19 @@
         "no-account-cta": "Just sign in and you will get a new account.",
         "chrome-extension": "Chrome extension",
         "waiting": {
-            "label": "Waiting for Google\u2026",
+            "label": "Waiting for Google…",
             "hint": "A Google window should have opened. Nothing there?",
             "retry": "Open it again"
         },
         "returning": {
-            "title": "Signing you in\u2026",
+            "title": "Signing you in…",
             "subtitle": "Taking you to your dashboard."
         },
         "notice": {
             "expired": "Your session ended, so we brought you here. Nothing you saved was lost.",
             "failed": {
                 "title": "That didn't go through",
-                "message": "The Google window closed before you finished. Nothing was saved \u2014 try once more."
+                "message": "The Google window closed before you finished. Nothing was saved — try once more."
             }
         },
         "preview": {
@@ -450,14 +459,14 @@
             "start-review": "Start review",
             "time-left": "3 min left",
             "session-title": "Live session",
-            "session-body": "Say this week's phrases out loud with Coach. Money Heist \u2014 s1e4.",
+            "session-body": "Say this week's phrases out loud with Coach. Money Heist — s1e4.",
             "start-session": "Start session",
             "resting-title": "Resting",
             "resting-body": "Levels 4 and 5 are asleep. Their next cards land on Thursday.",
             "optional": "Optional practice",
             "phrase-1": "Je n'en reviens pas",
             "phrase-1-translation": "I can't believe it",
-            "phrase-2": "\u00c7a vaut le coup",
+            "phrase-2": "Ça vaut le coup",
             "phrase-2-translation": "It's worth it"
         }
     },
@@ -736,7 +745,7 @@
         "light": "Light",
         "dark": "Dark",
         "system": "System",
-        "resolved": "{mode} \u00b7 {resolved}",
+        "resolved": "{mode} · {resolved}",
         "aria": "Theme: {current}. Switch to {next}."
     }
 }

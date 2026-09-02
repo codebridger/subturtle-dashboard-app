@@ -181,8 +181,9 @@ promoted to `dev` in batches. While it is in progress:
   writing the `.dark` class and `plugins/theme.client.ts` mirrors the preference into
   pilotui's store, so the two never disagree, but they are not styled to match and will not
   be until each screen migrates.
-  ⚠️ `ui/src/styles/theme-tokens.css` still holds the EARLIER handoff's palette. The design
-  system's own `subturtle-theme.css` supersedes it wholesale — see the banner in that file.
+  `ui/src/styles/theme-tokens.css` is the dark layer that ships. The design system carries
+  its own `subturtle-theme.css`, but that is a reference for values only — it writes hex
+  where Tailwind needs RGB channels — so diff the two rather than swapping the file in.
 - `subturtle-ui` is a `link:../ui` dependency whose `dist/` is not committed, so the
   frontend's `postinstall` builds it. Any context that installs the frontend needs `ui/`
   present — the Dockerfile copies it in.

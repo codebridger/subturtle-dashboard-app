@@ -254,26 +254,35 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
         await expect(page.getByText('Upgrade to unlock')).not.toBeVisible();
     });
 
-    test('/settings/subscription renders four plan cards with GBP base prices', async ({ page }) => {
+    // The redesign replaced the four standalone pricing cards with a tablist + a detail
+    // panel for the selected tier, so each tier is a tab and only one plan's full detail
+    // is on screen at a time. The page opens on the highlighted tier (Learner).
+    test('/settings/subscription renders all four tiers as tabs with GBP base prices', async ({ page }) => {
         await page.goto('/#/settings/subscription');
 
-        // All four tiers render as cards.
-        await expect(page.getByRole('heading', { name: 'Starter', exact: true })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Reader', exact: true })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Learner', exact: true })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Coach', exact: true })).toBeVisible();
+        // All four tiers render as tabs.
+        await expect(page.getByRole('tab', { name: /^Starter/ })).toBeVisible();
+        await expect(page.getByRole('tab', { name: /^Reader/ })).toBeVisible();
+        await expect(page.getByRole('tab', { name: /^Learner/ })).toBeVisible();
+        await expect(page.getByRole('tab', { name: /^Coach/ })).toBeVisible();
 
-        // Starter is the free user's current level (not a "Downgrade" CTA).
-        await expect(page.getByText('Current plan')).toBeVisible();
+        // Starter is the free user's current level, marked on its tab.
+        await expect(page.getByRole('tab', { name: /^Starter/ })).toContainText('Current');
 
-        // Learner is the highlighted tier: "Most popular" ribbon + 3-day trial CTA.
+        // Learner is the highlighted tier, so it is selected on arrival: "Most popular"
+        // ribbon (from Stripe metadata) + its 3-day trial CTA in the detail panel.
         await expect(page.getByText('Most popular')).toBeVisible();
-        await expect(page.getByText('Start 3-day free trial')).toBeVisible();
+        await expect(page.getByRole('tab', { name: /^Learner/ })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByRole('button', { name: 'Start 3-day free trial' })).toBeVisible();
 
         // GBP base prices (Adaptive Pricing probe disabled → £ fallback).
-        await expect(page.getByText('£4.49')).toBeVisible();
-        await expect(page.getByText('£10.99')).toBeVisible();
-        await expect(page.getByText('£24.99')).toBeVisible();
+        await expect(page.getByText('£4.49 / month')).toBeVisible();
+        await expect(page.getByText('£10.99 / month')).toBeVisible();
+        await expect(page.getByText('£24.99 / month')).toBeVisible();
+
+        // Selecting the tier the user is on swaps the detail panel to the disabled marker.
+        await page.getByRole('tab', { name: /^Starter/ }).click();
+        await expect(page.getByRole('button', { name: 'Current plan' })).toBeDisabled();
     });
 
     test('paid Learner sees the voice meter in the "This month" section', async ({ page }) => {
@@ -290,9 +299,13 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
 
         await page.goto('/#/settings/subscription');
 
-        await expect(page.getByRole('heading', { name: 'This month' })).toBeVisible();
-        // The meter sub-line (base 90, used 30) — proves VoiceMeter computed the balance.
-        await expect(page.getByText('60 of 90 minutes left this month', { exact: true })).toBeVisible();
+        // The redesign folds voice into the current-plan usage strip as one of four
+        // meters, so the balance reads as used / granted (30 of 90) rather than as the
+        // old VoiceMeter's "60 of 90 minutes left this month" sub-line.
+        await expect(page.getByText('Voice minutes', { exact: true })).toBeVisible();
+        await expect(page.getByText('30 / 90', { exact: true })).toBeVisible();
+        // Paid tiers keep a top-up entry point (it used to live inside VoiceMeter).
+        await expect(page.getByRole('button', { name: 'Top up minutes' })).toBeVisible();
     });
 
     test('paid user sees the voice top-ups section on /settings/billing', async ({ page }) => {
@@ -348,19 +361,24 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
 
         await page.goto('/#/settings/subscription');
 
-        // The active-plan "This month" card lists each entitlement as a label + used/limit
-        // row; Reader's finite text-chat cap renders as "23 / 60" (saved phrases stay Unlimited).
+        // The usage strip meters each entitlement as a label + used/limit; Reader's finite
+        // text-chat cap renders as "23 / 60", while an absent cap reads "Unlimited".
         await expect(page.getByText('Text chats', { exact: true })).toBeVisible();
         await expect(page.getByText('23 / 60', { exact: true })).toBeVisible();
+        await expect(page.getByText('Unlimited').first()).toBeVisible();
     });
 
-    test('Starter (free) user sees a usage card with the free-tier limits', async ({ page }) => {
-        // Default stub is a free Starter user; the usage card renders for them.
+    test('Starter (free) user sees the usage strip with the free-tier limits', async ({ page }) => {
+        // Default stub is a free Starter user; one strip serves every tier now, so it
+        // names the tier from the plan list ("Starter") rather than a separate free card.
         await page.goto('/#/settings/subscription');
 
-        await expect(page.getByRole('heading', { name: 'Free plan' })).toBeVisible();
+        await expect(page.getByText('Free, forever. No card needed.').first()).toBeVisible();
         await expect(page.getByText('Saved phrases', { exact: true })).toBeVisible();
         await expect(page.getByText('Text chats', { exact: true })).toBeVisible();
         await expect(page.getByText('Live sessions', { exact: true })).toBeVisible();
+        // A free tier never reads "Unlimited" — the caps come through as used / limit.
+        await expect(page.getByText('0 / 200', { exact: true })).toBeVisible();
+        await expect(page.getByText('0 / 3', { exact: true })).toBeVisible();
     });
 });
