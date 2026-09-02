@@ -135,7 +135,7 @@
         "ai-character": "AI Character",
         "native-language": "Your native language",
         "native-language-hint": "The coach will explain instructions and feedback in this language; English is used for the practice itself.",
-        "native-language-auto": "Auto (detect from my speech)",
+        "native-language-auto": "Auto — detect what I speak",
         "mode": {
             "label": "Practice mode",
             "voice": "Voice",
@@ -201,14 +201,25 @@
             "hands-free-label": "Hands-free"
         },
         "coach": {
-            "title": "Your coach",
-            "subtitle-voice": "Pick the voice you want to hear.",
+            "title": "Who's coaching you?",
+            "subtitle-voice": "Tap to hear a few seconds.",
             "subtitle-text": "A text session is written only — no voice to pick."
         },
         "phrases": {
             "title": "Phrases this session"
         },
-        "pick-randomly": "Pick randomly instead"
+        "pick-randomly": "Pick randomly",
+        "voice": {
+            "preview": "Preview",
+            "playing": "Playing",
+            "preview-aria": "Hear a sample of {name}",
+            "stop": "Stop the {name} sample"
+        },
+        "fallback-label": "Falls back to",
+        "pick-range": "Pick a range",
+        "at-random": "at random",
+        "to": "to",
+        "about-minutes": "about {n} min"
     },
     "subscription": {
         "title": "Subscription",
@@ -486,7 +497,7 @@
     "live-session": {
         "no-sessions": "No Sessions Yet",
         "no-sessions-description": "You haven't started any practice sessions yet. Start a live session from a phrase bundle to practice your language skills and come back here to see your session history.",
-        "start-session": "Start Session",
+        "start-session": "Start session",
         "start-first-session": "Start Your First Session",
         "6-months-expiry": "Each session will expire in 6 months",
         "session-history": "Session history",
@@ -502,29 +513,45 @@
         "total-cost": "Total Cost (USD)",
         "duration": "Duration",
         "start-new-session": "Start New Session",
-        "overline": "LIVE SESSIONS",
-        "start-new-subtitle": "Pick a bundle, choose a coach, and talk your phrases into memory.",
+        "overline": "AI COACHING",
+        "start-new-subtitle": "Pick a bundle, choose how you want to talk, and Coach takes it from there.",
         "no-bundles": {
             "title": "No bundles to practise yet",
             "description": "A live session runs on a phrase bundle. Save a few phrases from YouTube, Netflix or any page and one will be waiting here."
         },
         "pick-bundle": {
-            "title": "Pick a bundle",
-            "subtitle": "The coach will practise the phrases inside it with you.",
+            "title": "Which bundle?",
+            "subtitle": "Coach only uses phrases from the set you pick.",
+            "search": "Search {count} bundles",
             "phrase-count": "{count} phrase | {count} phrases",
+            "due-count": "{n} due",
             "scope-recent": "Recent",
-            "scope-all": "All"
+            "scope-due": "Due today",
+            "scope-new": "Never practised",
+            "scope-all": "All {count}",
+            "no-matches": "No bundles here",
+            "no-matches-description": "Nothing matches that search and filter. Try another word, or switch to All."
         },
         "summary": {
             "title": "Your session",
-            "bundle": "Bundle",
-            "fallback": "Falls back to",
+            "mode": "Mode",
+            "coach-voice": "Coach voice",
+            "fallback": "Fallback",
+            "fallback-auto": "Auto",
             "phrases": "Phrases",
             "random-count": "{n} at random",
+            "voice-minutes": "Voice minutes",
             "free-sessions": "Free sessions",
             "free-chats": "Free text chats",
-            "pick-first": "Pick a bundle to start."
-        }
+            "n-of-m-left": "{left} of {total} left",
+            "resets-on": "Resets on {date}.",
+            "text-no-minutes": "Text chat doesn't use minutes.",
+            "pick-first": "Pick a bundle to get started.",
+            "text-chats": "Text chats",
+            "unlimited": "Unlimited"
+        },
+        "start-a-session": "Start a session",
+        "repeat-last": "Repeat your last session"
     },
     "profile": {
         "profile": "Profile",
