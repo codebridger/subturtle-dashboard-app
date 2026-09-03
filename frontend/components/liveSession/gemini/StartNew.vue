@@ -190,6 +190,7 @@
     const RECENT_COUNT = 6;
 
     const router = useRouter();
+    const route = useRoute();
     const { t } = useI18n();
     const profileStore = useProfileStore();
     const { voices: serverVoices, ensureLoaded: ensureVoicesLoaded } = useLiveSessionVoices();
@@ -232,6 +233,7 @@
         try {
             await controller.updatePagination();
             await controller.fetchPage(1);
+            preselectBundleFromRoute();
         } catch (error) {
             console.error(error);
         } finally {
@@ -302,6 +304,18 @@
     });
 
     const selectedBundle = computed(() => bundleList.value.find((b) => b._id === formData.bundleId) || null);
+
+    /**
+     * `/sessions/new?bundle=<id>` — how a bundle's own screen hands its bundle over rather than
+     * repeating this setup form in a modal of its own. The scope moves to "All" so the
+     * preselected card is actually on screen: it need not be among the six most recent.
+     */
+    function preselectBundleFromRoute() {
+        const wanted = route.query.bundle?.toString();
+        if (!wanted || !bundleList.value.some((b) => b._id === wanted)) return;
+        formData.bundleId = wanted;
+        scope.value = 'all';
+    }
 
     // "42 phrases · ES → EN". The bundle list carries phrase ids only, so the language pair
     // comes from one phrase of the chosen bundle; it is dropped when that phrase does not

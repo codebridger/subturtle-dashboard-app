@@ -55,10 +55,12 @@ const ICONS = [
     'solar:history-2-bold-duotone',
     'solar:inbox-in-bold-duotone',
     'solar:layers-minimalistic-bold-duotone',
+    'solar:link-minimalistic-2-linear',
     'solar:lock-keyhole-bold',
     'solar:lock-keyhole-minimalistic-bold-duotone',
     'solar:logout-2-linear',
     'solar:magnifer-linear',
+    'solar:menu-dots-bold',
     'solar:microphone-3-bold',
     'solar:microphone-3-bold-duotone',
     'solar:monitor-bold-duotone',
@@ -66,6 +68,7 @@ const ICONS = [
     'solar:moon-sleep-bold-duotone',
     'solar:notebook-bold',
     'solar:notebook-bold-duotone',
+    'solar:pen-new-square-linear',
     'solar:play-bold',
     'solar:refresh-bold',
     'solar:restart-bold',
@@ -74,9 +77,12 @@ const ICONS = [
     'solar:settings-linear',
     'solar:shuffle-bold',
     'solar:sun-2-bold-duotone',
+    'solar:trash-bin-minimalistic-bold',
     'solar:tuning-2-bold',
     'solar:user-linear',
     'solar:user-speak-rounded-bold-duotone',
+    'solar:videocamera-record-bold',
+    'solar:volume-loud-bold',
 ];
 
 const setCache = new Map();
