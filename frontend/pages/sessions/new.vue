@@ -1,30 +1,42 @@
 <template>
-    <div class="relative min-h-screen">
-        <!-- Decorative Background Elements -->
-        <div
-            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
-        <div
-            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] pointer-events-none">
-        </div>
+    <div class="flex flex-col gap-6">
+        <StPageHeader :title="t('live-session.start-a-session')" :overline="t('live-session.overline')" :subtitle="t('live-session.start-new-subtitle')">
+            <template v-if="lastSession" #actions>
+                <StButton variant="outline" color="neutral" pill icon="solar:history-2-bold-duotone" @click="repeatLast">
+                    {{ t('live-session.repeat-last') }}
+                </StButton>
+            </template>
+        </StPageHeader>
 
-        <div class="container relative mx-auto px-6 py-16 max-w-7xl">
-            <PageHeader :title="t('live-session.start-new-session')"
-                :breadcrumbs="[{ label: t('live-session.your-sessions'), to: '/sessions' }, { label: t('live-session.start-new-session') }]" />
-
-            <section>
-                <LiveSessionGeminiStartNew />
-            </section>
-        </div>
+        <LiveSessionGeminiStartNew ref="startRef" />
     </div>
 </template>
 
 <script setup lang="ts">
-const { t } = useI18n();
-import PageHeader from '~/components/common/PageHeader.vue';
-definePageMeta({
-    layout: 'default',
-    title: () => t('live-session.start-new-session'),
-    middleware: ['auth'],
-});
+    import { StButton } from 'subturtle-ui';
+    import StPageHeader from '~/components/common/StPageHeader.vue';
+    import { readLastSession, type LastSession } from '~/composables/useLastSession';
+
+    const { t } = useI18n();
+
+    definePageMeta({
+        layout: 'default',
+        title: () => t('live-session.start-a-session'),
+        // @ts-ignore
+        middleware: ['auth'],
+    });
+
+    const startRef = ref<any>(null);
+    const lastSession = ref<LastSession | null>(null);
+
+    // Read on mount, not at setup: localStorage does not exist until the client runs.
+    onMounted(() => {
+        lastSession.value = readLastSession();
+    });
+
+    // Fills the form in rather than starting straight away, so the setup is visible and
+    // adjustable before any voice minutes are spent.
+    function repeatLast() {
+        if (lastSession.value) startRef.value?.applyLastSession(lastSession.value);
+    }
 </script>
