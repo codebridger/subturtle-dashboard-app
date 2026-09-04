@@ -1,34 +1,29 @@
 /* ============================================================
    Subturtle — theme layer (dark).
 
-   ⚠️ SUPERSEDED, AND STILL HERE ON PURPOSE.
+   THIS IS THE FILE THAT SHIPS. The design system also carries a dark layer
+   (`subturtle-theme.css`, in the screen handoff); it is a reference for VALUES, not a
+   replacement for this file, and an earlier note here claiming it supersedes this one
+   wholesale predated the theme PR landing. Do not swap the files. Two things only this
+   one has, and both are load-bearing:
 
-   The design system now ships `subturtle-theme.css` (its own tokens/dark.css plus three
-   patches), and THAT is the file this one has to be replaced by, wholesale. It was not
-   available when this was written, so the palette below is the earlier profile-menu
-   handoff's. The two genuinely disagree, so do not reconcile them by hand:
+     - colours as space-separated RGB channels, so Tailwind can compose
+       `rgb(var(--token) / <alpha-value>)`. The handoff writes hex; shipping that verbatim
+       would emit `rgb(#211b28 / 1)` and silently break every `st-` colour utility in dark.
+     - the `.theme-switching` rule and the `--blob-alpha` / `--surface-topbar` additions.
 
-     - ramps here invert step-for-step; there they invert around their MID-step, with
-       --rose-500 / --jade-500 keeping their exact brand values
-     - --paper #161219 here, #15111a there; --surface-card #211b28 here, #1e1826 there
-     - --white is NOT re-pointed here, but IS #1e1826 there ("the card neutral")
-
-   That last one reverses the meaning of --white, so the literal-white audit already done
-   in the components (`st-text-on-brand`, see tailwind.config.cjs) is correct for BOTH and
-   should survive the swap. Everything else in this file is placeholder-accurate only.
+   Where the two disagree on a value, this file's is the deliberate one and carries its
+   measured contrast in a comment beside it (e.g. --ink-500 is lightened to #9d93a9 for
+   5.9:1 on --surface-card, against the handoff's #8d8496). Diff before changing anything
+   here, and carry a handoff value across only when it is actually better.
 
    Loaded from index.css
    immediately after tokens.css, which is the whole mechanism: this file re-points the
    SAME token names under `html[data-theme='dark']`, so every component already styled with
    var(--surface-card) / var(--text-body) / var(--ink-100) themes itself with no edits.
 
-   ONE DELIBERATE DIFFERENCE FROM THE HANDOFF FILE — and it is not optional. The handoff
-   writes colours as hex; tokens.css stores them as space-separated RGB channels so
-   Tailwind can compose `rgb(var(--token) / <alpha-value>)`. Shipping the hex verbatim
-   would emit `rgb(#211b28 / 1)` and silently break every `st-` colour utility in dark.
-   The VALUES below are the handoff's, converted channel-for-channel; the two tokens
-   tokens.css documents as finished colours (--ring-focus) or as caller-alpha channels
-   (--surface-overlay) keep their documented form.
+   The two tokens tokens.css documents as finished colours (--ring-focus) or as
+   caller-alpha channels (--surface-overlay) keep their documented form.
 
    The handoff's translucent tints (rgba(249,30,90,.18) and friends) cannot survive that
    conversion — a channel token has no room for its own alpha. They are pre-composited
