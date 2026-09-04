@@ -495,11 +495,11 @@
         "title": "Study"
     },
     "live-session": {
-        "no-sessions": "No Sessions Yet",
-        "no-sessions-description": "You haven't started any practice sessions yet. Start a live session from a phrase bundle to practice your language skills and come back here to see your session history.",
+        "no-sessions": "No sessions yet",
+        "no-sessions-description": "Practise a bundle with the AI coach and every session you run will be listed here.",
         "start-session": "Start session",
         "start-first-session": "Start Your First Session",
-        "6-months-expiry": "Each session will expire in 6 months",
+        "6-months-expiry": "Every session stays here for six months.",
         "session-history": "Session history",
         "session-details": "Session Details",
         "dialogs": "dialogs",
@@ -551,7 +551,21 @@
             "unlimited": "Unlimited"
         },
         "start-a-session": "Start a session",
-        "repeat-last": "Repeat your last session"
+        "repeat-last": "Repeat your last session",
+        "history-overline": "LIVE SESSIONS",
+        "6-months-removal": "Sessions older than six months are removed automatically.",
+        "new-session": "New session",
+        "search-sessions": "Search sessions",
+        "n-dialogs": "{n} dialogs",
+        "showing-count": "Showing {shown} of {total}.",
+        "transcript-locked": "Transcript locked",
+        "no-matches": "No sessions match",
+        "no-matches-description": "Nothing on this page matches that search and filter.",
+        "filter": {
+            "all": "All"
+        },
+        "n-minutes": "{n} min",
+        "under-a-minute": "under a min"
     },
     "profile": {
         "profile": "Profile",
@@ -806,5 +820,10 @@
         "system": "System",
         "resolved": "{mode} · {resolved}",
         "aria": "Theme: {current}. Switch to {next}."
+    },
+    "pagination": {
+        "prev": "Prev",
+        "next": "Next",
+        "page-of": "Page {page} of {total}"
     }
 }
