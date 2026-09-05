@@ -20,6 +20,8 @@ export { default as StEmptyState } from './elements/StEmptyState.vue';
 export { default as StIconButton } from './elements/StIconButton.vue';
 export { default as StInput } from './elements/StInput.vue';
 export { default as StModal } from './elements/StModal.vue';
+export { default as StProgressBar } from './elements/StProgressBar.vue';
+export { default as StSegmentedControl } from './elements/StSegmentedControl.vue';
 export { default as StSkeleton } from './elements/StSkeleton.vue';
 export { default as StSwitch } from './elements/StSwitch.vue';
 export { default as StTextarea } from './elements/StTextarea.vue';
@@ -34,4 +36,5 @@ export { default as StAppShell } from './shell/StAppShell.vue';
 export { default as StProfileMenu } from './shell/StProfileMenu.vue';
 export { default as StSidebarNav } from './shell/StSidebarNav.vue';
 
+export type { StSegment } from './elements/StSegmentedControl.vue';
 export type { StNavGroup, StNavItem, StProfileMenuItem, StTheme, StTone, StSize, StPadding, StElevation } from './types';

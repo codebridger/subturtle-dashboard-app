@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 
-/** Every icon the shell, the Progress screen, the Login screen and the profile menu use. Keep sorted by set, then name. */
+/** Every icon the migrated screens, the shell and the profile menu use. Keep sorted by set, then name. */
 const ICONS = [
     'logos:google-icon',
     'solar:add-circle-bold',
@@ -34,6 +34,8 @@ const ICONS = [
     'solar:calendar-minimalistic-linear',
     'solar:card-2-bold-duotone',
     'solar:chart-2-bold-duotone',
+    'solar:chat-round-line-bold',
+    'solar:chat-round-line-bold-duotone',
     'solar:check-circle-bold',
     'solar:check-circle-bold-duotone',
     'solar:clock-circle-bold',
@@ -48,13 +50,16 @@ const ICONS = [
     'solar:download-minimalistic-bold',
     'solar:fire-bold',
     'solar:fire-bold-duotone',
+    'solar:global-linear',
     'solar:hamburger-menu-linear',
     'solar:history-2-bold-duotone',
     'solar:inbox-in-bold-duotone',
     'solar:layers-minimalistic-bold-duotone',
+    'solar:lock-keyhole-bold',
     'solar:lock-keyhole-minimalistic-bold-duotone',
     'solar:logout-2-linear',
     'solar:magnifer-linear',
+    'solar:microphone-3-bold',
     'solar:microphone-3-bold-duotone',
     'solar:monitor-bold-duotone',
     'solar:moon-bold-duotone',
@@ -67,9 +72,11 @@ const ICONS = [
     'solar:rocket-2-bold-duotone',
     'solar:settings-bold-duotone',
     'solar:settings-linear',
+    'solar:shuffle-bold',
     'solar:sun-2-bold-duotone',
     'solar:tuning-2-bold',
     'solar:user-linear',
+    'solar:user-speak-rounded-bold-duotone',
 ];
 
 const setCache = new Map();
