@@ -5,7 +5,20 @@
     "bundle": {
         "nav": "Phrase bundles",
         "list": "Bundle List",
-        "detail": "Bundle Detail",
+        "detail": {
+            "title": "Bundle detail",
+            "live_session": "Live session",
+            "flashcards": "Flashcards",
+            "phrases_title": "Phrases in this bundle",
+            "no_phrases": "No phrases yet",
+            "no_phrases_description": "This bundle is empty. Save a phrase with the extension while you watch, or add one here by hand.",
+            "review_title": "Pick the phrases to review",
+            "review_description": "Flashcards run over what you choose here — everything is selected to start with.",
+            "selected_count": "{n} selected",
+            "select_all": "Select all",
+            "deselect_all": "Clear",
+            "start_review": "Start review ({n})"
+        },
         "add_phrase": "Add Phrase",
         "collection_label": "Library",
         "list_title": "Phrase bundles",
@@ -45,10 +58,30 @@
             "translation_placeholder": "Type your translation here",
             "definition_placeholder": "Definition will be displayed here",
             "confirm_deletion": "Confirm Phrase Deletion",
-            "confirm_deletion_message": "Are you sure you want to delete this phrase?"
+            "confirm_deletion_message": "Are you sure you want to delete this phrase?",
+            "new_badge": "New",
+            "save": "Save phrase",
+            "play": "Play pronunciation",
+            "delete": "Delete phrase",
+            "phrase_required": "Phrase is required",
+            "translation_required": "Translation is required"
         },
         "filter_bundles": "Filter bundles",
-        "select_bundle": "Select Bundle"
+        "select_bundle": "Select Bundle",
+        "saves": {
+            "used": "{used} of {total} saves used this month",
+            "resets_on": "Resets on {date}.",
+            "unlimited": "Unlimited saves on your plan",
+            "unlimited_description": "Add as many phrases to this bundle as you like."
+        },
+        "settings": {
+            "title": "Bundle settings",
+            "description": "Rename this bundle, or remove it along with its phrases.",
+            "save": "Save changes",
+            "delete_title": "Delete this bundle",
+            "delete_description": "Its phrases go with it. This cannot be undone.",
+            "delete_failed": "Failed to delete the bundle"
+        }
     },
     "freemium": {
         "limitation": {

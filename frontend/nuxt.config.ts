@@ -17,7 +17,9 @@ export default defineNuxtConfig({
             mode: process.env.NUXT_PUBLIC_MODE,
             MIXPANEL_PROJECT_TOKEN: process.env.NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN,
             MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
-            chromeWebStoreUrl: process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL || 'https://chromewebstore.google.com/detail/PLACEHOLDER',
+            chromeWebStoreUrl:
+                process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL ||
+                'https://chromewebstore.google.com/detail/subturtle-learn-english-w/gaplicnpaiidofkoeonioomcnadoofkf',
             STRIPE_PUBLISHABLE_KEY: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
             // Baked in at build time from package.json (owned by semantic-release).
             APP_VERSION,
