@@ -22,6 +22,7 @@ const root = resolve(here, '..');
 const ICONS = [
     'logos:google-icon',
     'solar:add-circle-bold',
+    'solar:alt-arrow-down-bold-duotone',
     'solar:alt-arrow-down-linear',
     'solar:alt-arrow-left-linear',
     'solar:alt-arrow-right-linear',
