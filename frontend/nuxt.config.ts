@@ -17,7 +17,9 @@ export default defineNuxtConfig({
             mode: process.env.NUXT_PUBLIC_MODE,
             MIXPANEL_PROJECT_TOKEN: process.env.NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN,
             MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
-            chromeWebStoreUrl: process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL || 'https://chromewebstore.google.com/detail/PLACEHOLDER',
+            chromeWebStoreUrl:
+                process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL ||
+                'https://chromewebstore.google.com/detail/subturtle-learn-english-w/gaplicnpaiidofkoeonioomcnadoofkf',
             STRIPE_PUBLISHABLE_KEY: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
             // Baked in at build time from package.json (owned by semantic-release).
             APP_VERSION,
@@ -78,7 +80,44 @@ export default defineNuxtConfig({
 
     plugins: ['~/plugins/mixpanel.ts'],
 
-    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster'],
+    modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@cssninja/nuxt-toaster', '@nuxtjs/color-mode'],
+
+    /**
+     * The theme layer for the `st-` design system. The module stamps BOTH a `data-theme` attribute
+     * and a bare `light`/`dark` class on <html>; subturtle-ui re-points its tokens under
+     * `html[data-theme='dark']` and both Tailwind builds select on the same attribute.
+     *
+     * The module also injects a blocking pre-paint script into the SPA shell's <head>, which is what
+     * keeps a hard reload from flashing the wrong theme. `system` is resolved in that script from
+     * `prefers-color-scheme`, so it is flash-free too; useAppTheme() keeps it following live
+     * afterwards.
+     *
+     * pilotui writes its own theme to localStorage under `theme`, so this uses a distinct key rather
+     * than fighting it over one entry — plugins/theme.client.ts mirrors this preference into
+     * pilotui's store.
+     *
+     * `disableTransition: false` is the module's own default, kept explicit so nobody turns it on.
+     * At `true` the module suppresses the cross-fade itself by injecting an anonymous <style>
+     * element; at `false` it leaves transitions alone, which is what we want, because
+     * plugins/theme.client.ts already does that job with an `html.theme-switching` class whose
+     * rule ships in subturtle-ui's stylesheet. One mechanism, and one that is inspectable in
+     * devtools. Setting this to `true` would stack a second, invisible one on top.
+     */
+    colorMode: {
+        // `dataValue` is what makes the module write data-theme="light|dark" on <html> — the
+        // application mechanism the design system specifies, and what both Tailwind builds now
+        // select on. The pre-paint script sets it too, which is what keeps a hard reload from
+        // flashing the wrong theme, `system` included.
+        dataValue: 'theme',
+        // The class is ALSO kept. pilotui's compiled CSS and every un-migrated screen's `dark:`
+        // classes were built against `.dark`, so dropping it would take those screens' dark mode
+        // with it. Migrated `st-` surfaces read data-theme; the two agree at all times.
+        classSuffix: '',
+        preference: 'system',
+        fallback: 'light',
+        storageKey: 'subturtle:theme',
+        disableTransition: false,
+    },
 
     i18n: {
         locales: [{ code: 'en', file: 'en.json' }],

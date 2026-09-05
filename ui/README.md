@@ -72,9 +72,29 @@ composes them as `rgb(var(--token) / <alpha-value>)`. That is what makes opacity
 (`st-bg-primary/5`, the ambient background blobs) and what a dark theme will hook into. Write raw
 CSS against them as `rgb(var(--rose-500))`.
 
-`:root.dark` is scaffolded and empty. The design system ships light values only, and the product
-keeps its theme switcher, so dark currently leaves anything built on this library in its light
-palette. Adding dark means redefining the semantic aliases there — no component should change.
+`src/styles/theme-tokens.css` is the dark half, imported straight after `tokens.css`. It re-points
+the **same token names** under `html.dark`, so a component already written against
+`var(--surface-card)` / `var(--text-body)` / `var(--ink-100)` themes itself with no edits — that is
+the whole mechanism, and it is why nothing in `src/` carries a `dark:` variant.
+
+Two flips in that file are load-bearing, and both look wrong until you know the role they protect:
+
+- **The `--ink-*` ramp inverts** — `--ink-50` is the darkest step in dark. Components use `ink-100`
+  as a hover wash and `ink-150`/`ink-200` as hairlines; inverting is what preserves those roles.
+  The corollary is that `ink-800`/`ink-900` can no longer be used as a *dark fill* (it would become
+  a light fill); `bg-inverse` + `text-page` is the pair for that.
+- **`--rose-700` / `--jade-700` (and the `-600` steps) become light tints** — they are used as
+  "text on a soft brand tint", so they flip to stay legible.
+
+`--white` is deliberately *not* re-pointed. It means "ink on a rose CTA". Never use it as a
+surface; use `--surface-card`.
+
+The theme is applied as **`data-theme="light" | "dark"` on `<html>`** (both Tailwind builds use
+`darkMode: ['selector', '[data-theme="dark"]']`).
+
+Consumers must also add `class="theme-switching"` to `<html>` for the one frame around a change —
+the stylesheet kills transitions while it is set, otherwise the whole page cross-fades. See the
+dashboard's `plugins/theme.client.ts`.
 
 ### Icons
 
@@ -102,13 +122,45 @@ yarn dev     # rebuild on change, for a linked consumer
 
 | Group | |
 | --- | --- |
-| Shell | `StAppShell`, `StSidebarNav` |
-| Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StIcon` |
+| Shell | `StAppShell`, `StSidebarNav`, `StProfileMenu` |
+| Elements | `StButton`, `StIconButton`, `StCard`, `StBadge`, `StAvatar`, `StEmptyState`, `StSkeleton`, `StThemeSwitcher`, `StIcon` |
 | Brand | `StStatTile`, `StBundleCard` |
 
-This is the set the app shell and the Progress screen need. The rest of the design system
-(`Input`, `Tag`, `Switch`, `ProgressBar`, `SegmentedControl`, `Tabs`, `Modal`, `Toast`,
-`PhraseCard`, `Flashcard`, `LevelPip`, `PlanCard`) lands as each remaining screen is migrated.
+This is the set the app shell, the Progress screen and the Login screen need. The rest of the
+design system (`Input`, `Tag`, `Switch`, `ProgressBar`, `SegmentedControl`, `Tabs`, `Modal`,
+`Toast`, `PhraseCard`, `Flashcard`, `LevelPip`, `PlanCard`) lands as each remaining screen is
+migrated.
+
+### `StThemeSwitcher`
+
+One round icon button that cycles Light → Dark → System. It can run standalone — persisting to
+`persistKey` and writing `data-theme` itself — or controlled via `v-model` with `persist-key=""`
+and `:apply="false"`, which is what a host that already owns the theme (the dashboard, through
+`@nuxtjs/color-mode`) must pass so the two do not both write the attribute.
+
+`labels.aria` and `labels.resolved` are **formatters**, not patterns. Handing a translated pattern
+like `t('theme.aria')` over instead looks correct and silently isn't: vue-i18n interpolates the
+placeholders on the way out, so `{current}` / `{next}` arrive already blanked.
+
+Positioning it is done by a **wrapper element**, not by passing layout classes down. Its root
+carries `st-relative`, and `dist/style.css` loads after the host's own Tailwind, so an `absolute`
+passed as a fall-through class loses the specificity tie.
+
+### `StProfileMenu`
+
+The account dropdown, shared by the dashboard topbar and the extension popup. Two things about it
+are not stylistic preferences:
+
+- **The panel is teleported to `<body>` and positioned `fixed`** against the trigger rect,
+  re-placed on `resize` and on **capture-phase** `scroll` (so scrolling `StAppShell`'s inner
+  `<main>` counts). The topbar sets `backdrop-filter`, which bleeds its blur under an
+  absolutely-positioned descendant and washes the panel out. The design prototype hit this and
+  fixes it the same way.
+There is no Appearance row: the design system ships `StThemeSwitcher` as a dedicated topbar
+control, so the menu keeps its four rows.
+
+The component holds no router, store or i18n coupling — `items` is a plain array carrying the
+caller's own handlers, and every visible string comes in through `labels`.
 
 Three things were deliberately added rather than ported, because the source components are React
 files styled entirely with inline style objects and cannot express them: nav-item hover states,

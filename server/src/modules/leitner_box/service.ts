@@ -509,9 +509,16 @@ export class LeitnerService {
     console.log('[PhraseManagementInfo] Getting info for userId:', userId);
     const system = await this.getSystem(userId);
     const phraseToBoxMap: Record<string, number> = {};
+    // Phrases whose next review has come round. The Start-a-session bundle picker
+    // intersects these with each bundle's phrase ids to show its "N due" count and
+    // to drive the Due today / Never practised filters — `leitner_system` itself is
+    // owner-access, so the client cannot derive this on its own.
+    const duePhraseIds: string[] = [];
+    const now = new Date();
     if (system && system.items) {
       system.items.forEach(i => {
         phraseToBoxMap[i.phraseId.toString()] = i.boxLevel;
+        if (new Date(i.nextReviewDate) <= now) duePhraseIds.push(i.phraseId.toString());
       });
     }
 
@@ -527,6 +534,8 @@ export class LeitnerService {
 
     return {
       phraseToBoxMap,
+      // Additive: existing callers (the Leitner phrase picker) ignore it.
+      duePhraseIds,
       bundles: (bundles || []).map((b: any) => ({ _id: b._id.toString(), title: b.title }))
     };
   }

@@ -1,9 +1,10 @@
 <template>
     <!--
         <App> is pilotui's theme/RTL provider. It stays until the last pilotui-era page is
-        migrated: every un-migrated screen's components still read their theming from it, and
-        the header's theme switcher drives it. StAppShell replaces only the chrome
-        (DashboardShell + SidebarMenu + HorizontalMenu).
+        migrated: every un-migrated screen's components still read their theming from it.
+        It no longer DRIVES the theme, though — @nuxtjs/color-mode owns the preference now and
+        plugins/theme.client.ts mirrors it into pilotui's store, so this only follows.
+        StAppShell replaces only the chrome (DashboardShell + SidebarMenu + HorizontalMenu).
     -->
     <App>
         <!-- StAppShell fills its container and scrolls internally, so it needs a container
@@ -18,18 +19,20 @@
                 @navigate="onNavigate"
                 @update:collapsed="setRail"
             >
-                <!-- Breadcrumb built from the nav itself, so it can never drift from the menu. -->
+                <!-- Breadcrumb built from the nav itself, so it can never drift from the menu.
+                     A detail route may name the record instead (usePageCrumb). -->
                 <template #title>
                     <span v-if="crumb" class="inline-flex items-center gap-2 text-st-sm font-bold text-st-faint">
                         <span>{{ crumb.section }}</span>
                         <StIcon name="solar:alt-arrow-right-linear" :size="16" />
                         <span class="text-st-body">{{ crumb.label }}</span>
+                        <StBadge v-if="crumb.badge">{{ crumb.badge }}</StBadge>
                     </span>
                 </template>
 
                 <template #header-right>
-                    <PartialThemeSwitcher class="scale-75" />
-                    <PartialProfileButton />
+                    <PartialThemeSwitcher />
+                    <PartialProfileMenu />
                 </template>
 
                 <!-- overflow-x-clip contains decorative full-bleed page backgrounds (e.g. blurred blobs positioned past the edge)
@@ -76,7 +79,7 @@
 
 <script setup lang="ts">
 import { App, ThemeCustomizer } from 'pilotui/shell';
-import { StAppShell, StIcon } from 'subturtle-ui';
+import { StAppShell, StBadge, StIcon } from 'subturtle-ui';
 import UsageCapBanner from '~/components/freemium_alerts/UsageCapBanner.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import VoiceCapBanner from '~/components/VoiceCapBanner.vue';
@@ -84,6 +87,7 @@ import VoiceCapModal from '~/components/VoiceCapModal.vue';
 import { useTierLimitModal } from '~/composables/useTierLimitModal';
 import { DASHBOARD_NAV_ROUTES, activeNavId } from '~/composables/useDashboardNavigatorItems';
 import { useLeitnerStore } from '~/stores/leitner';
+import { usePageCrumbState } from '~/composables/usePageCrumb';
 
 const { t, te } = useI18n();
 const { open: tierLimitOpen, feature: tierLimitFeature, closeTierLimitModal } = useTierLimitModal();
@@ -100,12 +104,19 @@ const dueCount = computed(() => leitner.boardActivities.find((a) => a.type === '
 const menuItems = useDashboardNavigatorItems(() => ({ board: dueCount.value }));
 const activeItem = computed(() => activeNavId(route.path));
 
+// Nav-derived by default; a detail page (one bundle, say) publishes its own via usePageCrumb
+// and only has to name the thing — the section still comes from the nav group it sits in.
+const crumbOverride = usePageCrumbState();
+
 const crumb = computed(() => {
     for (const group of menuItems.value) {
         const item = group.items.find((i) => i.id === activeItem.value);
-        if (item) return { section: group.section, label: item.label };
+        if (item) {
+            if (crumbOverride.value) return { section: crumbOverride.value.section || group.section, ...crumbOverride.value };
+            return { section: group.section, label: item.label };
+        }
     }
-    return null;
+    return crumbOverride.value;
 });
 
 onMounted(() => {

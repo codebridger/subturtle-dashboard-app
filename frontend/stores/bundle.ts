@@ -140,6 +140,12 @@ export const useBundleStore = defineStore('bundle', () => {
                 const index = phrases.value.findIndex((p) => p._id === id);
                 phrases.value.splice(index, 1);
 
+                // The bundle's own id list is what the phrase count and the phrase numbering
+                // read, so it has to lose the phrase too — `createPhrase` keeps the same pair
+                // in step on the way in.
+                const idIndex = bundleDetail.value?.phrases.indexOf(id) ?? -1;
+                if (idIndex > -1) bundleDetail.value!.phrases.splice(idIndex, 1);
+
                 const profileStore = useProfileStore();
                 if (profileStore.isFreemium) {
                     const currentValue = profileStore.freemiumAllocation!.allowed_save_words_used;

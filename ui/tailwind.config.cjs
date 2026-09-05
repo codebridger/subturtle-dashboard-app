@@ -17,7 +17,7 @@ const scale = (name, steps) => Object.fromEntries(steps.map((s) => [String(s), c
 
 module.exports = {
     prefix: 'st-',
-    darkMode: 'class',
+    darkMode: ['selector', '[data-theme="dark"]'],
     content: ['./src/**/*.{vue,ts}'],
     corePlugins: { preflight: false },
     theme: {
@@ -26,6 +26,12 @@ module.exports = {
             current: 'currentColor',
             inherit: 'inherit',
             white: c('--white'),
+            // Literal #fff, immune to theming. The design system's dark layer redeclares
+            // --white as the CARD NEUTRAL (#1e1826), so `white` is no longer a safe way to
+            // say "ink on a rose CTA" — that meaning lives here instead. Anything sitting on
+            // a brand or status fill uses `on-brand`; anything that is a SURFACE uses
+            // `bg-card`. Never `white` for either.
+            'on-brand': '#fff',
             paper: c('--paper'),
             rose: scale('rose', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]),
             jade: scale('jade', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]),
@@ -62,6 +68,9 @@ module.exports = {
                 faint: c('--text-faint'),
                 link: c('--text-link'),
                 'on-dark': c('--text-on-dark'),
+                // The readable pairing for `bg-inverse`: it is the page colour, so it flips
+                // with the surface instead of being a literal that only works in one theme.
+                page: c('--surface-page'),
             },
             backgroundColor: {
                 page: c('--surface-page'),
@@ -69,11 +78,18 @@ module.exports = {
                 sunken: c('--surface-sunken'),
                 raised: c('--surface-raised'),
                 inverse: c('--surface-inverse'),
+                // Scrims and image-overlay pills. NOT `ink-950` — that ramp inverts in dark,
+                // so a scrim written against it would turn into a white veil.
+                overlay: c('--surface-overlay'),
             },
             borderColor: {
                 DEFAULT: c('--border-subtle'),
                 subtle: c('--border-subtle'),
+                default: c('--border-default'),
                 strong: c('--border-strong'),
+                // For rings that punch a component out of whatever it sits on (the avatar's).
+                // `white` would be a literal, and literal white is only ever ink on a rose CTA.
+                card: c('--surface-card'),
             },
             fontFamily: {
                 sans: 'var(--font-sans)',

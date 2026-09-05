@@ -5,20 +5,45 @@
     "bundle": {
         "nav": "Phrase bundles",
         "list": "Bundle List",
-        "detail": "Bundle Detail",
+        "detail": {
+            "title": "Bundle detail",
+            "live_session": "Live session",
+            "flashcards": "Flashcards",
+            "phrases_title": "Phrases in this bundle",
+            "no_phrases": "No phrases yet",
+            "no_phrases_description": "This bundle is empty. Save a phrase with the extension while you watch, or add one here by hand.",
+            "review_title": "Pick the phrases to review",
+            "review_description": "Flashcards run over what you choose here — everything is selected to start with.",
+            "selected_count": "{n} selected",
+            "select_all": "Select all",
+            "deselect_all": "Clear",
+            "start_review": "Start review ({n})"
+        },
         "add_phrase": "Add Phrase",
-        "no-bundles": "No Phrase Bundles Yet",
-        "no-bundles-description": "You don't have any phrase bundles yet. Create your first bundle to start adding phrases and practice with live sessions.",
+        "collection_label": "Library",
+        "list_title": "Phrase bundles",
+        "list_subtitle": "{count} bundle. Practise it from here. | {count} bundles. Practise any of them from here.",
+        "showing_count": "Showing {shown} of {total}",
+        "load_more": "Load more",
+        "no-bundles": "No bundles yet",
+        "no-bundles-description": "Save a phrase from YouTube, Netflix, or any page and Subturtle files it into a bundle for you.",
+        "no-matches": "No bundles match \"{filter}\"",
+        "no-matches-description": "Nothing in your library has that in its title. Try a shorter word, or clear the filter to see everything.",
+        "clear_filter": "Clear filter",
         "add_new": {
-            "title_placeholder": "My new Tiny set",
+            "title_placeholder": "My new tiny set",
             "title_required": "Title is required",
             "duplicate_title": "Title already exists",
             "duplicate_title_desc": "Please choose another title",
             "desc_max": "Description is too long",
-            "desc_placeholder": "Description",
+            "desc_placeholder": "A line about what's inside",
             "error": "Failed to create new bundle",
-            "title": "Add new bundle",
-            "action_add_new": "Add new bundle",
+            "title": "New bundle",
+            "description": "Name it after where the phrases come from — a show, a course, a topic.",
+            "title_label": "Name",
+            "desc_label": "Description",
+            "desc_optional": "(optional)",
+            "action_add_new": "New bundle",
             "action_cancel": "Cancel",
             "action_create": "Create"
         },
@@ -33,10 +58,30 @@
             "translation_placeholder": "Type your translation here",
             "definition_placeholder": "Definition will be displayed here",
             "confirm_deletion": "Confirm Phrase Deletion",
-            "confirm_deletion_message": "Are you sure you want to delete this phrase?"
+            "confirm_deletion_message": "Are you sure you want to delete this phrase?",
+            "new_badge": "New",
+            "save": "Save phrase",
+            "play": "Play pronunciation",
+            "delete": "Delete phrase",
+            "phrase_required": "Phrase is required",
+            "translation_required": "Translation is required"
         },
-        "filter_bundles": "Filter bundles...",
-        "select_bundle": "Select Bundle"
+        "filter_bundles": "Filter bundles",
+        "select_bundle": "Select Bundle",
+        "saves": {
+            "used": "{used} of {total} saves used this month",
+            "resets_on": "Resets on {date}.",
+            "unlimited": "Unlimited saves on your plan",
+            "unlimited_description": "Add as many phrases to this bundle as you like."
+        },
+        "settings": {
+            "title": "Bundle settings",
+            "description": "Rename this bundle, or remove it along with its phrases.",
+            "save": "Save changes",
+            "delete_title": "Delete this bundle",
+            "delete_description": "Its phrases go with it. This cannot be undone.",
+            "delete_failed": "Failed to delete the bundle"
+        }
     },
     "freemium": {
         "limitation": {
@@ -123,7 +168,7 @@
         "ai-character": "AI Character",
         "native-language": "Your native language",
         "native-language-hint": "The coach will explain instructions and feedback in this language; English is used for the practice itself.",
-        "native-language-auto": "Auto (detect from my speech)",
+        "native-language-auto": "Auto — detect what I speak",
         "mode": {
             "label": "Practice mode",
             "voice": "Voice",
@@ -187,11 +232,32 @@
             "tap-label": "Tap to talk",
             "hands-free-tooltip": "Hands-free: keep the microphone open for the whole session.",
             "hands-free-label": "Hands-free"
-        }
+        },
+        "coach": {
+            "title": "Who's coaching you?",
+            "subtitle-voice": "Tap to hear a few seconds.",
+            "subtitle-text": "A text session is written only — no voice to pick."
+        },
+        "phrases": {
+            "title": "Phrases this session"
+        },
+        "pick-randomly": "Pick randomly",
+        "voice": {
+            "preview": "Preview",
+            "playing": "Playing",
+            "preview-aria": "Hear a sample of {name}",
+            "stop": "Stop the {name} sample"
+        },
+        "fallback-label": "Falls back to",
+        "pick-range": "Pick a range",
+        "at-random": "at random",
+        "to": "to",
+        "about-minutes": "about {n} min"
     },
     "subscription": {
         "title": "Subscription",
         "subscription-plans": "Subscription Plans",
+        "overline": "Membership",
         "plans-price-details": "Plans & Price Details",
         "invoice-date": "Invoice Date:",
         "due-date": "Due Date:",
@@ -256,7 +322,16 @@
             "continue-free": "Continue with Free",
             "loading": "Loading plans…",
             "error": "Plans are temporarily unavailable due to a payment system issue. Please check back soon.",
-            "empty": "No plans available right now."
+            "empty": "No plans available right now.",
+            "popular": "Popular",
+            "current": "Current",
+            "trial": "Trial",
+            "canceling": "Canceling",
+            "billed-yearly": "Billed yearly. Save 20%.",
+            "billed-monthly": "Billed monthly.",
+            "footnote": "Stripe shows your local currency at checkout. Switch or cancel any time.",
+            "error-title": "Plans unavailable",
+            "empty-title": "No plans yet"
         },
         "checkout": {
             "title": "Subscribe to {plan}",
@@ -348,7 +423,6 @@
             "ai-usage": "AI translations & explanations: {n} used"
         },
         "starter-usage": {
-            "title": "Free plan",
             "saved-phrases": "Saved phrases",
             "text-chats": "Text chats",
             "live-sessions": "Live sessions",
@@ -412,19 +486,19 @@
         "no-account-cta": "Just sign in and you will get a new account.",
         "chrome-extension": "Chrome extension",
         "waiting": {
-            "label": "Waiting for Google\u2026",
+            "label": "Waiting for Google…",
             "hint": "A Google window should have opened. Nothing there?",
             "retry": "Open it again"
         },
         "returning": {
-            "title": "Signing you in\u2026",
+            "title": "Signing you in…",
             "subtitle": "Taking you to your dashboard."
         },
         "notice": {
             "expired": "Your session ended, so we brought you here. Nothing you saved was lost.",
             "failed": {
                 "title": "That didn't go through",
-                "message": "The Google window closed before you finished. Nothing was saved \u2014 try once more."
+                "message": "The Google window closed before you finished. Nothing was saved — try once more."
             }
         },
         "preview": {
@@ -438,14 +512,14 @@
             "start-review": "Start review",
             "time-left": "3 min left",
             "session-title": "Live session",
-            "session-body": "Say this week's phrases out loud with Coach. Money Heist \u2014 s1e4.",
+            "session-body": "Say this week's phrases out loud with Coach. Money Heist — s1e4.",
             "start-session": "Start session",
             "resting-title": "Resting",
             "resting-body": "Levels 4 and 5 are asleep. Their next cards land on Thursday.",
             "optional": "Optional practice",
             "phrase-1": "Je n'en reviens pas",
             "phrase-1-translation": "I can't believe it",
-            "phrase-2": "\u00c7a vaut le coup",
+            "phrase-2": "Ça vaut le coup",
             "phrase-2-translation": "It's worth it"
         }
     },
@@ -453,15 +527,12 @@
         "nav": "Practice",
         "title": "Study"
     },
-    "activities": {
-        "title": "Activities"
-    },
     "live-session": {
-        "no-sessions": "No Sessions Yet",
-        "no-sessions-description": "You haven't started any practice sessions yet. Start a live session from a phrase bundle to practice your language skills and come back here to see your session history.",
-        "start-session": "Start Session",
+        "no-sessions": "No sessions yet",
+        "no-sessions-description": "Practise a bundle with the AI coach and every session you run will be listed here.",
+        "start-session": "Start session",
         "start-first-session": "Start Your First Session",
-        "6-months-expiry": "Each session will expire in 6 months",
+        "6-months-expiry": "Every session stays here for six months.",
         "session-history": "Session history",
         "session-details": "Session Details",
         "dialogs": "dialogs",
@@ -474,22 +545,88 @@
         "total-tokens": "Total Tokens",
         "total-cost": "Total Cost (USD)",
         "duration": "Duration",
-        "start-new-session": "Start New Session"
+        "start-new-session": "Start New Session",
+        "overline": "AI COACHING",
+        "start-new-subtitle": "Pick a bundle, choose how you want to talk, and Coach takes it from there.",
+        "no-bundles": {
+            "title": "No bundles to practise yet",
+            "description": "A live session runs on a phrase bundle. Save a few phrases from YouTube, Netflix or any page and one will be waiting here."
+        },
+        "pick-bundle": {
+            "title": "Which bundle?",
+            "subtitle": "Coach only uses phrases from the set you pick.",
+            "search": "Search {count} bundles",
+            "phrase-count": "{count} phrase | {count} phrases",
+            "due-count": "{n} due",
+            "scope-recent": "Recent",
+            "scope-due": "Due today",
+            "scope-new": "Never practised",
+            "scope-all": "All {count}",
+            "no-matches": "No bundles here",
+            "no-matches-description": "Nothing matches that search and filter. Try another word, or switch to All."
+        },
+        "summary": {
+            "title": "Your session",
+            "mode": "Mode",
+            "coach-voice": "Coach voice",
+            "fallback": "Fallback",
+            "fallback-auto": "Auto",
+            "phrases": "Phrases",
+            "random-count": "{n} at random",
+            "voice-minutes": "Voice minutes",
+            "free-sessions": "Free sessions",
+            "free-chats": "Free text chats",
+            "n-of-m-left": "{left} of {total} left",
+            "resets-on": "Resets on {date}.",
+            "text-no-minutes": "Text chat doesn't use minutes.",
+            "pick-first": "Pick a bundle to get started.",
+            "text-chats": "Text chats",
+            "unlimited": "Unlimited"
+        },
+        "start-a-session": "Start a session",
+        "repeat-last": "Repeat your last session",
+        "history-overline": "LIVE SESSIONS",
+        "6-months-removal": "Sessions older than six months are removed automatically.",
+        "new-session": "New session",
+        "search-sessions": "Search sessions",
+        "n-dialogs": "{n} dialogs",
+        "showing-count": "Showing {shown} of {total}.",
+        "transcript-locked": "Transcript locked",
+        "no-matches": "No sessions match",
+        "no-matches-description": "Nothing on this page matches that search and filter.",
+        "filter": {
+            "all": "All"
+        },
+        "n-minutes": "{n} min",
+        "under-a-minute": "under a min"
     },
     "profile": {
         "profile": "Profile",
-        "receive-daily-practice-email-reminders": "Receive daily practice email reminders?",
-        "full-name": "Full Name",
+        "receive-daily-practice-email-reminders": "Daily practice email reminders",
+        "full-name": "Full name",
         "email": "Email",
         "password": "Password",
         "reset-password": "Reset Password",
         "uploading": "Uploading...",
-        "profile-updated": "Profile updated successfully",
+        "profile-updated": "Profile updated",
         "profile-update-failed": "Failed to update profile",
         "timezone": "Timezone",
-        "select_timezone": "Select Timezone",
-        "timezone_desc": "Select your local timezone so reviews appear at the correct time.",
-        "current_timezone": "Current Timezone"
+        "select_timezone": "Select timezone",
+        "timezone_desc": "Reviews appear at the correct time for this zone.",
+        "current_timezone": "Current Timezone",
+        "overline": "Account",
+        "title": "Your profile",
+        "subtitle": "Your name and timezone. Email and photo come from the Google account you sign in with.",
+        "local_time": "Your local time",
+        "personal_information": "Personal information",
+        "email_hint": "From Google. Not editable.",
+        "status_saving": "Saving…",
+        "status_unsaved": "Unsaved changes",
+        "status_saved": "All changes saved",
+        "status_idle": "Nothing to save yet",
+        "tz_search": "Search",
+        "tz_description": "Search over 400 zones. Smart Review follows the one you pick.",
+        "tz_no_match": "No zone matches that."
     },
     "billing": {
         "billing": "Billing",
@@ -526,7 +663,7 @@
     "sign-out": "Sign Out",
     "confirm-sign-out": "Confirm Sign Out",
     "confirm-sign-out-message": "Are you sure you want to sign out of your account?",
-    "save-changes": "Save Changes",
+    "save-changes": "Save changes",
     "coming-soon": "Coming soon",
     "review": {
         "title": "Review",
@@ -542,7 +679,6 @@
     "pool": {
         "title": "New words to encode",
         "tab": "Pool",
-        "module_label": "Encode Queue",
         "card_small": "{count} new words from yesterday's videos · ~{mins} min",
         "card_medium": "{count} words to encode · ~{mins} min · do the first {chunk} today?",
         "card_large": "{count} words waiting · do {chunk} now, the rest are aging",
@@ -565,6 +701,43 @@
         "save_failed": "Failed to save Pool settings"
     },
     "smart_review": {
+        "page_title": "Review settings",
+        "page_subtitle": "Your chain, your pace. Everything Smart Review keeps lives on this page.",
+        "the_journey": "The journey",
+        "the_chain": "The chain",
+        "discard": "Discard",
+        "changed": "Changed",
+        "not_saved": "Not saved",
+        "n_unsaved": "{count} unsaved change | {count} unsaved changes",
+        "total_levels_note": "Links in the chain, 1 to 10.",
+        "times_follow": "Times follow {zone}.",
+        "daily_in_zone": "Daily · {zone}",
+        "every_days_in_zone": "Every {days} days · {zone}",
+        "start_over": "Start over",
+        "reset_note": "Puts all {count} phrases back at level 1. This can't be undone.",
+        "reset_note_empty": "Nothing to reset yet. Levels and intervals stay as you set them.",
+        "reset_description": "Every phrase goes back to level 1 and the next session starts from scratch.",
+        "reset_loses": "{count} phrases lose their level and review history.",
+        "reset_keeps": "Your bundles, intervals and daily limit stay exactly as they are.",
+        "chain_note": "Items move down the chain as you learn them · {count} phrases",
+        "chain_note_empty": "Waiting on your first saved phrase",
+        "empty_chain_title": "Nothing in the chain yet",
+        "empty_chain_description": "Save a phrase from YouTube, Netflix or any page and, with auto entry on, it lands in level 1 at the next session.",
+        "n_cards": "{count} cards",
+        "cloze": "Cloze",
+        "note_entrance": "New saves land here.",
+        "note_middle": "Plain recall, both directions.",
+        "note_cloze": "Fill-in-the-blank starts here.",
+        "note_mature": "Nearly learned. Light touch-ups.",
+        "save_failed_title": "We couldn't save your preferences",
+        "save_failed_body": "Your edits are still here. Check your connection and try again.",
+        "try_again": "Try again",
+        "phrases_in_level": "Phrases in level {number}",
+        "only_this_level": "Only this level",
+        "not_in_chain": "Not in chain",
+        "add_here": "Add here",
+        "remove": "Remove",
+        "page_of": "Page {page} of {total}",
         "title": "Smart Review",
         "settings": "Smart Review Settings",
         "settings_desc": "Configure your spaced repetition journey. Items move down the chain as you learn them.",
@@ -636,13 +809,30 @@
         "select_phrase": "Select Phrase"
     },
     "board": {
-        "no_activities": "No activities right now",
         "all_caught_up": "You are all caught up! Check back later.",
         "due": "Due",
         "items_due": "{count} items due for review",
         "activity_ready": "Ready to start",
         "start_activity": "Start Activity",
-        "back_to_board": "Back to Board"
+        "back_to_board": "Back to Board",
+        "overline": "Today",
+        "title": "Today's board",
+        "subtitle": "Your reviews for today, and a few optional ways to practice.",
+        "due_today": "Due today",
+        "optional_practice": "Optional practice",
+        "start_review": "Start review",
+        "empty": {
+            "title": "You're all caught up",
+            "description": "Nothing is due right now. Check back later, or save a few new phrases while you watch.",
+            "cta": "Browse bundles"
+        },
+        "practice": {
+            "flashcards": {
+                "title": "Flashcards",
+                "description": "Free practice on any bundle. Doesn't move levels.",
+                "cta": "Open"
+            }
+        }
     },
     "leitner_session": {
         "completed_title": "Review Session Completed!",
@@ -662,5 +852,24 @@
         "todays-board": "Today's board",
         "start-a-session": "Start a session",
         "account": "Account"
+    },
+    "account": {
+        "menu": "Account menu",
+        "study-settings": "Study settings",
+        "subscription": "Subscription",
+        "sign-out": "Sign out",
+        "saves": "{used} / {total} saves"
+    },
+    "theme": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "resolved": "{mode} · {resolved}",
+        "aria": "Theme: {current}. Switch to {next}."
+    },
+    "pagination": {
+        "prev": "Prev",
+        "next": "Next",
+        "page-of": "Page {page} of {total}"
     }
 }
