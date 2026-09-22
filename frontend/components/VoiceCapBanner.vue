@@ -55,6 +55,6 @@
 
     // Learner's "Upgrade plan" highlights Coach; Coach has no tier above (button hidden).
     function goUpgrade() {
-        router.push('/settings/subscription?from=voice-banner&suggest=coach');
+        router.push('/settings/subscription?from=cap-hit-banner&suggest=coach');
     }
 </script>

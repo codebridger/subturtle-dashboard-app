@@ -1,5 +1,6 @@
 import { DatabaseTrigger } from "@modular-rest/server";
 import { LeitnerService } from "../leitner_box/service";
+import { PoolService } from "../pool/service";
 import {
   isUserOnFreemium,
   updateFreemiumAllocation,
@@ -22,15 +23,17 @@ export const phraseBundleTriggers = [
       });
     }
 
-    // When a new phrase is created, add it to the Leitner system (if autoEntry is enabled)
+    // When a new phrase is created, route it into the Pool for a first-encounter
+    // (encode) step instead of straight into Leitner L1 (if autoEntry is enabled).
+    // The Pool session, or the 7-day age-out, later promotes it to L1.
     if (doc && doc.phrase && doc.translation && doc.refId) {
       try {
         const settings = await LeitnerService.getSettings(doc.refId);
         if (settings && settings.autoEntry) {
-          await LeitnerService.addPhraseToBox(doc.refId, doc._id, 1);
+          await PoolService.add(doc.refId, doc._id);
         }
       } catch (e) {
-        console.error("Failed to add phrase to Leitner system", e);
+        console.error("Failed to add phrase to Pool", e);
       }
     }
   }),
@@ -83,10 +86,10 @@ export const phraseBundleTriggers = [
         const settings = userSettingsCache[item.userId];
 
         if (settings && settings.autoEntry) {
-          await LeitnerService.addPhraseToBox(item.userId, item.docId, 1);
+          await PoolService.add(item.userId, item.docId);
         }
       } catch (e) {
-        console.error("Failed to add phrase to Leitner system", e);
+        console.error("Failed to add phrase to Pool", e);
       }
     }
   }),

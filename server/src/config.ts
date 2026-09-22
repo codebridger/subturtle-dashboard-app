@@ -42,3 +42,7 @@ export const LEITNER_SYSTEM_COLLECTION = "leitner_system";
 // Board Module
 export const DATABASE_BOARD = DATABASE;
 export const BOARD_ACTIVITY_COLLECTION = "board_activity";
+
+// Pool Module (first-encounter queue — one doc per user, lives alongside phrases)
+export const DATABASE_POOL = DATABASE;
+export const POOL_COLLECTION = "pool";

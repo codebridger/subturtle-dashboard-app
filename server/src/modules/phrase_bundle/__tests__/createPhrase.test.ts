@@ -34,6 +34,14 @@ jest.mock("../../subscription/enforcement", () => ({
 
 jest.mock("../triggers", () => ({ phraseBundleTriggers: [] }));
 
+jest.mock("../../../utils/analytics", () => ({
+  trackServerEvent: jest.fn(),
+  SERVER_ANALYTICS_EVENTS: {
+    PHRASE_SAVED_FIRST_TIME: "phrase_saved_first-time",
+  },
+}));
+
+const { trackServerEvent } = require("../../../utils/analytics");
 const { functions } = require("../functions");
 const createPhrase = functions.find((f: any) => f.name === "createPhrase");
 
@@ -82,5 +90,44 @@ describe("createPhrase persistence", () => {
     const doc = (insertMany.mock.calls[0][0] as any[])[0];
     expect(doc.chunks).toBeUndefined();
     expect(doc.sourceUrl).toBeUndefined();
+  });
+
+  it("fires phrase_saved_first-time on the user's first-ever save", async () => {
+    // countDocuments is called first for bundle verification, then for the
+    // prior-phrase count. Both zero here -> genuine first save.
+    countDocuments.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+
+    await createPhrase.callback({
+      phrase: "we had to decide quickly",
+      translation: "...",
+      translation_language: "fa",
+      bundleIds: [],
+      refId: "user-1",
+      type: "linguistic",
+      language_info: { source: "en", target: "fa" },
+      sourceUrl: "https://www.youtube.com/watch?v=abc123",
+    });
+
+    expect(trackServerEvent).toHaveBeenCalledWith(
+      "phrase_saved_first-time",
+      "user-1",
+      { source_platform: "youtube", language_pair: "en-fa" }
+    );
+  });
+
+  it("does NOT fire phrase_saved_first-time when the user already has phrases", async () => {
+    // Bundle-verify count 0, then a non-zero prior-phrase count -> not the first save.
+    countDocuments.mockResolvedValueOnce(0).mockResolvedValueOnce(7);
+
+    await createPhrase.callback({
+      phrase: "hello",
+      translation: "...",
+      translation_language: "fa",
+      bundleIds: [],
+      refId: "user-1",
+      type: "normal",
+    });
+
+    expect(trackServerEvent).not.toHaveBeenCalled();
   });
 });

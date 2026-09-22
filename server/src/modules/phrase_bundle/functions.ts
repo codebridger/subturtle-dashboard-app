@@ -1,4 +1,5 @@
 import { defineFunction, getCollection } from "@modular-rest/server";
+import { Types } from "mongoose";
 import { DATABASE, PHRASE_COLLECTION, BUNDLE_COLLECTION } from "../../config";
 import {
   isUserOnFreemium,
@@ -15,7 +16,26 @@ import { PhraseSchema } from "./db";
 import { normaliseSourceUrl } from "../translation/url-normalise";
 import { openRouter } from "../../utils/openrouter";
 import { TRANSLATION_MODELS } from "../../utils/openrouter-models";
+import { trackServerEvent, SERVER_ANALYTICS_EVENTS } from "../../utils/analytics";
 import { z } from "zod";
+
+/**
+ * Map a saved-from page URL to the coarse `source_platform` bucket the activation
+ * funnel filters on. Unknown/absent hosts collapse to `other`.
+ */
+function sourcePlatformFromUrl(sourceUrl?: string): string {
+  if (!sourceUrl) return "other";
+  let host = "";
+  try {
+    host = new URL(sourceUrl).hostname.toLowerCase();
+  } catch {
+    return "other";
+  }
+  if (host.includes("youtube.")) return "youtube";
+  if (host.includes("netflix.")) return "netflix";
+  if (host.includes("wikipedia.")) return "wikipedia";
+  return "other";
+}
 
 interface RemoveBundleParams {
   _id: string;
@@ -182,13 +202,17 @@ const createPhrase = defineFunction({
       type: type,
     });
 
-    let phraseId: string;
+    let phraseId: Types.ObjectId;
     let isNewPhrase = false;
 
     if (existingPhrase) {
       // Use existing phrase
       phraseId = existingPhrase._id;
     } else {
+      // Detect the user's first-ever save BEFORE inserting: zero prior phrase
+      // docs for this owner means this new save is their activation moment.
+      const priorPhraseCount = await phraseCollection.countDocuments({ refId });
+
       // Enforce the saved-words cap BEFORE creating a new phrase (free: 200 per
       // window; paid tiers: unlimited). Reusing an existing phrase doc above does
       // not count against the cap, so the check only guards genuinely new saves.
@@ -229,6 +253,23 @@ const createPhrase = defineFunction({
 
       phraseId = insertedPhrases[0]._id;
       isNewPhrase = true;
+
+      // Activation funnel: fire once, only when this is the user's first-ever
+      // phrase. Both the extension and the dashboard save through this RPC, so
+      // this is the single server-truth point for the "first save" milestone.
+      if (priorPhraseCount === 0) {
+        const languagePair = language_info?.source
+          ? `${language_info.source}-${language_info.target}`
+          : translation_language?.trim() || undefined;
+        trackServerEvent(
+          SERVER_ANALYTICS_EVENTS.PHRASE_SAVED_FIRST_TIME,
+          refId,
+          {
+            source_platform: sourcePlatformFromUrl(sourceUrl),
+            language_pair: languagePair,
+          }
+        );
+      }
 
       // Update freemium allocation only for new phrases
       const user_id = refId;

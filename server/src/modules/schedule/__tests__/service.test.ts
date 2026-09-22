@@ -1,468 +1,352 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
-import { ScheduleService } from "../service";
-import schedule from "node-schedule";
-import { getCollection } from "@modular-rest/server";
-import parser from "cron-parser";
+import { describe, it, expect, jest, beforeAll, afterAll, beforeEach, afterEach } from "@jest/globals";
+import mongoose, { Connection, Model } from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 
-// Mock modular-rest/server
+// The scheduler's guarantees (atomic claims, leases, upsert semantics) are database
+// behaviour, so these tests run ScheduleService against a real in-memory MongoDB.
+let mockJobModel: Model<any>;
 jest.mock("@modular-rest/server", () => ({
-	getCollection: jest.fn(),
-	Schema: class { },
-	defineCollection: jest.fn(),
-	Permission: class { },
+  ...(jest.requireActual("@modular-rest/server") as object),
+  getCollection: jest.fn(() => mockJobModel),
 }));
 
-// Mock cron-parser
-jest.mock("cron-parser", () => ({
-	parseExpression: jest.fn(() => ({
-		prev: () => ({
-			toDate: () => new Date(Date.now() - 1000) // Default to 1 second ago for tests
-		})
-	}))
-}));
-
-// Mock node-schedule
-jest.mock("node-schedule", () => ({
-	scheduleJob: jest.fn(),
-	scheduledJobs: {},
-}));
-
-describe("ScheduleService", () => {
-	let mockCollection: any;
-
-	beforeEach(() => {
-		jest.clearAllMocks();
-		mockCollection = {
-			find: jest.fn(),
-			findOne: jest.fn(),
-			findOneAndUpdate: jest.fn(),
-			updateOne: jest.fn(),
-			create: jest.fn(),
-			deleteOne: jest.fn(),
-		};
-		(getCollection as any).mockResolvedValue(mockCollection);
-
-		// Reset registry
-		(ScheduleService as any).registry = new Map();
-		(ScheduleService as any).processingQueue = false;
-	});
-
-	describe("register", () => {
-		it("should add a function to the registry", () => {
-			const callback = jest.fn() as any;
-			ScheduleService.register("test-fn", callback);
-			expect((ScheduleService as any).registry.get("test-fn")).toBe(callback);
-		});
-	});
-
-	describe("init", () => {
-		it("should initialize active jobs from the database", async () => {
-			const mockJobs = [
-				{ name: "job1", cronExpression: "* * * * *", functionId: "fn1", args: {}, jobType: "recurrent" },
-				{ name: "job2", cronExpression: "0 0 * * *", functionId: "fn2", args: { x: 1 }, jobType: "recurrent" },
-			];
-			mockCollection.find.mockResolvedValue(mockJobs);
-
-			await ScheduleService.init();
-
-			expect(mockCollection.find).toHaveBeenCalledWith({});
-			expect(schedule.scheduleJob).toHaveBeenCalledTimes(2);
-		});
-	});
-
-	describe("createJob", () => {
-		it("should upsert a job keyed on its unique name", async () => {
-			const options = {
-				cronExpression: "* * * * *",
-				functionId: "test-fn",
-				args: { foo: "bar" },
-				executionType: "normal" as const,
-				jobType: "recurrent" as const,
-			};
-
-			await ScheduleService.createJob("new-job", "test-fn", options);
-
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ name: "new-job" },
-				{ $set: expect.objectContaining({ functionId: "test-fn", state: "scheduled" }) },
-				{ upsert: true }
-			);
-			// Idempotent upsert replaces the old findOne-then-create branch entirely.
-			expect(mockCollection.create).not.toHaveBeenCalled();
-			expect(schedule.scheduleJob).toHaveBeenCalled();
-		});
-
-		it("should update an existing job in place via the same upsert", async () => {
-			const options = {
-				cronExpression: "0 0 * * *",
-				functionId: "updated-fn",
-			};
-
-			await ScheduleService.createJob("existing-job", "updated-fn", options);
-
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ name: "existing-job" },
-				expect.objectContaining({ $set: expect.objectContaining({ functionId: "updated-fn" }) }),
-				{ upsert: true }
-			);
-			expect(schedule.scheduleJob).toHaveBeenCalled();
-		});
-
-		it("should save timezone to database", async () => {
-			const options = {
-				cronExpression: "* * * * *",
-				functionId: "test-fn",
-				timeZone: "Asia/Tokyo"
-			};
-
-			await ScheduleService.createJob("tz-create-job", "test-fn", options);
-
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ name: "tz-create-job" },
-				expect.objectContaining({ $set: expect.objectContaining({ timeZone: "Asia/Tokyo" }) }),
-				{ upsert: true }
-			);
-		});
-
-		it("should be idempotent: swallow an E11000 from a concurrent create instead of throwing", async () => {
-			// Two callers can race on a not-yet-existing doc; the loser's upsert
-			// still hits the unique index. This used to crash the process.
-			const dupErr: any = new Error("E11000 duplicate key error collection: ... index: name_1");
-			dupErr.code = 11000;
-			mockCollection.updateOne.mockRejectedValueOnce(dupErr);
-
-			await expect(
-				ScheduleService.createJob("dup-job", "test-fn", { cronExpression: "* * * * *" })
-			).resolves.toBeDefined();
-
-			// The job already exists, so the in-memory timer is still registered.
-			expect(schedule.scheduleJob).toHaveBeenCalled();
-		});
-
-		it("should rethrow non-duplicate database errors", async () => {
-			mockCollection.updateOne.mockRejectedValueOnce(new Error("connection lost"));
-
-			await expect(
-				ScheduleService.createJob("err-job", "test-fn", { cronExpression: "* * * * *" })
-			).rejects.toThrow("connection lost");
-		});
-	});
-
-	describe("deleteJob", () => {
-		it("should cancel moving job and delete from database", async () => {
-			const mockJob = { cancel: jest.fn() };
-			(schedule.scheduledJobs as any)["job-to-delete"] = mockJob;
-
-			await ScheduleService.deleteJob("job-to-delete");
-
-			expect(mockJob.cancel).toHaveBeenCalled();
-			expect(mockCollection.deleteOne).toHaveBeenCalledWith({ name: "job-to-delete" });
-		});
-	});
-
-	describe("Execution Logic", () => {
-		it("should execute Immediate jobs immediately after claiming", async () => {
-			const jobData = {
-				name: "immediate-job",
-				functionId: "fn",
-				executionType: "Immediate",
-				jobType: "recurrent",
-				cronExpression: "* * * * *",
-				state: "scheduled",
-			};
-
-			const callback = jest.fn() as any;
-			callback.mockResolvedValue(undefined);
-			ScheduleService.register("fn", callback);
-
-			// Mock scheduleJob callback trigger
-			let jobCallback: any;
-			(schedule.scheduleJob as jest.Mock).mockImplementation((name, cron, cb) => {
-				jobCallback = cb;
-				return { cancel: jest.fn() };
-			});
-
-			await ScheduleService.scheduleJobInternal(jobData);
-
-			// Mock the findOneAndUpdate result for claiming
-			mockCollection.findOneAndUpdate.mockResolvedValue({
-				_id: "id1",
-				...jobData,
-				state: "executing"
-			});
-
-			// Trigger the scheduled job
-			await jobCallback();
-
-			expect(mockCollection.findOneAndUpdate).toHaveBeenCalled();
-			expect(callback).toHaveBeenCalled();
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ _id: "id1" },
-				expect.objectContaining({ $set: expect.objectContaining({ state: "scheduled" }) })
-			);
-		});
-
-		it("should handle 'once' jobs and mark them as executed", async () => {
-			const jobData = {
-				name: "once-job",
-				functionId: "fn",
-				executionType: "Immediate",
-				jobType: "once",
-				runAt: new Date(Date.now() + 10000),
-				state: "scheduled",
-			};
-
-			const callback = jest.fn() as any;
-			ScheduleService.register("fn", callback);
-
-			let jobCallback: any;
-			(schedule.scheduleJob as jest.Mock).mockImplementation((name, time, cb) => {
-				jobCallback = cb;
-				return { cancel: jest.fn() };
-			});
-
-			await ScheduleService.scheduleJobInternal(jobData);
-			mockCollection.findOneAndUpdate.mockResolvedValue({ _id: "id2", ...jobData, state: "executing" });
-
-			await jobCallback();
-
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ _id: "id2" },
-				expect.objectContaining({ $set: expect.objectContaining({ state: "executed" }) })
-			);
-		});
-
-		it("should mark job as failed if registered function throws error", async () => {
-			const jobData = {
-				name: "failing-job",
-				functionId: "fail-fn",
-				executionType: "Immediate",
-				jobType: "recurrent",
-				cronExpression: "* * * * *",
-				state: "scheduled",
-			};
-
-			const callback = jest.fn() as any;
-			callback.mockRejectedValue(new Error("Test error"));
-			ScheduleService.register("fail-fn", callback);
-
-			let jobCallback: any;
-			(schedule.scheduleJob as jest.Mock).mockImplementation((name, cron, cb) => {
-				jobCallback = cb;
-				return { cancel: jest.fn() };
-			});
-
-			await ScheduleService.scheduleJobInternal(jobData);
-			mockCollection.findOneAndUpdate.mockResolvedValue({ _id: "id3", ...jobData, state: "executing" });
-
-			await jobCallback();
-
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ _id: "id3" },
-				expect.objectContaining({ $set: expect.objectContaining({ state: "failed" }) })
-			);
-		});
-
-		it("should queue normal jobs and process them sequentially", async () => {
-			const jobData = {
-				name: "normal-job",
-				functionId: "fn",
-				executionType: "normal",
-				jobType: "recurrent",
-				cronExpression: "* * * * *",
-				state: "scheduled",
-			};
-
-			const callback = jest.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))) as any;
-			ScheduleService.register("fn", callback);
-
-			let jobCallback: any;
-			(schedule.scheduleJob as jest.Mock).mockImplementation((name, cron, cb) => {
-				jobCallback = cb;
-				return { cancel: jest.fn() };
-			});
-
-			await ScheduleService.scheduleJobInternal(jobData);
-
-			// 1. Trigger fires, moves to 'queued'
-			mockCollection.findOneAndUpdate
-				.mockResolvedValueOnce({ ...jobData, state: "queued" }) // Trigger claim
-				.mockResolvedValueOnce({ _id: "id1", ...jobData, state: "executing" }) // Queue processing find next
-				.mockResolvedValueOnce(null); // Queue processing find next (empty)
-
-			await jobCallback();
-			// Wait for the fire-and-forget processQueue to complete
-			for (let i = 0; i < 20; i++) {
-				if (!(ScheduleService as any).processingQueue) break;
-				await new Promise(resolve => setTimeout(resolve, 50));
-			}
-
-			expect(mockCollection.findOneAndUpdate).toHaveBeenCalledTimes(3);
-			expect(callback).toHaveBeenCalled();
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ _id: "id1" },
-				expect.objectContaining({ $set: expect.objectContaining({ state: "scheduled" }) })
-			);
-		});
-	});
-
-	describe("Catch-up Mechanism", () => {
-		it("should trigger catch-up for recurrent jobs with catchUp enabled and missed runs", async () => {
-			const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
-			const mockJobs = [
-				{
-					_id: "job-id",
-					name: "catchup-job",
-					cronExpression: "0 9 */1 * *", // Every day at 9 AM
-					functionId: "fn",
-					args: { test: 123 },
-					jobType: "recurrent",
-					catchUp: true,
-					lastRun: pastDate,
-					createdAt: pastDate,
-					executionType: "Immediate"
-				}
-			];
-			mockCollection.find.mockResolvedValue(mockJobs);
-			mockCollection.findOneAndUpdate
-				.mockResolvedValueOnce({ ...mockJobs[0], state: "executing" })
-				.mockResolvedValue(null);
-
-			const callback = jest.fn() as any;
-			ScheduleService.register("fn", callback);
-
-			await ScheduleService.init();
-
-			// Verify catch-up was triggered
-			expect(mockCollection.findOneAndUpdate).toHaveBeenCalledWith(
-				expect.objectContaining({ name: "catchup-job", state: { $in: ["scheduled", "executed", "failed"] } }),
-				expect.objectContaining({ $set: { state: "executing" } }),
-				expect.any(Object)
-			);
-			expect(callback).toHaveBeenCalledWith(expect.objectContaining({
-				test: 123,
-				expectedTime: expect.any(Date),
-				executedTime: expect.any(Date)
-			}));
-		});
-
-		it("should NOT trigger catch-up if catchUp is false", async () => {
-			const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-			const mockJobs = [
-				{
-					name: "no-catchup-job",
-					cronExpression: "0 9 */1 * *",
-					functionId: "fn",
-					jobType: "recurrent",
-					catchUp: false,
-					lastRun: pastDate,
-					createdAt: pastDate
-				}
-			];
-			mockCollection.find.mockResolvedValue(mockJobs);
-			mockCollection.findOneAndUpdate.mockResolvedValue(null);
-
-			await ScheduleService.init();
-
-			// In init(), checkCatchUp should not have called it, but processQueue will
-			expect(mockCollection.findOneAndUpdate).toHaveBeenCalled();
-		});
-
-		it("should pass expectedTime and executedTime to non-catchup jobs too", async () => {
-			const jobData = {
-				name: "normal-job",
-				functionId: "fn",
-				executionType: "Immediate",
-				jobType: "recurrent",
-				cronExpression: "* * * * *",
-				state: "scheduled",
-				args: {}
-			};
-
-			const callback = jest.fn() as any;
-			ScheduleService.register("fn", callback);
-
-			let jobCallback: any;
-			(schedule.scheduleJob as jest.Mock).mockImplementation((name, cron, cb) => {
-				jobCallback = cb;
-				return { cancel: jest.fn() };
-			});
-
-			await ScheduleService.scheduleJobInternal(jobData);
-			mockCollection.findOneAndUpdate
-				.mockResolvedValueOnce({ _id: "id", ...jobData, state: "executing" })
-				.mockResolvedValue(null);
-
-			await jobCallback();
-
-			expect(callback).toHaveBeenCalledWith(expect.objectContaining({
-				expectedTime: expect.any(Date),
-				executedTime: expect.any(Date)
-			}));
-		});
-
-		it("should use timezone when calculating past occurrences", async () => {
-			const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-			const mockJobs = [
-				{
-					name: "catchup-tz-job",
-					cronExpression: "0 9 */1 * *",
-					functionId: "fn",
-					jobType: "recurrent",
-					catchUp: true,
-					lastRun: pastDate,
-					createdAt: pastDate,
-					timeZone: "America/New_York"
-				}
-			];
-			mockCollection.find.mockResolvedValue(mockJobs);
-			mockCollection.findOneAndUpdate.mockResolvedValue(null);
-
-			await ScheduleService.init();
-
-			expect(parser.parseExpression).toHaveBeenCalledWith(
-				"0 9 */1 * *",
-				expect.objectContaining({ tz: "America/New_York" })
-			);
-		});
-	});
-
-	describe("TimeZone Support", () => {
-		it("should schedule job with timezone if provided", async () => {
-			const jobData = {
-				name: "tz-job",
-				functionId: "fn",
-				cronExpression: "0 0 12 * * *",
-				timeZone: "America/New_York",
-				state: "scheduled",
-				jobType: "recurrent",
-			};
-
-			await ScheduleService.scheduleJobInternal(jobData);
-
-			expect(schedule.scheduleJob).toHaveBeenCalledWith(
-				"tz-job",
-				{ rule: "0 0 12 * * *", tz: "America/New_York" },
-				expect.any(Function)
-			);
-		});
-
-		it("should schedule normal cron string if no timezone provided", async () => {
-			const jobData = {
-				name: "no-tz-job",
-				functionId: "fn",
-				cronExpression: "0 0 12 * * *",
-				state: "scheduled",
-				jobType: "recurrent",
-			};
-
-			await ScheduleService.scheduleJobInternal(jobData);
-
-			expect(schedule.scheduleJob).toHaveBeenCalledWith(
-				"no-tz-job",
-				"0 0 12 * * *",
-				expect.any(Function)
-			);
-		});
-	});
+import {
+  ScheduleService,
+  CLAIM_LEASE_MS,
+  MISSED_RUN_GRACE_MS,
+  computeNextRunAt,
+  getScheduleDriver,
+} from "../service";
+
+const scheduleJobDefinition = require("../db")[0];
+
+const MINUTE = 60 * 1000;
+const ago = (ms: number) => new Date(Date.now() - ms);
+const fromNow = (ms: number) => new Date(Date.now() + ms);
+
+let mongo: MongoMemoryServer;
+let connection: Connection;
+
+async function insertJob(fields: Record<string, unknown>) {
+  const doc = await mockJobModel.create({
+    functionId: "work",
+    jobType: "recurrent",
+    cronExpression: "0 3 * * *",
+    catchUp: true,
+    state: "scheduled",
+    ...fields,
+  });
+  return doc._id;
+}
+
+const findJob = (name: string) => mockJobModel.findOne({ name }).lean() as Promise<any>;
+
+beforeAll(async () => {
+  mongo = await MongoMemoryServer.create();
+  connection = await mongoose.createConnection(mongo.getUri()).asPromise();
+  mockJobModel = connection.model("scheduled_job", scheduleJobDefinition.schema);
+  await mockJobModel.init();
+});
+
+afterAll(async () => {
+  ScheduleService.stop();
+  await connection.close();
+  await mongo.stop();
+});
+
+beforeEach(async () => {
+  await mockJobModel.deleteMany({});
+  (ScheduleService as any).registry = new Map();
+  jest.spyOn(console, "log").mockImplementation(() => undefined);
+  jest.spyOn(console, "warn").mockImplementation(() => undefined);
+  jest.spyOn(console, "error").mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  ScheduleService.stop();
+  jest.restoreAllMocks();
+});
+
+describe("computeNextRunAt", () => {
+  it("applies the job's time zone to its cron expression", () => {
+    // 09:00 in Tokyo is 00:00 UTC.
+    const next = computeNextRunAt(
+      { jobType: "recurrent", cronExpression: "0 9 * * *", timeZone: "Asia/Tokyo" },
+      new Date("2026-01-01T00:30:00Z")
+    );
+    expect(next?.toISOString()).toBe("2026-01-02T00:00:00.000Z");
+  });
+
+  it("uses runAt for once-jobs and null when nothing can run", () => {
+    const runAt = new Date("2026-05-01T10:00:00Z");
+    expect(computeNextRunAt({ jobType: "once", runAt }, new Date())).toEqual(runAt);
+    expect(computeNextRunAt({ jobType: "recurrent", cronExpression: null }, new Date())).toBeNull();
+  });
+});
+
+describe("createJob", () => {
+  it("stores a new job due at its next occurrence", async () => {
+    const before = new Date();
+    await ScheduleService.createJob("daily", "work", { cronExpression: "0 3 * * *", catchUp: true });
+
+    const job = await findJob("daily");
+    expect(job.state).toBe("scheduled");
+    expect(job.nextRunAt).toEqual(computeNextRunAt({ jobType: "recurrent", cronExpression: "0 3 * * *" }, before));
+  });
+
+  it("keeps a due nextRunAt when the job is re-created unchanged, as every boot does", async () => {
+    // On a scale-to-zero host the boot that re-creates the job can be the very tick that
+    // should run it; resetting nextRunAt to the next occurrence would skip that run.
+    await ScheduleService.createJob("daily", "work", { cronExpression: "0 3 * * *", catchUp: true });
+    const due = ago(MINUTE);
+    await mockJobModel.updateOne({ name: "daily" }, { $set: { nextRunAt: due } });
+
+    await ScheduleService.createJob("daily", "work", { cronExpression: "0 3 * * *", catchUp: true });
+    expect((await findJob("daily")).nextRunAt).toEqual(due);
+
+    const work = jest.fn(async () => undefined);
+    ScheduleService.register("work", work);
+    await ScheduleService.runDueJobs();
+    expect(work).toHaveBeenCalledTimes(1);
+  });
+
+  it("reschedules when the cron expression or time zone changes", async () => {
+    await ScheduleService.createJob("review", "work", { cronExpression: "0 3 * * *" });
+    await mockJobModel.updateOne({ name: "review" }, { $set: { nextRunAt: ago(MINUTE) } });
+
+    await ScheduleService.createJob("review", "work", { cronExpression: "0 9 * * *", timeZone: "Asia/Tokyo" });
+
+    const job = await findJob("review");
+    expect(job.nextRunAt.getTime()).toBeGreaterThan(Date.now());
+    expect(job.nextRunAt.getUTCHours()).toBe(0);
+  });
+
+  it("clears a time zone the caller no longer passes", async () => {
+    await ScheduleService.createJob("review", "work", { cronExpression: "0 9 * * *", timeZone: "Asia/Tokyo" });
+    await ScheduleService.createJob("review", "work", { cronExpression: "0 9 * * *" });
+
+    expect((await findJob("review")).timeZone).toBeNull();
+  });
+
+  it("gives a job stored without nextRunAt one when re-created", async () => {
+    await mockJobModel.collection.insertOne({ name: "legacy", functionId: "work", cronExpression: "0 3 * * *" });
+
+    await ScheduleService.createJob("legacy", "work", { cronExpression: "0 3 * * *" });
+
+    expect((await findJob("legacy")).nextRunAt).toBeInstanceOf(Date);
+  });
+
+  it("converges concurrent creates on one document without throwing", async () => {
+    await Promise.all(
+      Array.from({ length: 5 }, () => ScheduleService.createJob("race", "work", { cronExpression: "0 3 * * *" }))
+    );
+
+    expect(await mockJobModel.countDocuments({ name: "race" })).toBe(1);
+  });
+
+  it("rejects an invalid cron expression without storing anything", async () => {
+    await expect(ScheduleService.createJob("broken", "work", { cronExpression: "not a cron" })).rejects.toThrow();
+    expect(await mockJobModel.countDocuments({})).toBe(0);
+  });
+});
+
+describe("runDueJobs", () => {
+  it("runs a due job once and schedules its next occurrence", async () => {
+    const due = ago(MINUTE);
+    await insertJob({ name: "daily", nextRunAt: due, args: { userId: "u1" } });
+    const work = jest.fn(async (_args: any) => undefined);
+    ScheduleService.register("work", work);
+
+    const summary = await ScheduleService.runDueJobs();
+
+    expect(summary).toMatchObject({ claimed: 1, succeeded: 1, failed: 0, skipped: 0, unknownDue: 0 });
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(work.mock.calls[0][0]).toMatchObject({ userId: "u1", expectedTime: due });
+    const job = await findJob("daily");
+    expect(job.state).toBe("scheduled");
+    expect(job.lastRun).toBeInstanceOf(Date);
+    expect(job.claimedAt).toBeUndefined();
+    expect(job.nextRunAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("leaves jobs that are not due", async () => {
+    await insertJob({ name: "later", nextRunAt: fromNow(60 * MINUTE) });
+    const work = jest.fn(async () => undefined);
+    ScheduleService.register("work", work);
+
+    expect((await ScheduleService.runDueJobs()).claimed).toBe(0);
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it("runs every due job exactly once across concurrent drains", async () => {
+    for (let i = 0; i < 10; i++) await insertJob({ name: `job-${i}`, nextRunAt: ago(MINUTE), args: { id: `job-${i}` } });
+    const runs: Record<string, number> = {};
+    ScheduleService.register("work", async (args: any) => {
+      runs[args.id] = (runs[args.id] || 0) + 1;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+
+    const summaries = await Promise.all([1, 2, 3].map(() => ScheduleService.runDueJobs()));
+
+    expect(summaries.reduce((sum, s) => sum + s.succeeded, 0)).toBe(10);
+    expect(Object.keys(runs)).toHaveLength(10);
+    expect(Object.values(runs).every((count) => count === 1)).toBe(true);
+  });
+
+  it("marks a once-job executed and never runs it again", async () => {
+    await insertJob({ name: "once", jobType: "once", runAt: ago(MINUTE), nextRunAt: ago(MINUTE), cronExpression: null });
+    const work = jest.fn(async () => undefined);
+    ScheduleService.register("work", work);
+
+    await ScheduleService.runDueJobs();
+    await ScheduleService.runDueJobs();
+
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(await findJob("once")).toMatchObject({ state: "executed", nextRunAt: null });
+  });
+
+  it("records a failure and still schedules the next run", async () => {
+    await insertJob({ name: "flaky", nextRunAt: ago(MINUTE) });
+    ScheduleService.register("work", async () => {
+      throw new Error("boom");
+    });
+
+    const summary = await ScheduleService.runDueJobs();
+
+    expect(summary).toMatchObject({ claimed: 1, failed: 1 });
+    const job = await findJob("flaky");
+    expect(job.state).toBe("failed");
+    expect(job.nextRunAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("re-claims a job whose claim outlived the lease, but not a live claim", async () => {
+    await insertJob({ name: "abandoned", nextRunAt: ago(60 * MINUTE), state: "executing", claimedAt: ago(CLAIM_LEASE_MS + MINUTE) });
+    await insertJob({ name: "running", nextRunAt: ago(60 * MINUTE), state: "executing", claimedAt: ago(MINUTE) });
+    const work = jest.fn(async (_args: any) => undefined);
+    ScheduleService.register("work", work);
+
+    const summary = await ScheduleService.runDueJobs();
+
+    expect(summary.succeeded).toBe(1);
+    expect((await findJob("abandoned")).state).toBe("scheduled");
+    expect((await findJob("running")).state).toBe("executing");
+  });
+
+  it("recovers a job the old scheduler left queued without a claim", async () => {
+    await insertJob({ name: "stuck", nextRunAt: ago(MINUTE), state: "queued" });
+    const work = jest.fn(async () => undefined);
+    ScheduleService.register("work", work);
+
+    await ScheduleService.runDueJobs();
+
+    expect(work).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a job whose function this process does not have", async () => {
+    await insertJob({ name: "newer", functionId: "added-in-next-release", nextRunAt: ago(MINUTE) });
+    ScheduleService.register("work", async () => undefined);
+
+    const summary = await ScheduleService.runDueJobs();
+
+    expect(summary).toMatchObject({ claimed: 0, unknownDue: 1 });
+    expect((await findJob("newer")).state).toBe("scheduled");
+  });
+
+  it("skips a badly overdue run when catch-up is off, and runs it when on", async () => {
+    const overdue = ago(MISSED_RUN_GRACE_MS + 5 * MINUTE);
+    await insertJob({ name: "no-catch-up", nextRunAt: overdue, catchUp: false, args: { name: "no-catch-up" } });
+    await insertJob({ name: "catch-up", nextRunAt: overdue, catchUp: true, args: { name: "catch-up" } });
+    const ran: string[] = [];
+    ScheduleService.register("work", async (args: any) => {
+      ran.push(args.name);
+    });
+
+    const summary = await ScheduleService.runDueJobs();
+
+    expect(summary).toMatchObject({ succeeded: 1, skipped: 1 });
+    expect(ran).toEqual(["catch-up"]);
+    const skipped = await findJob("no-catch-up");
+    expect(skipped.state).toBe("scheduled");
+    expect(skipped.nextRunAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("disables a job whose stored schedule cannot be parsed", async () => {
+    await mockJobModel.collection.insertOne({
+      name: "corrupt",
+      functionId: "work",
+      jobType: "recurrent",
+      cronExpression: "not a cron",
+      state: "scheduled",
+      nextRunAt: ago(MINUTE),
+    });
+    const work = jest.fn(async () => undefined);
+    ScheduleService.register("work", work);
+
+    await ScheduleService.runDueJobs();
+
+    expect(work).not.toHaveBeenCalled();
+    expect(await findJob("corrupt")).toMatchObject({ state: "failed", nextRunAt: null });
+  });
+
+  it("stops claiming once its time budget is spent", async () => {
+    await insertJob({ name: "due", nextRunAt: ago(MINUTE) });
+    ScheduleService.register("work", async () => undefined);
+
+    expect(await ScheduleService.runDueJobs({ budgetMs: 0 })).toMatchObject({ claimed: 0, budgetExhausted: true });
+  });
+});
+
+describe("init", () => {
+  const env = { ...process.env };
+  afterEach(() => {
+    process.env = { ...env };
+  });
+
+  it("backfills nextRunAt on jobs stored by the old scheduler", async () => {
+    process.env.SCHEDULE_DRIVER = "http";
+    process.env.SCHEDULE_TICK_AUDIENCE = "https://api.example";
+    process.env.SCHEDULE_TICK_INVOKER = "scheduler@example.iam.gserviceaccount.com";
+    const twoDaysAgo = ago(48 * 60 * MINUTE);
+    await mockJobModel.collection.insertMany([
+      { name: "missed-catch-up", functionId: "work", jobType: "recurrent", cronExpression: "0 3 * * *", catchUp: true, lastRun: twoDaysAgo, state: "scheduled" },
+      { name: "no-catch-up", functionId: "work", jobType: "recurrent", cronExpression: "0 3 * * *", catchUp: false, lastRun: twoDaysAgo, state: "scheduled" },
+      { name: "once-done", functionId: "work", jobType: "once", runAt: twoDaysAgo, state: "executed" },
+      { name: "once-pending", functionId: "work", jobType: "once", runAt: fromNow(MINUTE), state: "scheduled" },
+    ]);
+
+    await ScheduleService.init();
+
+    expect((await findJob("missed-catch-up")).nextRunAt.getTime()).toBeLessThanOrEqual(Date.now());
+    expect((await findJob("no-catch-up")).nextRunAt.getTime()).toBeGreaterThan(Date.now());
+    expect((await findJob("once-done")).nextRunAt).toBeNull();
+    expect((await findJob("once-pending")).nextRunAt).toBeInstanceOf(Date);
+  });
+
+  it("rejects the http driver without tick authentication settings", async () => {
+    process.env.SCHEDULE_DRIVER = "http";
+    delete process.env.SCHEDULE_TICK_AUDIENCE;
+    delete process.env.SCHEDULE_TICK_INVOKER;
+
+    await expect(ScheduleService.init()).rejects.toThrow(/SCHEDULE_TICK_AUDIENCE/);
+  });
+
+  it("drains in-process with the default interval driver", async () => {
+    delete process.env.SCHEDULE_DRIVER;
+    await insertJob({ name: "due", nextRunAt: ago(MINUTE) });
+    const work = jest.fn(async () => undefined);
+    ScheduleService.register("work", work);
+
+    await ScheduleService.init();
+    // The first drain starts immediately; wait for it to run the job and release it.
+    for (let i = 0; i < 50 && !(await findJob("due")).lastRun; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
+    expect(work).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an unknown driver", () => {
+    process.env.SCHEDULE_DRIVER = "cron";
+    expect(() => getScheduleDriver()).toThrow(/SCHEDULE_DRIVER/);
+  });
 });

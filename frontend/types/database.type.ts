@@ -90,6 +90,18 @@ export interface LeitnerItemType {
     phrase?: PhraseType; // Populated
 }
 
+// A phrase awaiting its first-encounter (encode) session in the Pool. Returned by
+// the `get-pool` RPC, oldest first, joined to its phrase document with the flat
+// `confirmed_chunk` + `source_sentence` the encode cloze needs.
+export interface PoolItemType {
+    phraseId: string;
+    pooled_at: string; // Dates arrive as strings over JSON
+    encountered: boolean;
+    phrase?: PhraseType; // Populated
+    confirmed_chunk: string | null;
+    source_sentence: string | null;
+}
+
 // Override or extend DATABASE/COLLECTIONS
 export const DATABASE_EXT = {
     ...DATABASE,

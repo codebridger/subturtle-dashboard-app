@@ -234,8 +234,10 @@ test.describe('Subscription UI — free/Starter surfaces (§7)', () => {
     test('/statistic shows the weekly_insights lock panel, and the global modal defers to it', async ({ page }) => {
         await page.goto('/#/statistic');
 
-        // Shared in-page FeatureLocked panel (S15) — replaces the empty-charts pattern.
-        await expect(page.getByText('Weekly progress insights is part of Learner.')).toBeVisible();
+        // The redesign gives /statistic its own locked panel in place of the shared
+        // FeatureLocked one, with the design's copy. /sessions still uses the shared panel
+        // ("… is part of Learner."), so the two read differently until that screen migrates.
+        await expect(page.getByText('Weekly insights are a Learner feature')).toBeVisible();
 
         // The page owns the upsell inline (useInlineFeatureLock), so the global
         // tier-limit modal suppresses itself — no double surfacing of the same lock.

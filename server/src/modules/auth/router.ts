@@ -3,13 +3,24 @@ import { reply, userManager } from "@modular-rest/server";
 import { google } from "googleapis";
 import { updateUserProfile } from "../profile/service";
 import { LeitnerService } from "../leitner_box/service";
+import { trackServerEvent, SERVER_ANALYTICS_EVENTS } from "../../utils/analytics";
 
 const name = "auth";
 const auth = new Router();
 
 const CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
-const CLIENT_ID_EXTENSION = process.env.GOOGLE_OAUTH_CLIENT_ID_EXTENSION;
+
+// OAuth clients whose Google access tokens /google/access-token-login accepts. An access
+// token is a bearer token for whatever app requested it, so without this check a token
+// minted for ANY third-party app with the email scope would log in as its owner.
+// The extension gets its token from launchWebAuthFlow with the web client (CLIENT_ID) or
+// from chrome.identity with its own client. GOOGLE_OAUTH_CLIENT_ID_EXTENSION is a
+// comma-separated list, so old and new client IDs can both be accepted while a client
+// migration rolls out to installed extensions.
+const ACCESS_TOKEN_CLIENT_IDS = [CLIENT_ID, ...(process.env.GOOGLE_OAUTH_CLIENT_ID_EXTENSION || "").split(",")]
+  .map((id) => id?.trim())
+  .filter((id): id is string => !!id);
 
 // Note: The redirect uri is the callback route for the web app
 // This route will be called after the user has logged in to google
@@ -122,6 +133,13 @@ auth.get("/google/code-login", async (ctx) => {
   if (!registeredUser) {
     try {
       userId = await userManager.registerUser({ email });
+      // Activation funnel entry: first successful OAuth exchange for a brand-new
+      // account. Server-truth so it fires once, on the genuine new-user branch.
+      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, userId as string, {
+        signup_provider: "google",
+        oauth_timezone: timeZone || undefined,
+        referrer: redirectUrl || undefined,
+      });
     } catch (error) {
       ctx.throw(
         500,
@@ -172,11 +190,24 @@ auth.get("/google/access-token-login", async (ctx) => {
     return;
   }
 
-  const oauth2Client = new google.auth.OAuth2(CLIENT_ID_EXTENSION);
+  const oauth2Client = new google.auth.OAuth2();
   const payload = await oauth2Client.getTokenInfo(chromeUserToken);
+
+  if (!payload.aud || !ACCESS_TOKEN_CLIENT_IDS.includes(payload.aud)) {
+    ctx.throw(401, "Access token was not issued to a SubTurtle client");
+    return;
+  }
 
   if (!payload.email) {
     ctx.throw(400, "Invalid email from token");
+    return;
+  }
+
+  // A Google account can be registered on an address it never verified; trusting that
+  // email would hand its owner someone else's SubTurtle account. The tokeninfo endpoint
+  // reports the flag as the string "true".
+  if (String(payload.email_verified) !== "true") {
+    ctx.throw(401, "Google account email is not verified");
     return;
   }
 
@@ -187,7 +218,14 @@ auth.get("/google/access-token-login", async (ctx) => {
 
   if (!registeredUser) {
     try {
-      await userManager.registerUser({ email: googleEmail });
+      const newUserId = await userManager.registerUser({ email: googleEmail });
+      // Activation funnel entry for accounts created via the extension's Google
+      // token. No timezone/referrer on this path, so only the provider is known.
+      trackServerEvent(
+        SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED,
+        newUserId as string,
+        { signup_provider: "google" }
+      );
     } catch (error) {
       ctx.throw(
         500,

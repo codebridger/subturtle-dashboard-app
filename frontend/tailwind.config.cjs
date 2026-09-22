@@ -2,15 +2,20 @@
 const {
     addIconSelectors
 } = require('@iconify/tailwind');
+// Design-system tokens under an additive `st-` namespace (bg-st-card, text-st-strong,
+// rounded-st-lg, ...). They resolve to the CSS custom properties in subturtle-ui/style.css,
+// so page markup and the library's components read from the same source of truth.
+// The blue/purple scales below are the pre-redesign admin-template palette; they stay until
+// the last pilotui page is migrated.
+const stTokens = require('subturtle-ui/tailwind-tokens');
 module.exports = {
     content: [
         './components/**/*.{js,vue,ts}',
         './layouts/**/*.vue',
         './pages/**/*.vue',
         './plugins/**/*.{js,ts}',
+        './composables/**/*.{js,ts}',
         './nuxt.config.{js,ts}',
-        './app.vue',
-        './error.vue',
     ],
     darkMode: 'class',
     theme: {
@@ -18,7 +23,9 @@ module.exports = {
             center: true,
         },
         extend: {
+            ...stTokens,
             colors: {
+                ...stTokens.colors,
                 primary: {
                     DEFAULT: '#4361ee',
                     light: '#eaf1ff',
@@ -66,12 +73,14 @@ module.exports = {
                 },
             },
             fontFamily: {
+                ...stTokens.fontFamily,
                 nunito: ['Nunito', 'sans-serif'],
             },
             spacing: {
                 4.5: '18px',
             },
             boxShadow: {
+                ...stTokens.boxShadow,
                 '3xl': '0 2px 2px rgb(224 230 237 / 46%), 1px 6px 7px rgb(224 230 237 / 46%)',
             },
             typography: ({

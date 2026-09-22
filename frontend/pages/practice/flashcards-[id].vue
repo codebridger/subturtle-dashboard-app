@@ -36,12 +36,27 @@
                 </div>
             </selection>
         </div>
+
+        <Modal :modelValue="showComplete" size="sm" persistent :hideClose="true" @close="showComplete = false">
+            <div class="flex flex-col items-center p-4 text-center">
+                <Icon name="iconify solar--confetti-bold-duotone" class="mb-4 text-6xl text-success-500" />
+                <h2 class="text-2xl font-bold">{{ t('leitner_session.completed_title') }}</h2>
+            </div>
+
+            <template #footer>
+                <div class="flex justify-end">
+                    <Button color="primary" @click="endFlashcardSession">{{ t('board.back_to_board') }}</Button>
+                </div>
+            </template>
+        </Modal>
     </MaterialPracticeToolScaffold>
 </template>
 
 <script setup lang="ts">
 import { dataProvider, functionProvider } from '@modular-rest/client';
 import { IconButton, Button, Icon } from 'pilotui/elements';
+import { Modal } from 'pilotui/complex';
+import { toastError } from 'pilotui/toast';
 import { COLLECTIONS, DATABASE, type PopulatedPhraseBundleType } from '~/types/database.type';
 import { useProfileStore } from '~/stores/profile';
 import { storeToRefs } from 'pinia';
@@ -55,6 +70,8 @@ definePageMeta({
     middleware: ['auth'],
 });
 
+const { t } = useI18n();
+
 const route = useRoute();
 const { id } = route.params;
 
@@ -64,6 +81,7 @@ const { authUser } = storeToRefs(profileStore);
 
 const bundle = ref<PopulatedPhraseBundleType | null>(null);
 const phraseIndex = ref(0);
+const showComplete = ref(false);
 
 const isLeitnerMode = computed(() => {
     return route.query.type === 'leitner' || id === 'leitner';
@@ -109,25 +127,24 @@ function endFlashcardSession() {
 function fetchFlashcard() {
     if (isLeitnerMode.value) {
         return functionProvider.run({
-            name: 'get-review-bundle',
-            args: { userId: authUser.value?.id }
-        }).then((res: any) => {
-            if (!res || !res.items || res.items.length === 0) {
-                // Empty?
-                // toastError?
+            name: 'get-review-session',
+            args: { limit: 20, userId: authUser.value?.id }
+        }).then((items: any) => {
+            if (!Array.isArray(items) || items.length === 0) {
                 bundle.value = { title: 'Daily Review', phrases: [], refId: authUser.value?.id } as any;
                 return;
             }
-            // Map items to phrases, carrying the Leitner level through so the L3+ cloze can render.
-            const phrases = res.items.map((i: any) => ({
+            // get-review-session returns raw Leitner items: the phrase is populated on each item and the
+            // box level sits under `_doc` (same shape LeitnerReviewSession reads). Carry the level through
+            // on the enriched phrase so the L3+ cloze can render.
+            const phrases = items.map((i: any) => ({
                 ...i.phrase,
                 _leitnerLevel: i.boxLevel ?? i._doc?.boxLevel,
             }));
             bundle.value = {
-                _id: res._id,
                 title: 'Daily Review',
-                phrases: phrases,
-                refId: res.refId
+                phrases,
+                refId: authUser.value?.id,
             } as any;
         }).catch(err => {
             console.error(err);
@@ -180,10 +197,11 @@ async function submitLeitnerResult(correct: boolean) {
     // Better to await to handle error.
     try {
         await functionProvider.run({
-            name: 'submit-review-result',
+            name: 'submit-review',
             args: {
                 userId: authUser.value?.id,
-                results: [{ phraseId: currentPhraseId, correct }]
+                phraseId: currentPhraseId,
+                isCorrect: correct
             }
         });
 
@@ -191,13 +209,12 @@ async function submitLeitnerResult(correct: boolean) {
         if (phraseIndex.value < bundle.value.phrases.length - 1) {
             phraseIndex.value++;
         } else {
-            // End session
-            alert("Review Session Completed!");
-            endFlashcardSession();
+            // End session — celebratory modal; redirect happens on its button click.
+            showComplete.value = true;
         }
     } catch (e) {
         console.error("Failed to submit", e);
-        alert("Failed to save progress. Please try again.");
+        toastError(t('leitner_session.save_failed'));
     }
 }
 </script>

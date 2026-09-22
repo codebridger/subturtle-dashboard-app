@@ -1,3 +1,5 @@
+import { version as APP_VERSION } from './package.json';
+
 export default defineNuxtConfig({
     compatibilityDate: '2024-10-13',
     devtools: { enabled: true },
@@ -17,12 +19,25 @@ export default defineNuxtConfig({
             MIXPANEL_API_HOST: process.env.NUXT_PUBLIC_MIXPANEL_API_HOST,
             chromeWebStoreUrl: process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL || 'https://chromewebstore.google.com/detail/PLACEHOLDER',
             STRIPE_PUBLISHABLE_KEY: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+            // Baked in at build time from package.json (owned by semantic-release).
+            APP_VERSION,
         },
     },
 
     vite: {
         ssr: {
             noExternal: ['pilotui'],
+        },
+        // subturtle-ui lives at ../ui and is linked in, so Vite has to be allowed to read
+        // outside the app root. It ships prebuilt ESM, so pre-bundling it only adds a stale
+        // copy between `yarn dev` here and `yarn dev` (build --watch) there.
+        optimizeDeps: {
+            exclude: ['subturtle-ui'],
+        },
+        server: {
+            fs: {
+                allow: ['..'],
+            },
         },
     },
 
@@ -46,13 +61,13 @@ export default defineNuxtConfig({
                 { rel: 'icon', type: 'image/x-icon', href: '/favicon.png' },
                 {
                     rel: 'stylesheet',
-                    href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
+                    href: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap',
                 },
             ],
         },
     },
 
-    css: ['pilotui/style.css', '~/assets/css/app.css'],
+    css: ['pilotui/style.css', '~/assets/css/app.css', 'subturtle-ui/style.css'],
 
     postcss: {
         plugins: {
@@ -86,6 +101,6 @@ export default defineNuxtConfig({
 
     // Make sure your build options are properly set
     build: {
-        transpile: ['@tiny-ideas-lr/lib-vue-components', 'mixpanel-browser'],
+        transpile: ['mixpanel-browser'],
     },
 });

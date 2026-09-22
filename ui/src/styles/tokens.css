@@ -1,0 +1,196 @@
+/* ============================================================
+   Subturtle design tokens.
+
+   Ported from the Claude Design system
+   (_ds/subturtle-design-system-main-…/tokens/*.css). Token NAMES are kept byte-identical to
+   the design source so this file and the .dc.html screens can be read side by side.
+
+   One deliberate difference: colors are stored as space-separated RGB channels rather than
+   hex, so Tailwind can compose them as `rgb(var(--token) / <alpha-value>)`. That is what
+   makes opacity modifiers (`st-bg-primary/5`, the ambient blobs) work, and it is the hook a
+   dark theme will use — a dark palette is then a pure-CSS override of this block, with no
+   component changes. Write raw CSS against them as `rgb(var(--rose-500))`.
+   ============================================================ */
+
+:root {
+    /* ---- Brand: Rose (primary) ---------------------------- */
+    --rose-50: 255 241 245;
+    --rose-100: 255 227 236;
+    --rose-200: 254 205 218;
+    --rose-300: 253 164 189;
+    --rose-400: 251 111 150;
+    --rose-500: 249 30 90; /* #f91e5a — the brand mark */
+    --rose-600: 227 11 75;
+    --rose-700: 189 8 64;
+    --rose-800: 156 10 58;
+    --rose-900: 132 13 54;
+
+    /* ---- Grow: Jade (secondary / progress) ---------------- */
+    --jade-50: 236 253 246;
+    --jade-100: 210 249 232;
+    --jade-200: 168 240 211;
+    --jade-300: 110 226 185;
+    --jade-400: 52 205 156;
+    --jade-500: 20 180 133; /* #14b485 */
+    --jade-600: 10 145 108;
+    --jade-700: 9 116 88;
+    --jade-800: 10 92 71;
+    --jade-900: 9 76 60;
+
+    /* ---- Neutrals: warm mauve-gray ------------------------ */
+    --ink-950: 27 22 32;
+    --ink-900: 39 31 45;
+    --ink-800: 56 47 63;
+    --ink-700: 77 68 85;
+    --ink-600: 102 92 110;
+    --ink-500: 133 122 141;
+    --ink-400: 165 157 172;
+    --ink-300: 201 194 207;
+    --ink-200: 230 224 234;
+    --ink-150: 238 233 241;
+    --ink-100: 244 240 246;
+    --ink-50: 250 248 251;
+    --paper: 248 245 247;
+    --white: 255 255 255;
+
+    /* ---- Semantic hues ------------------------------------ */
+    --amber-100: 254 240 211;
+    --amber-500: 245 165 36;
+    --amber-600: 212 134 11;
+    --red-100: 255 226 226;
+    --red-500: 239 68 68;
+    --red-600: 217 45 45;
+    --sky-100: 220 241 254;
+    --sky-500: 31 156 240;
+    --sky-600: 13 127 205;
+
+    /* ---- Semantic aliases — reference these in product UI -- */
+    --color-primary: var(--rose-500);
+    --color-primary-hover: var(--rose-600);
+    --color-primary-press: var(--rose-700);
+    --color-primary-soft: var(--rose-100);
+    --color-primary-tint: var(--rose-50);
+    --color-on-primary: var(--white);
+
+    --color-accent: var(--jade-500);
+    --color-accent-hover: var(--jade-600);
+    --color-accent-soft: var(--jade-100);
+    --color-accent-tint: var(--jade-50);
+    --color-on-accent: var(--white);
+
+    --text-strong: var(--ink-950);
+    --text-body: var(--ink-800);
+    --text-muted: var(--ink-500);
+    --text-faint: var(--ink-400);
+    --text-on-dark: var(--white);
+    --text-link: var(--rose-600);
+
+    --surface-page: var(--paper);
+    --surface-card: var(--white);
+    --surface-sunken: var(--ink-100);
+    --surface-raised: var(--white);
+    --surface-inverse: var(--ink-950);
+    /* Channels, so callers pick their own alpha: rgb(var(--surface-overlay) / 0.45) */
+    --surface-overlay: var(--ink-950);
+
+    --border-subtle: var(--ink-200);
+    --border-default: var(--ink-300);
+    --border-strong: var(--ink-400);
+    /* A finished color, not channels — it is dropped straight into box-shadow. */
+    --ring-focus: rgb(249 30 90 / 0.35);
+
+    --color-success: var(--jade-500);
+    --color-success-soft: var(--jade-100);
+    --color-warning: var(--amber-500);
+    --color-warning-soft: var(--amber-100);
+    --color-danger: var(--red-500);
+    --color-danger-soft: var(--red-100);
+    --color-info: var(--sky-500);
+    --color-info-soft: var(--sky-100);
+
+    /* ---- Typography --------------------------------------- */
+    --font-sans: 'Nunito', ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-display: 'Nunito', ui-rounded, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+    --text-2xs: 0.6875rem; /* 11px — counters, micro-labels */
+    --text-xs: 0.75rem; /* 12px — captions, meta */
+    --text-sm: 0.875rem; /* 14px — secondary UI */
+    --text-base: 1rem; /* 16px — body */
+    --text-md: 1.125rem; /* 18px — lead body / card titles */
+    --text-lg: 1.375rem; /* 22px — section titles */
+    --text-xl: 1.75rem; /* 28px — page titles */
+    --text-2xl: 2.25rem; /* 36px — display */
+    --text-3xl: 3rem; /* 48px — hero */
+    --text-4xl: 3.75rem; /* 60px — big stats */
+
+    --leading-tight: 1.1;
+    --leading-snug: 1.25;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.65;
+
+    --tracking-tight: -0.02em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.04em;
+    --tracking-caps: 0.12em; /* overlines / eyebrow labels */
+
+    /* ---- Spacing & layout (4px base grid) ----------------- */
+    --control-h-sm: 2rem; /* 32 */
+    --control-h-md: 2.5rem; /* 40 */
+    --control-h-lg: 3rem; /* 48 */
+    --card-pad: 1.5rem;
+    --card-pad-lg: 2rem;
+
+    --container-max: 80rem; /* 1280 */
+    --content-max: 44rem;
+    --sidebar-w: 17rem; /* 272 — StAppShell overrides this inline when collapsed */
+    --gutter: 1.5rem;
+    --gutter-lg: 2.5rem;
+
+    /* ---- Radius ------------------------------------------- */
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius-md: 14px; /* inputs / small cards */
+    --radius-lg: 20px; /* cards */
+    --radius-xl: 28px; /* feature panels */
+    --radius-2xl: 36px; /* hero surfaces */
+    --radius-pill: 999px;
+    --radius-circle: 50%;
+
+    /* ---- Shadows (warm, soft, layered — never pure black) - */
+    --shadow-xs: 0 1px 2px rgb(39 31 45 / 0.06);
+    --shadow-sm: 0 1px 3px rgb(39 31 45 / 0.07), 0 1px 2px rgb(39 31 45 / 0.05);
+    --shadow-md: 0 4px 14px rgb(39 31 45 / 0.08), 0 2px 4px rgb(39 31 45 / 0.05);
+    --shadow-lg: 0 12px 30px rgb(39 31 45 / 0.1), 0 4px 10px rgb(39 31 45 / 0.05);
+    --shadow-xl: 0 24px 50px rgb(39 31 45 / 0.14), 0 8px 18px rgb(39 31 45 / 0.06);
+    --shadow-primary: 0 8px 22px rgb(249 30 90 / 0.3);
+    --shadow-accent: 0 8px 22px rgb(20 180 133 / 0.28);
+    --shadow-inset: inset 0 1px 2px rgb(39 31 45 / 0.08);
+
+    /* ---- Motion ------------------------------------------- */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-fast: 120ms;
+    --dur-base: 200ms;
+    --dur-slow: 360ms;
+
+    /* ---- Z-index ------------------------------------------ */
+    --z-sticky: 100;
+    --z-overlay: 200;
+    --z-modal: 300;
+    --z-toast: 400;
+    --z-tooltip: 500;
+}
+
+/*
+ * Dark theme — intentionally empty for now.
+ *
+ * The design system ships light values only, and the product keeps its theme switcher, so
+ * toggling dark currently leaves anything built on this library in its light palette. When
+ * dark lands, redefine the semantic aliases here (--text-*, --surface-*, --border-*, and the
+ * --color-* pairs); no component should need to change.
+ */
+:root.dark {
+    /* TODO: dark palette. */
+}

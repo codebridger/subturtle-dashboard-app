@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { phraseBundleTriggers } from "../triggers";
 import { LeitnerService } from "../../leitner_box/service";
+import { PoolService } from "../../pool/service";
 import { isUserOnFreemium } from "../../subscription/service";
 
 // Mock modular-rest/server
@@ -15,11 +16,18 @@ jest.mock("@modular-rest/server", () => ({
 	},
 }));
 
-// Mock LeitnerService
+// Mock LeitnerService (triggers only read getSettings now — save routing goes to the Pool).
 jest.mock("../../leitner_box/service", () => ({
 	LeitnerService: {
 		getSettings: jest.fn(),
-		addPhraseToBox: jest.fn(),
+		removePhraseFromBox: jest.fn(),
+	},
+}));
+
+// Mock PoolService — new saves route here instead of Leitner L1.
+jest.mock("../../pool/service", () => ({
+	PoolService: {
+		add: jest.fn(),
 	},
 }));
 
@@ -39,23 +47,23 @@ describe("phraseBundleTriggers", () => {
 	});
 
 	describe("insert-one", () => {
-		it("should add phrase to Leitner if autoEntry is true", async () => {
+		it("should add phrase to the Pool if autoEntry is true", async () => {
 			const doc = { _id: "p1", refId: "u1", phrase: "hello", translation: "ahlo" };
 			(LeitnerService.getSettings as jest.Mock<any>).mockResolvedValue({ autoEntry: true });
 
 			await insertOneTrigger!.callback({ doc, queryResult: {} });
 
 			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u1");
-			expect(LeitnerService.addPhraseToBox).toHaveBeenCalledWith("u1", "p1", 1);
+			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1");
 		});
 
-		it("should NOT add phrase to Leitner if autoEntry is false", async () => {
+		it("should NOT add phrase to the Pool if autoEntry is false", async () => {
 			const doc = { _id: "p1", refId: "u1", phrase: "hello", translation: "ahlo" };
 			(LeitnerService.getSettings as jest.Mock<any>).mockResolvedValue({ autoEntry: false });
 
 			await insertOneTrigger!.callback({ doc, queryResult: {} });
 
-			expect(LeitnerService.addPhraseToBox).not.toHaveBeenCalled();
+			expect(PoolService.add).not.toHaveBeenCalled();
 		});
 	});
 
@@ -79,11 +87,11 @@ describe("phraseBundleTriggers", () => {
 			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u1");
 			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u2");
 
-			// Should add p1, p2 (u1) but NOT p3, p4 (u2)
-			expect(LeitnerService.addPhraseToBox).toHaveBeenCalledTimes(2);
-			expect(LeitnerService.addPhraseToBox).toHaveBeenCalledWith("u1", "p1", 1);
-			expect(LeitnerService.addPhraseToBox).toHaveBeenCalledWith("u1", "p2", 1);
-			expect(LeitnerService.addPhraseToBox).not.toHaveBeenCalledWith("u2", expect.any(String), expect.any(Number));
+			// Should pool p1, p2 (u1) but NOT p3, p4 (u2)
+			expect(PoolService.add).toHaveBeenCalledTimes(2);
+			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1");
+			expect(PoolService.add).toHaveBeenCalledWith("u1", "p2");
+			expect(PoolService.add).not.toHaveBeenCalledWith("u2", expect.any(String));
 		});
 	});
 });

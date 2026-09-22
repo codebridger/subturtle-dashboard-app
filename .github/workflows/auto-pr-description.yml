@@ -6,9 +6,22 @@
 
 name: Generate PR Description
 
+# DISABLED. This ran on every `opened` and `synchronize` and overwrote the pull request body
+# wholesale, discarding hand-written descriptions on each push. It also fabricated ClickUp
+# links from whatever it inferred, producing dead task references.
+#
+# The file is kept rather than deleted so the setup is recoverable. `workflow_dispatch` is only
+# here to keep the file valid — the steps below read `github.event.pull_request`, so a manual
+# run would need the PR number wired in as an input first.
+#
+# To turn automation back on: restore the `pull_request` trigger below AND re-enable the
+# workflow in the repo (`gh workflow enable auto-pr-description.yml`). Both are required — a
+# `pull_request` workflow runs from the BASE branch's copy, so editing this file alone changes
+# nothing for PRs already targeting an existing branch.
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_dispatch:
+  # pull_request:
+  #   types: [opened, synchronize]
 
 env:
   TEMPLATE_FILE_PATH: .github/pr-description-template.md

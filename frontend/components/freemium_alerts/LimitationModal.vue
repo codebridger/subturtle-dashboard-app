@@ -119,7 +119,7 @@ function handlePrimaryAction(toggleModal?: (value: boolean) => void) {
 
     // Default behavior: redirect to subscription page (can be overridden by parent)
     if (props.autoRedirectOnUpgrade) {
-        router.push('/settings/subscription');
+        router.push('/settings/subscription?from=cap-hit-banner');
         analytic.track('upgrade-cta_clicked');
     }
 }
