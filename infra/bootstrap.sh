@@ -22,20 +22,30 @@ ensure_sa subturtle-api "SubTurtle API (Cloud Run runtime)"
 ensure_sa subturtle-scheduler "Cloud Scheduler caller of POST /schedule/tick"
 ensure_sa github-deployer "GitHub Actions deploys"
 
+# A service account created a moment ago can take a while to be visible to IAM.
+retry() {
+  local attempt
+  for attempt in 1 2 3 4 5 6; do
+    "$@" && return 0
+    sleep $((attempt * 5))
+  done
+  return 1
+}
+
 project_role() {
-  gcloud_p projects add-iam-policy-binding "$PROJECT_ID" --member "$1" --role "$2" --condition None --quiet >/dev/null
+  retry gcloud_p projects add-iam-policy-binding "$PROJECT_ID" --member "$1" --role "$2" --condition None --quiet >/dev/null
 }
 # The deployer pushes images, deploys Cloud Run as the runtime account, and deploys Hosting.
 project_role "serviceAccount:$DEPLOYER_SA" roles/artifactregistry.writer
 project_role "serviceAccount:$DEPLOYER_SA" roles/run.admin
 project_role "serviceAccount:$DEPLOYER_SA" roles/firebasehosting.admin
 project_role "serviceAccount:$DEPLOYER_SA" roles/serviceusage.serviceUsageConsumer
-gcloud_p iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
+retry gcloud_p iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
   --member "serviceAccount:$DEPLOYER_SA" --role roles/iam.serviceAccountUser >/dev/null
 
 # Cloud Scheduler signs the tick's OIDC token as the scheduler account.
 gcloud_p beta services identity create --service cloudscheduler.googleapis.com >/dev/null
-gcloud_p iam service-accounts add-iam-policy-binding "$SCHEDULER_SA" \
+retry gcloud_p iam service-accounts add-iam-policy-binding "$SCHEDULER_SA" \
   --member "serviceAccount:service-$PROJECT_NUMBER@gcp-sa-cloudscheduler.iam.gserviceaccount.com" \
   --role roles/iam.serviceAccountTokenCreator >/dev/null
 
@@ -51,7 +61,7 @@ gcloud_p iam workload-identity-pools providers describe "$PROVIDER" --workload-i
     --issuer-uri https://token.actions.githubusercontent.com \
     --attribute-mapping "google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
     --attribute-condition "$CONDITION"
-gcloud_p iam service-accounts add-iam-policy-binding "$DEPLOYER_SA" --role roles/iam.workloadIdentityUser \
+retry gcloud_p iam service-accounts add-iam-policy-binding "$DEPLOYER_SA" --role roles/iam.workloadIdentityUser \
   --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository/$GITHUB_REPO" >/dev/null
 
 cat <<EOF

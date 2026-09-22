@@ -31,13 +31,13 @@ clients, the Gemini and Text-to-Speech API keys) come first. Then:
    ```bash
    cd server && MONGO_BASE_ADDRESS="$(gcloud secrets versions access latest --secret mongo-base-address --project subturtle-dev)" yarn spike:firestore
    ```
-4. Secrets — `infra/secrets.sh dev` prompts (hidden input) for single-line values. Pipe
-   multi-line values, e.g. the JWT keypair, straight from wherever they live:
-   ```bash
-   <command that prints the PEM> | infra/secrets.sh dev jwt-private-key
-   ```
+4. Secrets — `infra/api-keys.sh dev` creates the Gemini and Text-to-Speech keys.
+   `infra/import-legacy-secrets.sh dev` copies what the old deployment already
+   has (JWT keypair, admin, Stripe, OpenRouter, Mixpanel, old OAuth client IDs) straight
+   from its Secret Manager. `infra/secrets.sh dev` prompts, with hidden input, for anything
+   still missing; multi-line values can be piped: `<command> | infra/secrets.sh dev NAME`.
 5. `infra/deploy-api.sh dev` — needs Docker with buildx.
-6. `infra/deploy-hosting.sh dev` — with the `NUXT_PUBLIC_*` values listed in the script exported.
+6. `infra/deploy-hosting.sh dev` — public build values come from [public/](public/).
 7. `infra/scheduler.sh dev`.
 8. Point the outside world at the new URLs (both printed by the scripts):
    - OAuth **web** client, authorized redirect URIs: `<API_URL>/auth/google/code-login` for
@@ -45,9 +45,9 @@ clients, the Gemini and Text-to-Speech API keys) come first. Then:
      signs in through `launchWebAuthFlow` with the web client.
    - Stripe webhook endpoint: `<API_URL>/gateway/webhook/stripe`, and its signing secret in
      `stripe-webhook-secret`.
-9. GitHub: on environment `dev`, set the variables `bootstrap.sh` printed plus the
-   `NUXT_PUBLIC_*` values; add `dev` to the repository variable `DEPLOY_ENVIRONMENTS`.
-   Pushes to `dev` then deploy automatically.
+9. GitHub: on environment `dev`, set the two variables `bootstrap.sh` printed, and add
+   `dev` to the repository variable `DEPLOY_ENVIRONMENTS`. Pushes to `dev` then deploy
+   automatically.
 
 ## Secrets
 
@@ -64,6 +64,18 @@ clients, the Gemini and Text-to-Speech API keys) come first. Then:
 | `openai-api-key`, `mixpanel-token` | `OPENAI_API_KEY`, `MIXPANEL_TOKEN` | Optional |
 
 `deploy-api.sh` refuses to deploy while a required secret has no version.
+
+## Firestore behaviour to keep in mind
+
+- **A conditional `findOneAndUpdate` is not atomic under concurrency**: several concurrent
+  callers can get the same document back. A conditional `updateOne` is applied exactly
+  once, so claims and guards must use `updateOne` and read `modifiedCount`
+  (`ScheduleService.runDueJobs` does). `$inc`, `$push` and `$ne`-guarded updates under
+  concurrency lose nothing (verified by the spike).
+- **Index builds are long-running.** The first `createIndexes` for an index can outlast the
+  45 s socket timeout; the build still completes, and later boots find the index in
+  place. The SCRAM user needs `roles/datastore.indexAdmin` for Mongoose to create indexes
+  at all (`firestore.sh` grants it, limited to the database).
 
 ## Production data (cutover)
 

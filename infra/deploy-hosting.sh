@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Builds the dashboard for one environment and deploys it to Firebase Hosting
 # (https://<project>.web.app). NUXT_PUBLIC_* values are baked in at build time, so every
-# environment gets its own build. The API URL is derived; the other public values come
-# from the environment (GitHub environment variables in CI):
-#   NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN,
-#   NUXT_PUBLIC_MIXPANEL_API_HOST, NUXT_PUBLIC_CHROME_WEB_STORE_URL
+# environment gets its own build: the API URL is derived, the other public values come
+# from infra/public/<env>.env.
 # Usage: infra/deploy-hosting.sh dev|prod
 set -euo pipefail
 source "$(dirname "$0")/env.sh" "${1:-}"
+set -a
+# shellcheck source=/dev/null  # infra/public/dev.env or prod.env
+source "$(dirname "$0")/public/$ENVIRONMENT.env"
+set +a
 cd "$(dirname "$0")/../frontend"
 
 NUXT_PUBLIC_MODE=development

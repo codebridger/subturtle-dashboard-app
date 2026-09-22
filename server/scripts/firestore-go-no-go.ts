@@ -158,6 +158,17 @@ async function main() {
 
   const mongoOption = { mongoBaseAddress: uri, dbPrefix: "", singleDatabase: true };
 
+  // A run that could not clean up leaves rows behind, and duplicates among them would
+  // fail the unique index builds. Clear them before the models (and indexes) exist.
+  const raw = await mongoose.createConnection(uri, { serverSelectionTimeoutMS: 10000 }).asPromise();
+  try {
+    const names = (await raw.db!.listCollections().toArray()).map((c) => c.name);
+    for (const name of names.filter((n) => n.startsWith("spike_"))) await raw.db!.collection(name).deleteMany({});
+    if (names.includes("scheduled_jobs")) await raw.db!.collection("scheduled_jobs").deleteMany({ name: { $regex: "^spike-" } });
+  } finally {
+    await raw.close();
+  }
+
   console.log("Connection and modular-rest");
 
   await check("connect through modular-rest's single-database mode", async () => {
@@ -183,19 +194,28 @@ async function main() {
 
   console.log("\nCollections and indexes (Mongoose autoCreate + autoIndex)");
 
-  await check("createCollection + createIndexes for every model", async () => {
+  // Firestore builds an index as a long-running operation, and createIndexes waits for it:
+  // a first build can outlast modular-rest's 45 s socket timeout while still completing on
+  // the server. So the gate is the indexes existing with the right options, not the call.
+  await check("createIndexes returns within the socket timeout (first builds may not)", async () => {
     for (const definition of definitions) await definition.model.init();
-  });
-
-  await check("index definitions as listed by the server", async () => {
-    const bundleIndexes = await model("spike_bundle").listIndexes();
-    const compound = bundleIndexes.find((i: any) => i.key?.refId === 1 && i.key?.title === 1);
-    assert(compound?.unique, `compound unique index missing: ${JSON.stringify(bundleIndexes)}`);
-    const sessionIndexes = await model("spike_session").listIndexes();
-    const ttl = sessionIndexes.find((i: any) => i.key?.createdAt === 1);
-    assert(ttl?.expireAfterSeconds, `TTL index missing: ${JSON.stringify(sessionIndexes)}`);
-    return `bundle: ${bundleIndexes.map((i: any) => i.name).join(", ")}; session TTL ${ttl.expireAfterSeconds}s`;
   }, { gating: false });
+
+  await check("unique, compound and TTL indexes exist (waits up to 5 min for builds)", async () => {
+    const started = Date.now();
+    while (true) {
+      const bundle = (await model("spike_bundle").listIndexes()).find((i: any) => i.key?.refId === 1 && i.key?.title === 1);
+      const ttl = (await model("spike_session").listIndexes()).find((i: any) => i.key?.createdAt === 1);
+      const jobName = (await model(SCHEDULE_JOB_COLLECTION, DATABASE_SCHEDULE).listIndexes()).find((i: any) => i.key?.name === 1);
+      if (bundle?.unique && ttl?.expireAfterSeconds && jobName?.unique) {
+        return `ready after ${Math.round((Date.now() - started) / 1000)} s; TTL ${ttl.expireAfterSeconds}s`;
+      }
+      if (Date.now() - started > 300_000) {
+        throw new Error(`still missing after 5 min: ${JSON.stringify({ bundle, ttl, jobName })}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  });
 
   console.log("\nWrites, reads and operators");
 
@@ -371,6 +391,42 @@ async function main() {
     assertEqual(rows.length, 3, "rows");
   });
 
+  console.log("\nConcurrent writes");
+
+  await check("20 concurrent conditional updateOne calls: exactly one applies (scheduler claims)", async () => {
+    const m = model("spike_session");
+    const doc = await m.create({ refId: "unclaimed" });
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () => m.updateOne({ _id: doc._id, refId: "unclaimed" }, { $set: { refId: "claimed" } }))
+    );
+    assertEqual(results.reduce((sum, r) => sum + r.modifiedCount, 0), 1, "updates applied");
+  });
+
+  await check("20 concurrent $inc, $push and guarded top-ups: nothing lost, top-up applied once", async () => {
+    const doc = await subscriptions.create({ user_id: new Types.ObjectId(), status: "active", end_date: new Date(Date.now() + 86400_000) });
+    const twenty = (write: (i: number) => Promise<unknown>) => Promise.all(Array.from({ length: 20 }, (_, i) => write(i)));
+    await twenty(() => subscriptions.updateOne({ _id: doc._id }, { $inc: { used_credit: 1 } }));
+    await twenty((i) => subscriptions.updateOne({ _id: doc._id }, { $push: { top_ups: { session_id: `cs_${i}`, amount: 1 } } }));
+    await twenty(() =>
+      subscriptions.updateOne(
+        { _id: doc._id, "top_ups.session_id": { $ne: "cs_once" } },
+        { $push: { top_ups: { session_id: "cs_once", amount: 500 } }, $inc: { credit: 500 } }
+      )
+    );
+    const stored: any = await subscriptions.findById(doc._id).lean();
+    assertEqual([stored.used_credit, stored.top_ups.length, stored.credit], [20, 21, 500], "used_credit / top_ups / credit");
+  });
+
+  await check("concurrent findOneAndUpdate claims (not relied on; one winner in MongoDB)", async () => {
+    const m = model("spike_session");
+    const doc = await m.create({ refId: "unclaimed" });
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () => m.findOneAndUpdate({ _id: doc._id, refId: "unclaimed" }, { $set: { refId: "claimed" } }).lean())
+    );
+    const winners = results.filter(Boolean).length;
+    assert(winners === 1, `${winners} of 20 callers got the document back`);
+  }, { gating: false });
+
   console.log("\nScheduler (real ScheduleService against the real collection)");
 
   const jobs = model(SCHEDULE_JOB_COLLECTION, DATABASE_SCHEDULE);
@@ -427,7 +483,9 @@ async function main() {
       await jobs.deleteMany(spikeJobs);
       for (const definition of definitions) {
         const name = definition.model.collection.collectionName;
-        if (name.startsWith("spike_")) await connection.db!.dropCollection(name);
+        if (!name.startsWith("spike_")) continue;
+        // Dropping needs more than read/write access; emptying the collection does not.
+        await connection.db!.dropCollection(name).catch(() => definition.model.deleteMany({}));
       }
     }, { gating: false });
   }

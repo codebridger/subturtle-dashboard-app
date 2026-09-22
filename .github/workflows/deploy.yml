@@ -52,9 +52,4 @@ jobs:
         run: infra/deploy-api.sh ${{ inputs.environment }} ${{ github.sha }}
 
       - name: Deploy the dashboard to Firebase Hosting
-        env:
-          NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
-          NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN: ${{ vars.NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN }}
-          NUXT_PUBLIC_MIXPANEL_API_HOST: ${{ vars.NUXT_PUBLIC_MIXPANEL_API_HOST }}
-          NUXT_PUBLIC_CHROME_WEB_STORE_URL: ${{ vars.NUXT_PUBLIC_CHROME_WEB_STORE_URL }}
         run: infra/deploy-hosting.sh ${{ inputs.environment }}
