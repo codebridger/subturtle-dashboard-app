@@ -148,13 +148,21 @@ jobs:
 
       - name: Forward Stripe webhooks (background)
         run: |
+          # --events is required by newer Stripe CLIs ("must specify events to forward
+          # using --events, --all-snapshot, or --all-thin"). Without it the CLI exits
+          # immediately, no webhook ever reaches the server, and the executor reports
+          # three "no grant (webhook?)" failures that read as a subscription bug.
+          # These are the four the gateway acts on for the tier ladder.
           stripe listen --api-key "$STRIPE_SECRET_KEY" \
+            --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted \
             --forward-to localhost:8080/gateway/webhook/stripe > stripe.log 2>&1 &
           echo $! > stripe.pid
           # Wait for the CLI to print "Ready!" — it must be tunneling before the
           # executor drives Stripe, or the grant webhooks would be missed.
           for i in $(seq 1 30); do grep -qi "ready" stripe.log && break; sleep 1; done
           cat stripe.log
+          # Fail here rather than let a dead forwarder surface as a product failure.
+          grep -qi "ready" stripe.log || { echo "::error::stripe listen never became ready — see stripe.log above"; exit 1; }
 
       - name: Run tier-ladder executor
         run: node scripts/e2e-tier-ladder.js
