@@ -151,3 +151,12 @@ echo "  ---- total               $SOURCE_TOTAL -> $TARGET_TOTAL"
 echo
 echo "Done. Restart the API so ScheduleService.init() stamps nextRunAt on the restored jobs:"
 echo "  gcloud run services update $SERVICE --region $REGION --project $PROJECT_ID --update-env-vars RESTART_TOKEN=\$(date +%s)"
+echo
+echo "That backfill is one updateOne per job, filtered on a field Firestore cannot index"
+echo "(nextRunAt missing), and Cloud Run throttles CPU between requests - so on an idle"
+echo "instance it crawls. Keep hitting the API while it runs and ~230 jobs take about four"
+echo "minutes. A job cannot be claimed until it is stamped, so wait for zero here:"
+echo "  MONGO_URI=\"\$(gcloud secrets versions access latest --secret mongo-base-address --project $PROJECT_ID)\" \\"
+echo "    mongosh --nodb --quiet --eval 'print(connect(process.env.MONGO_URI).scheduled_jobs.countDocuments({ nextRunAt: { \$exists: false } }))'"
+echo
+echo "It resumes on the next boot if the instance dies mid-way, so a partial count is safe."
