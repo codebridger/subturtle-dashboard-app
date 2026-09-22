@@ -40,6 +40,11 @@ project_role "serviceAccount:$DEPLOYER_SA" roles/artifactregistry.writer
 project_role "serviceAccount:$DEPLOYER_SA" roles/run.admin
 project_role "serviceAccount:$DEPLOYER_SA" roles/firebasehosting.admin
 project_role "serviceAccount:$DEPLOYER_SA" roles/serviceusage.serviceUsageConsumer
+# deploy-api.sh refuses to deploy when a required secret has no enabled version, which
+# means listing version metadata. `viewer` grants exactly that and NOT access to the
+# payloads - only the runtime account can read those (secrets.sh) - so a compromised
+# deploy job still cannot read a single secret value.
+project_role "serviceAccount:$DEPLOYER_SA" roles/secretmanager.viewer
 retry gcloud_p iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
   --member "serviceAccount:$DEPLOYER_SA" --role roles/iam.serviceAccountUser >/dev/null
 
