@@ -3,6 +3,7 @@ import { createRest, CmsTrigger, getCollection } from "@modular-rest/server";
 import { permissionGroups } from "./permissions";
 import fs from "fs";
 import { authTriggers } from "./triggers";
+import { generateVerificationCode } from "./verification-code";
 // Load .env file
 require("dotenv").config({
   path: path.resolve(__dirname, "../.env"),
@@ -77,9 +78,7 @@ const app = createRest({
     email: process.env.ADMIN_EMAIL || "",
     password: process.env.ADMIN_PASSWORD || "",
   },
-  verificationCodeGeneratorMethod: function () {
-    return "123456";
-  },
+  verificationCodeGeneratorMethod: generateVerificationCode,
   permissionGroups,
   authTriggers: authTriggers,
 }).then((app) => {

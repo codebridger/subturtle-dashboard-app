@@ -222,6 +222,13 @@ A Playwright MCP is committed in [.mcp.json](.mcp.json) (`@playwright/mcp`, head
 | **Standard** *(default)* | `cd server && node scripts/create-standard-user.mjs` — runs the register→login flow (dev code `123456`), prints `{ email, password, token, userId }`. | Normal development — the real freemium experience |
 | **Admin** *(only when intended)* | Auto-provisioned on server boot from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `server/.env` (the framework's `createRest({ adminUser })`, loginable as `type:'user'`); fetch its token with `node scripts/agent-token.mjs`. | Admin/elevated flows you specifically want to test |
 
+The register flow only works against a server running **outside** production: the fixed code
+`123456` would otherwise let anyone reset any account's password by email address alone, so
+`NODE_ENV=production` swaps in an unguessable one ([server/src/verification-code.ts](server/src/verification-code.ts)).
+To get a standard user on a deployed environment, register against a local server pointed at
+that environment's database (`MONGO_BASE_ADDRESS`, `MONGO_SINGLE_DATABASE=true`), then
+`POST /user/login` on the deployed API with the same email and password — login needs no code.
+
 ### The loop
 
 ```bash
