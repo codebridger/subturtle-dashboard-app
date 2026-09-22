@@ -28,6 +28,15 @@ function getKeys() {
       ),
     };
   } catch (error) {
+    // Without a keypair modular-rest generates a new one at every boot, silently
+    // invalidating every issued token: all dashboard users and extension installs are
+    // signed out on each restart, which on a scale-to-zero host means every cold start.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "JWT keypair missing: set PRIVATE_KEY and PUBLIC_KEY (or provide keys/private.pem and keys/public.pem)"
+      );
+    }
+    console.warn("[auth] No JWT keypair configured; using a temporary one. Issued tokens will not survive a restart.");
     return undefined;
   }
 }
@@ -39,50 +48,14 @@ const app = createRest({
   modulesPath: path.join(__dirname, "../dist", "modules"),
   uploadDirectory: path.join(__dirname, "../dist", "uploads"),
   keypair: getKeys(),
+  // CORS is open on purpose. The extension's content scripts run on every site
+  // (<all_urls>) and call this API directly; under MV3 their requests carry the host
+  // page's Origin, so no finite allowlist can cover them. Auth is a bearer token in the
+  // Authorization header — no cookies, and credentials are never allowed — so a foreign
+  // origin gains nothing it could not get by calling the API outside a browser.
   cors: {
-    origin(ctx: any) {
-      const requestOrigin = ctx.get("Origin") as string;
-      const allowedOrigins = [
-        // All
-        "*",
-
-        //dev
-        "http://localhost:3000",
-
-        // Subturtle domains
-        "https://subturtle.app",
-        "https://www.subturtle.app",
-        "https://www.dashboard.subturtle.app",
-        "https://dashboard.subturtle.app",
-
-        // Chrome extension - prod
-        "chrome-extension://",
-        "https://www.youtube.com",
-        "https://www.netflix.com",
-        "https://teams.microsoft.com",
-        "https://meet.google.com",
-      ];
-
-      // Handle requests without Origin header (like direct API calls)
-      if (!requestOrigin) {
-        console.warn("Request without Origin header detected");
-        return false; // Reject requests without origin in production
-      }
-
-      // Check if the origin is in our allowed list
-      for (const origin of allowedOrigins) {
-        if (origin === "*") {
-          return requestOrigin;
-        }
-
-        if (requestOrigin.startsWith(origin)) {
-          return requestOrigin;
-        }
-      }
-
-      // In production, reject unauthorized origins
-      return false;
-    },
+    origin: (ctx: any) => ctx.get("Origin"),
+    credentials: false,
   },
   // Expose the raw request body so the Stripe webhook can verify signatures.
   koaBodyOptions: {
@@ -92,6 +65,9 @@ const app = createRest({
     mongoBaseAddress:
       process.env.MONGO_BASE_ADDRESS || "mongodb://localhost:27017",
     dbPrefix: process.env.MONGO_DB_PREFIX || "subturtle_",
+    // Store every logical database (cms, user_content) in the one database named in
+    // MONGO_BASE_ADDRESS; required by Firestore with MongoDB compatibility.
+    singleDatabase: process.env.MONGO_SINGLE_DATABASE === "true",
   },
   staticPath: {
     directory: path.join(__dirname, "public"),
@@ -125,7 +101,11 @@ const app = createRest({
     await PoolService.ageOutAllUsers();
   });
 
-  ScheduleService.init();
+  // Rejects only on invalid scheduler configuration; fail the deploy instead of running without jobs.
+  ScheduleService.init().catch((err: any) => {
+    console.error("[Schedule] init failed", err);
+    process.exit(1);
+  });
 
   // Ensure the daily Pool age-out sweep exists (idempotent upsert keyed on job
   // name). Cron is interpreted in server-local time; the sweep is safe to run more

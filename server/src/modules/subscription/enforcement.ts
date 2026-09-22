@@ -68,7 +68,7 @@ export async function getGateContext(userId: string): Promise<GateContext> {
   const active = await subscriptions.findOne({
     // subscription.user_id is stored as an ObjectId (see service.ts) — a raw
     // string would never match, silently treating paid users as free.
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   });

@@ -1,0 +1,17 @@
+name: Deploy prod
+
+# Manual, from main only, into the subturtle-prod Firebase project (see deploy.yml).
+# The prod Workload Identity provider also trusts nothing but refs/heads/main.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod

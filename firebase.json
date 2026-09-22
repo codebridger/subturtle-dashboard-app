@@ -1,0 +1,26 @@
+{
+  "hosting": {
+    "public": "frontend/.output/public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/user/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "/verify/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "/data-provider/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "/function/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "/file/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "/auth/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "/gateway/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
+      {
+        "source": "/_nuxt/**",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  }
+}

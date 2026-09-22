@@ -85,7 +85,7 @@ subturtle-dashboard-app/
 
 **Frontend** — Nuxt 3 (SSR **off**, hash routing), Vue 3, Pinia, Tailwind CSS, **pilotui** (in-house Vue 3 + Tailwind component library), vee-validate + yup, `@modular-rest/client`, `@google/genai` (Gemini Live API), Mixpanel, `@nuxtjs/i18n`, Iconify (`solar:` + `clarity:`), ApexCharts, Vitest, Playwright.
 
-**Server** — Node + TypeScript, `@modular-rest/server` (the RPC/data framework), MongoDB, Stripe, `@google/genai`, `@google-cloud/text-to-speech`, Jest.
+**Server** — Node + TypeScript, `@modular-rest/server` (the RPC/data framework; a vendored Mongoose 8 build, see [server/vendor/README.md](server/vendor/README.md)), MongoDB / Firestore with MongoDB compatibility, Stripe, `@google/genai`, `@google-cloud/text-to-speech`, Jest.
 
 ## Architecture
 
@@ -119,7 +119,7 @@ Modules are discovered dynamically by the modular-rest framework. Entry point: [
 | [`live_session/`](server/src/modules/live_session/) | Live AI conversation practice — splits into `gemini/` (primary) and `openai/` (legacy); shared `types.ts` and `db.ts` |
 | [`phrase_bundle/`](server/src/modules/phrase_bundle/) | Phrase + bundle content management (normal vs linguistic phrase variants, triggers) |
 | [`profile/`](server/src/modules/profile/) | User profile data, preferences, onboarding state |
-| [`schedule/`](server/src/modules/schedule/) | Scheduled jobs — daily bundle generation, recurring tasks (uses `cms` DB) |
+| [`schedule/`](server/src/modules/schedule/) | Scheduled jobs stored in `cms.scheduled_job` and drained by `ScheduleService.runDueJobs()`: in-process locally, `POST /schedule/tick` from Cloud Scheduler in production |
 | [`statistic/`](server/src/modules/statistic/) | Analytics + usage statistics aggregation |
 | [`subscription/`](server/src/modules/subscription/) | Freemium tier limits, token-based usage accounting, Stripe subscription state — see its [readme.md](server/src/modules/subscription/readme.md) and [module_diagram.md](server/src/modules/subscription/module_diagram.md) |
 | [`translation/`](server/src/modules/translation/) | Translation service (phrase translation + Google TTS audio generation) |
@@ -198,7 +198,9 @@ Don't dress a real feature as `refactor`/`chore` (it would skip a release) or in
 
 - **Gemini, not OpenAI**, for new live-session work.
 - **SSR is off** — don't reach for server-only Nuxt features (`useFetch` server context, Nitro server routes, etc.).
-- **Mongo spans multiple databases** (`user_content`, `subturtle_leitner`, `subturtle_board`, `cms`). Always check [server/src/config.ts](server/src/config.ts) before adding a collection.
+- **Two logical Mongo databases** (`user_content`, `cms`). With `MONGO_SINGLE_DATABASE=true` (Firestore) they share one physical database, so a collection name must be unique across both — check [server/src/config.ts](server/src/config.ts) before adding one.
+- **No in-process timers for jobs** (`node-schedule`, `setInterval`): Cloud Run scales to zero, so nothing runs between requests. Create jobs with `ScheduleService.createJob` and register their function with `ScheduleService.register`.
+- **Deploys** go to Firebase Hosting (dashboard) + Cloud Run (API) in the `subturtle-dev` / `subturtle-prod` projects — see [infra/README.md](infra/README.md).
 - **Live-session audio formats are fixed**: mic input is 16 kHz Int16 PCM via an AudioWorklet (`pcm16-downsampler`); server audio comes back at 24 kHz and is queued as gapless `AudioBufferSourceNode`s. Don't change rates without updating the worklet.
 - **Yarn only** — both workspaces ship `yarn.lock`. Mixing `npm install` will desync the lockfile.
 - **pilotui `<Button :to="url">` renders a disabled-looking link** — in link mode it emits `<a disabled="false">`, and the `.btn[disabled]` rule fades it (`opacity: 0.6`, `cursor: not-allowed`). For button-styled links, use `@click` with programmatic navigation instead of `:to`.
@@ -223,8 +225,8 @@ A Playwright MCP is committed in [.mcp.json](.mcp.json) (`@playwright/mcp`, head
 ### The loop
 
 ```bash
-# 1. Server on node 18 (node 22 breaks the Mongoose 5 handshake); frontend on node 22.
-cd server && yarn build && nvm exec 18 node dist/index.js   # :8080  (auto-provisions the admin)
+# 1. Server and frontend both on node 22.
+cd server && yarn build && node dist/index.js   # :8080  (auto-provisions the admin)
 cd frontend && yarn dev                                      # :3000
 
 # 2. Mint a token. DEFAULT: a standard (freemium) user — test with this token
