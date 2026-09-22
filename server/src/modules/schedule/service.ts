@@ -215,6 +215,7 @@ export class ScheduleService {
       budgetExhausted: false,
     };
 
+    let lostClaims = 0;
     while (true) {
       if (Date.now() - startedAt >= budgetMs) {
         summary.budgetExhausted = true;
@@ -222,29 +223,39 @@ export class ScheduleService {
       }
 
       const now = new Date();
-      const job = (await collection
-        .findOneAndUpdate(
-          {
-            nextRunAt: { $lte: now },
-            // Only jobs this process can run: during a rollout an older revision must
-            // leave job types it does not know to a newer one instead of failing them.
-            functionId: { $in: functionIds },
-            $or: [
-              { state: { $nin: ["queued", "executing"] } },
-              // The claimant died mid-run, or the job was left running by the old scheduler.
-              { claimedAt: { $lt: new Date(now.getTime() - CLAIM_LEASE_MS) } },
-              { claimedAt: null },
-            ],
-          },
-          { $set: { state: "executing", claimedAt: now } },
-          { sort: { nextRunAt: 1 }, returnDocument: "after" }
-        )
-        .lean()) as any;
+      const claimable = {
+        nextRunAt: { $lte: now },
+        // Only jobs this process can run: during a rollout an older revision must
+        // leave job types it does not know to a newer one instead of failing them.
+        functionId: { $in: functionIds },
+        $or: [
+          { state: { $nin: ["queued", "executing"] } },
+          // The claimant died mid-run, or the job was left running by the old scheduler.
+          { claimedAt: { $lt: new Date(now.getTime() - CLAIM_LEASE_MS) } },
+          { claimedAt: null },
+        ],
+      };
 
-      if (!job) break;
+      // Two steps rather than one findOneAndUpdate: on Firestore with MongoDB
+      // compatibility, concurrent findOneAndUpdate calls can all get the same document
+      // back, while a conditional updateOne is applied by exactly one of them. Repeating
+      // the claimable condition (and the occurrence) in the update makes modifiedCount the
+      // verdict on who owns the job.
+      const candidate = (await collection.findOne(claimable).sort({ nextRunAt: 1 }).lean()) as any;
+      if (!candidate) break;
+
+      const claim = await collection.updateOne(
+        { ...claimable, _id: candidate._id, nextRunAt: candidate.nextRunAt },
+        { $set: { state: "executing", claimedAt: now } }
+      );
+      if (claim.modifiedCount !== 1) {
+        // Another process claimed it first; move on to the next due job.
+        if (++lostClaims > 50) break;
+        continue;
+      }
 
       summary.claimed++;
-      summary[await this.executeJob(job, now)]++;
+      summary[await this.executeJob({ ...candidate, state: "executing", claimedAt: now }, now)]++;
     }
 
     summary.unknownDue = await collection.countDocuments({
