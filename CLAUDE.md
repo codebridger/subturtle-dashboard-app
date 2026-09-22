@@ -153,7 +153,7 @@ CU-<taskId>_<Short-Task-Title-Dashed>_<Author-Name>
 e.g. `CU-86ext1gpf_Make-subscription-tiers-Stripe-metadata-driven-adaptive-pricing-Council-004-rollout_Navid-Shad`. The `<taskId>` is the ClickUp custom id (the `CU-…` shown on the task), the title is the task name with spaces → dashes, and the author is the assignee.
 
 - Branch off the latest `dev`; open a **PR into `dev`**. `dev` reaches `main` via the long-running `dev → main` PR — so a task only needs the one PR into `dev`.
-- 🚧 **`main` is frozen for the duration of the UI migration. Do not merge `dev → main`.** The redesign lands one screen at a time (see [Design system migration](#design-system-migration)), so `dev` carries a deliberately half-migrated UI: screens already rebuilt on `subturtle-ui` sit beside screens still on pilotui, and dark mode is light-only on the migrated ones. Shipping that to production would put a visibly inconsistent app in front of users. The standing `dev → main` PR was closed for this reason; open a fresh one once the last screen is migrated and pilotui is removed.
+- **Both branches deploy themselves:** a push to `dev` deploys the dev environment and a push to `main` deploys production, via [.github/workflows/](.github/workflows/) (see [CI/CD](#cicd)). `main` is therefore what production is running — treat a merge into it as a release.
 - **Footgun:** if you create the branch with `git switch -c <branch> origin/dev`, Git sets its upstream to `origin/dev`, and a plain `git push` (or a Git-client "sync") then lands the commits **straight on `dev`** instead of a new remote branch. Create it without that tracking and publish it explicitly: `git switch -c <branch>` then `git push -u origin <branch>` (or `--no-track` when branching off `origin/dev`).
 
 ## Design system migration
@@ -165,8 +165,11 @@ carrying Subturtle's real brand, replacing **pilotui** — a generic admin theme
 The redesign lands **one screen per PR** onto the long-running `new-design` branch, which is
 promoted to `dev` in batches. While it is in progress:
 
-- **`main` is frozen** — see the note under [Branching](#branching). Nothing ships to
-  production until every screen is migrated.
+- **The half-migrated UI is already in production.** `main` was frozen to keep it off
+  production, but the September 2026 move to Firebase deployed `dev`-based code to the
+  new prod project, so migrated and un-migrated screens now sit side by side for users.
+  The freeze was lifted rather than pretended about; finish the migration on merit, not
+  to unblock releases.
 - **pilotui stays installed** and is still required. Removing it is blocked on more than
   components: `pilotui/style.css` supplies global classes the app markup uses directly
   (`panel`, `btn`, `form-input`, `badge`, `animate__*`, `screen_loader`, `main-section`),
@@ -193,6 +196,30 @@ Don't dress a real feature as `refactor`/`chore` (it would skip a release) or in
 **Link the ClickUp task:** when the work has a task id, append it as `#<taskId>` to the commit subject — and to the **PR title** so it survives a squash-merge — e.g. `feat: show dashboard version in a global footer #86exqazkq`. Use the bare id (not the `CU-` branch prefix). The type prefix still drives the version bump; the `#<taskId>` just keeps `git log` greppable and linkable back to ClickUp.
 
 > Release automation is wired up for the **frontend** via `semantic-release` ([frontend/release.config.cjs](frontend/release.config.cjs), [.github/workflows/release.yml](.github/workflows/release.yml)) — it owns the version in [frontend/package.json](frontend/package.json) and cuts a tagged release on pushes to `dev`/`main` that contain releasable commits. The **server** has no release pipeline yet (`server/package.json` stays `0.0.0`). The sibling **subturtle-extension-apps** repo enforces the identical mapping via its own `semantic-release` setup.
+
+## CI/CD
+
+GitHub Actions deploys both environments; there is no build pipeline inside Google Cloud.
+
+| Push to | Workflow | Deploys to |
+| --- | --- | --- |
+| `dev` | [deploy-dev.yml](.github/workflows/deploy-dev.yml) | `subturtle-dev` |
+| `main` | [deploy-prod.yml](.github/workflows/deploy-prod.yml) | `subturtle-prod` |
+
+Both call [deploy.yml](.github/workflows/deploy.yml), which runs the **same `infra/` scripts
+an operator runs by hand** (`deploy-api.sh` then `deploy-hosting.sh`) — so a CI deploy and a
+local one take the identical path, and there is no second deployment definition to drift.
+
+- **Keyless.** Authentication is Workload Identity Federation, so no service-account key
+  exists to leak. Each environment carries `GCP_WORKLOAD_IDENTITY_PROVIDER` and
+  `GCP_DEPLOYER_SERVICE_ACCOUNT` as GitHub environment variables; the prod provider trusts
+  only `refs/heads/main`, so no other ref can obtain prod credentials even by editing a
+  workflow file.
+- **Inert until enabled.** `deploy.yml` only runs for environments named in the repository
+  variable `DEPLOY_ENVIRONMENTS` (e.g. `dev,prod`). Clearing it stops all deploys without
+  touching the workflows.
+- Deploys for one environment are serialized (`concurrency: deploy-<env>`), so two merges
+  cannot race a Cloud Run revision.
 
 ## Gotchas
 

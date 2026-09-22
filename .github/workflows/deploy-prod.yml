@@ -1,9 +1,13 @@
 name: Deploy prod
 
-# Manual, from main only, into the subturtle-prod Firebase project (see deploy.yml).
-# The prod Workload Identity provider also trusts nothing but refs/heads/main.
+# Every push to main ships to the subturtle-prod Firebase project (see deploy.yml), so
+# main is what production is running. workflow_dispatch stays for re-running a deploy
+# without a new commit. The prod Workload Identity provider also trusts nothing but
+# refs/heads/main, so no other ref can obtain prod credentials even by editing a workflow.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
