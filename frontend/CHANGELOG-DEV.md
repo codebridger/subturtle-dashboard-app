@@ -1,3 +1,19 @@
+# [1.0.0-dev.8](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2026-09-22)
+
+
+### Bug Fixes
+
+* **auth:** accept only SubTurtle clients' Google tokens with verified emails ([7c209e2](https://github.com/codebridger/subturtle-dashboard-app/commit/7c209e2f57b250daa30633e7ca8330a55f2c1192))
+* **auth:** make the verification code unguessable in production ([7059ebf](https://github.com/codebridger/subturtle-dashboard-app/commit/7059ebf9caca8ffc3e175d0b953175bd09e00b7f))
+* **gateway:** require a valid Stripe signature whenever webhooks are verifiable ([5193c21](https://github.com/codebridger/subturtle-dashboard-app/commit/5193c21b9dd45aa89f24432770bf0a39533ef5aa))
+* **login:** fall back to the page origin for the API URL ([42d747f](https://github.com/codebridger/subturtle-dashboard-app/commit/42d747f2badf22f698ce7615bd513ab96e1d9850))
+* **schedule:** claim jobs with a conditional updateOne ([338de26](https://github.com/codebridger/subturtle-dashboard-app/commit/338de26a08f91e61760504eff70a576604074726))
+
+
+### Features
+
+* **server:** run on Firestore with Mongoose 8, database-driven jobs and a Firebase deploy pipeline ([ffff5ab](https://github.com/codebridger/subturtle-dashboard-app/commit/ffff5ab94f36f0b3df7f773d358875c7e7ca84bf))
+
 # [1.0.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2026-08-29)
 
 
