@@ -1,3 +1,10 @@
+# [1.0.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2026-09-22)
+
+
+### Features
+
+* **leitner:** return confirmed_chunk + source_sentence on review items for L3+ fill-in [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exnxph5 ([64d9af8](https://github.com/codebridger/subturtle-dashboard-app/commit/64d9af8ef9f044e2c21a3d2bf71ecb8c38eee741)), closes [#86exnxph5](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxph5) [#86exnxph5](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxph5)
+
 # [1.0.0-dev.8](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2026-09-22)
 
 
