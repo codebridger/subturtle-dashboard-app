@@ -45,18 +45,11 @@ export interface LeitnerSystem {
 const leitnerSystemSchema = new Schema<LeitnerSystem>(
   {
     userId: { type: String, required: true },
-    settings: {
-      type: {
-        dailyLimit: { type: Number, default: 20 }, // Deprecated/Fallback
-        totalBoxes: { type: Number, default: 5 },
-        boxIntervals: { type: [Number], default: [1, 2, 4, 8, 16] }, // Days wait per box
-        boxQuotas: { type: [Number], default: [20, 10, 5, 5, 5] }, // Max items per session per box
-        autoEntry: { type: Boolean, default: true },
-        reviewInterval: { type: Number, default: 1 },
-        reviewHour: { type: Number, default: 9 },
-      },
-      required: true,
-    },
+    // Mixed, as Mongoose 5 stored the nested `type: {...}` this used to be (typePojoToMixed).
+    // Mongoose 6+ would turn that into a subdocument: defaults applied to legacy documents
+    // and `{ ...settings }` spreads in LeitnerService losing every field. Shape is
+    // LeitnerSystem["settings"] above; values come from LeitnerService.DEFAULT_SETTINGS.
+    settings: { type: Schema.Types.Mixed, required: true },
     items: {
       type: [
         {

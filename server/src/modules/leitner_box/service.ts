@@ -21,6 +21,14 @@ type LeitnerSystemDoc = Document & {
   items: LeitnerItem[];
 };
 
+// Stored items are Mongoose subdocuments; spreading one copies internals (on Mongoose 8
+// including `$__parent`, the whole Leitner document) into every review item's JSON.
+// Plain objects keep only the item's fields, at the top level where the clients read them.
+function toPlainItem(item: LeitnerItem): LeitnerItem {
+  const subdoc = item as any;
+  return typeof subdoc.toObject === "function" ? subdoc.toObject() : item;
+}
+
 export class LeitnerService {
   private static syncedUsers = new Set<string>();
 
@@ -136,7 +144,7 @@ export class LeitnerService {
     return selectedItems.map((item: LeitnerItem): ReviewItem => {
       const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
       return {
-        ...item,
+        ...toPlainItem(item),
         phrase,
         confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
         source_sentence: phrase?.context ?? null,
@@ -169,7 +177,7 @@ export class LeitnerService {
       .map((item: LeitnerItem): ReviewItem => {
         const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
         return {
-          ...item,
+          ...toPlainItem(item),
           phrase,
           confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
           source_sentence: phrase?.context ?? null,

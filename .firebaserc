@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "subturtle-dev",
+    "dev": "subturtle-dev",
+    "prod": "subturtle-prod"
+  }
+}

@@ -75,7 +75,7 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
 
   // Try to find existing active freemium allocation
   let freemiumAllocation: any | null = await freeCreditCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     end_date: { $gte: new Date() },
   });
 
@@ -86,7 +86,7 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
     endDate.setDate(endDate.getDate() + FREEMIUM_DURATION_DAYS);
 
     const newFreemiumAllocation = {
-      user_id: Types.ObjectId(userId),
+      user_id: new Types.ObjectId(userId),
       start_date: startDate,
       end_date: endDate,
       total_credits: FREEMIUM_DEFAULT_CREDITS,
@@ -122,8 +122,8 @@ export async function isUserOnFreemium(userId: string) {
     DATABASE,
     SUBSCRIPTION_COLLECTION
   );
-  const activeSubscription = await subscriptionsCollection.count({
-    user_id: Types.ObjectId(userId),
+  const activeSubscription = await subscriptionsCollection.countDocuments({
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   });
@@ -301,7 +301,7 @@ export async function getVoiceBudget(userId: string): Promise<VoiceBudget> {
     SUBSCRIPTION_COLLECTION
   );
   const activeSubscription = (await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   })) as Subscription | null;
@@ -338,7 +338,7 @@ export async function assertNoActiveSubscription(userId: string): Promise<void> 
     SUBSCRIPTION_COLLECTION
   );
   const existing = await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   });
@@ -389,7 +389,7 @@ export async function debitVoiceMinutes(
       );
       await subscriptionsCollection.updateOne(
         {
-          user_id: Types.ObjectId(userId),
+          user_id: new Types.ObjectId(userId),
           status: { $nin: ["canceled", "incomplete_expired"] },
           end_date: { $gte: new Date() },
         },
@@ -451,7 +451,7 @@ export async function addVoiceMinutesPack(props: {
     SUBSCRIPTION_COLLECTION
   );
   const activeFilter: any = {
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   };
@@ -517,7 +517,7 @@ export async function assertAndConsumeTextChat(userId: string): Promise<void> {
     SUBSCRIPTION_COLLECTION
   );
   const active = (await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   } as any)) as Subscription | null;
@@ -566,7 +566,7 @@ export async function getTextChatMessageCap(
     SUBSCRIPTION_COLLECTION
   );
   const active = (await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   } as any)) as Subscription | null;
@@ -596,7 +596,7 @@ export async function checkCreditAllocation(props: {
   // status:"active" filter here silently dropped trialing/past_due/paused
   // subscriptions back to the freemium pool.
   const activeSubscription = (await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   })) as Subscription | null;
@@ -713,7 +713,7 @@ export async function addNewSubscriptionWithCredit(props: {
   // Deactivate any previous active/trialing subscriptions for the user
   await subscriptionsCollection.updateMany(
     {
-      user_id: Types.ObjectId(userId),
+      user_id: new Types.ObjectId(userId),
       status: { $in: ["active", "trialing"] },
     },
     { $set: { status: "expired" } }
@@ -732,7 +732,7 @@ export async function addNewSubscriptionWithCredit(props: {
   }
 
   const newSubscription: Partial<Subscription> = {
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     start_date: startDate,
     end_date: endDate,
     total_credits: creditAmount,
@@ -812,7 +812,7 @@ export async function cancelSubscriptionByProviderAndSubscriptionId(props: {
       },
     });
 
-    if (updateResult.nModified == 0) {
+    if (updateResult.modifiedCount == 0) {
       throw new Error("Subscription not found");
     }
 
@@ -996,7 +996,7 @@ export async function recordUsage(props: {
   // status:"active" filter here silently dropped trialing/past_due/paused
   // subscriptions back to the freemium pool.
   const activeSubscription = (await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   })) as Subscription | null;
@@ -1022,7 +1022,7 @@ export async function recordUsage(props: {
   // Record usage in database regardless of available credits
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
   const newUsage = {
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     subscription_id: subscriptionId,
     service_type: serviceType,
     credit_used: creditAmount,
@@ -1049,7 +1049,7 @@ export async function recordUsage(props: {
 
     await freeCreditCollection.updateOne(
       {
-        user_id: Types.ObjectId(userId),
+        user_id: new Types.ObjectId(userId),
         end_date: { $gte: new Date() },
       },
       { $inc: { credits_used: creditAmount } }
@@ -1057,7 +1057,7 @@ export async function recordUsage(props: {
 
     // Get updated freemium allocation
     const updatedFreemiumAllocation = (await freeCreditCollection.findOne({
-      user_id: Types.ObjectId(userId),
+      user_id: new Types.ObjectId(userId),
       end_date: { $gte: new Date() },
     })) as FreeCredit | null;
 
@@ -1138,11 +1138,10 @@ export async function getSubscription(userId: string) {
 
   const activeSubscription = await subscriptionsCollection
     .findOne({
-      user_id: Types.ObjectId(userId),
+      user_id: new Types.ObjectId(userId),
       status: { $nin: ["canceled", "incomplete_expired"] },
       end_date: { $gte: new Date() },
-    })
-    .populate({ path: "payments" });
+    });
 
   if (!activeSubscription) {
     return null;
@@ -1229,7 +1228,7 @@ export async function createSubscriptionUpdatePortalUrl(
     SUBSCRIPTION_COLLECTION
   );
   const activeSubscription = await subscriptionsCollection.findOne({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
     status: { $nin: ["canceled", "incomplete_expired"] },
     end_date: { $gte: new Date() },
   });
@@ -1279,7 +1278,7 @@ export async function clearUserSubscriptions(userId: string) {
   );
 
   const result = await subscriptionsCollection.deleteMany({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
   });
 
   return {
@@ -1303,7 +1302,7 @@ export async function clearUserFreemiumAllocations(userId: string) {
   );
 
   const result = await freeCreditCollection.deleteMany({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
   });
 
   return {
@@ -1324,7 +1323,7 @@ export async function clearUserUsageRecords(userId: string) {
   const usageCollection = getCollection(DATABASE, USAGE_COLLECTION);
 
   const result = await usageCollection.deleteMany({
-    user_id: Types.ObjectId(userId),
+    user_id: new Types.ObjectId(userId),
   });
 
   return {

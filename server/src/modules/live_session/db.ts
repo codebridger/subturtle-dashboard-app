@@ -15,7 +15,7 @@ const liveSessionSchema = new Schema<LiveSessionRecordType>(
     refId: { type: String, required: true },
     session: { type: Object, required: true },
     usage: { type: Object },
-    dialogs: { type: Array<Object>, default: [] },
+    dialogs: { type: [Object], default: [] },
     metadata: { type: Object, default: {} },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

@@ -199,7 +199,8 @@
         const config = useRuntimeConfig();
         const redirectUrl = route.query.redirect as string;
 
-        let url = `${config.public.BASE_URL_API}/auth/google`;
+        // Same fallback as plugins/modular-rest.ts: with no API URL baked in, the API is same-origin.
+        let url = `${config.public.BASE_URL_API || window.location.origin}/auth/google`;
 
         // Pass redirect parameter to backend if present
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;

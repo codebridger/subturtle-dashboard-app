@@ -1,0 +1,55 @@
+name: Deploy
+
+# Deploys the API (Cloud Run) and the dashboard (Firebase Hosting) into one environment's
+# Firebase project, by running the same infra/ scripts an operator runs by hand. Called
+# by deploy-dev.yml and deploy-prod.yml.
+#
+# Keyless: Workload Identity Federation. infra/bootstrap.sh prints the two variables to
+# set on the GitHub environment (GCP_WORKLOAD_IDENTITY_PROVIDER,
+# GCP_DEPLOYER_SERVICE_ACCOUNT). The job only runs for environments listed in the
+# repository variable DEPLOY_ENVIRONMENTS (e.g. "dev" or "dev,prod"), so the workflow
+# stays inert until an environment has been provisioned.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    if: contains(vars.DEPLOY_ENVIRONMENTS, inputs.environment)
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: yarn
+          cache-dependency-path: |
+            frontend/yarn.lock
+            ui/yarn.lock
+
+      - name: Deploy the API to Cloud Run
+        run: infra/deploy-api.sh ${{ inputs.environment }} ${{ github.sha }}
+
+      - name: Deploy the dashboard to Firebase Hosting
+        run: infra/deploy-hosting.sh ${{ inputs.environment }}
