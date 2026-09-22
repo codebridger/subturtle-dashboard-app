@@ -49,6 +49,16 @@ clients, the Gemini and Text-to-Speech API keys) come first. Then:
    `dev` to the repository variable `DEPLOY_ENVIRONMENTS`. Pushes to `dev` then deploy
    automatically.
 
+Both environments are already through this list. Deploys now run from GitHub Actions —
+a push to `dev` deploys `subturtle-dev`, a push to `main` deploys `subturtle-prod`, both
+running the scripts above (see the CI/CD section of [CLAUDE.md](../CLAUDE.md)). Running a
+script by hand still works and takes the same path; it is the way to deploy a branch that
+is not `dev` or `main`.
+
+The Cloud Build triggers in the old `learn-by-subtitle` project that used to build from
+`dev` and `main` are **disabled**, not deleted — they deploy the pre-Firebase stack, which
+is the rollback path until it is decommissioned.
+
 ## Secrets
 
 | Secret | Env var | Notes |
