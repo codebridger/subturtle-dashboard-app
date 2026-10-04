@@ -47,13 +47,22 @@ jobs:
           cache-dependency-path: |
             frontend/yarn.lock
             ui/yarn.lock
-            landing/yarn.lock
 
       - name: Deploy the API to Cloud Run
         run: infra/deploy-api.sh ${{ inputs.environment }} ${{ github.sha }}
 
       - name: Deploy the dashboard to Firebase Hosting
         run: infra/deploy-hosting.sh ${{ inputs.environment }}
+
+      # Nuxt 4 needs a newer Node 22 than the dashboard pins, so switch to landing/.nvmrc.
+      - uses: actions/setup-node@v4
+        if: contains(vars.LANDING_ENVIRONMENTS, inputs.environment)
+        with:
+          node-version-file: landing/.nvmrc
+          cache: yarn
+          cache-dependency-path: |
+            landing/yarn.lock
+            ui/yarn.lock
 
       # The marketing site's own Hosting site. Inert until the environment is listed in the
       # repository variable LANDING_ENVIRONMENTS (its site must exist first), so nothing is
