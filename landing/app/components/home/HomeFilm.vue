@@ -27,12 +27,13 @@
                         height="720"
                         loading="lazy"
                         decoding="async"
-                        alt="The film’s end card: “From watching English to speaking it.” in a subtitle bar, with “speaking it.” highlighted in rose."
+                        alt="A scene from the film: at a team meeting, a colleague asks “Are you coming to the party on Friday?” and the answer is “I’m on the fence. Can I tell you tomorrow?”"
                     />
                     <button v-if="canPlay" type="button" class="player__play" @click="play">
                         <span class="player__pill">
                             <span class="player__icon"><StIcon name="solar:play-bold" :size="22" /></span>
                             Watch the film
+                            <span class="player__time mono">1:24</span>
                         </span>
                     </button>
                 </template>
@@ -80,15 +81,15 @@
         border: 0;
     }
 
-    /* The whole poster is the button; the visible control is a pill in the corner, clear of the
-       poster's own headline. */
+    /* The whole poster is the button; the visible control is a pill at the bottom centre, over the
+       scene's empty table and clear of the dialogue. */
     .player__play {
         position: absolute;
         inset: 0;
         display: flex;
         align-items: flex-end;
-        justify-content: flex-start;
-        padding: clamp(12px, 3vw, 24px);
+        justify-content: center;
+        padding: clamp(14px, 4vw, 36px);
         border: 0;
         background: none;
         cursor: pointer;
@@ -105,6 +106,14 @@
         font-weight: 800;
         font-size: 1rem;
         box-shadow: var(--shadow-lg);
+    }
+
+    .player__time {
+        padding-inline-start: 10px;
+        border-inline-start: 1px solid rgb(255 255 255 / 0.3);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: rgb(255 255 255 / 0.85);
     }
 
     .player__icon {
