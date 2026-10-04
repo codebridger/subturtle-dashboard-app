@@ -10,6 +10,10 @@
    makes opacity modifiers (`st-bg-primary/5`, the ambient blobs) work, and it is the hook a
    dark theme will use — a dark palette is then a pure-CSS override of this block, with no
    component changes. Write raw CSS against them as `rgb(var(--rose-500))`.
+
+   A second deliberate difference: the primary, muted and link aliases point one step darker
+   than the design source, because the source values fail WCAG AA (4.5:1) for normal-size
+   text. See the notes on each below. The brand scale itself is unchanged.
    ============================================================ */
 
 :root {
@@ -65,9 +69,12 @@
     --sky-600: 13 127 205;
 
     /* ---- Semantic aliases — reference these in product UI -- */
-    --color-primary: var(--rose-500);
-    --color-primary-hover: var(--rose-600);
-    --color-primary-press: var(--rose-700);
+    /* rose-600, not the brand rose-500: primary carries white text (solid buttons and badges),
+       and white on rose-500 is 3.9:1 where AA asks 4.5:1; on rose-600 it is 4.8:1. rose-500
+       stays the brand mark and is still right for large display type and decoration. */
+    --color-primary: var(--rose-600);
+    --color-primary-hover: var(--rose-700);
+    --color-primary-press: var(--rose-800);
     --color-primary-soft: var(--rose-100);
     --color-primary-tint: var(--rose-50);
     --color-on-primary: var(--white);
@@ -80,10 +87,12 @@
 
     --text-strong: var(--ink-950);
     --text-body: var(--ink-800);
-    --text-muted: var(--ink-500);
+    /* ink-600, not ink-500: ink-500 is 4.1:1 on white and 3.8:1 on paper; ink-600 is 5.9:1. */
+    --text-muted: var(--ink-600);
     --text-faint: var(--ink-400);
     --text-on-dark: var(--white);
-    --text-link: var(--rose-600);
+    /* rose-700, not rose-600: rose-600 text passes on white (4.8:1) but not on paper (4.4:1). */
+    --text-link: var(--rose-700);
 
     --surface-page: var(--paper);
     --surface-card: var(--white);
