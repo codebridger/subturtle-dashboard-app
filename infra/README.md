@@ -6,7 +6,8 @@ settings from [env.sh](env.sh).
 
 | Piece | Resource |
 | --- | --- |
-| Dashboard (SPA) | Firebase Hosting → `https://<project>.web.app` |
+| Dashboard (SPA) | Firebase Hosting, the project's default site → `https://<project>.web.app` (target `dashboard`) |
+| Landing page (static) | Firebase Hosting, its own site → `subturtle-landing-dev` / `subturtle-landing` (target `landing`), see [Landing page](#landing-page) |
 | API | Cloud Run `subturtle-api`, `europe-west4`, scales to zero |
 | Database | Firestore Enterprise with MongoDB compatibility, database `subturtle` |
 | Scheduled jobs | Cloud Scheduler `schedule-tick` → `POST /schedule/tick` every 5 min (OIDC) |
@@ -58,6 +59,30 @@ is not `dev` or `main`.
 The Cloud Build triggers in the old `learn-by-subtitle` project that used to build from
 `dev` and `main` are **disabled**, not deleted — they deploy the pre-Firebase stack, which
 is the rollback path until it is decommissioned.
+
+## Landing page
+
+The marketing site ([landing/](../landing/README.md)) is a second Hosting site in each project.
+`firebase.json` holds two targets, bound per project in `.firebaserc`; every deploy names one
+(`--only hosting:dashboard` in `deploy-hosting.sh`, `--only hosting:landing` in
+`deploy-landing.sh`), because a bare `--only hosting` publishes both.
+
+Per environment, once:
+
+1. Create the site (site ids are global and permanent):
+   ```bash
+   npx firebase-tools@15 hosting:sites:create subturtle-landing-dev --project subturtle-dev
+   ```
+   `subturtle-landing-dev` exists (2026-10-04). `subturtle-landing` for prod is created at the
+   subturtle.app cutover.
+2. `infra/deploy-landing.sh dev` by hand, and check the site on its `*.web.app` URL. Its public
+   values come from [public/landing-dev.env](public/landing-dev.env) (origins, Ads tag, film id)
+   plus `public/dev.env` (the Mixpanel project it shares with the dashboard).
+3. Add the environment to the repository variable `LANDING_ENVIRONMENTS` (e.g. `dev`, later
+   `dev,prod`). Until then `deploy.yml` skips the landing step for it.
+
+The dev site is reached only on `subturtle-landing-dev.web.app` and ships `noindex` and
+`Disallow: /`. Only a build whose `NUXT_PUBLIC_SITE_URL` is `https://subturtle.app` is indexable.
 
 ## Secrets
 

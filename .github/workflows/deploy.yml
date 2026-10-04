@@ -1,8 +1,8 @@
 name: Deploy
 
-# Deploys the API (Cloud Run) and the dashboard (Firebase Hosting) into one environment's
-# Firebase project, by running the same infra/ scripts an operator runs by hand. Called
-# by deploy-dev.yml and deploy-prod.yml.
+# Deploys the API (Cloud Run), the dashboard and the landing page (two Firebase Hosting
+# sites) into one environment's Firebase project, by running the same infra/ scripts an
+# operator runs by hand. Called by deploy-dev.yml and deploy-prod.yml.
 #
 # Keyless: Workload Identity Federation. infra/bootstrap.sh prints the two variables to
 # set on the GitHub environment (GCP_WORKLOAD_IDENTITY_PROVIDER,
@@ -47,9 +47,17 @@ jobs:
           cache-dependency-path: |
             frontend/yarn.lock
             ui/yarn.lock
+            landing/yarn.lock
 
       - name: Deploy the API to Cloud Run
         run: infra/deploy-api.sh ${{ inputs.environment }} ${{ github.sha }}
 
       - name: Deploy the dashboard to Firebase Hosting
         run: infra/deploy-hosting.sh ${{ inputs.environment }}
+
+      # The marketing site's own Hosting site. Inert until the environment is listed in the
+      # repository variable LANDING_ENVIRONMENTS (its site must exist first), so nothing is
+      # published to production before the subturtle.app cutover (see infra/README.md).
+      - name: Deploy the landing page to Firebase Hosting
+        if: contains(vars.LANDING_ENVIRONMENTS, inputs.environment)
+        run: infra/deploy-landing.sh ${{ inputs.environment }}

@@ -18,26 +18,35 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 
-/** Every icon the shell, the Progress screen and the Login screen use. Keep sorted by set, then name. */
+/** Every icon the shell, the Progress and Login screens, and landing/ use. Keep sorted by set, then name. */
 const ICONS = [
     'logos:google-icon',
     'solar:add-circle-bold',
+    'solar:alt-arrow-down-linear',
     'solar:alt-arrow-left-linear',
     'solar:alt-arrow-right-linear',
     'solar:arrow-down-bold',
     'solar:arrow-right-bold',
     'solar:arrow-right-linear',
+    'solar:arrow-right-up-linear',
     'solar:arrow-up-bold',
     'solar:bookmark-bold-duotone',
+    'solar:case-minimalistic-bold-duotone',
     'solar:chart-2-bold-duotone',
+    'solar:chat-round-dots-bold-duotone',
+    'solar:check-circle-bold',
     'solar:clock-circle-bold',
+    'solar:close-circle-linear',
+    'solar:code-square-bold-duotone',
     'solar:crown-bold',
     'solar:crown-bold-duotone',
     'solar:danger-triangle-bold',
+    'solar:document-text-bold-duotone',
     'solar:documents-bold-duotone',
     'solar:download-minimalistic-bold',
     'solar:fire-bold',
     'solar:fire-bold-duotone',
+    'solar:global-bold-duotone',
     'solar:hamburger-menu-linear',
     'solar:history-2-bold-duotone',
     'solar:layers-minimalistic-bold-duotone',
@@ -48,6 +57,13 @@ const ICONS = [
     'solar:play-bold',
     'solar:rocket-2-bold-duotone',
     'solar:settings-bold-duotone',
+    'solar:shield-check-bold-duotone',
+    'solar:star-bold',
+    'solar:subtitles-bold-duotone',
+    'solar:translation-2-bold-duotone',
+    'solar:tv-bold-duotone',
+    'solar:user-speak-bold-duotone',
+    'solar:verified-check-bold',
 ];
 
 const setCache = new Map();

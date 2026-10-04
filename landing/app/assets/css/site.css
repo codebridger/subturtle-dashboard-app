@@ -1,0 +1,258 @@
+/* ============================================================
+   Page chrome for subturtle.app, on top of subturtle-ui/style.css.
+
+   Colors come from the design system's semantic aliases, which already meet WCAG AA for text
+   (subturtle-ui/src/styles/tokens.css). Raw rose-500 appears here only on large type (the
+   headline highlights, the demo) or as decoration, where white on it passes at 3:1.
+   ============================================================ */
+/* Self-hosted type (SIL OFL, see public/fonts/OFL.txt): Nunito as one variable font split by script, and
+   JetBrains Mono at the one weight the page uses. Same family names as the design tokens, so nothing
+   else changes. nuxt.config.ts preloads the Latin file and drops the Google Fonts @import that
+   subturtle-ui's stylesheet carries, which was a render-blocking request chain. */
+@font-face {
+    font-family: 'Nunito';
+    font-style: normal;
+    font-weight: 200 1000;
+    font-display: swap;
+    src: url('/fonts/nunito-latin.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+        U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Nunito';
+    font-style: normal;
+    font-weight: 200 1000;
+    font-display: swap;
+    src: url('/fonts/nunito-latin-ext.woff2') format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+        U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Nunito';
+    font-style: normal;
+    font-weight: 200 1000;
+    font-display: swap;
+    src: url('/fonts/nunito-cyrillic.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/jetbrains-mono-latin-500.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+        U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+    --page-max: 72rem;
+    --section-y: clamp(4.5rem, 10vw, 7.5rem);
+    --header-h: 4.25rem;
+}
+
+/* The two rules of Tailwind's preflight that subturtle-ui's components assume of their host page: its
+   border utilities set only a width, so without `border-style: solid` an outlined StButton rendered as
+   a link has no border at all. */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+}
+
+body {
+    margin: 0;
+    background: rgb(var(--surface-page));
+    color: rgb(var(--text-body));
+    font-family: var(--font-sans);
+    /* One step above the design default: many readers are B1–B2 non-native speakers. */
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin: 0;
+    color: rgb(var(--text-strong));
+    font-family: var(--font-display);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+}
+
+p,
+ul,
+ol,
+figure {
+    margin: 0;
+}
+
+a {
+    color: rgb(var(--text-link));
+    text-underline-offset: 3px;
+}
+
+img,
+svg,
+video {
+    display: block;
+    max-width: 100%;
+}
+
+button {
+    font: inherit;
+}
+
+:where(a, button, summary, [tabindex]):focus-visible {
+    outline: 3px solid rgb(var(--rose-600));
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+
+.container {
+    width: 100%;
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 32px);
+}
+
+.section {
+    padding-block: var(--section-y);
+}
+
+/* The rose eyebrow above a section title: the design system's .st-overline, one size up. */
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: rgb(var(--rose-700));
+}
+
+.eyebrow::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgb(var(--rose-500));
+}
+
+.section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 44rem;
+}
+
+.section-head--center {
+    margin-inline: auto;
+    align-items: center;
+    text-align: center;
+}
+
+.section-title {
+    font-size: clamp(1.875rem, 4.4vw, 2.875rem);
+    font-weight: 900;
+}
+
+.lede {
+    font-size: clamp(1.0625rem, 1.5vw, 1.1875rem);
+    line-height: 1.6;
+    color: rgb(var(--text-body));
+    max-width: 40rem;
+}
+
+/* One key phrase per title, in a soft rose tint (rose-800 on rose-100 is 6.9:1). */
+.hl {
+    background: rgb(var(--rose-100));
+    color: rgb(var(--rose-800));
+    border-radius: 0.18em;
+    padding: 0 0.16em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
+/* The brand moment: the solid rose block from the stills, used once, on the hero headline. White on
+   rose-500 passes AA only as large text (3:1), which this always is. */
+.hl--brand {
+    background: rgb(var(--rose-500));
+    color: rgb(var(--white));
+    box-shadow: 0 0.18em 0.6em rgb(249 30 90 / 0.18);
+}
+
+.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.skip-link {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 1000;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: rgb(var(--ink-950));
+    color: rgb(var(--white));
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 12px;
+}
+
+/* Old Framer anchors (subturtle.app/#pricing, #demo, …) keep landing on the matching section. */
+.legacy-anchor {
+    display: block;
+    height: 0;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -20,5 +20,6 @@ yarn install --frozen-lockfile
 yarn generate
 
 cd ..
-npx --yes firebase-tools@15 deploy --only hosting --project "$PROJECT_ID" --non-interactive
+# The named target: a bare `--only hosting` would also publish the marketing site (see firebase.json).
+npx --yes firebase-tools@15 deploy --only hosting:dashboard --project "$PROJECT_ID" --non-interactive
 echo "Deployed the dashboard to $DASHBOARD_URL"

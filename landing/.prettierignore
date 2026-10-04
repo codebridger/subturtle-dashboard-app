@@ -1,0 +1,7 @@
+dist
+.nuxt
+.output
+node_modules
+app/legal/*.md
+app/data/*.json
+public
