@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 4 May 2026_
+_Last updated: 4 October 2026_
 
 ## Introduction
 
@@ -69,11 +69,22 @@ Our Service integrates with third-party services like YouTube and Netflix. This 
 
 Our Service is not intended for use by children under the age of 13. We do not knowingly collect personally identifiable information from children under 13.
 
-## 8. Changes to This Privacy Policy
+## 8. Cookies on Our Website
+
+Our website, subturtle.app, uses cookies and similar technologies only if you agree in the cookie banner.
+
+- **Analytics (Mixpanel):** We measure how people use the website, for example which pages they visit and which buttons they click. Mixpanel stores a cookie with a random identifier. If you later sign in to the Subturtle dashboard, this identifier can be linked to your account.
+- **Advertising measurement (Google Ads):** We measure whether our ads bring people to Subturtle. Google may set cookies and receive information about your visit, as described in Google's own privacy policy.
+
+If you choose "Decline", we do not load these tools. We remember your choice in your browser's local storage, so we do not ask you again. You can change your choice at any time with "Cookie settings" at the bottom of every page.
+
+Our film plays from YouTube (youtube-nocookie.com), and only after you press play. YouTube's privacy policy applies to the video player.
+
+## 9. Changes to This Privacy Policy
 
 We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
 
-## 9. Contact Us
+## 10. Contact Us
 
 If you have any questions about this Privacy Policy, please contact us `info@codebridger.co.uk`
 
