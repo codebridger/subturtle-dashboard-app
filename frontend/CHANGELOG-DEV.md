@@ -1,3 +1,10 @@
+# [1.1.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0...v1.1.0-dev.1) (2026-10-05)
+
+
+### Features
+
+* rebuild subturtle.app landing on Firebase and subturtle-ui #z8zc9zyaa2 ([#80](https://github.com/codebridger/subturtle-dashboard-app/issues/80)) ([63e7f13](https://github.com/codebridger/subturtle-dashboard-app/commit/63e7f13729dc4148feea0e34ec04e7d811c097f0)), closes [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2)
+
 # [1.0.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2026-09-22)
 
 
