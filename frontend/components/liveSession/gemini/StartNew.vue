@@ -98,6 +98,7 @@ onMounted(async () => {
         await controller.fetchPage(1);
     } catch (error) {
         console.error(error);
+        toastError({ message: t('bundle.load_failed') });
     }
 });
 

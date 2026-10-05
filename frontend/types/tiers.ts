@@ -15,6 +15,10 @@ export type {
 // Re-exported so the frontend has a single source of truth to pattern-match on.
 export { AI_CREDIT_EXHAUSTED_CODE } from '../../server/src/modules/subscription/config';
 
+// Stable code the live-session token issuer throws while new voice sessions are
+// paused by the operator kill switch.
+export { VOICE_PAUSED_CODE } from '../../server/src/modules/subscription/config';
+
 // Stable code thrown when a tier limit/lock blocks an action (save_words cap,
 // weekly_insights / session_history lock, voice budget, live-session count). A
 // global interceptor matches it to show the upgrade modal — single source of truth.

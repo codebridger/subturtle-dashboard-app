@@ -172,7 +172,7 @@
             <div class="flex flex-col items-center justify-center">
                 <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
-                <Button class="mt-8" to="/">{{ t('live-practice.back-to-dashboard') }}</Button>
+                <Button class="mt-8" @click="router.push('/')">{{ t('live-practice.back-to-dashboard') }}</Button>
             </div>
         </template>
     </MaterialPracticeToolScaffold>
@@ -242,7 +242,7 @@ import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 import { analytic } from '~/plugins/mixpanel';
-import { AI_CREDIT_EXHAUSTED_CODE } from '~/types/tiers';
+import { AI_CREDIT_EXHAUSTED_CODE, VOICE_PAUSED_CODE } from '~/types/tiers';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
@@ -474,7 +474,9 @@ function createLiveSession() {
                 return;
             }
             errorMode.value = true;
-            errorMessage.value = message || t('live-practice.toast.start-failed');
+            errorMessage.value = message.includes(VOICE_PAUSED_CODE)
+                ? t('live-practice.voice-paused')
+                : message || t('live-practice.toast.start-failed');
         });
 }
 
@@ -516,8 +518,16 @@ function handleSessionEvent(eventData: any) {
         });
     } else if (eventData?.type === 'session-resumed') {
         toastSuccess({ title: t('live-practice.toast.reconnected-title') });
-    } else if (eventData?.type === 'session-resume-failed') {
-        toastError({ title: t('live-practice.toast.reconnect-failed') });
+    } else if (eventData?.type === 'session-resume-failed' || eventData?.type === 'session-dropped') {
+        // The store has already torn the session down; without this the page
+        // would sit on the loading spinner with no way out.
+        errorMode.value = true;
+        errorMessage.value = t('live-practice.connection-lost');
+        try {
+            analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice', reason: eventData.type });
+        } catch {
+            /* analytics is best-effort */
+        }
     }
 }
 

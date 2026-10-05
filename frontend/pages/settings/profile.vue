@@ -56,12 +56,6 @@
                             <p class="mt-1 text-xs text-gray-500">{{ t('profile.timezone_desc') }}</p>
                         </div>
 
-                        <div class="pointer-events-none mb-6">
-                            <CheckboxInput v-for="option in options" :key="option.value"
-                                v-model="selectedValues[option.value]" :text="`${option.label} (${t('coming-soon')})`"
-                                :value="option.value" :disabled="true" />
-                        </div>
-
                         <div class="border-t border-gray-200 pt-4">
                             <div class="flex justify-end">
                                 <Button :label="t('save-changes')" type="submit" size="lg"
@@ -79,7 +73,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue';
 import { useProfileStore } from '~/stores/profile';
-import { Card, Input, Button, CheckboxInput } from 'pilotui';
+import { Card, Input, Button } from 'pilotui';
 import TimezonePicker from '~/components/common/TimezonePicker.vue';
 import { toastSuccess, toastError } from 'pilotui/toast';
 
@@ -98,7 +92,6 @@ const email = ref(profileStore.email);
 const profilePicture = computed(() => profileStore.profilePicture);
 const selectedFile = ref<File | null>(null);
 const filePreviewUrl = ref<string | null>(null);
-const options = [{ label: t('profile.receive-daily-practice-email-reminders'), value: 'dailyReminders' }];
 const selectedValues = ref<Record<string, boolean>>({});
 const isSubmitting = ref(false);
 const isUploading = ref(false);

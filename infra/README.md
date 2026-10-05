@@ -100,6 +100,21 @@ The dev site is reached only on `subturtle-landing-dev.web.app` and ships `noind
 
 `deploy-api.sh` refuses to deploy while a required secret has no version.
 
+## Pausing voice sessions
+
+Voice practice is the one feature whose cost scales with traffic (Gemini Live, billed per
+minute of audio). To stop new voice sessions without a code deploy:
+
+```bash
+gcloud run services update subturtle-api --project subturtle-prod --region europe-west4 \
+  --update-env-vars VOICE_SESSIONS_PAUSED=true
+```
+
+The token issuer then refuses new sessions with `VOICE_PAUSED`, which the dashboard shows as a
+"paused" message; sessions already running still reconnect and finish within their minute
+caps. Undo it with `--remove-env-vars VOICE_SESSIONS_PAUSED`. The next `deploy-api.sh` run
+clears it too, because that script replaces the service's env vars with `--set-env-vars`.
+
 ## Firestore behaviour to keep in mind
 
 - **A conditional `findOneAndUpdate` is not atomic under concurrency**: several concurrent
