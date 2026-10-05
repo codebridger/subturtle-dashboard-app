@@ -28,6 +28,12 @@ done
 gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
 docker buildx build --platform linux/amd64 -f Dockerfile.api -t "$IMAGE" --push .
 
+# The profile reset testing tool (modules/profile/functions.ts) is allowed on dev only.
+extra_env=""
+if [[ $ENVIRONMENT == dev ]]; then
+  extra_env=",PROFILE_RESET_ENABLED=true"
+fi
+
 # SCHEDULE_TICK_AUDIENCE must equal the audience in infra/scheduler.sh.
 gcloud_p run deploy "$SERVICE" \
   --image "$IMAGE" \
@@ -37,7 +43,7 @@ gcloud_p run deploy "$SERVICE" \
   --min-instances 0 --max-instances 4 \
   --cpu 1 --memory 512Mi --cpu-boost \
   --timeout 300 \
-  --set-env-vars "MONGO_SINGLE_DATABASE=true,SCHEDULE_DRIVER=http,SCHEDULE_TICK_AUDIENCE=$API_URL,SCHEDULE_TICK_INVOKER=$SCHEDULER_SA,API_BASE_URL=$API_URL,DASHBOARD_BASE_URL=$DASHBOARD_URL" \
+  --set-env-vars "MONGO_SINGLE_DATABASE=true,SCHEDULE_DRIVER=http,SCHEDULE_TICK_AUDIENCE=$API_URL,SCHEDULE_TICK_INVOKER=$SCHEDULER_SA,API_BASE_URL=$API_URL,DASHBOARD_BASE_URL=$DASHBOARD_URL$extra_env" \
   --set-secrets "$(IFS=,; echo "${secret_env[*]}")"
 
 echo "Deployed $IMAGE to $API_URL"
