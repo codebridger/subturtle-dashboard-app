@@ -1,3 +1,10 @@
+# [1.1.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **security:** lock API functions to the signed-in user and keep profile reset out of production #z8zc9zyjw3 ([#83](https://github.com/codebridger/subturtle-dashboard-app/issues/83)) ([787d7b3](https://github.com/codebridger/subturtle-dashboard-app/commit/787d7b3c4244d700ce9928b3579f1a07f66b7910)), closes [#z8zc9zyjw3](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyjw3)
+
 # [1.1.0-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-10-05)
 
 
