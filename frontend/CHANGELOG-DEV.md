@@ -1,3 +1,10 @@
+# [1.1.0-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-10-05)
+
+
+### Features
+
+* **live-session:** voice pause switch, visible coach failures, English login preview #z8zc9zyg37 ([#81](https://github.com/codebridger/subturtle-dashboard-app/issues/81)) ([e285ac5](https://github.com/codebridger/subturtle-dashboard-app/commit/e285ac57879a26402d4174233908994eaf5e53dc)), closes [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37)
+
 # [1.1.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0...v1.1.0-dev.1) (2026-10-05)
 
 
