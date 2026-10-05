@@ -1,0 +1,95 @@
+[
+  {
+    "id": "starter",
+    "status": "live",
+    "name": "Starter",
+    "tagline": "Start learning English from the videos you already watch.",
+    "isPaid": false,
+    "featureLabels": [
+      "Save up to 200 phrases a month",
+      "Unlimited Smart Review flashcards",
+      "Hover to translate any subtitle",
+      "A taste of AI tools each month"
+    ],
+    "aiBudgetLabel": "a taste each month",
+    "pricing": null,
+    "highlight": false,
+    "badge": null,
+    "trialDays": 0
+  },
+  {
+    "id": "reader",
+    "status": "live",
+    "name": "Reader",
+    "tagline": "Read, save, and chat with AI about every phrase you meet.",
+    "isPaid": true,
+    "featureLabels": [
+      "Everything in Starter",
+      "Save as many phrases as you want",
+      "60 text chats per month",
+      "Unlimited translations"
+    ],
+    "aiBudgetLabel": "voice top-ups any time",
+    "pricing": {
+      "monthly": {
+        "gbp": 4.49
+      },
+      "annual": {
+        "gbp": 42.99
+      }
+    },
+    "highlight": false,
+    "badge": null,
+    "trialDays": 0
+  },
+  {
+    "id": "learner",
+    "status": "live",
+    "name": "Learner",
+    "tagline": "Make real progress — read with AI, then practice out loud.",
+    "isPaid": true,
+    "featureLabels": [
+      "Everything in Reader",
+      "90 minutes of voice chat a month",
+      "Top up voice minutes any time",
+      "Weekly progress insights",
+      "Full session history"
+    ],
+    "aiBudgetLabel": "90 minutes of voice chat a month",
+    "pricing": {
+      "monthly": {
+        "gbp": 10.99
+      },
+      "annual": {
+        "gbp": 104.99
+      }
+    },
+    "highlight": true,
+    "badge": "Most popular",
+    "trialDays": 3
+  },
+  {
+    "id": "coach",
+    "status": "live",
+    "name": "Coach",
+    "tagline": "Speak English every day with your AI coach.",
+    "isPaid": true,
+    "featureLabels": [
+      "Everything in Learner",
+      "300 minutes of voice chat a month",
+      "Top up voice minutes any time"
+    ],
+    "aiBudgetLabel": "300 minutes of voice chat a month",
+    "pricing": {
+      "monthly": {
+        "gbp": 24.99
+      },
+      "annual": {
+        "gbp": 239.99
+      }
+    },
+    "highlight": false,
+    "badge": null,
+    "trialDays": 0
+  }
+]

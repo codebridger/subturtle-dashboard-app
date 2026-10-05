@@ -10,6 +10,7 @@ SubTurtle Dashboard App — a language-learning dashboard for SubTurtle (learn-b
 | --- | --- |
 | Production | <https://dashboard.subturtle.app> |
 | Development | <https://dev.dashboard.subturtle.app> |
+| Landing page (dev) | <https://subturtle-landing-dev.web.app> — `subturtle.app` itself still serves the old Framer site until its cutover |
 
 ## Sibling repositories
 
@@ -43,6 +44,8 @@ subturtle-dashboard-app/
 │   ├── locales/              # i18n JSON (en only)
 │   ├── utils/, types/, assets/, public/, tests/
 │   └── nuxt.config.ts, tailwind.config.cjs, vitest.config.ts, playwright.config.ts
+├── landing/                  # subturtle.app marketing site: static Nuxt 4 on subturtle-ui (see landing/README.md)
+├── ui/                       # subturtle-ui, the design system (see Design system migration)
 ├── server/                   # Node + TS modular-rest backend
 │   └── src/
 │       ├── index.ts          # Server entry (modular-rest setup)
@@ -71,6 +74,15 @@ subturtle-dashboard-app/
 | `yarn test:e2e` / `yarn test:e2e:ui` | Playwright e2e |
 | `yarn test:coverage` | Coverage report |
 | `yarn format` / `yarn format:check` | Prettier |
+
+### `landing/`
+
+| Command | What it does |
+| --- | --- |
+| `yarn dev` | Nuxt dev server on :3100 (needs `.env.local`, see `.env.local.example`) |
+| `yarn build` | Typecheck + prerender to `landing/dist` |
+| `yarn sync:plans <api-origin>` | Pull live plan prices for the build (falls back to the snapshot) |
+| `yarn check:hosting` | The deploy gate (`--config-only` for firebase.json alone) |
 
 ### `server/`
 
@@ -207,7 +219,8 @@ GitHub Actions deploys both environments; there is no build pipeline inside Goog
 | `main` | [deploy-prod.yml](.github/workflows/deploy-prod.yml) | `subturtle-prod` |
 
 Both call [deploy.yml](.github/workflows/deploy.yml), which runs the **same `infra/` scripts
-an operator runs by hand** (`deploy-api.sh` then `deploy-hosting.sh`) — so a CI deploy and a
+an operator runs by hand** (`deploy-api.sh`, `deploy-hosting.sh`, then `deploy-landing.sh` for
+environments listed in the repository variable `LANDING_ENVIRONMENTS`) — so a CI deploy and a
 local one take the identical path, and there is no second deployment definition to drift.
 
 - **Keyless.** Authentication is Workload Identity Federation, so no service-account key
@@ -228,6 +241,7 @@ local one take the identical path, and there is no second deployment definition 
 - **Two logical Mongo databases** (`user_content`, `cms`). With `MONGO_SINGLE_DATABASE=true` (Firestore) they share one physical database, so a collection name must be unique across both — check [server/src/config.ts](server/src/config.ts) before adding one.
 - **No in-process timers for jobs** (`node-schedule`, `setInterval`): Cloud Run scales to zero, so nothing runs between requests. Create jobs with `ScheduleService.createJob` and register their function with `ScheduleService.register`.
 - **Deploys** go to Firebase Hosting (dashboard) + Cloud Run (API) in the `subturtle-dev` / `subturtle-prod` projects — see [infra/README.md](infra/README.md).
+- **Two Hosting sites per project** (targets `dashboard` and `landing`). Always deploy a named target (`--only hosting:dashboard`); a bare `--only hosting` publishes both.
 - **Live-session audio formats are fixed**: mic input is 16 kHz Int16 PCM via an AudioWorklet (`pcm16-downsampler`); server audio comes back at 24 kHz and is queued as gapless `AudioBufferSourceNode`s. Don't change rates without updating the worklet.
 - **Yarn only** — both workspaces ship `yarn.lock`. Mixing `npm install` will desync the lockfile.
 - **pilotui `<Button :to="url">` renders a disabled-looking link** — in link mode it emits `<a disabled="false">`, and the `.btn[disabled]` rule fades it (`opacity: 0.6`, `cursor: not-allowed`). For button-styled links, use `@click` with programmatic navigation instead of `:to`.

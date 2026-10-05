@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.nuxt/
+.output/
+.data/
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.firebase/
+# Build-time pricing from scripts/sync-plans.mjs; the committed fallback is plans.snapshot.json.
+app/data/plans.json
+# Local-only film master, served by `nuxt dev` (see nuxt.config.ts $development). Never committed.
+.film/

@@ -72,6 +72,11 @@ composes them as `rgb(var(--token) / <alpha-value>)`. That is what makes opacity
 (`st-bg-primary/5`, the ambient background blobs) and what a dark theme will hook into. Write raw
 CSS against them as `rgb(var(--rose-500))`.
 
+Values match the design source except three semantic aliases, darkened one step to meet WCAG AA
+(4.5:1) for normal-size text: `--color-primary` is rose-600 (white on the brand rose-500 is only
+3.9:1), `--text-link` is rose-700, `--text-muted` is ink-600. `.st-overline` text is rose-700 for
+the same reason. rose-500 remains the brand mark, for large type and decoration.
+
 `:root.dark` is scaffolded and empty. The design system ships light values only, and the product
 keeps its theme switcher, so dark currently leaves anything built on this library in its light
 palette. Adding dark means redefining the semantic aliases there — no component should change.
