@@ -48,8 +48,9 @@
         solid: {
             primary: 'st-bg-primary hover:st-bg-primary-hover st-text-primary-on',
             accent: 'st-bg-accent hover:st-bg-accent-hover st-text-accent-on',
-            neutral: 'st-bg-ink-900 hover:st-bg-ink-950 st-text-white',
-            danger: 'st-bg-danger hover:st-bg-red-600 st-text-white',
+            // See StButton: the ink ramp inverts in dark, so this pairs with --surface-page.
+            neutral: 'st-bg-inverse hover:st-opacity-90 st-text-page',
+            danger: 'st-bg-danger hover:st-bg-red-600 st-text-on-brand',
         },
         soft: {
             primary: 'st-bg-primary-tint hover:st-bg-primary-soft st-text-rose-600',

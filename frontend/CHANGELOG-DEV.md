@@ -1,3 +1,32 @@
+# [1.2.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0...v1.2.0-dev.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* point extension install links at the real Chrome Web Store listing ([77aac87](https://github.com/codebridger/subturtle-dashboard-app/commit/77aac876c84c6de47677bdb4edb2efc26c9fbda0))
+* **ui:** act on the profile-menu review ([064051d](https://github.com/codebridger/subturtle-dashboard-app/commit/064051db8f3fda5e6501e29380eff04a0436b88d))
+* **ui:** drop a dead prop default and correct two stale comments ([5bffacf](https://github.com/codebridger/subturtle-dashboard-app/commit/5bffacf582929c6d106a47f138bad31d87c7ae5d)), closes [#65](https://github.com/codebridger/subturtle-dashboard-app/issues/65)
+* **ui:** lift the app shell topbar above the content column ([c13caa5](https://github.com/codebridger/subturtle-dashboard-app/commit/c13caa5573dfc2be3ede0ec4613ba9de98c9079d)), closes [#header-right](https://github.com/codebridger/subturtle-dashboard-app/issues/header-right)
+* **ui:** stop the board cards stretching, and gate optional practice ([603d216](https://github.com/codebridger/subturtle-dashboard-app/commit/603d2161a312cc147e2eb958de12d761327f4529))
+
+
+### Features
+
+* **ui:** add StThemeSwitcher and place it on all three surfaces ([51663ef](https://github.com/codebridger/subturtle-dashboard-app/commit/51663efe6168061d2c163481edc1a0d791e3a473))
+* **ui:** add the topbar profile menu with the theme switch ([31f5a51](https://github.com/codebridger/subturtle-dashboard-app/commit/31f5a51edc784585b8b27b026cc01583f0c54832)), closes [#header-right](https://github.com/codebridger/subturtle-dashboard-app/issues/header-right)
+* **ui:** make dark real on the st- design system ([d36fca1](https://github.com/codebridger/subturtle-dashboard-app/commit/d36fca1909d547c8feca041716913dc819f401de)), closes [#211b28](https://github.com/codebridger/subturtle-dashboard-app/issues/211b28) [#e30b4b](https://github.com/codebridger/subturtle-dashboard-app/issues/e30b4b)
+* **ui:** rebuild Bundle detail on subturtle-ui ([35901b1](https://github.com/codebridger/subturtle-dashboard-app/commit/35901b1070a7a70337f066dc0f6c31c0cb7814ba))
+* **ui:** rebuild Phrase bundles on subturtle-ui ([0808df4](https://github.com/codebridger/subturtle-dashboard-app/commit/0808df425d55dacc8d8690eb65efcf9f516a7363))
+* **ui:** rebuild PoolCard on subturtle-ui ([51bfc6b](https://github.com/codebridger/subturtle-dashboard-app/commit/51bfc6b19846cf0d26887391757005279188aec8))
+* **ui:** rebuild Profile on subturtle-ui ([ed1bc41](https://github.com/codebridger/subturtle-dashboard-app/commit/ed1bc41f6be69fe3ef71087b799a025aa484e851))
+* **ui:** rebuild Review settings on subturtle-ui ([61d430f](https://github.com/codebridger/subturtle-dashboard-app/commit/61d430f060a61ef93b828ca859b02385166402bf))
+* **ui:** rebuild Session history on subturtle-ui ([908e6c2](https://github.com/codebridger/subturtle-dashboard-app/commit/908e6c2b72e548003c8af7bef1c38da158b7a152))
+* **ui:** rebuild Start a session on subturtle-ui ([a14b02e](https://github.com/codebridger/subturtle-dashboard-app/commit/a14b02ef7d9957baef13bed110588858d178b448))
+* **ui:** rebuild Start a session on subturtle-ui ([6b3586d](https://github.com/codebridger/subturtle-dashboard-app/commit/6b3586de92f830f1c1aec059904bf63b329cb911))
+* **ui:** rebuild Subscription on subturtle-ui ([f83c5eb](https://github.com/codebridger/subturtle-dashboard-app/commit/f83c5eb4f4f995bff4f7f0265cb078cea5770a86))
+* **ui:** rebuild Today's board on subturtle-ui ([2e7da51](https://github.com/codebridger/subturtle-dashboard-app/commit/2e7da513d120eb8bd9870128a1231606ab182dcb))
+* wire the three-state theme switch and its no-flash guard ([47a6c10](https://github.com/codebridger/subturtle-dashboard-app/commit/47a6c10fbeb44214b93f3bcd0545b36b4cc39fda))
+
 # [1.1.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.6...v1.1.0-dev.7) (2026-10-06)
 
 

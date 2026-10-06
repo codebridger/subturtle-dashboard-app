@@ -102,7 +102,8 @@
         padding: 6px 11px;
         border-radius: var(--radius-sm);
         background: rgb(var(--ink-950));
-        color: rgb(var(--white));
+        /* Literal, not var(--white): the dark layer redeclares that as the card neutral. */
+        color: #fff;
         font-size: var(--text-xs);
         font-weight: 700;
         box-shadow: var(--shadow-md);
