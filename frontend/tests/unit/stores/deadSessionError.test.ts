@@ -1,9 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-vi.mock('@modular-rest/client', () => ({ authentication: {}, dataProvider: {}, functionProvider: {} }));
-vi.mock('pilotui/toast', () => ({ toastError: vi.fn() }));
-
-const { isDeadSessionError } = await import('~/stores/profile');
+import { isDeadSessionError } from '~/utils/deadSession';
 
 describe('isDeadSessionError', () => {
     it('recognises the bodies a dead session comes back with', () => {
