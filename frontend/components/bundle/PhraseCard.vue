@@ -1,256 +1,294 @@
 <template>
-    <Card class="shadow-none" shape="curved" :color="props.newPhrase ? 'primary' : 'default'">
-        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3 dark:border-gray-700">
-            <div>{{ props.number }}</div>
+    <StCard padding="none" elevation="none" :class="isNew ? 'border-st-primary/40' : ''">
+        <!-- Header: the phrase's number in the bundle, where it was captured, and the row's
+             actions. The design shows only the number and the source; the actions are ours, so
+             they sit quietly at the end of the row and come up to full strength on hover. -->
+        <div class="flex items-center gap-3 px-[18px] pt-[18px]">
+            <span class="rounded-st-pill bg-st-ink-100 px-2.5 py-1 text-st-2xs font-extrabold tracking-[0.04em] text-st-ink-700">
+                {{ isNew ? t('bundle.phrase_card.new_badge') : numberLabel }}
+            </span>
 
-            <GroupTransition name="fade" class="flex space-x-2">
-                <IconButton icon="IconChecks" rounded="full" size="sm"
-                    v-if="getSubmitButtonStatus() && !isLinguisticPhrase"
-                    :disabled="phrase.length === 0 || translation.length === 0"
-                    :color="props.newPhrase ? 'default' : 'warning'" @click="onSubmit" />
+            <span v-if="sourceLabel" class="flex min-w-0 items-center gap-1.5 text-st-sm font-semibold text-st-faint">
+                <StIcon :name="sourceIcon" :size="16" class="flex-none" />
+                <span class="truncate">{{ sourceLabel }}</span>
+            </span>
 
-                <IconButton icon="IconPlayCircle" v-if="phrase.length > 0" rounded="full" size="sm"
-                    @click="playPhraseAudio" :disabled="isLoadingAudio || isPlayingAudio" />
+            <span class="ml-auto flex items-center gap-1 opacity-70 transition-opacity duration-200 focus-within:opacity-100 hover:opacity-100">
+                <!-- Saving is explicit: it appears only once a field actually changed. -->
+                <StIconButton
+                    v-if="isDirty && !isLinguisticPhrase"
+                    icon="solar:diskette-bold"
+                    variant="ghost"
+                    color="primary"
+                    size="sm"
+                    :disabled="!canSubmit"
+                    :aria-label="t('bundle.phrase_card.save')"
+                    @click="onSubmit"
+                />
 
-                <!-- Delete Button for new phrase -->
-                <IconButton v-else icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting"
-                    @click="removePhrase" />
+                <StIconButton
+                    v-if="phrase.length > 0"
+                    icon="solar:volume-loud-bold"
+                    variant="ghost"
+                    color="neutral"
+                    size="sm"
+                    :disabled="isLoadingAudio || isPlayingAudio"
+                    :aria-label="t('bundle.phrase_card.play')"
+                    @click="playPhraseAudio"
+                />
 
-                <!-- Delete Confirmation Modal for saved phrase -->
-                <Modal v-if="!props.newPhrase" :title="t('bundle.phrase_card.confirm_deletion')">
-                    <template #trigger="{ toggleModal }">
-                        <IconButton icon="IconTrash" rounded="full" size="sm" :disabled="isSubmitting"
-                            @click="toggleModal(true)" />
-                    </template>
-
-                    <template #default>
-                        <div class="flex flex-col space-y-2 p-4">
-                            <p>{{ t('bundle.phrase_card.confirm_deletion_message') }}</p>
-                        </div>
-                    </template>
-
-                    <template #footer="{ toggleModal }">
-                        <!-- Footer -->
-                        <div class="flex justify-end space-x-2">
-                            <Button @click="toggleModal(false)">Cancel</Button>
-                            <Button color="danger" @click="
-                                toggleModal(false);
-                            removePhrase();
-                            ">Delete</Button>
-                        </div>
-                    </template>
-                </Modal>
-            </GroupTransition>
+                <StIconButton
+                    icon="solar:trash-bin-minimalistic-bold"
+                    variant="ghost"
+                    color="danger"
+                    size="sm"
+                    :disabled="isSubmitting"
+                    :aria-label="t('bundle.phrase_card.delete')"
+                    @click="isNew ? removePhrase() : (isConfirmingDelete = true)"
+                />
+            </span>
         </div>
-        <div class="flex space-x-4 p-5">
-            <div class="flex-1">
-                <audio ref="phraseAudio" />
-                <TextArea type="text" :label="t('phrase')" :placeholder="t('bundle.phrase_card.phrase_placeholder')"
-                    v-model="phrase" :error="!!error" :error-message="error || ''"
-                    :loading="!!props.newPhrase && isSubmitting" :disabled="isLinguisticPhrase" />
-            </div>
 
-            <div class="flex-1">
-                <TextArea type="text" :label="t('translation')"
-                    :placeholder="t('bundle.phrase_card.translation_placeholder')"
-                    v-model="translation" :error="!!error" :error-message="error || ''"
-                    :loading="!!props.newPhrase && isSubmitting" :disabled="isLinguisticPhrase" />
-            </div>
+        <audio ref="phraseAudio" />
+
+        <div class="grid grid-cols-1 gap-4 p-[18px] md:grid-cols-2">
+            <StTextarea
+                v-model="phrase"
+                :label="t('phrase')"
+                :placeholder="t('bundle.phrase_card.phrase_placeholder')"
+                :error="error || errors.phrase"
+                :disabled="isLinguisticPhrase || isSubmitting"
+                :rows="2"
+            />
+
+            <StTextarea
+                v-model="translation"
+                :label="t('translation')"
+                :placeholder="t('bundle.phrase_card.translation_placeholder')"
+                :error="errors.translation"
+                :disabled="isLinguisticPhrase || isSubmitting"
+                :rows="2"
+            />
         </div>
-    </Card>
+    </StCard>
+
+    <StModal
+        :open="isConfirmingDelete"
+        size="sm"
+        :title="t('bundle.phrase_card.confirm_deletion')"
+        :description="t('bundle.phrase_card.confirm_deletion_message')"
+        @close="isConfirmingDelete = false"
+    >
+        <template #actions>
+            <StButton variant="ghost" color="neutral" @click="isConfirmingDelete = false">{{ t('cancel') }}</StButton>
+            <StButton
+                color="danger"
+                @click="
+                    isConfirmingDelete = false;
+                    removePhrase();
+                "
+            >
+                {{ t('remove') }}
+            </StButton>
+        </template>
+    </StModal>
 </template>
 
 <script setup lang="ts">
-import { Card, IconButton, TextArea, Button, Modal } from 'pilotui';
-import { useForm } from 'vee-validate';
-import { useBundleStore } from '~/stores/bundle';
-import * as yup from 'yup';
-import type { NewPhraseType, PhraseType } from '~/types/database.type';
-import { useTemplateRef } from 'vue';
-import { functionProvider } from '@modular-rest/client';
-const { t } = useI18n();
+    /**
+     * One row of the bundle detail screen, rebuilt on subturtle-ui.
+     *
+     * The design draws a card with the phrase's position, its capture source and the two
+     * editable fields. Editing keeps the behaviour it had on pilotui: a save button that only
+     * appears once something changed, audio playback of the phrase, and deletion behind a
+     * confirmation (for a saved phrase — an unsaved draft just disappears).
+     */
+    import { StButton, StCard, StIcon, StIconButton, StModal, StTextarea } from 'subturtle-ui';
+    import { useForm } from 'vee-validate';
+    import { useBundleStore } from '~/stores/bundle';
+    import * as yup from 'yup';
+    import type { NewPhraseType, PhraseType } from '~/types/database.type';
+    import { useTemplateRef } from 'vue';
+    import { functionProvider } from '@modular-rest/client';
+    import { isVideoSource, phraseSourceLabel } from '~/utils/url';
 
-const bundleStore = useBundleStore();
-const isSubmitting = ref(false);
-const error = ref<string | null>(null);
+    const { t } = useI18n();
 
-// Audio
-const isLoadingAudio = ref(false);
-const isPlayingAudio = ref(false);
+    const bundleStore = useBundleStore();
+    const isSubmitting = ref(false);
+    const isConfirmingDelete = ref(false);
+    const error = ref<string>('');
 
-const phraseAudio = useTemplateRef<HTMLAudioElement>('phraseAudio');
+    // Audio
+    const isLoadingAudio = ref(false);
+    const isPlayingAudio = ref(false);
 
-const props = defineProps({
-    newPhrase: {
-        type: Object as PropType<NewPhraseType | null>,
-    },
-    phrase: {
-        type: Object as PropType<PhraseType | null>,
-    },
-    number: {
-        type: Number as PropType<number>,
-    },
-});
+    const phraseAudio = useTemplateRef<HTMLAudioElement>('phraseAudio');
 
-// Computed property to check if the phrase is linguistic type
-const isLinguisticPhrase = computed(() => {
-    return props.phrase?.type === 'linguistic';
-});
+    const props = defineProps({
+        newPhrase: {
+            type: Object as PropType<NewPhraseType | null>,
+        },
+        phrase: {
+            type: Object as PropType<PhraseType | null>,
+        },
+        number: {
+            type: Number as PropType<number>,
+        },
+    });
 
-// Computed property for the translation value.
-// Show the same translation the user saw in the extension (translation.phrase),
-// not linguistic_data.definition (a whole-phrase explanation never shown on save).
-const translationValue = computed(() => {
-    return props.phrase?.translation || '';
-});
+    const isNew = computed(() => !!props.newPhrase);
 
-const { defineField, errors, handleSubmit, resetForm, meta, isFieldDirty, validate } = useForm({
-    validationSchema: yup.object({
-        phrase: yup.string().required('Phrase is required'),
-        translation: yup.string().required('Translation is required'),
-    }),
-    initialTouched: {
-        phrase: false,
-        translation: false,
-    },
-    initialValues: {
-        phrase: props.phrase?.phrase || '',
-        translation: translationValue.value,
-    },
-});
+    /** Zero-padded like the design's "05" — but only while the bundle is small enough for it to read as one. */
+    const numberLabel = computed(() => String(props.number ?? 0).padStart(2, '0'));
 
-const [phrase] = defineField('phrase');
-const [translation] = defineField('translation');
+    const isLinguisticPhrase = computed(() => props.phrase?.type === 'linguistic');
 
-function getSubmitButtonStatus() {
-    // Don't show submit button for linguistic phrases
-    if (isLinguisticPhrase.value) {
-        return false;
-    }
+    const sourceLabel = computed(() => phraseSourceLabel(props.phrase?.sourceUrl));
+    const sourceIcon = computed(() => (isVideoSource(props.phrase?.sourceUrl) ? 'solar:videocamera-record-bold' : 'solar:link-minimalistic-2-linear'));
 
-    const conditions = [isFieldDirty('phrase'), isFieldDirty('translation'), Object.keys(errors.value).length > 0];
+    // Show the same translation the user saw in the extension (translation.phrase),
+    // not linguistic_data.definition (a whole-phrase explanation never shown on save).
+    const translationValue = computed(() => props.phrase?.translation || '');
 
-    return conditions.some((condition) => condition);
-}
+    const { defineField, errors, handleSubmit, resetForm, meta, isFieldDirty, validate } = useForm({
+        validationSchema: yup.object({
+            phrase: yup.string().required(t('bundle.phrase_card.phrase_required')),
+            translation: yup.string().required(t('bundle.phrase_card.translation_required')),
+        }),
+        initialTouched: {
+            phrase: false,
+            translation: false,
+        },
+        initialValues: {
+            phrase: props.phrase?.phrase || '',
+            translation: translationValue.value,
+        },
+    });
 
-const onSubmit = handleSubmit(async () => {
-    // Prevent submission for linguistic phrases
-    if (isLinguisticPhrase.value) {
-        return;
-    }
+    const [phrase] = defineField('phrase');
+    const [translation] = defineField('translation');
 
-    const validated = await validate();
+    /** A linguistic phrase is read-only, so it never offers a save button. */
+    const isDirty = computed(() => isFieldDirty('phrase') || isFieldDirty('translation') || Object.keys(errors.value).length > 0);
 
-    if (!validated.valid || !meta.value.dirty) return;
+    const canSubmit = computed(() => !isSubmitting.value && !!phrase.value?.length && !!translation.value?.length);
 
-    isSubmitting.value = true;
+    const onSubmit = handleSubmit(async () => {
+        if (isLinguisticPhrase.value) return;
 
-    // Update phrase
-    if (props.phrase) {
-        bundleStore
-            .updatePhrase(props.phrase._id, {
-                phrase: phrase.value,
-                translation: translation.value,
-            })
-            .finally(() => {
-                isSubmitting.value = false;
-            });
+        const validated = await validate();
 
-        resetForm({
-            values: {
-                phrase: phrase?.value || '',
-                translation: translation?.value || '',
-            },
-        });
-    }
+        if (!validated.valid || !meta.value.dirty) return;
 
-    // Create new phrase
-    else if (props.newPhrase) {
-        bundleStore
-            .createPhrase({
-                phrase: phrase.value,
-                translation: translation.value,
-                id: props.newPhrase.id,
-            })
-            .finally(() => {
-                isSubmitting.value = false;
-            });
-    }
-});
+        isSubmitting.value = true;
 
-function removePhrase() {
-    isSubmitting.value = true;
+        // Update phrase
+        if (props.phrase) {
+            bundleStore
+                .updatePhrase(props.phrase._id, {
+                    phrase: phrase.value,
+                    translation: translation.value,
+                })
+                .finally(() => {
+                    isSubmitting.value = false;
+                });
 
-    if (props.phrase) {
-        bundleStore.removePhrase(props.phrase!._id).finally(() => {
-            isSubmitting.value = false;
-        });
-    }
-
-    // Remove new phrase
-    else if (props.newPhrase) {
-        bundleStore.removeTemporarilyPhrase(props.newPhrase.id);
-    }
-}
-
-// Simple hash function for creating cache keys
-function simpleHash(str: string): string {
-    let hash = 0;
-    if (str.length === 0) return hash.toString();
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return Math.abs(hash).toString(36);
-}
-
-async function playPhraseAudio() {
-    isLoadingAudio.value = true;
-
-    // Create a unique key for this audio content
-    const voiceName = 'en-US-Wavenet-A';
-    const cacheKey = `audio-${voiceName}-${simpleHash(phrase.value.toLocaleLowerCase())}`;
-
-    // Check if audio is already cached
-    let audioContent = localStorage.getItem(cacheKey);
-
-    if (!audioContent) {
-        // Audio not in cache, fetch from server
-        audioContent = await functionProvider
-            .run<string>({
-                name: 'textToSpeechBase64',
-                args: {
-                    text: phrase.value,
-                    voiceName: voiceName,
+            resetForm({
+                values: {
+                    phrase: phrase?.value || '',
+                    translation: translation?.value || '',
                 },
-            })
-            .catch((err) => null);
+            });
+        }
 
-        // Store in localStorage if we got valid content
-        if (audioContent) {
-            try {
-                localStorage.setItem(cacheKey, audioContent);
-            } catch (e) {
-                // Handle localStorage quota exceeded or other errors
-                console.warn('Failed to cache audio content:', e);
-            }
+        // Create new phrase
+        else if (props.newPhrase) {
+            bundleStore
+                .createPhrase({
+                    phrase: phrase.value,
+                    translation: translation.value,
+                    id: props.newPhrase.id,
+                })
+                .finally(() => {
+                    isSubmitting.value = false;
+                });
+        }
+    });
+
+    function removePhrase() {
+        isSubmitting.value = true;
+
+        if (props.phrase) {
+            bundleStore.removePhrase(props.phrase!._id).finally(() => {
+                isSubmitting.value = false;
+            });
+        }
+
+        // Remove new phrase
+        else if (props.newPhrase) {
+            bundleStore.removeTemporarilyPhrase(props.newPhrase.id);
         }
     }
 
-    isLoadingAudio.value = false;
+    // Simple hash function for creating cache keys
+    function simpleHash(str: string): string {
+        let hash = 0;
+        if (str.length === 0) return hash.toString();
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(36);
+    }
 
-    if (!audioContent) return;
+    async function playPhraseAudio() {
+        isLoadingAudio.value = true;
 
-    phraseAudio.value!.src = audioContent;
-    phraseAudio.value!.play();
+        // Create a unique key for this audio content
+        const voiceName = 'en-US-Wavenet-A';
+        const cacheKey = `audio-${voiceName}-${simpleHash(phrase.value.toLocaleLowerCase())}`;
 
-    phraseAudio.value!.onplay = () => {
-        isPlayingAudio.value = true;
-    };
+        // Check if audio is already cached
+        let audioContent = localStorage.getItem(cacheKey);
 
-    phraseAudio.value!.onpause = () => {
-        isPlayingAudio.value = false;
-    };
-}
+        if (!audioContent) {
+            // Audio not in cache, fetch from server
+            audioContent = await functionProvider
+                .run<string>({
+                    name: 'textToSpeechBase64',
+                    args: {
+                        text: phrase.value,
+                        voiceName: voiceName,
+                    },
+                })
+                .catch((err) => null);
+
+            // Store in localStorage if we got valid content
+            if (audioContent) {
+                try {
+                    localStorage.setItem(cacheKey, audioContent);
+                } catch (e) {
+                    // Handle localStorage quota exceeded or other errors
+                    console.warn('Failed to cache audio content:', e);
+                }
+            }
+        }
+
+        isLoadingAudio.value = false;
+
+        if (!audioContent) return;
+
+        phraseAudio.value!.src = audioContent;
+        phraseAudio.value!.play();
+
+        phraseAudio.value!.onplay = () => {
+            isPlayingAudio.value = true;
+        };
+
+        phraseAudio.value!.onpause = () => {
+            isPlayingAudio.value = false;
+        };
+    }
 </script>

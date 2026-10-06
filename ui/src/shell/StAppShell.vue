@@ -4,14 +4,9 @@
         :data-rail="collapsed ? 'collapsed' : 'expanded'"
         :style="{ '--sidebar-w': collapsed ? COLLAPSED_W : undefined }"
     >
-        <!--
-            Below md the sidebar is an off-canvas drawer. Left in flow it would eat 272px of a
-            375px viewport, squeezing the content column to a sliver that clips its own
-            children — they stay in the DOM but measure as hidden.
-        -->
         <div
             v-if="drawerOpen"
-            class="st-fixed st-inset-0 st-z-overlay st-bg-ink-950/40 md:st-hidden"
+            class="st-fixed st-inset-0 st-z-overlay st-bg-overlay/40 md:st-hidden"
             @click="drawerOpen = false"
         />
 
@@ -49,8 +44,11 @@
         </aside>
 
         <div class="st-flex-1 st-flex st-flex-col st-min-w-0 st-overflow-hidden">
+            <!-- The translucent fill is a finished token, not `bg-page/80`: dark wants a
+                 different base AND a different alpha (a translucent --surface-card). -->
             <header
-                class="st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-bg-page/80 st-backdrop-blur-[8px]"
+                class="st-relative st-z-sticky st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-backdrop-blur-[8px]"
+                :style="{ background: 'var(--surface-topbar)' }"
             >
                 <div class="st-flex st-items-center st-gap-3 st-min-w-0">
                     <button
@@ -69,17 +67,18 @@
                     <slot name="header-right" />
                 </div>
             </header>
-
-<!-- overflow-x must be clipped, not visible: the ambient blobs are positioned past the
-                 right edge, and a scrolling box cannot keep overflow-x visible — it would silently
-                 become auto and add a horizontal scrollbar. -->
             <main class="st-flex-1 st-overflow-y-auto st-overflow-x-clip st-relative">
+                <!-- Opacity comes from --blob-alpha rather than a Tailwind `/5` modifier: it is
+                     the one value that differs between themes here (5% light, 3% dark), and a
+                     class can only carry one. -->
                 <template v-if="ambient">
                     <div
-                        class="st-pointer-events-none st-absolute -st-top-[10%] -st-left-[6%] st-w-[36%] st-h-[36%] st-rounded-circle st-bg-primary/5 st-blur-[120px]"
+                        class="st-pointer-events-none st-absolute -st-top-[10%] -st-left-[6%] st-w-[36%] st-h-[36%] st-rounded-circle st-blur-[120px]"
+                        :style="{ background: 'rgb(var(--color-primary) / var(--blob-alpha))' }"
                     />
                     <div
-                        class="st-pointer-events-none st-absolute -st-bottom-[10%] -st-right-[6%] st-w-[36%] st-h-[36%] st-rounded-circle st-bg-accent/5 st-blur-[120px]"
+                        class="st-pointer-events-none st-absolute -st-bottom-[10%] -st-right-[6%] st-w-[36%] st-h-[36%] st-rounded-circle st-blur-[120px]"
+                        :style="{ background: 'rgb(var(--color-accent) / var(--blob-alpha))' }"
                     />
                 </template>
 

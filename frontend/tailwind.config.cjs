@@ -17,7 +17,7 @@ module.exports = {
         './composables/**/*.{js,ts}',
         './nuxt.config.{js,ts}',
     ],
-    darkMode: 'class',
+    darkMode: ['selector', '[data-theme="dark"]'],
     theme: {
         container: {
             center: true,
