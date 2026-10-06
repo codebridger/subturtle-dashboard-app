@@ -68,6 +68,7 @@
         },
         "filter_bundles": "Filter bundles",
         "select_bundle": "Select Bundle",
+        "load_failed": "Couldn't load your bundles. Please refresh the page.",
         "saves": {
             "used": "{used} of {total} saves used this month",
             "resets_on": "Resets on {date}.",
@@ -189,6 +190,8 @@
         "total-phrases-required": "Total phrases is required",
         "back-to-dashboard": "Back to Dashboard",
         "oops-something-went-wrong": "Oops, something went wrong",
+        "connection-lost": "The connection to your coach dropped. Start a new session to keep practicing.",
+        "voice-paused": "Voice practice is paused for a short while. Please try again later.",
         "click-to-start": "Click on any vocabulary card to start practicing",
         "currently-practicing": "Currently practicing:",
         "transcript-empty-hint": "Your conversation will appear here.",
@@ -222,7 +225,6 @@
             "reconnecting-title": "Reconnecting…",
             "reconnecting-message": "Renewing the session token.",
             "reconnected-title": "Reconnected",
-            "reconnect-failed": "Could not reconnect, ending session.",
             "fetch-failed": "Failed to fetch flashcard",
             "no-session-data": "No session data found",
             "start-failed": "Failed to start live session"
@@ -512,15 +514,15 @@
             "start-review": "Start review",
             "time-left": "3 min left",
             "session-title": "Live session",
-            "session-body": "Say this week's phrases out loud with Coach. Money Heist — s1e4.",
+            "session-body": "Say this week's phrases out loud with Coach. Rooftop Nights \u2014 s1e4.",
             "start-session": "Start session",
             "resting-title": "Resting",
             "resting-body": "Levels 4 and 5 are asleep. Their next cards land on Thursday.",
             "optional": "Optional practice",
-            "phrase-1": "Je n'en reviens pas",
-            "phrase-1-translation": "I can't believe it",
-            "phrase-2": "Ça vaut le coup",
-            "phrase-2-translation": "It's worth it"
+            "phrase-1": "on the fence",
+            "phrase-1-translation": "indeciso",
+            "phrase-2": "hang out",
+            "phrase-2-translation": "pasar el rato"
         }
     },
     "practice": {
@@ -602,7 +604,6 @@
     },
     "profile": {
         "profile": "Profile",
-        "receive-daily-practice-email-reminders": "Daily practice email reminders",
         "full-name": "Full name",
         "email": "Email",
         "password": "Password",

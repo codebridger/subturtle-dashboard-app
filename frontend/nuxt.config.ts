@@ -12,6 +12,8 @@ export default defineNuxtConfig({
     runtimeConfig: {
         public: {
             BASE_URL_API: process.env.NUXT_PUBLIC_BASE_URL_API,
+            // The dashboard's own domain; visitors on Firebase's default host are sent here.
+            DASHBOARD_URL: process.env.NUXT_PUBLIC_DASHBOARD_URL,
             isProduction: process.env.NUXT_PUBLIC_MODE?.toLowerCase() === 'production',
             isNotProduction: process.env.NUXT_PUBLIC_MODE?.toLowerCase() !== 'production',
             mode: process.env.NUXT_PUBLIC_MODE,

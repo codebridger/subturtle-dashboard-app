@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "subturtle-dev",
+    "dev": "subturtle-dev",
+    "prod": "subturtle-prod"
+  },
+  "targets": {
+    "subturtle-dev": {
+      "hosting": {
+        "dashboard": ["subturtle-dev"],
+        "landing": ["subturtle-landing-dev"]
+      }
+    },
+    "subturtle-prod": {
+      "hosting": {
+        "dashboard": ["subturtle-prod"],
+        "landing": ["subturtle-landing"]
+      }
+    }
+  }
+}

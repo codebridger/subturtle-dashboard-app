@@ -1,0 +1,69 @@
+{
+  "//": "Two Hosting sites per project, one target each (bound in .firebaserc). ALWAYS deploy a named target: `--only hosting:dashboard` or `--only hosting:landing`, never a bare `--only hosting`, which publishes both. `landing` is a static site: it has NO rewrites (a catch-all would answer every 404 and robots.txt with the home page) and relies on cleanUrls + flat files; landing/scripts/check-hosting.mjs asserts all of this before every landing deploy.",
+  "hosting": [
+    {
+      "target": "dashboard",
+      "public": "frontend/.output/public",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/user/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "/verify/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "/data-provider/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "/function/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "/file/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "/auth/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "/gateway/**", "run": { "serviceId": "subturtle-api", "region": "europe-west4" } },
+        { "source": "**", "destination": "/index.html" }
+      ],
+      "headers": [
+        {
+          "source": "/_nuxt/**",
+          "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+        },
+        {
+          "source": "**/*.html",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        }
+      ]
+    },
+    {
+      "target": "landing",
+      "public": "landing/dist",
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "redirects": [
+        { "source": "/privacy-policy", "destination": "/privacy", "type": 301 },
+        { "source": "/terms-of-service", "destination": "/terms", "type": 301 },
+        { "source": "/terms-and-conditions", "destination": "/terms", "type": 301 }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-cache, max-age=0, must-revalidate" },
+            { "key": "X-Content-Type-Options", "value": "nosniff" },
+            { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+          ]
+        },
+        {
+          "source": "/_nuxt/**",
+          "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+        },
+        {
+          "source": "/img/**",
+          "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=2592000" }]
+        },
+        {
+          "source": "/fonts/**",
+          "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=2592000" }]
+        }
+      ]
+    }
+  ],
+  "emulators": {
+    "hosting": { "port": 5010 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}

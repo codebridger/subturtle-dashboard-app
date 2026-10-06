@@ -1,4 +1,5 @@
 import { defineFunction, getCollection } from "@modular-rest/server";
+import { Types } from "mongoose";
 import { DATABASE, PHRASE_COLLECTION, BUNDLE_COLLECTION } from "../../config";
 import {
   isUserOnFreemium,
@@ -201,7 +202,7 @@ const createPhrase = defineFunction({
       type: type,
     });
 
-    let phraseId: string;
+    let phraseId: Types.ObjectId;
     let isNewPhrase = false;
 
     if (existingPhrase) {

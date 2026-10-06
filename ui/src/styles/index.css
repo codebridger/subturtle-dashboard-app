@@ -36,15 +36,17 @@
     font-weight: 800;
     letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
-    color: rgb(var(--color-primary));
+    /* rose-700: at 11px on the paper page background even rose-600 is only 4.4:1. */
+    color: rgb(var(--rose-700));
 }
 
+/* The dot is decoration, so it keeps the brand rose. */
 .st-overline::before {
     content: '';
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: rgb(var(--color-primary));
+    background: rgb(var(--rose-500));
 }
 
 /*

@@ -1,8 +1,13 @@
 <template>
-    <button
-        :type="type"
-        :disabled="disabled"
-        class="st-font-sans st-font-extrabold st-leading-none st-tracking-[0.01em] st-items-center st-justify-center st-transition st-duration-fast st-ease-out st-focus-ring disabled:st-opacity-50 disabled:st-cursor-not-allowed disabled:active:st-scale-100"
+    <!-- With `href` it is a real link (crawlable, opens in a new tab on middle-click) styled as a button. -->
+    <component
+        :is="href ? 'a' : 'button'"
+        :type="href ? undefined : type"
+        :disabled="href ? undefined : disabled"
+        :href="href"
+        :target="href ? target : undefined"
+        :rel="href ? rel : undefined"
+        class="st-no-underline st-font-sans st-font-extrabold st-leading-none st-tracking-[0.01em] st-items-center st-justify-center st-transition st-duration-fast st-ease-out st-focus-ring disabled:st-opacity-50 disabled:st-cursor-not-allowed disabled:active:st-scale-100"
         :class="[
             block ? 'st-flex st-w-full' : 'st-inline-flex',
             pill ? 'st-rounded-pill' : 'st-rounded-md',
@@ -17,7 +22,7 @@
         <StIcon v-if="icon" :name="icon" :size="iconSize" />
         <slot />
         <StIcon v-if="iconRight" :name="iconRight" :size="iconSize" />
-    </button>
+    </component>
 </template>
 
 <script setup lang="ts">
@@ -40,6 +45,10 @@
             /** Trailing icon, an Iconify name. */
             iconRight?: string;
             type?: 'button' | 'submit' | 'reset';
+            /** Renders an `<a>` instead of a `<button>`; `type` and `disabled` then do not apply. */
+            href?: string;
+            target?: string;
+            rel?: string;
         }>(),
         { variant: 'solid', color: 'primary', size: 'md', type: 'button' }
     );

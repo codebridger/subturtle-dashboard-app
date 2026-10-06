@@ -10,7 +10,17 @@ const auth = new Router();
 
 const CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
-const CLIENT_ID_EXTENSION = process.env.GOOGLE_OAUTH_CLIENT_ID_EXTENSION;
+
+// OAuth clients whose Google access tokens /google/access-token-login accepts. An access
+// token is a bearer token for whatever app requested it, so without this check a token
+// minted for ANY third-party app with the email scope would log in as its owner.
+// The extension gets its token from launchWebAuthFlow with the web client (CLIENT_ID) or
+// from chrome.identity with its own client. GOOGLE_OAUTH_CLIENT_ID_EXTENSION is a
+// comma-separated list, so old and new client IDs can both be accepted while a client
+// migration rolls out to installed extensions.
+const ACCESS_TOKEN_CLIENT_IDS = [CLIENT_ID, ...(process.env.GOOGLE_OAUTH_CLIENT_ID_EXTENSION || "").split(",")]
+  .map((id) => id?.trim())
+  .filter((id): id is string => !!id);
 
 // Note: The redirect uri is the callback route for the web app
 // This route will be called after the user has logged in to google
@@ -180,11 +190,24 @@ auth.get("/google/access-token-login", async (ctx) => {
     return;
   }
 
-  const oauth2Client = new google.auth.OAuth2(CLIENT_ID_EXTENSION);
+  const oauth2Client = new google.auth.OAuth2();
   const payload = await oauth2Client.getTokenInfo(chromeUserToken);
+
+  if (!payload.aud || !ACCESS_TOKEN_CLIENT_IDS.includes(payload.aud)) {
+    ctx.throw(401, "Access token was not issued to a SubTurtle client");
+    return;
+  }
 
   if (!payload.email) {
     ctx.throw(400, "Invalid email from token");
+    return;
+  }
+
+  // A Google account can be registered on an address it never verified; trusting that
+  // email would hand its owner someone else's SubTurtle account. The tokeninfo endpoint
+  // reports the flag as the string "true".
+  if (String(payload.email_verified) !== "true") {
+    ctx.throw(401, "Google account email is not verified");
     return;
   }
 

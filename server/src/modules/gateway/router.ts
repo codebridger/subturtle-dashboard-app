@@ -18,7 +18,12 @@ getway.post("/webhook/stripe", async (ctx: any) => {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const signature = ctx.headers["stripe-signature"] as string | undefined;
 
-    if (webhookSecret && signature) {
+    if (webhookSecret) {
+      // With a secret configured, every event must carry a valid signature. Checking
+      // only when the header was present let a request that simply omitted it through.
+      if (!signature) {
+        throw new Error("Missing Stripe-Signature header");
+      }
       // Stripe signature verification needs the exact raw request bytes.
       const rawBody = ctx.request.body?.[UNPARSED_BODY];
       if (!rawBody) {
@@ -32,6 +37,9 @@ getway.post("/webhook/stripe", async (ctx: any) => {
         signature,
         webhookSecret
       );
+    } else if (process.env.NODE_ENV === "production") {
+      // An unsigned event could grant anyone a paid subscription.
+      throw new Error("STRIPE_WEBHOOK_SECRET is not configured; refusing an unverifiable webhook");
     } else {
       // No secret configured (local dev without `stripe listen`) - accept the
       // already-parsed body unverified, but warn loudly.

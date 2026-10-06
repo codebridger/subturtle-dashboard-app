@@ -62,15 +62,6 @@
                         <TimezonePicker v-model="timeZone" :disabled="isSubmitting" />
                         <p class="mt-1.5 text-st-xs font-semibold text-st-muted">{{ t('profile.timezone_desc') }}</p>
                     </div>
-
-                    <!-- Not wired to anything yet: the server has no reminder job, so this is a
-                         placeholder the design asks for rather than a control. Rendered inert
-                         (no input element) so it can't be focused or toggled. -->
-                    <div class="flex h-10 items-center gap-[11px] opacity-70 sm:mt-[27px]">
-                        <span class="h-5 w-5 flex-none rounded-[6px] border-[1.5px] border-st-line bg-st-ink-100" />
-                        <span class="text-st-sm font-bold text-st-body">{{ t('profile.receive-daily-practice-email-reminders') }}</span>
-                        <StBadge color="neutral">{{ t('coming-soon') }}</StBadge>
-                    </div>
                 </form>
 
                 <div class="mb-4 mt-[18px] h-px bg-st-line" />
@@ -98,7 +89,7 @@
 <script lang="ts" setup>
     import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
     import { useProfileStore } from '~/stores/profile';
-    import { StAvatar, StBadge, StButton, StCard, StIcon, StInput, StSkeleton } from 'subturtle-ui';
+    import { StAvatar, StButton, StCard, StIcon, StInput, StSkeleton } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import TimezonePicker from '~/components/common/TimezonePicker.vue';
     import { toastSuccess, toastError } from 'pilotui/toast';
@@ -125,7 +116,8 @@
     const justSaved = ref(false);
 
     // Preferences are still sent on every save so the payload shape is unchanged, but nothing writes
-    // to them yet — the reminders row above is a placeholder, not a control.
+    // to them yet. The design's "Coming soon" reminders row is hidden (its `showReminders` off) until
+    // the server has a reminder job.
     const selectedValues = ref<Record<string, boolean>>({});
 
     // Change detection baselines. Both are (re)seeded after getProfileInfo() resolves, not at setup:

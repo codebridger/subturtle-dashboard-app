@@ -2,7 +2,7 @@ import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { phraseBundleTriggers } from "../triggers";
 import { LeitnerService } from "../../leitner_box/service";
 import { PoolService } from "../../pool/service";
-import { isUserOnFreemium } from "../../subscription/service";
+import { isUserOnFreemium, updateFreemiumAllocation } from "../../subscription/service";
 
 // Mock modular-rest/server
 jest.mock("@modular-rest/server", () => ({
@@ -92,6 +92,25 @@ describe("phraseBundleTriggers", () => {
 			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1");
 			expect(PoolService.add).toHaveBeenCalledWith("u1", "p2");
 			expect(PoolService.add).not.toHaveBeenCalledWith("u2", expect.any(String));
+		});
+	});
+
+	// createPhrase / removePhrase keep the saved-words counter; these hooks also
+	// fire for their inserts and deletes, so counting here would count twice.
+	describe("free-tier saved-words counter", () => {
+		const removeOneTrigger = phraseBundleTriggers.find(t => (t as any).type === "remove-one") as any;
+
+		it("is never touched by insert-one, insert-many or remove-one, even for a free user", async () => {
+			(isUserOnFreemium as jest.Mock<any>).mockResolvedValue(true);
+			(LeitnerService.getSettings as jest.Mock<any>).mockResolvedValue({ autoEntry: true });
+			const doc = { _id: "p1", refId: "u1", phrase: "on the fence", translation: "indeciso" };
+
+			await insertOneTrigger!.callback({ doc, queryResult: {} });
+			await insertManyTrigger!.callback({ docs: [doc], queryResult: [] });
+			await removeOneTrigger!.callback({ query: { _id: "p1", refId: "u1" }, queryResult: {} });
+
+			expect(updateFreemiumAllocation).not.toHaveBeenCalled();
+			expect(LeitnerService.removePhraseFromBox).toHaveBeenCalledWith("u1", "p1");
 		});
 	});
 });

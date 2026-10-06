@@ -15,6 +15,14 @@ const clearSubscriptionAndFreemium = defineFunction({
   callback: async (params) => {
     const { userId } = params;
 
+    // A testing tool: it deletes the user's subscription records, free allocation and usage,
+    // so in production it would hand out unlimited free usage. Local servers (NODE_ENV other
+    // than production, e.g. the agent tests) always allow it; deployed dev opts in through
+    // PROFILE_RESET_ENABLED=true (infra/deploy-api.sh).
+    if (process.env.NODE_ENV === "production" && process.env.PROFILE_RESET_ENABLED !== "true") {
+      throw new Error("Profile reset is disabled in production.");
+    }
+
     if (!userId) {
       throw new Error("User ID is required");
     }

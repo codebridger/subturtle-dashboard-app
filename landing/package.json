@@ -1,0 +1,28 @@
+{
+    "name": "subturtle-landing",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "subturtle.app — the Subturtle marketing site. Static, every route prerendered, built on subturtle-ui.",
+    "scripts": {
+        "postinstall": "yarn build:ui && nuxt prepare",
+        "build:ui": "cd ../ui && yarn install --frozen-lockfile --silent && yarn build",
+        "dev": "nuxt dev --dotenv .env.local",
+        "build": "nuxt typecheck --dotenv .env.local && nuxt generate --dotenv .env.local",
+        "preview": "npx --yes serve dist -l 3100",
+        "sync:plans": "node scripts/sync-plans.mjs",
+        "check:hosting": "node scripts/check-hosting.mjs"
+    },
+    "dependencies": {
+        "mixpanel-browser": "^2.83.0",
+        "nuxt": "^4.5.2",
+        "subturtle-ui": "link:../ui",
+        "vue": "^3.5.43"
+    },
+    "devDependencies": {
+        "@types/node": "^22",
+        "marked": "^18.0.14",
+        "typescript": "~5.9.0",
+        "vue-tsc": "^3.3.12"
+    }
+}

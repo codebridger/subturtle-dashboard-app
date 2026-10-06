@@ -1,5 +1,6 @@
 import date from "date-and-time";
 import { defineFunction, getCollection } from "@modular-rest/server";
+import type { PipelineStage } from "mongoose";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
 import { assertFeatureEnabled } from "../subscription/enforcement";
@@ -72,7 +73,7 @@ const generateChartDataForInsertionRatio = defineFunction({
       dates.push(day);
     }
 
-    const pipeline = [
+    const pipeline: PipelineStage[] = [
       {
         $match: {
           refId: userId,

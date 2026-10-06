@@ -7,6 +7,7 @@ import {
   PROFILE_COLLECTION,
 } from "../../config";
 import { PoolItem } from "./db";
+import { pickPrimaryChunkText } from "../../utils/chunk";
 
 // Default age cut-off (days) when the user has no `poolAgeCutoffDays` on their profile.
 const DEFAULT_AGE_CUTOFF_DAYS = 7;
@@ -14,19 +15,6 @@ const DEFAULT_AGE_CUTOFF_DAYS = 7;
 export class PoolService {
   private static async getCollection() {
     return getCollection(DATABASE_POOL, POOL_COLLECTION);
-  }
-
-  /**
-   * Text of the phrase's primary chunk for the encode cloze: the highest-`confidence`
-   * chunk (tie-broken by earliest). Mirrors LeitnerService.pickConfirmedChunk so the
-   * Pool review item and the Leitner L3+ card render the same way. `null` when there
-   * are no chunks.
-   */
-  private static pickConfirmedChunk(phrase: any): string | null {
-    const chunks = phrase?.chunks;
-    if (!Array.isArray(chunks) || chunks.length === 0) return null;
-    const best = chunks.reduce((a: any, b: any) => ((b?.confidence ?? 0) > (a?.confidence ?? 0) ? b : a));
-    return best?.text ?? null;
   }
 
   /**
@@ -95,7 +83,7 @@ export class PoolService {
           pooled_at: item.pooled_at,
           encountered: item.encountered,
           phrase,
-          confirmed_chunk: this.pickConfirmedChunk(phrase),
+          confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
           source_sentence: phrase?.context ?? null,
         };
       })

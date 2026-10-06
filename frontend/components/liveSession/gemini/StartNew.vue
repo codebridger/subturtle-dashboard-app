@@ -236,6 +236,7 @@
             preselectBundleFromRoute();
         } catch (error) {
             console.error(error);
+            toastError({ message: t('bundle.load_failed') });
         } finally {
             isLoadingBundles.value = false;
         }

@@ -8,10 +8,10 @@ const textSessionSchema = new Schema<TextSessionRecordType>(
   {
     refId: { type: String, required: true },
     instructions: { type: String, required: true },
-    toolDeclarations: { type: Array<Object>, default: [] },
+    toolDeclarations: { type: [Object], default: [] },
     session: { type: Object, default: {} },
-    contents: { type: Array<Object>, default: [] },
-    dialogs: { type: Array<Object>, default: [] },
+    contents: { type: [Object], default: [] },
+    dialogs: { type: [Object], default: [] },
     usage: { type: Object },
     metadata: { type: Object, default: {} },
     cacheName: { type: String },

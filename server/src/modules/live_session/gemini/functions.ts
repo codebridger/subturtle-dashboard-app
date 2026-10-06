@@ -25,7 +25,7 @@ import {
   GEMINI_TOKEN_TTL_MS,
   GEMINI_NEW_SESSION_TTL_MS,
 } from "./config";
-import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
+import { AI_CREDIT_EXHAUSTED_CODE, VOICE_PAUSED_CODE } from "../../subscription/config";
 import { EntitlementLimitError } from "../../subscription/enforcement";
 import { GeminiLiveSessionType } from "./types";
 
@@ -59,6 +59,16 @@ export const requestGeminiEphemeralToken = defineFunction({
     setup: GeminiPracticeSetup
   ): Promise<GeminiLiveSessionType> {
     const { userId, instructions, voice, tools, isResume } = setup;
+
+    // Operator kill switch for voice cost spikes: with VOICE_SESSIONS_PAUSED=true
+    // on the API service, new sessions are refused before any freemium slot is
+    // consumed. Resume legs still connect, so sessions already running finish
+    // within their own minute caps. See infra/README.md for how to flip it.
+    if (process.env.VOICE_SESSIONS_PAUSED === "true" && !isResume) {
+      throw new Error(
+        `${VOICE_PAUSED_CODE}: Voice practice is paused for a short while.`
+      );
+    }
 
     // AI features are the only thing the credit budget gates. `minCredits: 1`
     // means this blocks only at true exhaustion (the 100% hard cap) — saves

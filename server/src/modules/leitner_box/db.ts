@@ -28,6 +28,21 @@ export interface ReviewItem extends LeitnerItem {
   source_sentence: string | null;
 }
 
+/**
+ * A due/custom review item as returned by the review RPCs. Extends the stored
+ * {@link LeitnerItem} with the joined phrase document plus the two flat fields the
+ * L3+ fill-in card needs:
+ * - `confirmed_chunk` — text of the phrase's primary chunk (highest `confidence`,
+ *   tie-break earliest), or `null` when the phrase has no chunks (renderer falls
+ *   back to the recognition card).
+ * - `source_sentence` — the phrase's `context` (kept whole), or `null` when absent.
+ */
+export interface ReviewItem extends LeitnerItem {
+  phrase: any;
+  confirmed_chunk: string | null;
+  source_sentence: string | null;
+}
+
 export interface LeitnerSystem {
   userId: string;
   settings: {
@@ -45,18 +60,11 @@ export interface LeitnerSystem {
 const leitnerSystemSchema = new Schema<LeitnerSystem>(
   {
     userId: { type: String, required: true },
-    settings: {
-      type: {
-        dailyLimit: { type: Number, default: 20 }, // Deprecated/Fallback
-        totalBoxes: { type: Number, default: 5 },
-        boxIntervals: { type: [Number], default: [1, 2, 4, 8, 16] }, // Days wait per box
-        boxQuotas: { type: [Number], default: [20, 10, 5, 5, 5] }, // Max items per session per box
-        autoEntry: { type: Boolean, default: true },
-        reviewInterval: { type: Number, default: 1 },
-        reviewHour: { type: Number, default: 9 },
-      },
-      required: true,
-    },
+    // Mixed, as Mongoose 5 stored the nested `type: {...}` this used to be (typePojoToMixed).
+    // Mongoose 6+ would turn that into a subdocument: defaults applied to legacy documents
+    // and `{ ...settings }` spreads in LeitnerService losing every field. Shape is
+    // LeitnerSystem["settings"] above; values come from LeitnerService.DEFAULT_SETTINGS.
+    settings: { type: Schema.Types.Mixed, required: true },
     items: {
       type: [
         {

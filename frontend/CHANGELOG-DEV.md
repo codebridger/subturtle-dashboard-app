@@ -1,3 +1,95 @@
+# [1.1.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.6...v1.1.0-dev.7) (2026-10-06)
+
+
+### Bug Fixes
+
+* move visitors off *.web.app and log out dead sessions #z8zc9zywfj ([#87](https://github.com/codebridger/subturtle-dashboard-app/issues/87)) ([01dd243](https://github.com/codebridger/subturtle-dashboard-app/commit/01dd243617f941fe07f608a8d6f9ddbfc341318a)), closes [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj) [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj) [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj)
+
+# [1.1.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.5...v1.1.0-dev.6) (2026-10-06)
+
+
+### Bug Fixes
+
+* **infra:** send users to the dashboard's custom domain, not *.web.app #z8zc9zywfj ([#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)) ([df6a798](https://github.com/codebridger/subturtle-dashboard-app/commit/df6a7986960170a4fa9f0c0c067be3c43030d9fe)), closes [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj)
+
+# [1.1.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.4...v1.1.0-dev.5) (2026-10-06)
+
+
+### Features
+
+* ship the new subturtle.app landing page and the launch fixes to production #z8zc9zyaa2 #z8zc9zyg37 ([#82](https://github.com/codebridger/subturtle-dashboard-app/issues/82)) ([7e546af](https://github.com/codebridger/subturtle-dashboard-app/commit/7e546af8d18c21186991c33b8c1dc8a6bc96f181)), closes [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#80](https://github.com/codebridger/subturtle-dashboard-app/issues/80) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2)
+
+# [1.1.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-10-06)
+
+
+### Bug Fixes
+
+* count each saved phrase once against the free tier #z8zc9zyjvx ([#84](https://github.com/codebridger/subturtle-dashboard-app/issues/84)) ([d27d353](https://github.com/codebridger/subturtle-dashboard-app/commit/d27d353342658c9e285fad3e5e1f1cb23ac4b60f)), closes [#z8zc9zyjvx](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyjvx)
+
+# [1.1.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **security:** lock API functions to the signed-in user and keep profile reset out of production #z8zc9zyjw3 ([#83](https://github.com/codebridger/subturtle-dashboard-app/issues/83)) ([787d7b3](https://github.com/codebridger/subturtle-dashboard-app/commit/787d7b3c4244d700ce9928b3579f1a07f66b7910)), closes [#z8zc9zyjw3](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyjw3)
+
+# [1.1.0-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-10-05)
+
+
+### Features
+
+* **live-session:** voice pause switch, visible coach failures, English login preview #z8zc9zyg37 ([#81](https://github.com/codebridger/subturtle-dashboard-app/issues/81)) ([e285ac5](https://github.com/codebridger/subturtle-dashboard-app/commit/e285ac57879a26402d4174233908994eaf5e53dc)), closes [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37)
+
+# [1.1.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0...v1.1.0-dev.1) (2026-10-05)
+
+
+### Features
+
+* rebuild subturtle.app landing on Firebase and subturtle-ui #z8zc9zyaa2 ([#80](https://github.com/codebridger/subturtle-dashboard-app/issues/80)) ([63e7f13](https://github.com/codebridger/subturtle-dashboard-app/commit/63e7f13729dc4148feea0e34ec04e7d811c097f0)), closes [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2)
+
+# [1.0.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2026-09-22)
+
+
+### Features
+
+* **leitner:** return confirmed_chunk + source_sentence on review items for L3+ fill-in [#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)exnxph5 ([64d9af8](https://github.com/codebridger/subturtle-dashboard-app/commit/64d9af8ef9f044e2c21a3d2bf71ecb8c38eee741)), closes [#86exnxph5](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxph5) [#86exnxph5](https://github.com/codebridger/subturtle-dashboard-app/issues/86exnxph5)
+
+# [1.0.0-dev.8](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2026-09-22)
+
+
+### Bug Fixes
+
+* **auth:** accept only SubTurtle clients' Google tokens with verified emails ([7c209e2](https://github.com/codebridger/subturtle-dashboard-app/commit/7c209e2f57b250daa30633e7ca8330a55f2c1192))
+* **auth:** make the verification code unguessable in production ([7059ebf](https://github.com/codebridger/subturtle-dashboard-app/commit/7059ebf9caca8ffc3e175d0b953175bd09e00b7f))
+* **gateway:** require a valid Stripe signature whenever webhooks are verifiable ([5193c21](https://github.com/codebridger/subturtle-dashboard-app/commit/5193c21b9dd45aa89f24432770bf0a39533ef5aa))
+* **login:** fall back to the page origin for the API URL ([42d747f](https://github.com/codebridger/subturtle-dashboard-app/commit/42d747f2badf22f698ce7615bd513ab96e1d9850))
+* **schedule:** claim jobs with a conditional updateOne ([338de26](https://github.com/codebridger/subturtle-dashboard-app/commit/338de26a08f91e61760504eff70a576604074726))
+
+
+### Features
+
+* **server:** run on Firestore with Mongoose 8, database-driven jobs and a Firebase deploy pipeline ([ffff5ab](https://github.com/codebridger/subturtle-dashboard-app/commit/ffff5ab94f36f0b3df7f773d358875c7e7ca84bf))
+
+# [1.0.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2026-08-29)
+
+
+### Features
+
+* **ui:** rebuild the login screen on subturtle-ui ([3883d91](https://github.com/codebridger/subturtle-dashboard-app/commit/3883d91c23aa0ea6c6832aeef0bc19516bef9342))
+
+# [1.0.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-08-27)
+
+
+### Bug Fixes
+
+* **build:** build subturtle-ui wherever the frontend is installed ([f3204ff](https://github.com/codebridger/subturtle-dashboard-app/commit/f3204ff52079c02fea5247ddc0fe3ff277b88a94))
+* **ui:** give StAppShell a mobile drawer, and follow the redesigned lock copy ([44e5e54](https://github.com/codebridger/subturtle-dashboard-app/commit/44e5e5450f47c36e80f2f4ef2a1d4bf19d0e2258))
+
+
+### Features
+
+* **ui:** add subturtle-ui design system, new app shell and progress screen ([871957e](https://github.com/codebridger/subturtle-dashboard-app/commit/871957ecbb2e29e7d9562a044a966ca61627c098)), closes [#f91e5a](https://github.com/codebridger/subturtle-dashboard-app/issues/f91e5a)
+
 # [1.0.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-07-10)
 
 

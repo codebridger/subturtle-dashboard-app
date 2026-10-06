@@ -4,6 +4,7 @@ import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
 import { ScheduleService } from "../schedule/service";
+import { pickPrimaryChunkText } from "../../utils/chunk";
 
 // Helper type since modular-rest types are opaque sometimes
 type LeitnerSystemDoc = Document & {
@@ -20,25 +21,20 @@ type LeitnerSystemDoc = Document & {
   items: LeitnerItem[];
 };
 
+// Stored items are Mongoose subdocuments; spreading one copies internals (on Mongoose 8
+// including `$__parent`, the whole Leitner document) into every review item's JSON.
+// Plain objects keep only the item's fields, at the top level where the clients read them.
+function toPlainItem(item: LeitnerItem): LeitnerItem {
+  const subdoc = item as any;
+  return typeof subdoc.toObject === "function" ? subdoc.toObject() : item;
+}
+
 export class LeitnerService {
   private static syncedUsers = new Set<string>();
 
   private static async getSystem(userId: string): Promise<LeitnerSystemDoc | null> {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
     return (await col.findOne({ userId })) as unknown as LeitnerSystemDoc;
-  }
-
-  /**
-   * Text of the phrase's primary chunk for the L3+ fill-in: the highest-`confidence`
-   * chunk, tie-broken by earliest (the strict `>` keeps the earlier chunk on ties).
-   * Returns `null` when the phrase has no chunks so the renderer falls back to the
-   * recognition card. Read-path only — no schema change.
-   */
-  private static pickConfirmedChunk(phrase: any): string | null {
-    const chunks = phrase?.chunks;
-    if (!Array.isArray(chunks) || chunks.length === 0) return null;
-    const best = chunks.reduce((a: any, b: any) => ((b?.confidence ?? 0) > (a?.confidence ?? 0) ? b : a));
-    return best?.text ?? null;
   }
 
   /** Coerce to an integer in [min, max]; throw on anything out of range. Guards the
@@ -148,9 +144,9 @@ export class LeitnerService {
     return selectedItems.map((item: LeitnerItem): ReviewItem => {
       const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
       return {
-        ...item,
+        ...toPlainItem(item),
         phrase,
-        confirmed_chunk: this.pickConfirmedChunk(phrase),
+        confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
         source_sentence: phrase?.context ?? null,
       }
     }).filter((item: ReviewItem) => item.phrase);
@@ -181,9 +177,9 @@ export class LeitnerService {
       .map((item: LeitnerItem): ReviewItem => {
         const phrase: any = phrases.find((p: any) => p._id.toString() === item.phraseId.toString());
         return {
-          ...item,
+          ...toPlainItem(item),
           phrase,
-          confirmed_chunk: this.pickConfirmedChunk(phrase),
+          confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
           source_sentence: phrase?.context ?? null,
         };
       })

@@ -114,8 +114,8 @@ const notifyFluentWaitlist = defineFunction({
       FLUENT_WAITLIST_COLLECTION
     );
     await waitlistCollection.updateOne(
-      { user_id: Types.ObjectId(userId) },
-      { $set: { user_id: Types.ObjectId(userId), email: user.email } },
+      { user_id: new Types.ObjectId(userId) },
+      { $set: { user_id: new Types.ObjectId(userId), email: user.email } },
       { upsert: true }
     );
 

@@ -13,6 +13,10 @@ interface ScheduleJobSchema {
   state: "scheduled" | "queued" | "executing" | "executed" | "failed";
   catchUp?: boolean;
   timeZone?: string;
+  /** When the job is next due; null once it will never run again. See ScheduleService. */
+  nextRunAt?: Date | null;
+  /** Set while a process holds the job's claim; an old value means the claimant died. */
+  claimedAt?: Date;
 }
 
 const scheduleJobSchema = new Schema<ScheduleJobSchema>(
@@ -40,6 +44,8 @@ const scheduleJobSchema = new Schema<ScheduleJobSchema>(
     },
     catchUp: { type: Boolean, default: false },
     timeZone: { type: String },
+    nextRunAt: { type: Date, index: true },
+    claimedAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -6,3 +6,7 @@
 # Agent E2E run reports (the specs are tracked; the generated run logs are not)
 agent-tests/_runs/
 .playwright-mcp
+
+# Firebase CLI local state
+.firebase/
+firebase-debug.log

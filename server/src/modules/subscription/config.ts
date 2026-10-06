@@ -41,6 +41,13 @@ export const FREE_VOICE_SESSION_MAX_MINUTES = 5;
 export const AI_CREDIT_EXHAUSTED_CODE = "AI_CREDIT_EXHAUSTED";
 
 /**
+ * Stable error code thrown when an operator has paused new voice sessions with
+ * the `VOICE_SESSIONS_PAUSED=true` env switch (a cost brake for usage spikes).
+ * The frontend pattern-matches it to show a "paused" message, not a raw error.
+ */
+export const VOICE_PAUSED_CODE = "VOICE_PAUSED";
+
+/**
  * Stable code thrown when a tier limit/lock blocks an action (save-words cap,
  * weekly_insights / session_history lock, voice budget, live-session count). Lives
  * here (a dependency-free constants file) so the frontend can import it WITHOUT
