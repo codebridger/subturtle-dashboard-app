@@ -4,6 +4,7 @@ import { permissionGroups } from "./permissions";
 import fs from "fs";
 import { authTriggers } from "./triggers";
 import { generateVerificationCode } from "./verification-code";
+import { functionCallerGuard } from "./function-caller-guard";
 // Load .env file
 require("dotenv").config({
   path: path.resolve(__dirname, "../.env"),
@@ -61,6 +62,11 @@ const app = createRest({
   // Expose the raw request body so the Stripe webhook can verify signatures.
   koaBodyOptions: {
     includeUnparsed: true,
+  },
+  // Runs after koa-body and before the routers: functions only ever see the client's args,
+  // so this pins their userId / refId to the signed-in user (see function-caller-guard.ts).
+  onBeforeInit: (koaApp: any) => {
+    koaApp.use(functionCallerGuard);
   },
   mongo: {
     mongoBaseAddress:

@@ -14,6 +14,7 @@ jobs:
     outputs:
       server: ${{ steps.filter.outputs.server }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      landing: ${{ steps.filter.outputs.landing }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -25,6 +26,13 @@ jobs:
               - '.github/workflows/test.yml'
             frontend:
               - 'frontend/**'
+              - '.github/workflows/test.yml'
+            landing:
+              - 'landing/**'
+              - 'ui/**'
+              - 'firebase.json'
+              - '.firebaserc'
+              - 'infra/public/landing-*.env'
               - '.github/workflows/test.yml'
 
   server-tests:
@@ -120,9 +128,36 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+  landing:
+    name: Landing (build + hosting gate)
+    needs: changes
+    if: needs.changes.outputs.landing == 'true'
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: landing/.nvmrc
+          cache: yarn
+          cache-dependency-path: |
+            landing/yarn.lock
+            ui/yarn.lock
+      - run: yarn install --frozen-lockfile
+      # The same typecheck, prerender and deploy gate as infra/deploy-landing.sh, with the dev
+      # site's public values. No analytics token and no API call: prices come from the snapshot.
+      - name: Build and check
+        run: |
+          set -a; source ../infra/public/landing-dev.env; set +a
+          npx nuxt typecheck --dotenv .env.ci
+          npx nuxt generate --dotenv .env.ci
+          node scripts/check-hosting.mjs
+
   all-tests-pass:
     name: All tests pass
-    needs: [server-tests, frontend-unit, frontend-e2e]
+    needs: [server-tests, frontend-unit, frontend-e2e, landing]
     if: always()
     runs-on: ubuntu-22.04
     steps:

@@ -1,3 +1,31 @@
+# [1.1.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-10-06)
+
+
+### Bug Fixes
+
+* count each saved phrase once against the free tier #z8zc9zyjvx ([#84](https://github.com/codebridger/subturtle-dashboard-app/issues/84)) ([d27d353](https://github.com/codebridger/subturtle-dashboard-app/commit/d27d353342658c9e285fad3e5e1f1cb23ac4b60f)), closes [#z8zc9zyjvx](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyjvx)
+
+# [1.1.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **security:** lock API functions to the signed-in user and keep profile reset out of production #z8zc9zyjw3 ([#83](https://github.com/codebridger/subturtle-dashboard-app/issues/83)) ([787d7b3](https://github.com/codebridger/subturtle-dashboard-app/commit/787d7b3c4244d700ce9928b3579f1a07f66b7910)), closes [#z8zc9zyjw3](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyjw3)
+
+# [1.1.0-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-10-05)
+
+
+### Features
+
+* **live-session:** voice pause switch, visible coach failures, English login preview #z8zc9zyg37 ([#81](https://github.com/codebridger/subturtle-dashboard-app/issues/81)) ([e285ac5](https://github.com/codebridger/subturtle-dashboard-app/commit/e285ac57879a26402d4174233908994eaf5e53dc)), closes [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37)
+
+# [1.1.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0...v1.1.0-dev.1) (2026-10-05)
+
+
+### Features
+
+* rebuild subturtle.app landing on Firebase and subturtle-ui #z8zc9zyaa2 ([#80](https://github.com/codebridger/subturtle-dashboard-app/issues/80)) ([63e7f13](https://github.com/codebridger/subturtle-dashboard-app/commit/63e7f13729dc4148feea0e34ec04e7d811c097f0)), closes [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2)
+
 # [1.0.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2026-09-22)
 
 

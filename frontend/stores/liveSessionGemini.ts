@@ -218,12 +218,15 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         }
 
         if (session) {
+            // Clear the reference before closing so this socket's `onclose`
+            // sees a deliberate close, not a dropped connection.
+            const closing = session;
+            session = null;
             try {
-                session.close();
+                closing.close();
             } catch {
                 /* already closed */
             }
-            session = null;
         }
 
         dropPlayback();
@@ -483,13 +486,22 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             rejectSetupComplete = rej;
         });
 
+        // The socket this call opens. Its callbacks compare it with the live
+        // `session` so a socket we already replaced (the old leg of a resume)
+        // or closed on purpose (`endLiveSession`) can't tear down the session.
+        let thisSession: Session | null = null;
+        let setupDone = false;
+
         const newSession = await ai.live.connect({
             model: liveSession.value?.model || DEFAULT_MODEL,
             config: liveConfig,
             callbacks: {
                 onopen: () => { },
                 onmessage: (msg: LiveServerMessage) => {
-                    if ((msg as any).setupComplete) resolveSetupComplete();
+                    if ((msg as any).setupComplete) {
+                        setupDone = true;
+                        resolveSetupComplete();
+                    }
                     try {
                         onLiveMessage(msg);
                     } catch (err) {
@@ -503,14 +515,18 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                 },
                 onclose: (_e: any) => {
                     rejectSetupComplete?.(new Error('WebSocket closed before setup'));
-                    if (connState.value !== 'resuming') {
-                        connState.value = 'closed';
-                        sessionStarted.value = false;
-                    }
+                    // Before setupComplete the rejected promise above reports the
+                    // failure, and a resume in flight owns its own outcome.
+                    if (!setupDone || isResuming || !thisSession || session !== thisSession) return;
+                    // The live socket dropped without us asking: tell the page,
+                    // then release the mic and debit the minutes used.
+                    onUpdateCallback?.({ type: 'session-dropped' });
+                    endLiveSession();
                 },
             },
         });
 
+        thisSession = newSession;
         session = newSession;
 
         await Promise.race([
