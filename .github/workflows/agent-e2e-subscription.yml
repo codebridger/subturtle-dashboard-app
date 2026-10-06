@@ -14,6 +14,8 @@ name: Agent E2E — Subscription tier ladder
 
 on:
   workflow_dispatch:
+  # deploy-prod.yml calls this after a merge to main and deploys only if it passes.
+  workflow_call:
   pull_request:
     types: [opened, synchronize]
     branches: [main]
@@ -30,9 +32,10 @@ jobs:
     name: Tier ladder (real Stripe test mode)
     runs-on: ubuntu-22.04
     # Skip for fork PRs: a pull_request from a fork can't read repo secrets, so the
-    # run would fail spuriously. Manual runs and same-repo (release) PRs proceed.
+    # run would fail spuriously. Manual runs, the deploy gate (a push, via workflow_call)
+    # and same-repo (release) PRs proceed.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     defaults:
       run:
