@@ -3,6 +3,10 @@ name: Test
 on:
   pull_request:
     branches: [dev, main]
+  # A dev → main release PR opened right after semantic-release gets no checks: its head is the
+  # `chore(release): … [skip ci]` commit, and GitHub skips pull_request workflows for that too.
+  # Dispatch this on the PR's branch to test it anyway; every suite runs, with no path filter.
+  workflow_dispatch:
 
 env:
   GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
@@ -12,12 +16,13 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-22.04
     outputs:
-      server: ${{ steps.filter.outputs.server }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      landing: ${{ steps.filter.outputs.landing }}
+      server: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.server }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend }}
+      landing: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.landing }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
+        if: github.event_name == 'pull_request'
         id: filter
         with:
           filters: |
