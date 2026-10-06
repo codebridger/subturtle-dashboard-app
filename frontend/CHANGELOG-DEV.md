@@ -1,3 +1,10 @@
+# [1.1.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.6...v1.1.0-dev.7) (2026-10-06)
+
+
+### Bug Fixes
+
+* move visitors off *.web.app and log out dead sessions #z8zc9zywfj ([#87](https://github.com/codebridger/subturtle-dashboard-app/issues/87)) ([01dd243](https://github.com/codebridger/subturtle-dashboard-app/commit/01dd243617f941fe07f608a8d6f9ddbfc341318a)), closes [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj) [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj) [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj)
+
 # [1.1.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.5...v1.1.0-dev.6) (2026-10-06)
 
 
