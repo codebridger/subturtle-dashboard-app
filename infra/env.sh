@@ -3,8 +3,14 @@
 # shellcheck disable=SC2034  # the variables are used by the scripts that source this file
 
 case "${1:-}" in
-  dev) PROJECT_ID=subturtle-dev ;;
-  prod) PROJECT_ID=subturtle-prod ;;
+  dev)
+    PROJECT_ID=subturtle-dev
+    DASHBOARD_DOMAIN=dev.dashboard.subturtle.app
+    ;;
+  prod)
+    PROJECT_ID=subturtle-prod
+    DASHBOARD_DOMAIN=dashboard.subturtle.app
+    ;;
   *)
     echo "usage: $0 dev|prod" >&2
     exit 64
@@ -27,7 +33,10 @@ DEPLOYER_SA=github-deployer@${PROJECT_ID}.iam.gserviceaccount.com
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
 # Cloud Run's deterministic URL, known before the first deploy.
 API_URL=https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app
-DASHBOARD_URL=https://${PROJECT_ID}.web.app
+# The dashboard's public address. The API sends users here after Google sign-in and from Stripe
+# (portal and plan-change returns), so it must be the custom domain, not ${PROJECT_ID}.web.app:
+# localStorage, and with it the login, is per origin.
+DASHBOARD_URL=https://${DASHBOARD_DOMAIN}
 
 # Secret name -> environment variable the API reads.
 REQUIRED_SECRETS=(

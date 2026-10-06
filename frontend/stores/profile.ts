@@ -3,6 +3,8 @@ import { toastError } from 'pilotui/toast';
 import { defineStore } from 'pinia';
 
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
+import { isDeadSessionError } from '~/utils/deadSession';
+
 
 export const useProfileStore = defineStore('profile', () => {
     const authUser = computed(() => authentication.user);
@@ -137,6 +139,8 @@ export const useProfileStore = defineStore('profile', () => {
                 }
             })
             .catch((res) => {
+                // A dead session must reach loginWithLastSession, which logs out.
+                if (isDeadSessionError(res)) throw res;
                 console.error('Error fetching subscription:', res);
                 toastError(res.error || 'Unable to fetch subscription details', { position: 'top-end' });
             })
@@ -208,6 +212,7 @@ export const useProfileStore = defineStore('profile', () => {
                 return profile;
             })
             .catch((error) => {
+                if (isDeadSessionError(error)) throw error;
                 toastError(error.error || 'Unable to fetch profile info', { position: 'top-end' });
             });
     }
@@ -245,7 +250,7 @@ export const useProfileStore = defineStore('profile', () => {
                     })
                     .catch((error) => {
                         const message = (error?.error || error?.message || '').toString().toLowerCase();
-                        if (message.includes('user not found') || message.includes('authentication')) {
+                        if (isDeadSessionError(error) || message.includes('authentication')) {
                             authentication.logout();
                         }
                         throw error;

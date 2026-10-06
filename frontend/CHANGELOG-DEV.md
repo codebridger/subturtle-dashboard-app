@@ -1,3 +1,24 @@
+# [1.1.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.6...v1.1.0-dev.7) (2026-10-06)
+
+
+### Bug Fixes
+
+* move visitors off *.web.app and log out dead sessions #z8zc9zywfj ([#87](https://github.com/codebridger/subturtle-dashboard-app/issues/87)) ([01dd243](https://github.com/codebridger/subturtle-dashboard-app/commit/01dd243617f941fe07f608a8d6f9ddbfc341318a)), closes [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj) [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj) [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj)
+
+# [1.1.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.5...v1.1.0-dev.6) (2026-10-06)
+
+
+### Bug Fixes
+
+* **infra:** send users to the dashboard's custom domain, not *.web.app #z8zc9zywfj ([#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)) ([df6a798](https://github.com/codebridger/subturtle-dashboard-app/commit/df6a7986960170a4fa9f0c0c067be3c43030d9fe)), closes [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj)
+
+# [1.1.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.4...v1.1.0-dev.5) (2026-10-06)
+
+
+### Features
+
+* ship the new subturtle.app landing page and the launch fixes to production #z8zc9zyaa2 #z8zc9zyg37 ([#82](https://github.com/codebridger/subturtle-dashboard-app/issues/82)) ([7e546af](https://github.com/codebridger/subturtle-dashboard-app/commit/7e546af8d18c21186991c33b8c1dc8a6bc96f181)), closes [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#80](https://github.com/codebridger/subturtle-dashboard-app/issues/80) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2)
+
 # [1.1.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-10-06)
 
 
