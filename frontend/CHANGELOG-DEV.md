@@ -1,3 +1,10 @@
+# [1.1.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-10-06)
+
+
+### Bug Fixes
+
+* count each saved phrase once against the free tier #z8zc9zyjvx ([#84](https://github.com/codebridger/subturtle-dashboard-app/issues/84)) ([d27d353](https://github.com/codebridger/subturtle-dashboard-app/commit/d27d353342658c9e285fad3e5e1f1cb23ac4b60f)), closes [#z8zc9zyjvx](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyjvx)
+
 # [1.1.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2026-10-05)
 
 
