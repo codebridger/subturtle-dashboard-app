@@ -174,8 +174,10 @@ The UI is being rebuilt on **`subturtle-ui`** (`ui/`), an in-house Vue 3 compone
 carrying Subturtle's real brand, replacing **pilotui** — a generic admin theme whose blue
 `#4361ee` palette was never ours. See [ui/README.md](ui/README.md).
 
-The redesign lands **one screen per PR** onto the long-running `new-design` branch, which is
-promoted to `dev` in batches. While it is in progress:
+The redesign still lands **one screen per PR**, but on the normal flow: a feature branch off
+`dev`, a PR into `dev`, then `dev → main` (see [Branching](#branching)). The long-running
+`new-design` staging branch was folded into `dev` in October 2026 and is retired — don't
+branch off it or target it. While the migration is in progress:
 
 - **The half-migrated UI is already in production.** `main` was frozen to keep it off
   production, but the September 2026 move to Firebase deployed `dev`-based code to the
