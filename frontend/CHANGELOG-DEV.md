@@ -1,3 +1,10 @@
+# [1.1.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.4...v1.1.0-dev.5) (2026-10-06)
+
+
+### Features
+
+* ship the new subturtle.app landing page and the launch fixes to production #z8zc9zyaa2 #z8zc9zyg37 ([#82](https://github.com/codebridger/subturtle-dashboard-app/issues/82)) ([7e546af](https://github.com/codebridger/subturtle-dashboard-app/commit/7e546af8d18c21186991c33b8c1dc8a6bc96f181)), closes [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyg37](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyg37) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#80](https://github.com/codebridger/subturtle-dashboard-app/issues/80) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2) [#z8zc9zyaa2](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zyaa2)
+
 # [1.1.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-10-06)
 
 
