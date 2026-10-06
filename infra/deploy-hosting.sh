@@ -14,7 +14,7 @@ cd "$(dirname "$0")/../frontend"
 
 NUXT_PUBLIC_MODE=development
 if [[ $ENVIRONMENT == prod ]]; then NUXT_PUBLIC_MODE=production; fi
-export NUXT_PUBLIC_MODE NUXT_PUBLIC_BASE_URL_API=$API_URL
+export NUXT_PUBLIC_MODE NUXT_PUBLIC_BASE_URL_API=$API_URL NUXT_PUBLIC_DASHBOARD_URL=$DASHBOARD_URL
 
 yarn install --frozen-lockfile
 yarn generate

@@ -4,6 +4,17 @@ import { defineStore } from 'pinia';
 
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
 
+/**
+ * True when a request failed because the session itself is dead: the token's user no longer
+ * exists (412 "User not found" / "Precondition Failed"), the token was refused (401), or the
+ * API's caller guard rejected it. @modular-rest/client drops the HTTP status and rejects with
+ * the response body, so this matches the body text.
+ */
+export function isDeadSessionError(error: unknown): boolean {
+    const text = typeof error === 'string' ? error : (error as any)?.error || (error as any)?.message || '';
+    return /user not found|precondition failed|unauthorized|a function can only act on the signed-in user/i.test(String(text));
+}
+
 export const useProfileStore = defineStore('profile', () => {
     const authUser = computed(() => authentication.user);
     const isLogin = computed(() => authentication.isLogin);
@@ -137,6 +148,8 @@ export const useProfileStore = defineStore('profile', () => {
                 }
             })
             .catch((res) => {
+                // A dead session must reach loginWithLastSession, which logs out.
+                if (isDeadSessionError(res)) throw res;
                 console.error('Error fetching subscription:', res);
                 toastError(res.error || 'Unable to fetch subscription details', { position: 'top-end' });
             })
@@ -208,6 +221,7 @@ export const useProfileStore = defineStore('profile', () => {
                 return profile;
             })
             .catch((error) => {
+                if (isDeadSessionError(error)) throw error;
                 toastError(error.error || 'Unable to fetch profile info', { position: 'top-end' });
             });
     }
@@ -245,7 +259,7 @@ export const useProfileStore = defineStore('profile', () => {
                     })
                     .catch((error) => {
                         const message = (error?.error || error?.message || '').toString().toLowerCase();
-                        if (message.includes('user not found') || message.includes('authentication')) {
+                        if (isDeadSessionError(error) || message.includes('authentication')) {
                             authentication.logout();
                         }
                         throw error;
