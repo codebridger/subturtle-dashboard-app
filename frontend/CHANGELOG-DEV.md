@@ -1,3 +1,10 @@
+# [1.1.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.5...v1.1.0-dev.6) (2026-10-06)
+
+
+### Bug Fixes
+
+* **infra:** send users to the dashboard's custom domain, not *.web.app #z8zc9zywfj ([#86](https://github.com/codebridger/subturtle-dashboard-app/issues/86)) ([df6a798](https://github.com/codebridger/subturtle-dashboard-app/commit/df6a7986960170a4fa9f0c0c067be3c43030d9fe)), closes [#z8zc9zywfj](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zywfj)
+
 # [1.1.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0-dev.4...v1.1.0-dev.5) (2026-10-06)
 
 
