@@ -7,6 +7,9 @@ on:
   # `chore(release): … [skip ci]` commit, and GitHub skips pull_request workflows for that too.
   # Dispatch this on the PR's branch to test it anyway; every suite runs, with no path filter.
   workflow_dispatch:
+  # deploy-dev.yml / deploy-prod.yml call this after a merge and deploy only if it passes, so
+  # nothing reaches an environment untested even when the PR that brought it ran no checks.
+  workflow_call:
 
 env:
   GIGET_AUTH_TOKEN: ${{ secrets.GIGET_AUTH_TOKEN }}
@@ -16,9 +19,11 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-22.04
     outputs:
-      server: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.server }}
-      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend }}
-      landing: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.landing }}
+      # Outside a PR (manual run, or called by a deploy) every suite runs: there is no PR diff to
+      # filter by, and a deploy gate must not pass because a suite was skipped.
+      server: ${{ github.event_name != 'pull_request' || steps.filter.outputs.server }}
+      frontend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.frontend }}
+      landing: ${{ github.event_name != 'pull_request' || steps.filter.outputs.landing }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
