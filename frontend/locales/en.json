@@ -192,6 +192,14 @@
         "oops-something-went-wrong": "Oops, something went wrong",
         "connection-lost": "The connection to your coach dropped. Start a new session to keep practicing.",
         "voice-paused": "Voice practice is paused for a short while. Please try again later.",
+        "voice-locked": {
+            "title-not-included": "Voice practice isn't included in your plan",
+            "title-used-up": "You've used all your voice minutes",
+            "message": "Keep practicing these same phrases by text, or add voice minutes to talk with your coach.",
+            "use-text": "Practice by text instead",
+            "top-up": "Buy voice minutes",
+            "see-plans": "See plans"
+        },
         "click-to-start": "Click on any vocabulary card to start practicing",
         "currently-practicing": "Currently practicing:",
         "transcript-empty-hint": "Your conversation will appear here.",
@@ -383,7 +391,7 @@
                 "weekly_insights": "Progress insights are a Learner feature.",
                 "session_history": "Full session history is a Learner feature.",
                 "live_sessions": "You've used all your free live sessions.",
-                "voice_minutes": "You're out of voice minutes on your plan.",
+                "voice_minutes": "Voice practice needs voice minutes. Add a top-up or upgrade your plan to keep speaking.",
                 "text_chat_count": "You've used your 60 chats this month. For unlimited chat with the AI coach, go Learner.",
                 "text_chat_messages_per_chat": "This chat has reached its message limit. Start a new chat to keep going."
             },
@@ -472,6 +480,7 @@
         },
         "voice-modal": {
             "title": "You're out of voice minutes this month.",
+            "title-none": "Your plan doesn't include voice minutes.",
             "body1": "You have 0 of {total} voice minutes left.",
             "body2": "Add 30 minutes for {price} to keep speaking, or switch to text chat to keep practising.",
             "add30": "Add 30 min — {price}",

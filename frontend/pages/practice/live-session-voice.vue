@@ -169,13 +169,33 @@
         </template>
 
         <template #error-mode>
-            <div class="flex flex-col items-center justify-center">
+            <!-- No voice minutes on the plan: never a raw error. Offer the same phrases
+                 by text, voice minutes, or plans. -->
+            <div v-if="voiceLock" role="alert" class="flex max-w-md flex-col items-center justify-center text-center">
+                <Icon name="iconify solar--microphone-bold-duotone" class="mb-3 text-4xl text-primary/60" />
+                <h1 class="text-2xl font-bold">
+                    {{ voiceLock.notIncluded ? t('live-practice.voice-locked.title-not-included') : t('live-practice.voice-locked.title-used-up') }}
+                </h1>
+                <p class="mt-2 text-base text-gray-600 dark:text-white-light/70">{{ t('live-practice.voice-locked.message') }}</p>
+                <div class="mt-6 flex w-full flex-col gap-2 sm:w-72">
+                    <Button color="primary" block @click="switchToText">{{ t('live-practice.voice-locked.use-text') }}</Button>
+                    <Button v-if="!profileStore.isFreemium" outline color="primary" block @click="showTopUpPicker = true">
+                        {{ t('live-practice.voice-locked.top-up') }}
+                    </Button>
+                    <button type="button" class="mt-1 text-sm text-primary hover:underline" @click="router.push('/settings/subscription')">
+                        {{ t('live-practice.voice-locked.see-plans') }}
+                    </button>
+                </div>
+            </div>
+            <div v-else class="flex flex-col items-center justify-center">
                 <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
                 <Button class="mt-8" @click="router.push('/')">{{ t('live-practice.back-to-dashboard') }}</Button>
             </div>
         </template>
     </MaterialPracticeToolScaffold>
+
+    <TopUpPickerModal v-model="showTopUpPicker" />
 
     <!-- End-of-session recap -->
     <Modal :title="t('live-practice.recap.title')" size="md" :modelValue="showRecapModal" @close="dismissRecap">
@@ -242,8 +262,10 @@ import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 import { analytic } from '~/plugins/mixpanel';
-import { AI_CREDIT_EXHAUSTED_CODE, VOICE_PAUSED_CODE } from '~/types/tiers';
+import { AI_CREDIT_EXHAUSTED_CODE, TIER_LIMIT_REACHED_CODE, VOICE_PAUSED_CODE } from '~/types/tiers';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
+import TopUpPickerModal from '~/components/TopUpPickerModal.vue';
+import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
 
 definePageMeta({
     // @ts-ignore
@@ -263,6 +285,14 @@ const liveSessionStore = useLiveSessionGeminiStore();
 const profileStore = useProfileStore();
 const errorMode = ref(false);
 const errorMessage = ref('');
+
+// Set when the plan has no voice minutes for this session (TIER_LIMIT_REACHED
+// "voice_minutes"). `notIncluded`: the plan grants none at all (Reader), so the
+// copy must not say the user ran "out of" them.
+const voiceLock = ref<{ notIncluded: boolean } | null>(null);
+const showTopUpPicker = ref(false);
+// This page renders the voice lock itself; keep the global upgrade modal out of it.
+useInlineFeatureLock('voice_minutes');
 
 const selectedPhrases = computed(() => setup.selectedPhrases);
 const returnTo = computed(() => setup.request?.returnTo || '/board');
@@ -464,8 +494,18 @@ function createLiveSession() {
             return profileStore.fetchSubscription();
         })
         .catch((error) => {
-            analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice' });
             const message = error?.error || error?.message || '';
+            const errorCode = /^([A-Z][A-Z_]+):/.exec(message)?.[1] || 'UNKNOWN';
+            try {
+                analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice', error_code: errorCode });
+            } catch {
+                /* analytics is best-effort */
+            }
+            if (errorCode === TIER_LIMIT_REACHED_CODE && message.includes('voice_minutes')) {
+                voiceLock.value = { notIncluded: message.includes('not included') };
+                errorMode.value = true;
+                return;
+            }
             // AI budget exhausted (the 100% hard cap) — surface the upgrade
             // modal instead of the generic error screen.
             if (message.includes(AI_CREDIT_EXHAUSTED_CODE)) {
@@ -478,6 +518,12 @@ function createLiveSession() {
                 ? t('live-practice.voice-paused')
                 : message || t('live-practice.toast.start-failed');
         });
+}
+
+/** Keep the same phrases and go on by text; the text page reuses the resolved setup. */
+function switchToText() {
+    if (setup.request) setup.request.mode = 'text';
+    router.replace({ path: '/practice/live-session-text', query: route.query });
 }
 
 function onFreemiumTimeExpired() {
