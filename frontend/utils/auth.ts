@@ -11,7 +11,9 @@ export const isAnyUserLogin = computed(() => authentication.isLogin || authentic
  * @returns A promise that resolves when the user is authenticated
  */
 export function waitForAuth(callback: () => void, interval = 500, timeout = 30000) {
-    return waitFor(() => isAnyUserLogin.value === true, interval, timeout).then(() => {
+    // Read `authentication` directly: it is not reactive, so `isAnyUserLogin`
+    // keeps whatever value it had on first read and would never turn true here.
+    return waitFor(() => authentication.isLogin || authentication.isAnonymousUser, interval, timeout).then(() => {
         callback();
     });
 }
