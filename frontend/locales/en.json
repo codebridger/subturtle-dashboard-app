@@ -192,6 +192,8 @@
         "back-to-dashboard": "Back to Dashboard",
         "oops-something-went-wrong": "Oops, something went wrong",
         "connection-lost": "The connection to your coach dropped. Start a new session to keep practicing.",
+        "connection-lost-title": "Connection lost",
+        "go-back": "Go back",
         "voice-paused": "Voice practice is paused for a short while. Please try again later.",
         "voice-locked": {
             "title-not-included": "Voice practice isn't included in your plan",

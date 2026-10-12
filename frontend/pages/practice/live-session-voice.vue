@@ -2,7 +2,7 @@
     <MaterialPracticeToolScaffold :title="setup.request?.title || 'Practice'" :activePhrase="practicedCount"
         :totalPhrases="totalPhrases" :bundleId="''"
         :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
-        :isLoading="!errorMode && !showTimerExpiredModal && !liveSessionStore.isSessionActive" :error-mode="errorMode"
+        :isLoading="!errorMode && !sessionEnded && !showTimerExpiredModal && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
         <template v-if="selectedPhrases.length">
     <!-- Freemium Timer Section -->
@@ -187,6 +187,13 @@
                     </button>
                 </div>
             </div>
+            <!-- The connection dropped before anything was practised: no recap to show. -->
+            <div v-else-if="connectionLost" role="alert" class="flex max-w-md flex-col items-center justify-center text-center">
+                <Icon name="iconify solar--plug-circle-bold-duotone" class="mb-3 text-4xl text-warning" />
+                <h1 class="text-2xl font-bold">{{ t('live-practice.connection-lost-title') }}</h1>
+                <p class="mt-2 text-base text-gray-600 dark:text-white-light/70">{{ t('live-practice.connection-lost') }}</p>
+                <Button class="mt-6" color="primary" @click="router.push(returnTo)">{{ t('live-practice.go-back') }}</Button>
+            </div>
             <div v-else class="flex flex-col items-center justify-center">
                 <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
@@ -288,6 +295,11 @@ const liveSessionStore = useLiveSessionGeminiStore();
 const profileStore = useProfileStore();
 const errorMode = ref(false);
 const errorMessage = ref('');
+// The session is over (ended by the user, a tool, or a dropped connection), so the
+// scaffold must not fall back to its "connecting" spinner while the recap or the
+// error state is up.
+const sessionEnded = ref(false);
+const connectionLost = ref(false);
 
 // Set when the plan has no voice minutes for this session (TIER_LIMIT_REACHED
 // "voice_minutes"). `notIncluded`: the plan grants none at all (Reader), so the
@@ -558,6 +570,8 @@ function onFreemiumTimeExpired() {
     // letting the session linger on the modal would tip into a minute the user
     // doesn't have. Tearing down debits exactly the elapsed minutes; it's
     // idempotent, so the modal's follow-up action (upgrade / exit) won't re-debit.
+    // A session that already ended (e.g. the connection dropped) has nothing left to stop.
+    if (sessionEnded.value) return;
     liveSessionStore.endLiveSession();
     showTimerExpiredModal.value = true;
 }
@@ -567,6 +581,7 @@ function endLiveSession() {
     // (and billing) audio while the recap is on screen. Navigation is
     // deferred until the user dismisses the recap.
     liveSessionStore.endLiveSession();
+    sessionEnded.value = true;
 
     // Skip the recap when the freemium timer is forcing the exit (the timer
     // modal is already up) or when the user bails before practicing anything.
@@ -591,10 +606,16 @@ function handleSessionEvent(eventData: any) {
     } else if (eventData?.type === 'session-resumed') {
         toastSuccess({ title: t('live-practice.toast.reconnected-title') });
     } else if (eventData?.type === 'session-resume-failed' || eventData?.type === 'session-dropped') {
-        // The store has already torn the session down; without this the page
-        // would sit on the loading spinner with no way out.
-        errorMode.value = true;
-        errorMessage.value = t('live-practice.connection-lost');
+        // The store has already torn the session down. End on a screen with a way
+        // out: the recap when something was practised, else the connection-lost state.
+        sessionEnded.value = true;
+        if (practicedCount.value > 0) {
+            toastError({ title: t('live-practice.connection-lost-title'), message: t('live-practice.connection-lost') });
+            showRecapModal.value = true;
+        } else {
+            connectionLost.value = true;
+            errorMode.value = true;
+        }
         try {
             analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice', reason: eventData.type });
         } catch {
