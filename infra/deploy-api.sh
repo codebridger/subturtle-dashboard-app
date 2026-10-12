@@ -22,6 +22,9 @@ for entry in "${OPTIONAL_SECRETS[@]}"; do
   name=${entry%%:*}
   if [[ -n $(gcloud_p secrets versions list "$name" --filter 'state=ENABLED' --limit 1 --format 'value(name)' 2>/dev/null) ]]; then
     secret_env+=("${entry#*:}=$name:latest")
+  else
+    # Optional means the API starts without it, not that nothing breaks: say so.
+    echo "Warning: optional secret $name has no enabled version in $PROJECT_ID; ${entry#*:} will be unset." >&2
   fi
 done
 

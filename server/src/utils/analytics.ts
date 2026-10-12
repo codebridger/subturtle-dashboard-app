@@ -2,6 +2,11 @@
  * Server-side Mixpanel — fire-and-forget analytics for events that must be
  * server-truth (trial conversion, AI-budget exhaustion). No-ops when
  * MIXPANEL_TOKEN is not configured, so it never blocks a webhook or RPC.
+ *
+ * On Cloud Run the token comes from the optional `mixpanel-token` secret
+ * (infra/env.sh). A missing secret is skipped at deploy, so in production the
+ * absence is logged once at startup — otherwise every server event silently
+ * disappears, which is how they went dark after the Firebase move.
  */
 const mixpanel = require("mixpanel");
 
@@ -9,9 +14,11 @@ let client: any = null;
 const token = process.env.MIXPANEL_TOKEN;
 if (token) {
   client = mixpanel.init(token);
-} else {
+} else if (process.env.NODE_ENV === "production") {
   console.warn(
-    "[analytics] MIXPANEL_TOKEN not set — server-side analytics events are disabled"
+    "[analytics] MIXPANEL_TOKEN is not set — server-side analytics events " +
+      "(translation_requested, trial_started, …) are DISABLED. Add the " +
+      "`mixpanel-token` secret (infra/secrets.sh) and redeploy."
   );
 }
 
