@@ -1,3 +1,10 @@
+## [1.2.1-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.1-dev.1...v1.2.1-dev.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* **live-session:** refresh plan meters after a refunded text chat ([c088f68](https://github.com/codebridger/subturtle-dashboard-app/commit/c088f682108a6c1fb8addf35c6d65bd372cc411a))
+
 ## [1.2.1-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.0...v1.2.1-dev.1) (2026-10-12)
 
 
