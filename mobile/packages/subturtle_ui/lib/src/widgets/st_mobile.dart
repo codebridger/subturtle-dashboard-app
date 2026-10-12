@@ -74,6 +74,7 @@ class _Tab extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 62),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Stack(

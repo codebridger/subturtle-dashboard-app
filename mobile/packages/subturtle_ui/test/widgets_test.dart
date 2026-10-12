@@ -187,6 +187,8 @@ void main() {
       for (final l in ['Today', 'Bundles', 'Coach', 'Me']) {
         expect(find.text(l), findsOneWidget);
       }
+      // The bar must stay short; it once grew to fill the whole screen.
+      expect(tester.getSize(find.byType(StTabBar)).height, lessThan(120));
       await tester.tap(find.text('Coach'));
       await tester.pumpAndSettle();
       expect(index, 2);
