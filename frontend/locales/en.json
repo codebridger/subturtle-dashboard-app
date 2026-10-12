@@ -194,6 +194,14 @@
         "connection-lost": "The connection to your coach dropped. Start a new session to keep practicing.",
         "connection-lost-title": "Connection lost",
         "go-back": "Go back",
+        "mic-error": {
+            "blocked-title": "Subturtle needs your microphone",
+            "blocked-message": "Your browser is blocking the microphone. Click the lock or settings icon next to the address, allow the microphone for this site, then try again.",
+            "not-found-title": "No microphone found",
+            "not-found-message": "We couldn't find a microphone. Connect one, or check that another app isn't using it, then try again.",
+            "try-again": "Try again",
+            "use-text": "Continue in text"
+        },
         "voice-paused": "Voice practice is paused for a short while. Please try again later.",
         "voice-locked": {
             "title-not-included": "Voice practice isn't included in your plan",

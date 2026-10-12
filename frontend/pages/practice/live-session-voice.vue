@@ -187,6 +187,21 @@
                     </button>
                 </div>
             </div>
+            <!-- The browser blocked the microphone, or there is none. Asked before the
+                 token, so no session slot was used. -->
+            <div v-else-if="micError" role="alert" class="flex max-w-md flex-col items-center justify-center text-center">
+                <Icon name="iconify solar--microphone-bold-duotone" class="mb-3 text-4xl text-warning" />
+                <h1 class="text-2xl font-bold">
+                    {{ micError === 'blocked' ? t('live-practice.mic-error.blocked-title') : t('live-practice.mic-error.not-found-title') }}
+                </h1>
+                <p class="mt-2 text-base text-gray-600 dark:text-white-light/70">
+                    {{ micError === 'blocked' ? t('live-practice.mic-error.blocked-message') : t('live-practice.mic-error.not-found-message') }}
+                </p>
+                <div class="mt-6 flex w-full flex-col gap-2 sm:w-72">
+                    <Button color="primary" block @click="retryAfterMicError">{{ t('live-practice.mic-error.try-again') }}</Button>
+                    <Button outline color="primary" block @click="switchToText">{{ t('live-practice.mic-error.use-text') }}</Button>
+                </div>
+            </div>
             <!-- The connection dropped before anything was practised: no recap to show. -->
             <div v-else-if="connectionLost" role="alert" class="flex max-w-md flex-col items-center justify-center text-center">
                 <Icon name="iconify solar--plug-circle-bold-duotone" class="mb-3 text-4xl text-warning" />
@@ -263,7 +278,7 @@
 <script setup lang="ts">
 import { Card, Button, Icon } from 'pilotui/elements';
 import { Modal } from 'pilotui/complex';
-import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
+import { MIC_UNAVAILABLE_CODE, useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
 import { buildInstructions, buildPracticeTools, resolveNativeLanguage } from '~/utils/livePractice';
@@ -300,6 +315,7 @@ const errorMessage = ref('');
 // error state is up.
 const sessionEnded = ref(false);
 const connectionLost = ref(false);
+const micError = ref<'blocked' | 'not-found' | null>(null);
 
 // Set when the plan has no voice minutes for this session (TIER_LIMIT_REACHED
 // "voice_minutes"). `notIncluded`: the plan grants none at all (Reader), so the
@@ -539,6 +555,11 @@ function createLiveSession() {
             } catch {
                 /* analytics is best-effort */
             }
+            if (errorCode === MIC_UNAVAILABLE_CODE) {
+                micError.value = message.includes('blocked') ? 'blocked' : 'not-found';
+                errorMode.value = true;
+                return;
+            }
             if (errorCode === TIER_LIMIT_REACHED_CODE && message.includes('voice_minutes')) {
                 voiceLock.value = { notIncluded: message.includes('not included') };
                 errorMode.value = true;
@@ -556,6 +577,12 @@ function createLiveSession() {
                 ? t('live-practice.voice-paused')
                 : message || t('live-practice.toast.start-failed');
         });
+}
+
+function retryAfterMicError() {
+    micError.value = null;
+    errorMode.value = false;
+    createLiveSession();
 }
 
 /** Keep the same phrases and go on by text; the text page reuses the resolved setup. */
