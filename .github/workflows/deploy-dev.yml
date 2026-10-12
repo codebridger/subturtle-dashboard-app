@@ -1,6 +1,7 @@
 name: Deploy dev
 
-# Every push to dev goes to the subturtle-dev Firebase project (see deploy.yml).
+# Every push to dev goes to the subturtle-dev Firebase project (see deploy.yml), once the full
+# test suite passes on the pushed commit.
 
 on:
   push:
@@ -8,7 +9,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
   deploy:
+    needs: test
     permissions:
       contents: read
       id-token: write

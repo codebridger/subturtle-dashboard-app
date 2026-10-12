@@ -1,3 +1,16 @@
+## [1.2.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.0...v1.2.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **analytics:** identify dashboard users on every boot and keep the app super property ([6ab4767](https://github.com/codebridger/subturtle-dashboard-app/commit/6ab4767a2520c7611d8d412569b402d7d39fea68))
+* **analytics:** warn when server Mixpanel is disabled and document the missing secret ([d251199](https://github.com/codebridger/subturtle-dashboard-app/commit/d25119972eda63ff8be51e45e3d27e1ed3ecc41a))
+* **auth:** make the shared auth computeds follow sign-in and sign-out ([1288027](https://github.com/codebridger/subturtle-dashboard-app/commit/1288027ae7a9d855759d612a959ad7e8ea0e056c))
+* **live-session:** offer text, top-ups or plans when voice isn't on the plan ([5485647](https://github.com/codebridger/subturtle-dashboard-app/commit/54856477af70b87755df38b501ed194f2acd032f))
+* **live-session:** refresh plan meters after a refunded text chat ([c088f68](https://github.com/codebridger/subturtle-dashboard-app/commit/c088f682108a6c1fb8addf35c6d65bd372cc411a))
+* **live-session:** show text-chat coach failures and refund the chat when the first turn fails ([7bd61dc](https://github.com/codebridger/subturtle-dashboard-app/commit/7bd61dcf749fa359fdff49726a6124f050c6296a))
+* **ui:** empty voice bar on 0-minute plans, no stray modal buttons, honest Pool and progress stats ([00fe182](https://github.com/codebridger/subturtle-dashboard-app/commit/00fe182fb2d730b18f3a35681b439a363740ad2a)), closes [#trigger](https://github.com/codebridger/subturtle-dashboard-app/issues/trigger)
+
 # [1.2.0](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.1.0...v1.2.0) (2026-10-06)
 
 

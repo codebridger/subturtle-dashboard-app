@@ -242,10 +242,12 @@ local one take the identical path, and there is no second deployment definition 
 - **Inert until enabled.** `deploy.yml` only runs for environments named in the repository
   variable `DEPLOY_ENVIRONMENTS` (e.g. `dev,prod`). Clearing it stops all deploys without
   touching the workflows.
-- **Release PRs can arrive untested.** Tests run on PRs into `dev`/`main`, not in the deploy.
-  A `dev → main` PR opened right after a dev release has the `chore(release): … [skip ci]`
-  commit as its head, and GitHub skips `pull_request` workflows for it, so it shows no checks.
-  Run `gh workflow run test.yml --ref dev` (all suites, no path filter) before merging.
+- **Deploys are gated on tests.** `deploy-dev.yml` and `deploy-prod.yml` call `test.yml` (every
+  suite, no path filter) on the pushed commit, and prod also calls the real-Stripe tier ladder
+  (`agent-e2e-subscription.yml`); the deploy job `needs` them, so a red suite ships nothing. This
+  is the gate that matters: a `dev → main` PR opened right after a dev release has the
+  `chore(release): … [skip ci]` commit as its head, so GitHub runs none of its PR checks.
+  To test such a PR before merging anyway: `gh workflow run test.yml --ref dev`.
 - Deploys for one environment are serialized (`concurrency: deploy-<env>`), so two merges
   cannot race a Cloud Run revision.
 
