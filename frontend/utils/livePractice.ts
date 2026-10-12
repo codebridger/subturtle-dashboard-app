@@ -29,6 +29,20 @@ export function decodeSessionRequest(raw: string): LiveSessionRequest {
 }
 
 /**
+ * The i18n key for the button that leaves a finished session (the recap, the
+ * connection-lost state), named after where `returnTo` actually goes: the
+ * extension's "Practice now" returns to /board, Start New to /sessions/new.
+ */
+export function returnToLabelKey(returnTo: string): string {
+    // Compare the path only: a query (e.g. /sessions/new?bundle=…) does not change the destination.
+    const path = (returnTo || '').split(/[?#]/)[0].replace(/\/+$/, '');
+    if (/^\/bundles\/[^/]+$/.test(path)) return 'live-practice.recap.back-to-bundle';
+    if (path === '/board') return 'live-practice.recap.back-to-board';
+    if (path === '/sessions/new') return 'live-practice.recap.back-to-sessions';
+    return 'live-practice.recap.done';
+}
+
+/**
  * The AI tutor system prompt. `[nativeLanguage]` and `[phrases]` are filled in
  * by `buildInstructions`. Transport-agnostic on purpose — never mention the
  * microphone or typing here; that belongs in the per-page opening nudge.

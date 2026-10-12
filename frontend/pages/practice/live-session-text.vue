@@ -206,7 +206,7 @@
         </template>
         <template #footer>
             <div class="flex justify-end">
-                <Button color="primary" :label="t('live-practice.recap.back-to-bundle')" @click="dismissRecap" />
+                <Button color="primary" :label="returnLabel" @click="dismissRecap" />
             </div>
         </template>
     </Modal>
@@ -233,7 +233,7 @@ import { Modal } from 'pilotui/complex';
 import { useLiveSessionGeminiTextStore } from '~/stores/liveSessionGeminiText';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
-import { buildInstructions, buildPracticeTools, resolveNativeLanguage } from '~/utils/livePractice';
+import { buildInstructions, buildPracticeTools, resolveNativeLanguage, returnToLabelKey } from '~/utils/livePractice';
 import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -263,6 +263,7 @@ const errorMessage = ref('');
 
 const selectedPhrases = computed(() => setup.selectedPhrases);
 const returnTo = computed(() => setup.request?.returnTo || '/board');
+const returnLabel = computed(() => t(returnToLabelKey(returnTo.value)));
 const phraseIndex = ref(-1);
 const practicedPhraseIds = ref<Set<string>>(new Set());
 const activePhrase = computed(() => selectedPhrases.value[phraseIndex.value] ?? null);

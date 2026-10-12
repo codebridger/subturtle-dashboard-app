@@ -40,10 +40,11 @@
     import { useVoiceCapModal } from '~/composables/useVoiceCapModal';
     import { useVoiceBalance } from '~/composables/useVoiceBalance';
     import { useVoiceTopUp, TOP_UP_PACKS, localizeGbp } from '~/composables/useVoiceTopUp';
+    import { encodeSessionRequest } from '~/utils/livePractice';
 
     const { t } = useI18n();
     const router = useRouter();
-    const { open, phraseId, closeVoiceCapModal } = useVoiceCapModal();
+    const { open, request, closeVoiceCapModal } = useVoiceCapModal();
     const { base, renewalDate } = useVoiceBalance();
     const { loadingKey, buyPack } = useVoiceTopUp();
 
@@ -64,9 +65,15 @@
         buyPack('topup_30');
         closeVoiceCapModal();
     }
-    // Secondary keeps the user practising, carrying any saved-phrase context to text chat.
+    // Secondary keeps the user practising: the same request, as a text session. With no
+    // request to carry, back to the setup form with Text already selected.
     function onUseText() {
         closeVoiceCapModal();
-        router.push(phraseId.value ? `/practice/live-session-text?phraseId=${phraseId.value}` : '/practice/live-session-text');
+        if (!request.value) {
+            router.push('/sessions/new?mode=text');
+            return;
+        }
+        const session = encodeSessionRequest({ ...request.value, mode: 'text' });
+        router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
     }
 </script>

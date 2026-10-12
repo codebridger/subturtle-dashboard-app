@@ -2,7 +2,7 @@
     <MaterialPracticeToolScaffold :title="setup.request?.title || 'Practice'" :activePhrase="practicedCount"
         :totalPhrases="totalPhrases" :bundleId="''"
         :body-class="'flex flex-col items-stretch min-h-0 overflow-hidden'"
-        :isLoading="!errorMode && !showTimerExpiredModal && !liveSessionStore.isSessionActive" :error-mode="errorMode"
+        :isLoading="!errorMode && !sessionEnded && !showTimerExpiredModal && !liveSessionStore.isSessionActive" :error-mode="errorMode"
         @end-session="endLiveSession">
         <template v-if="selectedPhrases.length">
     <!-- Freemium Timer Section -->
@@ -187,6 +187,28 @@
                     </button>
                 </div>
             </div>
+            <!-- The browser blocked the microphone, or there is none. Asked before the
+                 token, so no session slot was used. -->
+            <div v-else-if="micError" role="alert" class="flex max-w-md flex-col items-center justify-center text-center">
+                <Icon name="iconify solar--microphone-bold-duotone" class="mb-3 text-4xl text-warning" />
+                <h1 class="text-2xl font-bold">
+                    {{ micError === 'blocked' ? t('live-practice.mic-error.blocked-title') : t('live-practice.mic-error.not-found-title') }}
+                </h1>
+                <p class="mt-2 text-base text-gray-600 dark:text-white-light/70">
+                    {{ micError === 'blocked' ? t('live-practice.mic-error.blocked-message') : t('live-practice.mic-error.not-found-message') }}
+                </p>
+                <div class="mt-6 flex w-full flex-col gap-2 sm:w-72">
+                    <Button color="primary" block @click="retryAfterMicError">{{ t('live-practice.mic-error.try-again') }}</Button>
+                    <Button outline color="primary" block @click="switchToText">{{ t('live-practice.mic-error.use-text') }}</Button>
+                </div>
+            </div>
+            <!-- The connection dropped before anything was practised: no recap to show. -->
+            <div v-else-if="connectionLost" role="alert" class="flex max-w-md flex-col items-center justify-center text-center">
+                <Icon name="iconify solar--plug-circle-bold-duotone" class="mb-3 text-4xl text-warning" />
+                <h1 class="text-2xl font-bold">{{ t('live-practice.connection-lost-title') }}</h1>
+                <p class="mt-2 text-base text-gray-600 dark:text-white-light/70">{{ t('live-practice.connection-lost') }}</p>
+                <Button class="mt-6" color="primary" @click="router.push(returnTo)">{{ returnLabel }}</Button>
+            </div>
             <div v-else class="flex flex-col items-center justify-center">
                 <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
@@ -232,7 +254,7 @@
         </template>
         <template #footer>
             <div class="flex justify-end">
-                <Button color="primary" :label="t('live-practice.recap.back-to-bundle')" @click="dismissRecap" />
+                <Button color="primary" :label="returnLabel" @click="dismissRecap" />
             </div>
         </template>
     </Modal>
@@ -256,10 +278,10 @@
 <script setup lang="ts">
 import { Card, Button, Icon } from 'pilotui/elements';
 import { Modal } from 'pilotui/complex';
-import { useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
+import { MIC_UNAVAILABLE_CODE, useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
-import { buildInstructions, buildPracticeTools, resolveNativeLanguage } from '~/utils/livePractice';
+import { buildInstructions, buildPracticeTools, resolveNativeLanguage, returnToLabelKey } from '~/utils/livePractice';
 import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -268,6 +290,7 @@ import { AI_CREDIT_EXHAUSTED_CODE, TIER_LIMIT_REACHED_CODE, VOICE_PAUSED_CODE } 
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 import TopUpPickerModal from '~/components/TopUpPickerModal.vue';
 import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
 
 definePageMeta({
     // @ts-ignore
@@ -287,6 +310,12 @@ const liveSessionStore = useLiveSessionGeminiStore();
 const profileStore = useProfileStore();
 const errorMode = ref(false);
 const errorMessage = ref('');
+// The session is over (ended by the user, a tool, or a dropped connection), so the
+// scaffold must not fall back to its "connecting" spinner while the recap or the
+// error state is up.
+const sessionEnded = ref(false);
+const connectionLost = ref(false);
+const micError = ref<'blocked' | 'not-found' | null>(null);
 
 // Set when the plan has no voice minutes for this session (TIER_LIMIT_REACHED
 // "voice_minutes"). `notIncluded`: the plan grants none at all (Reader), so the
@@ -295,9 +324,11 @@ const voiceLock = ref<{ notIncluded: boolean } | null>(null);
 const showTopUpPicker = ref(false);
 // This page renders the voice lock itself; keep the global upgrade modal out of it.
 useInlineFeatureLock('voice_minutes');
+const { base: voiceBase, remaining: voiceRemaining } = useVoiceBalance();
 
 const selectedPhrases = computed(() => setup.selectedPhrases);
 const returnTo = computed(() => setup.request?.returnTo || '/board');
+const returnLabel = computed(() => t(returnToLabelKey(returnTo.value)));
 const phraseIndex = ref(-1);
 const practicedPhraseIds = ref<Set<string>>(new Set());
 const activePhrase = computed(() => selectedPhrases.value[phraseIndex.value] ?? null);
@@ -470,8 +501,30 @@ onMounted(async () => {
     // Auto-activate when there's a single phrase (e.g. Practice now).
     if (selectedPhrases.value.length === 1) phraseIndex.value = 0;
 
+    if (isVoiceBudgetEmpty()) {
+        voiceLock.value = { notIncluded: voiceBase.value <= 0 };
+        errorMode.value = true;
+        try {
+            analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice', error_code: TIER_LIMIT_REACHED_CODE });
+        } catch {
+            /* analytics is best-effort */
+        }
+        return;
+    }
+
     createLiveSession();
 });
+
+/**
+ * Every way into a voice session (the gate, the extension's deep link, a refresh)
+ * lands here, so this is the one place to show the voice lock before asking the
+ * server for a token. Only trusted once the subscription has loaded; otherwise the
+ * server's TIER_LIMIT_REACHED "voice_minutes" in createLiveSession still catches it.
+ */
+function isVoiceBudgetEmpty() {
+    const loaded = profileStore.isFreemium ? !!profileStore.freemiumAllocation : !!profileStore.activeSubscription;
+    return loaded && voiceRemaining.value <= 0;
+}
 
 function createLiveSession() {
     const nativeLanguage = resolveNativeLanguage(setup.request, selectedPhrases.value);
@@ -503,6 +556,11 @@ function createLiveSession() {
             } catch {
                 /* analytics is best-effort */
             }
+            if (errorCode === MIC_UNAVAILABLE_CODE) {
+                micError.value = message.includes('blocked') ? 'blocked' : 'not-found';
+                errorMode.value = true;
+                return;
+            }
             if (errorCode === TIER_LIMIT_REACHED_CODE && message.includes('voice_minutes')) {
                 voiceLock.value = { notIncluded: message.includes('not included') };
                 errorMode.value = true;
@@ -522,6 +580,12 @@ function createLiveSession() {
         });
 }
 
+function retryAfterMicError() {
+    micError.value = null;
+    errorMode.value = false;
+    createLiveSession();
+}
+
 /** Keep the same phrases and go on by text; the text page reuses the resolved setup. */
 function switchToText() {
     if (setup.request) setup.request.mode = 'text';
@@ -534,6 +598,8 @@ function onFreemiumTimeExpired() {
     // letting the session linger on the modal would tip into a minute the user
     // doesn't have. Tearing down debits exactly the elapsed minutes; it's
     // idempotent, so the modal's follow-up action (upgrade / exit) won't re-debit.
+    // A session that already ended (e.g. the connection dropped) has nothing left to stop.
+    if (sessionEnded.value) return;
     liveSessionStore.endLiveSession();
     showTimerExpiredModal.value = true;
 }
@@ -543,6 +609,7 @@ function endLiveSession() {
     // (and billing) audio while the recap is on screen. Navigation is
     // deferred until the user dismisses the recap.
     liveSessionStore.endLiveSession();
+    sessionEnded.value = true;
 
     // Skip the recap when the freemium timer is forcing the exit (the timer
     // modal is already up) or when the user bails before practicing anything.
@@ -567,10 +634,16 @@ function handleSessionEvent(eventData: any) {
     } else if (eventData?.type === 'session-resumed') {
         toastSuccess({ title: t('live-practice.toast.reconnected-title') });
     } else if (eventData?.type === 'session-resume-failed' || eventData?.type === 'session-dropped') {
-        // The store has already torn the session down; without this the page
-        // would sit on the loading spinner with no way out.
-        errorMode.value = true;
-        errorMessage.value = t('live-practice.connection-lost');
+        // The store has already torn the session down. End on a screen with a way
+        // out: the recap when something was practised, else the connection-lost state.
+        sessionEnded.value = true;
+        if (practicedCount.value > 0) {
+            toastError({ title: t('live-practice.connection-lost-title'), message: t('live-practice.connection-lost') });
+            showRecapModal.value = true;
+        } else {
+            connectionLost.value = true;
+            errorMode.value = true;
+        }
         try {
             analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice', reason: eventData.type });
         } catch {
