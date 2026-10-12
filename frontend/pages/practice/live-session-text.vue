@@ -482,6 +482,8 @@ function handleSessionEvent(eventData: any) {
     if (eventData?.type !== 'turn-failed') return;
     const error: TextTurnError = eventData.error;
     trackSessionFailed(error);
+    // The server refunded this chat start; refresh so plan meters don't keep counting it.
+    if (error.sessionClosed) profileStore.fetchSubscription();
     if (error.code === AI_CREDIT_EXHAUSTED_CODE) {
         analytic.track(ANALYTICS_EVENTS.CAP_HIT, { cap: 'ai_taste' });
         showAiCapModal.value = true;
