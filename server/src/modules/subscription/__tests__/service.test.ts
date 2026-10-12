@@ -35,6 +35,7 @@ import {
   carryForwardTopUps,
   assertAndConsumeTextChat,
   getTextChatMessageCap,
+  refundTextChat,
 } from "../service";
 import { EntitlementLimitError } from "../enforcement";
 import { PaymentProvider } from "../../gateway/adapters";
@@ -532,6 +533,24 @@ describe("text-chat caps — assertAndConsumeTextChat + getTextChatMessageCap (S
     await expect(assertAndConsumeTextChat(USER)).rejects.toThrow(
       EntitlementLimitError
     );
+  });
+
+  it("refundTextChat gives one chat back to a capped Reader, never below zero", async () => {
+    col.findOne.mockResolvedValue({
+      _id: "sub1",
+      allowed_text_chats: 60,
+      allowed_text_chats_used: 11,
+    });
+    await refundTextChat(USER);
+    const [filter, update] = col.updateOne.mock.calls[0];
+    expect(filter).toEqual({ _id: "sub1", allowed_text_chats_used: { $gt: 0 } });
+    expect(update).toEqual({ $inc: { allowed_text_chats_used: -1 } });
+  });
+
+  it("refundTextChat is a no-op for an unlimited tier", async () => {
+    col.findOne.mockResolvedValue({ _id: "sub1", allowed_text_chats: null });
+    await refundTextChat(USER);
+    expect(col.updateOne).not.toHaveBeenCalled();
   });
 
   it("getTextChatMessageCap returns the snapshot cap for a paid Reader", async () => {

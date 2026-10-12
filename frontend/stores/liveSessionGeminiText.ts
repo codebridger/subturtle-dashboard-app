@@ -15,8 +15,39 @@ import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import type { TextDialogType, TextTokenUsageType, TextTurnInput } from '~/types/live-session-text.type';
 import type { LiveSessionMetadataType } from '~/types/live-session.type';
+import { COACH_UNAVAILABLE_CODE } from '~/types/tiers';
 
 type ConnState = 'idle' | 'connecting' | 'ready' | 'closed';
+
+/**
+ * A failed server turn, parsed from the `CODE: detail` message the server throws
+ * (`COACH_UNAVAILABLE: upstream_quota`, `AI_CREDIT_EXHAUSTED: …`,
+ * `TIER_LIMIT_REACHED: "feature" …`). `code` is `UNKNOWN` for anything else.
+ */
+export interface TextTurnError {
+    code: string;
+    /** The detail after the code, e.g. `upstream_quota`; trimmed to a short token. */
+    reason?: string;
+    message: string;
+    /** True when the coach had not answered yet in this session. */
+    beforeFirstReply: boolean;
+    /**
+     * An upstream failure before the first reply: the server refunded the chat
+     * start and closed the session, so a retry must start a new session.
+     */
+    sessionClosed: boolean;
+}
+
+export function parseTextTurnError(error: any, beforeFirstReply: boolean): TextTurnError {
+    const raw = error?.error ?? error?.message ?? error;
+    const message = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '');
+    const match = message.match(/^([A-Z][A-Z_]+):\s*(.*)$/s);
+    if (!match) return { code: 'UNKNOWN', message, beforeFirstReply, sessionClosed: false };
+    const quoted = match[2].match(/"([^"]+)"/);
+    const reason = (quoted ? quoted[1] : match[2].split(/\s/)[0]) || undefined;
+    const sessionClosed = beforeFirstReply && match[1] === COACH_UNAVAILABLE_CODE;
+    return { code: match[1], reason, message, beforeFirstReply, sessionClosed };
+}
 
 interface CreateOptions {
     sessionDetails: {
@@ -50,11 +81,16 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
     const isMicrophoneMuted = ref(true);
     const micLevel = ref(0);
     const metadata = ref<LiveSessionMetadataType | null>(null);
+    /** The last failed turn, shown by the page with a Retry; cleared on success. */
+    const turnError = ref<TextTurnError | null>(null);
+    /** Whether the coach has answered at least once in this session. */
+    const coachHasReplied = ref(false);
 
     // ----- Module-scoped, non-reactive -----
     let sessionId: string | null = null;
     let sessionTools: CreateOptions['tools'] | null = null;
     let onUpdateCallback: ((data: any) => void) | null = null;
+    let lastFailedInput: TextTurnInput | null = null;
 
     // ----- Getters -----
     const isSessionActive = computed(() => sessionStarted.value);
@@ -66,6 +102,9 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
     async function createLiveSession(options: CreateOptions) {
         clearConversationDialogs();
         tokenUsage.value = null;
+        turnError.value = null;
+        coachHasReplied.value = false;
+        lastFailedInput = null;
         sessionId = null;
         sessionTools = options.tools;
         onUpdateCallback = options.onUpdate || null;
@@ -113,6 +152,18 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
         runTurn({ kind: 'system', text: message });
     }
 
+    /**
+     * Re-send the turn that failed. Not valid for a closed session (see
+     * `TextTurnError.sessionClosed`); the page starts a new session instead.
+     */
+    function retryLastTurn() {
+        if (!lastFailedInput || !turnError.value || turnError.value.sessionClosed) return;
+        const input = lastFailedInput;
+        turnError.value = null;
+        lastFailedInput = null;
+        runTurn(input);
+    }
+
     // No-op: text mode has no microphone. Kept for voice-store parity.
     function toggleMicrophone(_active?: boolean) {
         return isMicrophoneMuted.value;
@@ -139,6 +190,8 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
 
             // Server returns the authoritative cumulative usage each turn.
             if (res?.totalUsage) tokenUsage.value = res.totalUsage;
+            coachHasReplied.value = true;
+            turnError.value = null;
 
             if (res?.done === false && res.functionCalls?.length) {
                 const results = res.functionCalls.map((fc) => {
@@ -166,7 +219,10 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
             // Surface the server's message (modular-rest puts it on `error.error`)
             // rather than an opaque object, so failures are debuggable.
             console.error('Failed to run text turn:', error?.error ?? error?.message ?? error);
-            onUpdateCallback?.({ type: 'error', error });
+            const parsed = parseTextTurnError(error, !coachHasReplied.value);
+            turnError.value = parsed;
+            lastFailedInput = input;
+            onUpdateCallback?.({ type: 'turn-failed', error: parsed });
         }
     }
 
@@ -199,6 +255,8 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
         connState,
         isMicrophoneMuted,
         micLevel,
+        turnError,
+        coachHasReplied,
 
         // Getters
         isSessionActive,
@@ -210,6 +268,7 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
         endLiveSession,
         triggerConversation,
         sendMessage,
+        retryLastTurn,
         toggleMicrophone,
         clearConversationDialogs,
     };

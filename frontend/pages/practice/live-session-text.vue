@@ -68,7 +68,20 @@
             <!-- Live transcript -->
             <section ref="transcriptScroll"
                 class="flex w-full min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 md:px-16 lg:px-32">
-                <div v-if="visibleDialogs.length === 0"
+                <!-- The coach never answered, so there is no conversation to keep. -->
+                <div v-if="turnError?.beforeFirstReply" role="alert"
+                    class="flex flex-1 flex-col items-center justify-center text-center">
+                    <Icon name="iconify solar--chat-round-unread-bold-duotone" class="mb-3 text-3xl text-warning" />
+                    <p class="text-sm font-semibold text-gray-800 dark:text-white-light">
+                        {{ t('live-practice.coach-error.title') }}
+                    </p>
+                    <p class="mt-1 max-w-sm text-xs text-gray-600 dark:text-white-light/70">{{ turnErrorMessage }}</p>
+                    <Button v-if="canRetryTurn" class="mt-4" color="primary" size="sm" @click="retryTurn">
+                        {{ t('live-practice.coach-error.retry') }}
+                    </Button>
+                </div>
+
+                <div v-else-if="visibleDialogs.length === 0"
                     class="flex flex-1 flex-col items-center justify-center text-center">
                     <Icon name="IconChatDot" class="mb-3 text-3xl text-primary/40" />
                     <p v-if="!activePhrase" class="text-sm text-gray-600 dark:text-white-light/70">
@@ -104,6 +117,15 @@
             <!-- Composer + status -->
             <section
                 class="flex w-full shrink-0 flex-col items-center justify-center gap-2 px-4 pb-4 pt-2 md:gap-3 md:pb-6">
+                <div v-if="turnError && !turnError.beforeFirstReply" role="alert"
+                    class="flex w-[320px] max-w-full items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-gray-700 dark:text-white-light">
+                    <span class="flex-1">{{ turnErrorMessage }}</span>
+                    <button v-if="canRetryTurn" type="button" class="shrink-0 font-semibold text-primary hover:underline"
+                        @click="retryTurn">
+                        {{ t('live-practice.coach-error.retry') }}
+                    </button>
+                </div>
+
                 <div v-if="showStatusIndicator"
                     class="flex items-center gap-2 text-xs text-gray-600 dark:text-white-light/70">
                     <span :class="[
@@ -119,11 +141,11 @@
                         :class="isTextFocused || textInput ? 'rounded-2xl' : 'rounded-full'">
                         <textarea ref="textareaRef" v-model="textInput"
                             :placeholder="t('live-practice.text-input-placeholder')"
-                            :disabled="!liveSessionStore.isSessionActive" :rows="isTextFocused || textInput ? 3 : 1"
+                            :disabled="!canType" :rows="isTextFocused || textInput ? 3 : 1"
                             @focus="isTextFocused = true" @blur="isTextFocused = false"
                             @keydown.enter.exact.prevent="sendTextMessage"
                             class="flex-1 resize-none bg-transparent text-sm leading-tight text-gray-800 outline-none disabled:opacity-50 dark:text-white-light" />
-                        <button type="submit" :disabled="!textInput.trim() || !liveSessionStore.isSessionActive"
+                        <button type="submit" :disabled="!textInput.trim() || !canType"
                             class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                             :title="t('live-practice.send-text')">
                             <Icon name="iconify solar--arrow-right-linear" class="text-sm" />
@@ -144,7 +166,7 @@
             <div class="flex flex-col items-center justify-center">
                 <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
                 <p class="text-lg">{{ errorMessage }}</p>
-                <Button class="mt-8" to="/">{{ t('live-practice.back-to-dashboard') }}</Button>
+                <Button class="mt-8" @click="router.push('/')">{{ t('live-practice.back-to-dashboard') }}</Button>
             </div>
         </template>
     </MaterialPracticeToolScaffold>
@@ -214,7 +236,8 @@ import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
 import { analytic } from '~/plugins/mixpanel';
-import { AI_CREDIT_EXHAUSTED_CODE } from '~/types/tiers';
+import { AI_CREDIT_EXHAUSTED_CODE, COACH_UNAVAILABLE_CODE, TIER_LIMIT_REACHED_CODE } from '~/types/tiers';
+import { parseTextTurnError, type TextTurnError } from '~/stores/liveSessionGeminiText';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
@@ -333,6 +356,50 @@ const isPulsing = computed(
     () => isAiSpeaking.value || liveSessionStore.connState === 'connecting'
 );
 
+// ---- Failed turns (e.g. the upstream model is out of quota) ----
+const turnError = computed(() => liveSessionStore.turnError);
+
+// A per-chat message cap is final for this chat; everything else can be retried.
+const canRetryTurn = computed(
+    () => !(turnError.value?.code === TIER_LIMIT_REACHED_CODE && turnError.value.reason === 'text_chat_messages_per_chat')
+);
+
+const turnErrorMessage = computed(() => {
+    const error = turnError.value;
+    if (!error) return '';
+    if (error.code === COACH_UNAVAILABLE_CODE && error.reason === 'upstream_rate_limited') {
+        return t('live-practice.coach-error.busy');
+    }
+    if (error.code === COACH_UNAVAILABLE_CODE) {
+        const unavailable = t('live-practice.coach-error.unavailable');
+        return error.sessionClosed ? `${unavailable} ${t('live-practice.coach-error.not-counted')}` : unavailable;
+    }
+    if (!canRetryTurn.value) return t('live-practice.coach-error.chat-limit');
+    return t('live-practice.coach-error.generic');
+});
+
+// A chat the server closed after a failed first turn takes no more messages; Retry starts a new one.
+const canType = computed(() => liveSessionStore.isSessionActive && !turnError.value?.sessionClosed);
+
+function retryTurn() {
+    // The server closed (and refunded) the chat, so start a new one.
+    if (turnError.value?.sessionClosed) createLiveSession();
+    else liveSessionStore.retryLastTurn();
+}
+
+function trackSessionFailed(error: TextTurnError) {
+    try {
+        analytic.track('live-session_failed', {
+            provider: 'gemini',
+            mode: 'text',
+            error_code: error.code,
+            ...(error.reason ? { reason: error.reason } : {}),
+        });
+    } catch {
+        /* analytics is best-effort */
+    }
+}
+
 const showStatusIndicator = computed(() => {
     if (isAiSpeaking.value) return true;
     return ['connecting', 'closed'].includes(liveSessionStore.connState);
@@ -381,7 +448,7 @@ function createLiveSession() {
             return profileStore.fetchSubscription();
         })
         .catch((error) => {
-            analytic.track('live-session_failed', { provider: 'gemini', mode: 'text' });
+            trackSessionFailed(parseTextTurnError(error, true));
             const message = error?.error || error?.message || '';
             if (message.includes(AI_CREDIT_EXHAUSTED_CODE)) {
                 analytic.track(ANALYTICS_EVENTS.CAP_HIT, { cap: 'ai_taste' });
@@ -408,8 +475,15 @@ function dismissRecap() {
     router.push(returnTo.value);
 }
 
-function handleSessionEvent(_eventData: any) {
-    // Text sessions have no reconnect lifecycle; kept for store-API parity.
+function handleSessionEvent(eventData: any) {
+    // Text sessions have no reconnect lifecycle; the only event is a failed turn.
+    if (eventData?.type !== 'turn-failed') return;
+    const error: TextTurnError = eventData.error;
+    trackSessionFailed(error);
+    if (error.code === AI_CREDIT_EXHAUSTED_CODE) {
+        analytic.track(ANALYTICS_EVENTS.CAP_HIT, { cap: 'ai_taste' });
+        showAiCapModal.value = true;
+    }
 }
 
 function triggerTheConversation() {
@@ -450,7 +524,7 @@ function selectPhrase(index: number) {
 
 function sendTextMessage() {
     const message = textInput.value.trim();
-    if (!message || !liveSessionStore.isSessionActive) return;
+    if (!message || !canType.value) return;
     liveSessionStore.sendMessage(message);
     textInput.value = '';
 }

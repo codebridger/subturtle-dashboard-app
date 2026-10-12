@@ -58,6 +58,10 @@ export interface TextSessionRecordType {
    */
   cacheName?: string;
   cacheExpireTime?: number;
+  /** True while this chat's start counts against the monthly text-chat cap. */
+  textChatConsumed?: boolean;
+  /** Set when the start was refunded after a failed first turn; the chat is closed. */
+  textChatRefunded?: boolean;
   cacheDisabled?: boolean;
   createdAt: Date;
   updatedAt: Date;

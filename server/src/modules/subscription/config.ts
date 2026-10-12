@@ -56,6 +56,15 @@ export const VOICE_PAUSED_CODE = "VOICE_PAUSED";
 export const TIER_LIMIT_REACHED_CODE = "TIER_LIMIT_REACHED";
 
 /**
+ * Stable code thrown when the upstream AI model refuses a coach turn (out of
+ * quota, rate-limited, or down). The message is `COACH_UNAVAILABLE: <reason>`
+ * with reason `upstream_quota` | `upstream_rate_limited` | `upstream_unavailable`
+ * | `upstream_error`, so the frontend shows a friendly retry instead of the
+ * provider's raw JSON.
+ */
+export const COACH_UNAVAILABLE_CODE = "COACH_UNAVAILABLE";
+
+/**
  * Stable code thrown when a user who already has an active paid subscription tries
  * to start a NEW subscription checkout. Council 004 has no stacking — a second
  * purchase would create a parallel Stripe subscription (double charge). The

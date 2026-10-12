@@ -195,6 +195,15 @@
         "click-to-start": "Click on any vocabulary card to start practicing",
         "currently-practicing": "Currently practicing:",
         "transcript-empty-hint": "Your conversation will appear here.",
+        "coach-error": {
+            "title": "Your coach couldn't reply",
+            "unavailable": "Your coach is unavailable right now. Please try again in a few minutes.",
+            "not-counted": "This chat hasn't counted toward your plan.",
+            "busy": "Your coach is busy right now. Wait a moment and try again.",
+            "generic": "Something went wrong getting your coach's reply. Please try again.",
+            "chat-limit": "This chat has reached its message limit. Start a new session to keep practicing.",
+            "retry": "Retry"
+        },
         "speaker-coach": "Coach",
         "speaker-you": "You",
         "mic-level-aria": "Microphone input level",
