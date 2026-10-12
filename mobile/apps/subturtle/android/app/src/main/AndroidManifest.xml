@@ -35,7 +35,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="text/plain"/>
             </intent-filter>
-            <!-- Deep links: subturtle://board, subturtle://bundles/{id}, subturtle://capture?text=… -->
+            <!-- Deep links: subturtle://app/today, subturtle://app/bundles/{id}, subturtle://app/review, subturtle://app/capture?text=… (see mobile/README.md) -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>

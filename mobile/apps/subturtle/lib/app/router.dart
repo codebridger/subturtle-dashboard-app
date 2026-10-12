@@ -33,7 +33,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootKey,
     initialLocation: '/today',
     refreshListenable: refresh,
+    // Unknown links (or a custom-scheme link like subturtle://board, which
+    // arrives with an empty path) land on Today instead of an error page.
+    onException: (_, _, router) => router.go('/today'),
     redirect: (context, state) {
+      if (state.uri.path.isEmpty || state.uri.path == '/') return '/today';
       final status = ref.read(authProvider).status;
       final atSignIn = state.matchedLocation == '/signin';
       final atSplash = state.matchedLocation == '/splash';
