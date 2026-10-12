@@ -268,6 +268,7 @@ import { AI_CREDIT_EXHAUSTED_CODE, TIER_LIMIT_REACHED_CODE, VOICE_PAUSED_CODE } 
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 import TopUpPickerModal from '~/components/TopUpPickerModal.vue';
 import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
+import { useVoiceBalance } from '~/composables/useVoiceBalance';
 
 definePageMeta({
     // @ts-ignore
@@ -295,6 +296,7 @@ const voiceLock = ref<{ notIncluded: boolean } | null>(null);
 const showTopUpPicker = ref(false);
 // This page renders the voice lock itself; keep the global upgrade modal out of it.
 useInlineFeatureLock('voice_minutes');
+const { base: voiceBase, remaining: voiceRemaining } = useVoiceBalance();
 
 const selectedPhrases = computed(() => setup.selectedPhrases);
 const returnTo = computed(() => setup.request?.returnTo || '/board');
@@ -470,8 +472,30 @@ onMounted(async () => {
     // Auto-activate when there's a single phrase (e.g. Practice now).
     if (selectedPhrases.value.length === 1) phraseIndex.value = 0;
 
+    if (isVoiceBudgetEmpty()) {
+        voiceLock.value = { notIncluded: voiceBase.value <= 0 };
+        errorMode.value = true;
+        try {
+            analytic.track('live-session_failed', { provider: 'gemini', mode: 'voice', error_code: TIER_LIMIT_REACHED_CODE });
+        } catch {
+            /* analytics is best-effort */
+        }
+        return;
+    }
+
     createLiveSession();
 });
+
+/**
+ * Every way into a voice session (the gate, the extension's deep link, a refresh)
+ * lands here, so this is the one place to show the voice lock before asking the
+ * server for a token. Only trusted once the subscription has loaded; otherwise the
+ * server's TIER_LIMIT_REACHED "voice_minutes" in createLiveSession still catches it.
+ */
+function isVoiceBudgetEmpty() {
+    const loaded = profileStore.isFreemium ? !!profileStore.freemiumAllocation : !!profileStore.activeSubscription;
+    return loaded && voiceRemaining.value <= 0;
+}
 
 function createLiveSession() {
     const nativeLanguage = resolveNativeLanguage(setup.request, selectedPhrases.value);
