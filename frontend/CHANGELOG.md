@@ -1,3 +1,14 @@
+## [1.2.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.1...v1.2.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* end a Live Session on a usable screen when the connection is lost #z8zc9zzx60 ([cfe2f75](https://github.com/codebridger/subturtle-dashboard-app/commit/cfe2f750e05e209b7216f6864267acf72fbec617)), closes [#z8zc9zzx60](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zzx60)
+* name the real destination on the Live Session recap button #z8zc9zzx5z ([4d86a31](https://github.com/codebridger/subturtle-dashboard-app/commit/4d86a317898cf740e2f4c1d7193ce6b92dea9b43)), closes [#z8zc9zzx5z](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zzx5z)
+* open a working text session from the voice-limit modal #z8zc9zzx5y ([326259b](https://github.com/codebridger/subturtle-dashboard-app/commit/326259ba63aa69471a34edf686e9ef8570a91969)), closes [#z8zc9zzx5y](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zzx5y)
+* show a clear message when the microphone is blocked in a Live Session #z8zc9zzx61 ([b3a6ada](https://github.com/codebridger/subturtle-dashboard-app/commit/b3a6ada1aa47cfb19da4e20acac944b93931133d)), closes [#z8zc9zzx61](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zzx61)
+* show the voice lock before any voice session starts with 0 minutes #z8zc9zzx67 ([29d7e40](https://github.com/codebridger/subturtle-dashboard-app/commit/29d7e40e7cf4cb9d11a91c55bdaa32b1c055c545)), closes [#z8zc9zzx67](https://github.com/codebridger/subturtle-dashboard-app/issues/z8zc9zzx67)
+
 ## [1.2.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.0...v1.2.1) (2026-10-12)
 
 
