@@ -173,6 +173,8 @@
 
     <!-- End-of-session recap -->
     <Modal :title="t('live-practice.recap.title')" size="md" :modelValue="showRecapModal" @close="dismissRecap">
+        <!-- No trigger: an empty slot would render pilotui's default unlabeled button. -->
+        <template #trigger><span class="hidden" /></template>
         <template #default>
             <div class="space-y-4 p-2">
                 <p class="text-center text-sm text-gray-600 dark:text-white-light/70">

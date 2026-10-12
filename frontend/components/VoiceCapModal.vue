@@ -5,6 +5,8 @@
          the user practising rather than trapping them. -->
     <!-- A plan with no monthly minutes (Reader) never ran "out of" them: say so. -->
     <Modal :title="base > 0 ? t('subscription.voice-modal.title') : t('subscription.voice-modal.title-none')" size="md" :modelValue="open" @close="closeVoiceCapModal">
+        <!-- No trigger: an empty slot would render pilotui's default unlabeled button. -->
+        <template #trigger><span class="hidden" /></template>
         <div class="space-y-2 p-2 text-center">
             <p v-if="base > 0" class="text-gray-700 dark:text-gray-300">{{ t('subscription.voice-modal.body1', { total: base }) }}</p>
             <p v-if="renewsOn && base > 0" class="text-sm text-gray-500">{{ t('subscription.voice-meter.resets', { date: renewsOn }) }}</p>

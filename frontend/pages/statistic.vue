@@ -80,16 +80,29 @@
                 <template v-else>
                     <StStatTile
                         icon="solar:bookmark-bold-duotone"
-                        :value="locked ? '—' : totals.totalPhrases"
+                        :value="locked ? phraseCount : totals.totalPhrases"
                         :label="t('statistic.tiles.phrases')"
                         :trend="phrasesTrend"
                     />
+                    <!-- The streak comes from the weekly_insights series, so on a plan without
+                         insights it is shown as locked rather than as a blank "—". -->
                     <StStatTile
                         icon="solar:fire-bold-duotone"
                         accent="accent"
-                        :value="locked ? '—' : streak"
+                        :value="streak"
                         :label="t('statistic.tiles.streak')"
-                    />
+                    >
+                        <button
+                            v-if="locked"
+                            type="button"
+                            class="st-focus-ring inline-flex items-center gap-1.5 rounded-st-sm text-st-sm font-extrabold text-st-link hover:underline"
+                            @click="goToPlans"
+                        >
+                            <StIcon name="solar:lock-keyhole-minimalistic-bold-duotone" :size="16" />
+                            {{ t('statistic.tiles.streak-locked') }}
+                        </button>
+                        <template v-else>{{ streak }}</template>
+                    </StStatTile>
                     <StStatTile
                         icon="solar:layers-minimalistic-bold-duotone"
                         accent="warning"
@@ -174,6 +187,9 @@
 
     const recentBundles = ref<PhraseBundleType[]>([]);
     const totalBundles = ref(0);
+    // The saved-phrase total for plans without weekly insights, whose statistic RPC is
+    // locked. The user can always count their own phrases.
+    const phraseCount = ref(0);
     const lockDismissed = ref(false);
 
     const showInstallCta = computed(() => extensionPresent.value === false);
@@ -225,9 +241,26 @@
         totalBundles.value = Number(all) || recent.length;
     }
 
+    async function getPhraseCount() {
+        try {
+            phraseCount.value =
+                Number(
+                    await dataProvider.count({
+                        database: DATABASE.USER_CONTENT,
+                        collection: COLLECTIONS.PHRASE,
+                        query: { refId: authUser.value?.id },
+                    })
+                ) || 0;
+        } catch (error) {
+            console.error('Failed to count phrases:', error);
+        }
+    }
+
     onMounted(() => {
         getRecentBundles();
-        load();
+        load().then(() => {
+            if (locked.value) getPhraseCount();
+        });
         // The board is fetched once by the layout (it feeds the sidebar badge); this page
         // just reads the same store.
     });

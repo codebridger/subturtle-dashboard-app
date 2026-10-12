@@ -127,6 +127,7 @@
         "tiles": {
             "phrases": "Phrases saved",
             "streak": "Day streak",
+            "streak-locked": "Learner feature",
             "due": "Due today"
         },
         "bundles": {
@@ -698,7 +699,7 @@
     "pool": {
         "title": "New words to encode",
         "tab": "Pool",
-        "card_small": "{count} new words from yesterday's videos · ~{mins} min",
+        "card_small": "{count} new word you saved recently · ~{mins} min | {count} new words you saved recently · ~{mins} min",
         "card_medium": "{count} words to encode · ~{mins} min · do the first {chunk} today?",
         "card_large": "{count} words waiting · do {chunk} now, the rest are aging",
         "start": "Start",
