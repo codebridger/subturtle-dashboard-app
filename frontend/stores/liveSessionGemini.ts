@@ -77,6 +77,13 @@ const RESUME_PRE_EMPTIVE_MS = 14 * 60 * 1000;
 const PLAYBACK_LEAD_SEC = 0.02;
 const SETUP_COMPLETE_TIMEOUT_MS = 10_000;
 const DEFAULT_MODEL = 'gemini-3.1-flash-live-preview';
+
+/**
+ * Thrown (as `MIC_UNAVAILABLE: blocked` or `MIC_UNAVAILABLE: not-found`) when the
+ * microphone cannot be opened. Client-only, so it lives here and not with the
+ * server's error codes.
+ */
+export const MIC_UNAVAILABLE_CODE = 'MIC_UNAVAILABLE';
 const DEFAULT_VOICE = 'Kore';
 
 export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => {
@@ -157,6 +164,11 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
         try {
             connState.value = 'connecting';
+
+            // Open the microphone before the token: the token request saves a session
+            // record and, on the free tier, uses a session slot that a blocked
+            // microphone would waste. setupAudio reuses this stream.
+            microphoneStream = await openMicrophone();
 
             const sessionMeta = await functionProvider.run<GeminiLiveSessionType>({
                 name: 'request-gemini-live-session-ephemeral-token',
@@ -336,14 +348,7 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             (window as any).webkitAudioContext)();
         await inputAudioContext.resume();
 
-        microphoneStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                channelCount: 1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-            },
-        });
+        if (!microphoneStream) microphoneStream = await openMicrophone();
         microphoneTrack = microphoneStream.getAudioTracks()[0] || null;
 
         await inputAudioContext.audioWorklet.addModule('/worklets/pcm16-downsampler.js');
@@ -360,6 +365,26 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         const silentGain = inputAudioContext.createGain();
         silentGain.gain.value = 0;
         workletNode.connect(silentGain).connect(inputAudioContext.destination);
+    }
+
+    /** getUserMedia, with permission and missing-device failures mapped to MIC_UNAVAILABLE. */
+    async function openMicrophone(): Promise<MediaStream> {
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error(`${MIC_UNAVAILABLE_CODE}: not-found`);
+        try {
+            return await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+            });
+        } catch (error: any) {
+            const name = error?.name;
+            if (name === 'NotAllowedError' || name === 'SecurityError') throw new Error(`${MIC_UNAVAILABLE_CODE}: blocked`);
+            if (name === 'NotFoundError' || name === 'OverconstrainedError') throw new Error(`${MIC_UNAVAILABLE_CODE}: not-found`);
+            throw error;
+        }
     }
 
     function handleWorkletMessage(e: MessageEvent) {

@@ -97,7 +97,7 @@
 
             <!-- Inert until a bundle is chosen — there is nothing to configure a session over yet. -->
             <StCard padding="lg" class="!rounded-st-xl" :class="formData.bundleId ? '' : 'pointer-events-none opacity-50'">
-                <StartLiveSessionForm ref="formRef" v-model="formData" :voice-options="voiceOptions" @start="handleStartLiveSession" />
+                <StartLiveSessionForm ref="formRef" v-model="formData" :voice-options="voiceOptions" />
             </StCard>
         </div>
 
@@ -229,6 +229,8 @@
 
     onMounted(async () => {
         ensureVoicesLoaded();
+        // `?mode=text`: the voice-cap modal's "Use text chat instead" when it had no request to carry.
+        if (route.query.mode === 'text') formData.mode = 'text';
 
         try {
             await controller.updatePagination();
@@ -459,13 +461,6 @@
     function startSession() {
         if (!isFormValid.value || !formData.bundleId) return;
 
-        // Council 004: a paid user out of voice minutes gets the dedicated voice-cap
-        // modal (top-up / use text chat) — voice mode only, never for a text session.
-        if (!profileStore.isFreemium && formData.mode !== 'text' && voiceRemaining.value <= 0) {
-            openVoiceCapModal();
-            return;
-        }
-
         const sessionData: LivePracticeSessionSetupType = {
             aiCharacter: formData.aiCharacter,
             selectionMode: formData.selectionMode,
@@ -479,16 +474,28 @@
             sessionData.totalPhrases = parseInt(formData.totalPhrases);
         }
 
-        handleStartLiveSession(sessionData);
+        const request = buildSessionRequest(sessionData);
+
+        // Council 004: a paid user out of voice minutes gets the dedicated voice-cap
+        // modal (top-up / use text chat) — voice mode only, never for a text session.
+        // It gets the request so "Use text chat instead" keeps the same phrases.
+        if (!profileStore.isFreemium && formData.mode !== 'text' && voiceRemaining.value <= 0) {
+            openVoiceCapModal({ request });
+            return;
+        }
+
+        handleStartLiveSession(sessionData, request);
     }
 
-    function handleStartLiveSession(sessionData: LivePracticeSessionSetupType) {
-        // Build the unified request the /practice/live-session dispatcher consumes:
-        // resolve the selection to concrete phrase ids from the chosen bundle and carry
-        // the practice mode, then route through the gate. The old `live-session-<id>`
-        // path matched no route (404) and dropped the mode field entirely. [B2]
+    /**
+     * Build the unified request the /practice/live-session dispatcher consumes:
+     * resolve the selection to concrete phrase ids from the chosen bundle and carry
+     * the practice mode. The old `live-session-<id>` path matched no route (404) and
+     * dropped the mode field entirely. [B2]
+     */
+    function buildSessionRequest(sessionData: LivePracticeSessionSetupType): LiveSessionRequest {
         const bundle = bundleList.value.find((b) => b._id === formData.bundleId);
-        const request: LiveSessionRequest = {
+        return {
             aiCharacter: sessionData.aiCharacter,
             nativeLanguage: sessionData.nativeLanguage,
             mode: formData.mode,
@@ -496,10 +503,12 @@
             source: { phraseIds: pickPhraseIds(bundle?.phrases ?? [], sessionData) },
             returnTo: '/sessions/new',
         };
+    }
 
+    function handleStartLiveSession(sessionData: LivePracticeSessionSetupType, request: LiveSessionRequest) {
         // Feeds the header's "Repeat your last session". Stored here rather than read back
         // from session history, which is a Learner+ RPC that throws for the free tier.
-        rememberLastSession({ bundleId: formData.bundleId, mode: formData.mode, setup: sessionData, title: bundle?.title });
+        rememberLastSession({ bundleId: formData.bundleId, mode: formData.mode, setup: sessionData, title: request.title });
 
         const session = encodeSessionRequest(request);
         router.push(`/practice/live-session?session=${encodeURIComponent(session)}`);
