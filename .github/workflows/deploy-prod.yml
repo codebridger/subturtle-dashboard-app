@@ -4,6 +4,10 @@ name: Deploy prod
 # main is what production is running. workflow_dispatch stays for re-running a deploy
 # without a new commit. The prod Workload Identity provider also trusts nothing but
 # refs/heads/main, so no other ref can obtain prod credentials even by editing a workflow.
+#
+# Nothing ships until the full test suite and the real-Stripe tier ladder pass on the pushed
+# commit. A release PR can arrive with no checks (its head is a `[skip ci]` release commit),
+# so this, not the PR, is the gate production relies on.
 
 on:
   push:
@@ -11,7 +15,18 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  tier-ladder:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/agent-e2e-subscription.yml
+    secrets: inherit
+
   deploy:
+    needs: [test, tier-ladder]
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
