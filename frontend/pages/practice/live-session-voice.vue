@@ -207,7 +207,7 @@
                 <Icon name="iconify solar--plug-circle-bold-duotone" class="mb-3 text-4xl text-warning" />
                 <h1 class="text-2xl font-bold">{{ t('live-practice.connection-lost-title') }}</h1>
                 <p class="mt-2 text-base text-gray-600 dark:text-white-light/70">{{ t('live-practice.connection-lost') }}</p>
-                <Button class="mt-6" color="primary" @click="router.push(returnTo)">{{ t('live-practice.go-back') }}</Button>
+                <Button class="mt-6" color="primary" @click="router.push(returnTo)">{{ returnLabel }}</Button>
             </div>
             <div v-else class="flex flex-col items-center justify-center">
                 <h1 class="text-2xl font-bold">{{ t('live-practice.oops-something-went-wrong') }}</h1>
@@ -254,7 +254,7 @@
         </template>
         <template #footer>
             <div class="flex justify-end">
-                <Button color="primary" :label="t('live-practice.recap.back-to-bundle')" @click="dismissRecap" />
+                <Button color="primary" :label="returnLabel" @click="dismissRecap" />
             </div>
         </template>
     </Modal>
@@ -281,7 +281,7 @@ import { Modal } from 'pilotui/complex';
 import { MIC_UNAVAILABLE_CODE, useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
-import { buildInstructions, buildPracticeTools, resolveNativeLanguage } from '~/utils/livePractice';
+import { buildInstructions, buildPracticeTools, resolveNativeLanguage, returnToLabelKey } from '~/utils/livePractice';
 import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -328,6 +328,7 @@ const { base: voiceBase, remaining: voiceRemaining } = useVoiceBalance();
 
 const selectedPhrases = computed(() => setup.selectedPhrases);
 const returnTo = computed(() => setup.request?.returnTo || '/board');
+const returnLabel = computed(() => t(returnToLabelKey(returnTo.value)));
 const phraseIndex = ref(-1);
 const practicedPhraseIds = ref<Set<string>>(new Set());
 const activePhrase = computed(() => selectedPhrases.value[phraseIndex.value] ?? null);

@@ -193,7 +193,6 @@
         "oops-something-went-wrong": "Oops, something went wrong",
         "connection-lost": "The connection to your coach dropped. Start a new session to keep practicing.",
         "connection-lost-title": "Connection lost",
-        "go-back": "Go back",
         "mic-error": {
             "blocked-title": "Subturtle needs your microphone",
             "blocked-message": "Your browser is blocking the microphone. Click the lock or settings icon next to the address, allow the microphone for this site, then try again.",
@@ -247,7 +246,10 @@
         "recap": {
             "title": "Practice complete",
             "summary": "You practiced {practiced} of {total} phrases this session.",
-            "back-to-bundle": "Back to bundle"
+            "back-to-bundle": "Back to bundle",
+            "back-to-board": "Back to board",
+            "back-to-sessions": "Back to sessions",
+            "done": "Done"
         },
         "toast": {
             "reconnecting-title": "Reconnecting…",
