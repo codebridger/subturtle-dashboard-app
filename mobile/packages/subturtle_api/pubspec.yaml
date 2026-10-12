@@ -1,0 +1,16 @@
+name: subturtle_api
+description: Dart client for the Subturtle backend (a port of @modular-rest/client plus typed repositories).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  http: ^1.2.0
+  meta: ^1.15.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^6.0.0
