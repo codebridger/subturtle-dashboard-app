@@ -91,3 +91,40 @@ export function extractTextCostCalculationInput(
 
   return expenses;
 }
+
+export type CoachUpstreamReason =
+  | "upstream_quota"
+  | "upstream_rate_limited"
+  | "upstream_unavailable"
+  | "upstream_error";
+
+/**
+ * Pull the HTTP status out of a `@google/genai` failure. The SDK's `ApiError`
+ * carries `.status`, but some paths only put the provider's JSON body in
+ * `.message` (`{"error":{"code":402,...}}`), so fall back to parsing that.
+ */
+export function upstreamStatusOf(err: any): number | undefined {
+  if (typeof err?.status === "number") return err.status;
+  const message = String(err?.message ?? "");
+  const start = message.indexOf("{");
+  if (start === -1) return undefined;
+  try {
+    const code = JSON.parse(message.slice(start))?.error?.code;
+    return typeof code === "number" ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Map an upstream status to the stable reason sent to the client. 402 is
+ * Gemini's "prepayment credits are depleted"; it is our quota, not the user's.
+ */
+export function classifyUpstreamStatus(
+  status: number | undefined
+): CoachUpstreamReason {
+  if (status === 402) return "upstream_quota";
+  if (status === 429) return "upstream_rate_limited";
+  if (status !== undefined && status >= 500) return "upstream_unavailable";
+  return "upstream_error";
+}

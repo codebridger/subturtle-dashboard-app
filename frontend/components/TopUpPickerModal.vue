@@ -1,6 +1,8 @@
 <template>
     <!-- Council 004 Surface 5: pack picker, both sizes side-by-side, no default. -->
     <Modal :title="t('subscription.top-ups.picker-title')" size="md" :modelValue="modelValue" @close="$emit('update:modelValue', false)">
+        <!-- No trigger: an empty slot would render pilotui's default unlabeled button. -->
+        <template #trigger><span class="hidden" /></template>
         <div class="p-2">
             <p class="mb-4 text-sm text-gray-500">{{ t('subscription.top-ups.picker-sub') }}</p>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

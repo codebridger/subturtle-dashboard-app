@@ -17,6 +17,8 @@ const textSessionSchema = new Schema<TextSessionRecordType>(
     cacheName: { type: String },
     cacheExpireTime: { type: Number },
     cacheDisabled: { type: Boolean, default: false },
+    textChatConsumed: { type: Boolean, default: false },
+    textChatRefunded: { type: Boolean, default: false },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

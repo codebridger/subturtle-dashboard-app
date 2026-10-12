@@ -25,3 +25,7 @@ export { VOICE_PAUSED_CODE } from '../../server/src/modules/subscription/config'
 // Imported from config (dependency-free) NOT enforcement, so the browser bundle
 // doesn't pull in mongoose / @modular-rest/server.
 export { TIER_LIMIT_REACHED_CODE } from '../../server/src/modules/subscription/config';
+
+// Stable code `text-turn` throws when the upstream model refuses a coach turn
+// (`COACH_UNAVAILABLE: <reason>`); the text practice page shows a friendly retry.
+export { COACH_UNAVAILABLE_CODE } from '../../server/src/modules/subscription/config';

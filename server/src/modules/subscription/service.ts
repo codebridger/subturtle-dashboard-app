@@ -554,6 +554,44 @@ export async function assertAndConsumeTextChat(userId: string): Promise<void> {
 }
 
 /**
+ * Give back one text-chat start taken by `assertAndConsumeTextChat` — used when a
+ * chat dies before the coach ever answered (e.g. the upstream model is out of
+ * quota), so the user isn't charged a chat they never had. Unlimited tiers are a
+ * no-op, and the decrement is filtered on `used > 0` so it can never go negative.
+ * The caller is responsible for refunding at most once per chat.
+ */
+export async function refundTextChat(userId: string): Promise<void> {
+  const subscriptionsCollection = getCollection<Subscription>(
+    DATABASE,
+    SUBSCRIPTION_COLLECTION
+  );
+  const active = (await subscriptionsCollection.findOne({
+    user_id: new Types.ObjectId(userId),
+    status: { $nin: ["canceled", "incomplete_expired"] },
+    end_date: { $gte: new Date() },
+  } as any)) as Subscription | null;
+
+  if (active) {
+    if ((active.allowed_text_chats ?? null) === null) return;
+    await subscriptionsCollection.updateOne(
+      { _id: (active as any)._id, allowed_text_chats_used: { $gt: 0 } } as any,
+      { $inc: { allowed_text_chats_used: -1 } }
+    );
+    return;
+  }
+
+  const freemium: any = await getOrCreateFreemiumAllocation(userId);
+  const freeCreditCollection = getCollection<FreeCredit>(
+    DATABASE,
+    FREE_CREDIT_COLLECTION
+  );
+  await freeCreditCollection.updateOne(
+    { _id: freemium._id, allowed_text_chats_used: { $gt: 0 } } as any,
+    { $inc: { allowed_text_chats_used: -1 } }
+  );
+}
+
+/**
  * The per-chat message cap for the user's tier (null = unlimited). Reader / Starter
  * are capped; Learner / Coach are not. `text-turn` uses this to end a chat
  * gracefully at the cap and to surface a soft "wrap up soon" warning just before it.

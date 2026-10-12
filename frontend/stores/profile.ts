@@ -4,6 +4,7 @@ import { defineStore } from 'pinia';
 
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
 import { isDeadSessionError } from '~/utils/deadSession';
+import { identifyAnalyticsUser, resetAnalyticsUser } from '~/plugins/mixpanel';
 
 
 export const useProfileStore = defineStore('profile', () => {
@@ -160,6 +161,7 @@ export const useProfileStore = defineStore('profile', () => {
             }
         }
         profilePictureBase64.value = '';
+        resetAnalyticsUser();
         authentication.logout();
         userDetail.value = undefined;
     }
@@ -226,6 +228,9 @@ export const useProfileStore = defineStore('profile', () => {
 
     // bootstrap the profile store
     function bootstrap() {
+        // Every path into a signed-in app runs through here (session restore and
+        // explicit login), so this is where analytics learns who the user is.
+        identifyAnalyticsUser(authentication.user);
         return Promise.all([
             // Fetch profile info
             getProfileInfo(),

@@ -18,6 +18,7 @@ const mockAssertTextChat = jest.fn(async (..._args: any[]) => undefined);
 const mockTextChatMessageCap = jest.fn(
   async (..._args: any[]): Promise<number | null> => null
 );
+const mockRefundTextChat = jest.fn(async (..._args: any[]) => undefined);
 
 jest.mock("@modular-rest/server", () => ({
   defineFunction: (opts: any) => opts,
@@ -34,6 +35,7 @@ jest.mock("../../subscription/service", () => ({
   recordUsage: (...args: any[]) => mockRecordUsage(...args),
   assertAndConsumeTextChat: (...args: any[]) => mockAssertTextChat(...args),
   getTextChatMessageCap: (...args: any[]) => mockTextChatMessageCap(...args),
+  refundTextChat: (...args: any[]) => mockRefundTextChat(...args),
 }));
 
 // functions.ts uses CommonJS `module.exports.functions`, so require it.
@@ -521,5 +523,115 @@ describe("text-turn — per-chat message cap (Council 004 S16)", () => {
     });
     expect(res.done).toBe(true);
     expect(res.wrap_up_warning).toBe(false);
+  });
+});
+
+describe("text-turn upstream failures", () => {
+  // The shape @google/genai throws for a depleted prepayment key.
+  const quotaError = Object.assign(
+    new Error(
+      '{"error":{"code":402,"message":"Your prepayment credits are depleted."}}'
+    ),
+    { status: 402 }
+  );
+
+  beforeAll(() => {
+    process.env.GEMINI_API_KEY = "test-key";
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCheckCredit.mockResolvedValue({ allowedToProceed: true });
+    mockTextChatMessageCap.mockResolvedValue(null);
+    mockCachesCreate.mockResolvedValue({ name: "cachedContents/test-cache" });
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    (console.error as jest.Mock).mockRestore();
+  });
+
+  it("maps a 402 to COACH_UNAVAILABLE, logs it, and refunds the chat start once", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ textChatConsumed: true })
+    );
+    mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    mockGenerateContent.mockRejectedValue(quotaError);
+
+    await expect(
+      textTurn.callback({
+        userId: "user1",
+        sessionId: "sess1",
+        input: { kind: "system", text: "welcome the user" },
+      })
+    ).rejects.toThrow("COACH_UNAVAILABLE: upstream_quota");
+
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("upstream status 402")
+    );
+    const [filter, update] = mockCollection.updateOne.mock.calls[0];
+    expect(filter.textChatConsumed).toBe(true);
+    expect(update.$set).toEqual({
+      textChatConsumed: false,
+      textChatRefunded: true,
+    });
+    expect(mockRefundTextChat).toHaveBeenCalledWith("user1");
+    expect(mockRecordUsage).not.toHaveBeenCalled();
+  });
+
+  it("does not refund when a concurrent failure already closed the chat", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ textChatConsumed: true })
+    );
+    mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
+    mockGenerateContent.mockRejectedValue(quotaError);
+
+    await expect(
+      textTurn.callback({
+        userId: "user1",
+        sessionId: "sess1",
+        input: { kind: "system", text: "welcome" },
+      })
+    ).rejects.toThrow(/COACH_UNAVAILABLE/);
+    expect(mockRefundTextChat).not.toHaveBeenCalled();
+  });
+
+  it("keeps the chat (no refund) when the coach already answered", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({
+        textChatConsumed: true,
+        contents: [
+          { role: "user", parts: [{ text: "welcome" }] },
+          { role: "model", parts: [{ text: "Hi!" }] },
+        ],
+      })
+    );
+    mockGenerateContent.mockRejectedValue(
+      Object.assign(new Error("Service Unavailable"), { status: 503 })
+    );
+
+    await expect(
+      textTurn.callback({
+        userId: "user1",
+        sessionId: "sess1",
+        input: { kind: "user", text: "hello" },
+      })
+    ).rejects.toThrow("COACH_UNAVAILABLE: upstream_unavailable");
+    expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    expect(mockRefundTextChat).not.toHaveBeenCalled();
+  });
+
+  it("rejects further turns on a refunded chat", async () => {
+    mockCollection.findOne.mockResolvedValue(
+      baseRecord({ textChatRefunded: true })
+    );
+    await expect(
+      textTurn.callback({
+        userId: "user1",
+        sessionId: "sess1",
+        input: { kind: "user", text: "hi" },
+      })
+    ).rejects.toThrow(/has ended/);
+    expect(mockGenerateContent).not.toHaveBeenCalled();
   });
 });

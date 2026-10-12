@@ -2,6 +2,9 @@ import { GlobalOptions, authentication } from '@modular-rest/client';
 import axios from 'axios';
 import { TIER_LIMIT_REACHED_CODE } from '~/types/tiers';
 import { openTierLimitModal } from '~/composables/useTierLimitModal';
+// Side effect: makes `authentication.user` / `.token` reactive before any store or page
+// builds a computed over them (see utils/auth.ts).
+import '~/utils/auth';
 
 export default defineNuxtPlugin(() => {
     const config = useRuntimeConfig();
