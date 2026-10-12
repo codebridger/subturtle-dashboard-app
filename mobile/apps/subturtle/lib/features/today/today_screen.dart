@@ -341,10 +341,11 @@ class _RowCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              action,
-              if (onDismiss != null) StIconButton(icon: StIcons.close, semanticLabel: 'Hide this card', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: onDismiss),
+              // A dismissable card puts its × here and its action on its own row below.
+              if (onDismiss == null) action else StIconButton(icon: StIcons.close, semanticLabel: 'Hide this card', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: onDismiss),
             ],
           ),
+          if (onDismiss != null) Align(alignment: Alignment.centerRight, child: action),
           if (footer != null) ...[const SizedBox(height: 10), footer!],
         ],
       ),

@@ -136,14 +136,11 @@ class SpeakButton extends ConsumerStatefulWidget {
 
 class _SpeakButtonState extends ConsumerState<SpeakButton> {
   static final _cache = <String, List<int>>{};
-  final _player = AudioPlayer();
-  bool _loading = false;
 
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
+  /// One player for the whole app, made on the first tap (lists have many buttons).
+  static AudioPlayer? _shared;
+  static AudioPlayer get _player => _shared ??= AudioPlayer();
+  bool _loading = false;
 
   Future<void> _play() async {
     if (_loading) return;

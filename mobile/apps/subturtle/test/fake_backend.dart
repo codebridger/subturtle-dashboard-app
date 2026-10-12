@@ -90,11 +90,11 @@ class FakeBackend {
 }
 
 /// Pumps the whole app with the fake backend.
-Future<FakeBackend> pumpApp(WidgetTester tester, {bool signedIn = true, void Function(FakeBackend b)? seed, Size size = const Size(390, 844)}) async {
+Future<FakeBackend> pumpApp(WidgetTester tester, {bool signedIn = true, void Function(FakeBackend b)? seed, Size size = const Size(390, 844), ThemeMode? theme, Key? boundaryKey}) async {
   final backend = FakeBackend()..signedIn = signedIn;
   backend.seedDefaults();
   seed?.call(backend);
-  SharedPreferences.setMockInitialValues({'language': 'Persian', 'haptics': false});
+  SharedPreferences.setMockInitialValues({'language': 'Persian', 'haptics': false, 'theme': ?theme?.name});
   final prefs = await SharedPreferences.getInstance();
   final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: backend.client, tokenStore: MemoryTokenStore(signedIn ? 'header.eyJpZCI6InUxIn0.sig' : null));
   final container = ProviderContainer(overrides: [apiProvider.overrideWithValue(api), prefsProvider.overrideWithValue(prefs)], retry: (_, _) => null);
@@ -103,7 +103,7 @@ Future<FakeBackend> pumpApp(WidgetTester tester, {bool signedIn = true, void Fun
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   await container.read(authProvider.notifier).restore();
-  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const SubturtleApp()));
+  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: RepaintBoundary(key: boundaryKey, child: const SubturtleApp())));
   await tester.pumpAndSettle();
   return backend;
 }

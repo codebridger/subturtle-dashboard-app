@@ -72,10 +72,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       throw ApiException('Google sign-in is not set up for this app yet.', statusCode: 401);
     }
     final g = GoogleSignIn.instance;
-    await g.initialize(
-      clientId: AppConfig.googleIosClientId.isEmpty ? null : AppConfig.googleIosClientId,
-      serverClientId: AppConfig.googleServerClientId,
-    );
+    await g.initialize(clientId: AppConfig.googleIosClientId.isEmpty ? null : AppConfig.googleIosClientId, serverClientId: AppConfig.googleServerClientId);
     const scopes = ['email', 'profile'];
     final account = await g.authenticate(scopeHint: scopes);
     final auth = await account.authorizationClient.authorizationForScopes(scopes) ?? await account.authorizationClient.authorizeScopes(scopes);
@@ -100,21 +97,30 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + (bottom > 0 ? 0 : 20)),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: box.maxHeight - 16),
-                  child: AutofillGroup(
-                    child: Column(
-                      children: [
-                        _Hero(compact: _step != _Step.start),
-                        if (_error != null) ...[
-                          Semantics(
-                            liveRegion: true,
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(_error!, textAlign: TextAlign.center, style: StType.bodyMedium.copyWith(color: c.red600)),
-                            ),
+                  // The hero sits in the middle; the buttons sit at the bottom, in the thumb zone.
+                  child: IntrinsicHeight(
+                    child: AutofillGroup(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Center(child: _Hero(compact: _step != _Step.start)),
                           ),
+                          if (_error != null) ...[
+                            Semantics(
+                              liveRegion: true,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  _error!,
+                                  textAlign: TextAlign.center,
+                                  style: StType.bodyMedium.copyWith(color: c.red600),
+                                ),
+                              ),
+                            ),
+                          ],
+                          _body(context),
                         ],
-                        _body(context),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -178,9 +184,18 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
             if (AppConfig.enableCodeSignUp) ...[
               const SizedBox(height: 4),
-              StButton(label: 'Create an account with a code', variant: StButtonVariant.ghost, onPressed: disabled ? null : () => setState(() => _step = _Step.signUpEmail)),
+              StButton(
+                label: 'Create an account with a code',
+                variant: StButtonVariant.ghost,
+                onPressed: disabled ? null : () => setState(() => _step = _Step.signUpEmail),
+              ),
             ],
-            StButton(label: 'Back', variant: StButtonVariant.ghost, tone: StTone.neutral, onPressed: disabled ? null : () => setState(() => _step = _Step.start)),
+            StButton(
+              label: 'Back',
+              variant: StButtonVariant.ghost,
+              tone: StTone.neutral,
+              onPressed: disabled ? null : () => setState(() => _step = _Step.start),
+            ),
           ],
         );
       case _Step.signUpEmail:
@@ -232,7 +247,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            StInput(controller: _password, label: 'Choose a password', obscureText: true, autofillHints: const [AutofillHints.newPassword], hint: 'At least 8 characters.'),
+            StInput(
+              controller: _password,
+              label: 'Choose a password',
+              obscureText: true,
+              autofillHints: const [AutofillHints.newPassword],
+              hint: 'At least 8 characters.',
+            ),
             const SizedBox(height: 16),
             StButton(
               label: 'Create account',
@@ -276,7 +297,7 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.st;
     return Padding(
-      padding: EdgeInsets.only(top: compact ? 24 : 96, bottom: compact ? 24 : 64),
+      padding: EdgeInsets.only(top: compact ? 24 : 48, bottom: 24),
       child: Column(
         children: [
           Image.asset('assets/images/logo.png', width: compact ? 56 : 88, height: compact ? 56 : 88, semanticLabel: 'Subturtle'),
@@ -285,7 +306,11 @@ class _Hero extends StatelessWidget {
           const SizedBox(height: 14),
           Semantics(
             header: true,
-            child: Text('Learn English from what you watch', textAlign: TextAlign.center, style: StType.headline.copyWith(color: c.textStrong, height: 1.25)),
+            child: Text(
+              'Learn English from what you watch',
+              textAlign: TextAlign.center,
+              style: StType.headline.copyWith(color: c.textStrong, height: 1.25),
+            ),
           ),
           const SizedBox(height: 14),
           Text(
@@ -326,9 +351,18 @@ class _GoogleButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                loading ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: c.textMuted)) : const StIcon(StIcons.google, size: 20),
+                loading
+                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: c.textMuted))
+                    : const StIcon(StIcons.google, size: 20),
                 const SizedBox(width: 10),
-                Flexible(child: Text('Continue with Google', maxLines: 1, overflow: TextOverflow.ellipsis, style: StType.base(size: 16, weight: FontWeight.w800, height: 1).copyWith(color: c.textStrong))),
+                Flexible(
+                  child: Text(
+                    'Continue with Google',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: StType.base(size: 16, weight: FontWeight.w800, height: 1).copyWith(color: c.textStrong),
+                  ),
+                ),
               ],
             ),
           ),
@@ -368,15 +402,18 @@ class _Link extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        link: true,
-        label: text,
-        excludeSemantics: true,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text(text, style: style)),
-        ),
-      );
+    link: true,
+    label: text,
+    excludeSemantics: true,
+    child: GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Text(text, style: style),
+      ),
+    ),
+  );
 }
 
 class _Blob extends StatelessWidget {
@@ -386,10 +423,13 @@ class _Blob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)], stops: const [0, 0.65])),
-        ),
-      );
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)], stops: const [0, 0.65]),
+      ),
+    ),
+  );
 }
