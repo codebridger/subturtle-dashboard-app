@@ -39,7 +39,8 @@
     // Copy adapts to how big the backlog is (spec's four ranges; 0 renders no card).
     const cardCopy = computed(() => {
         const count = poolCount.value;
-        if (count <= 15) return t('pool.card_small', { count, mins: estMinutes.value });
+        // Pluralised on count; the words may have been saved today, so no "yesterday".
+        if (count <= 15) return t('pool.card_small', { count, mins: estMinutes.value }, count);
         if (count <= 30) return t('pool.card_medium', { count, mins: estMinutes.value, chunk: chunkSize.value });
         return t('pool.card_large', { count, chunk: chunkSize.value });
     });

@@ -67,8 +67,9 @@
                         <!-- An unlimited allowance gets an empty accent-tinted track rather
                              than a filled one: a full bar reads as "you are at your cap",
                              which is the opposite of what unlimited means. The upsell row has
-                             no budget to plot at all. -->
-                        <div class="h-[6px] overflow-hidden rounded-st-pill" :class="meter.unlimited || meter.upsell ? 'bg-st-accent-soft' : 'bg-st-ink-150'">
+                             no budget to plot at all, so it gets the plain empty track: tinted,
+                             it read as a full bar on a plan with 0 voice minutes. -->
+                        <div class="h-[6px] overflow-hidden rounded-st-pill" :class="meter.unlimited ? 'bg-st-accent-soft' : 'bg-st-ink-150'">
                             <div
                                 v-if="!meter.unlimited && !meter.upsell"
                                 class="h-full rounded-st-pill transition-all duration-500"

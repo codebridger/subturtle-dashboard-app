@@ -267,6 +267,27 @@
         mode: 'voice' as 'voice' | 'text',
     });
 
+    // Default the mode to what the user can actually start: with no voice minutes at
+    // all (e.g. "Voice minutes 0 of 0 left" on Reader), Text. Follows the balance as
+    // the subscription loads, until the user (or a re-applied last session) picks a mode.
+    let autoMode: 'voice' | 'text' = formData.mode;
+    let modeChosen = false;
+    watch(
+        () => formData.mode,
+        (mode) => {
+            if (mode !== autoMode) modeChosen = true;
+        }
+    );
+    watch(
+        voiceRemaining,
+        (remaining) => {
+            if (modeChosen) return;
+            autoMode = remaining > 0 ? 'voice' : 'text';
+            formData.mode = autoMode;
+        },
+        { immediate: true }
+    );
+
     const isFormValid = computed(() => {
         if (!formRef.value) return false;
         return formData.selectionMode === 'selection' ? !formRef.value.selectionError : !formRef.value.randomError;

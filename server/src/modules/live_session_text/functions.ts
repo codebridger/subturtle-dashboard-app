@@ -19,9 +19,13 @@ import {
   recordUsage,
   assertAndConsumeTextChat,
   getTextChatMessageCap,
+  refundTextChat,
 } from "../subscription/service";
 import { EntitlementLimitError } from "../subscription/enforcement";
-import { AI_CREDIT_EXHAUSTED_CODE } from "../subscription/config";
+import {
+  AI_CREDIT_EXHAUSTED_CODE,
+  COACH_UNAVAILABLE_CODE,
+} from "../subscription/config";
 import { DATABASE, LIVE_SESSION_TEXT_COLLECTION } from "../../config";
 import {
   ALLOWED_TEXT_MODELS,
@@ -32,7 +36,9 @@ import {
 } from "./config";
 import {
   accumulateUsage,
+  classifyUpstreamStatus,
   emptyUsage,
+  upstreamStatusOf,
   extractTextCostCalculationInput,
   mapUsage,
 } from "./utils";
@@ -126,6 +132,51 @@ async function ensureTextCache(
   }
 }
 
+/**
+ * Turn an upstream `generateContent` failure into a `COACH_UNAVAILABLE` error
+ * the client can show as a friendly retry, and log it with its status so ops can
+ * spot a depleted key. When the coach never answered in this chat, the chat start
+ * is refunded and the session closed: the user retries with a fresh chat and is
+ * not charged twice. The conditional update makes the refund happen at most once.
+ */
+async function coachUnavailable(
+  err: any,
+  record: TextSessionRecordType,
+  collection: ReturnType<typeof getCollection<TextSessionRecordType>>
+): Promise<Error> {
+  const status = upstreamStatusOf(err);
+  const reason = classifyUpstreamStatus(status);
+  console.error(
+    `[live_session_text] ${COACH_UNAVAILABLE_CODE} ${reason} (upstream status ${
+      status ?? "unknown"
+    }) session=${record._id} user=${record.refId}: ${err?.message || err}`
+  );
+
+  const coachHasAnswered = (record.contents || []).some(
+    (c: any) => c?.role === "model"
+  );
+  if (!coachHasAnswered && record.textChatConsumed) {
+    try {
+      const closed: any = await collection.updateOne(
+        { _id: record._id, refId: record.refId, textChatConsumed: true } as any,
+        { $set: { textChatConsumed: false, textChatRefunded: true } }
+      );
+      if (closed?.modifiedCount === 1) await refundTextChat(record.refId);
+    } catch (refundErr: any) {
+      console.error(
+        `[live_session_text] failed to refund the chat start for session=${
+          record._id
+        }: ${refundErr?.message || refundErr}`
+      );
+    }
+  }
+
+  const error: any = new Error(`${COACH_UNAVAILABLE_CODE}: ${reason}`);
+  error.code = COACH_UNAVAILABLE_CODE;
+  error.reason = reason;
+  return error;
+}
+
 const createTextSession = defineFunction({
   name: "create-text-session",
   permissionTypes: ["user_access"],
@@ -178,6 +229,7 @@ const createTextSession = defineFunction({
       dialogs: [],
       usage: emptyUsage(),
       metadata: metadata || {},
+      textChatConsumed: true,
     });
 
     return { sessionId: record._id.toString(), model: chosenModel };
@@ -205,6 +257,11 @@ const textTurn = defineFunction({
     } as any);
     if (!record) {
       throw new Error("Text session not found");
+    }
+    // A chat whose start was refunded (its first turn failed upstream) is
+    // closed — the client starts a fresh one, which is charged again.
+    if (record.textChatRefunded) {
+      throw new Error("Text session has ended; start a new one");
     }
 
     const { allowedToProceed } = await checkCreditAllocation({
@@ -274,16 +331,21 @@ const textTurn = defineFunction({
     // `systemInstruction`/`tools` MUST be omitted — they live in the cache, and
     // sending both is a 400. Otherwise inline them, exactly as before.
     const cache = await ensureTextCache(ai, record, model);
-    const res = await ai.models.generateContent({
-      model,
-      contents,
-      config: cache.usableName
-        ? { cachedContent: cache.usableName }
-        : {
-            systemInstruction: record.instructions,
-            tools: buildTools(record),
-          },
-    });
+    let res: Awaited<ReturnType<typeof ai.models.generateContent>>;
+    try {
+      res = await ai.models.generateContent({
+        model,
+        contents,
+        config: cache.usableName
+          ? { cachedContent: cache.usableName }
+          : {
+              systemInstruction: record.instructions,
+              tools: buildTools(record),
+            },
+      });
+    } catch (err: any) {
+      throw await coachUnavailable(err, record, collection);
+    }
 
     // Bill this turn's tokens (authoritative — the server holds the metadata).
     const usage = mapUsage(res.usageMetadata);

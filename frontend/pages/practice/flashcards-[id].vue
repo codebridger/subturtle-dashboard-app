@@ -38,6 +38,8 @@
         </div>
 
         <Modal :modelValue="showComplete" size="sm" persistent :hideClose="true" @close="showComplete = false">
+            <!-- No trigger: an empty slot would render pilotui's default unlabeled button. -->
+            <template #trigger><span class="hidden" /></template>
             <div class="flex flex-col items-center p-4 text-center">
                 <Icon name="iconify solar--confetti-bold-duotone" class="mb-4 text-6xl text-success-500" />
                 <h2 class="text-2xl font-bold">{{ t('leitner_session.completed_title') }}</h2>

@@ -96,9 +96,19 @@ The dev site is reached only on `subturtle-landing-dev.web.app` and ships `noind
 | `stripe-secret-key`, `stripe-webhook-secret` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Test mode in dev, live in prod |
 | `gemini-api-key`, `gcp-api-key` | `GEMINI_API_KEY`, `GCP_API_KEY` | Created in the project (Phase 2) |
 | `openrouter-api-key` | `OPENROUTER_API_KEY` | |
-| `openai-api-key`, `mixpanel-token` | `OPENAI_API_KEY`, `MIXPANEL_TOKEN` | Optional |
+| `openai-api-key` | `OPENAI_API_KEY` | Optional |
+| `mixpanel-token` | `MIXPANEL_TOKEN` | Optional, but without it every server event (`translation_requested`, `trial_started`, …) is dropped. The Mixpanel project token: Subturtle Legacy in prod, Subturtle-dev in dev — the same public tokens as `NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN` in `infra/public/<env>.env` |
 
-`deploy-api.sh` refuses to deploy while a required secret has no version.
+`deploy-api.sh` refuses to deploy while a required secret has no version, and warns about
+each optional one that has none.
+
+To set the Mixpanel token from the public env file without it touching the terminal:
+
+```bash
+grep '^NUXT_PUBLIC_MIXPANEL_PROJECT_TOKEN=' infra/public/prod.env | cut -d= -f2 | tr -d '\n' | infra/secrets.sh prod mixpanel-token
+```
+
+The next API deploy mounts it.
 
 ## Pausing voice sessions
 

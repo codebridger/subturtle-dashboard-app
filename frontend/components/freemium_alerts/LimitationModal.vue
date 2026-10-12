@@ -1,8 +1,11 @@
 <template>
     <Modal :title="modalTitle" size="md" :modelValue="modelValue" :preventClose="preventClose" :hideClose="hideClose"
         @close="handleClose">
+        <!-- Without a trigger from the parent this slot would render empty, which Vue
+             treats as no slot at all, so pilotui's Modal would fall back to its default
+             trigger: an unlabeled button left on the page. The hidden span keeps it out. -->
         <template #trigger="{ toggleModal }">
-            <slot name="trigger" :toggleModal="toggleModal" />
+            <slot name="trigger" :toggleModal="toggleModal"><span class="hidden" /></slot>
         </template>
 
         <template #default>

@@ -19,6 +19,9 @@ definePageMeta({
 onMounted(() => {
     const token = route.query.token as string;
     if (token) {
+        // Drop the JWT from the address bar before anything (analytics included)
+        // reads the URL. The router keeps its own copy of the route.
+        window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#/auth/login_with_token`);
         authentication
             .loginWithToken(token, true)
             .then(profileStore.bootstrap)
