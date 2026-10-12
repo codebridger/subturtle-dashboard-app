@@ -11,10 +11,10 @@ let initialized = false;
  * store's bootstrap, which runs on every boot with a stored session and after an
  * explicit login, so restored sessions are identified too — not just logins.
  *
- * Identity can't be driven by watching `isLogin`: `@modular-rest/client`'s
- * `authentication` is a plain object, so a computed over it never updates. The
- * old watcher saw `false` once at startup and called reset(), which wiped `app`
- * and minted a new anonymous `$device:` id on every load.
+ * Identity is set here rather than by watching `isLogin`: the client signs in
+ * anonymously first, so a watcher would see `false` at startup and call reset(),
+ * which wipes `app` and mints a new `$device:` id on every load (and did, back
+ * when `isLogin` was a computed that never updated).
  */
 export function identifyAnalyticsUser(user: { id?: string; email?: string } | null | undefined) {
     if (!initialized || !user?.id) return;
@@ -62,9 +62,8 @@ export default defineNuxtPlugin((nuxtApp) => {
         const router = useRouter();
 
         // Track a page view per route change, right away so it records this
-        // route's URL. It used to wait on `waitForAuth`, whose cached computed
-        // could stay false for the life of the tab and drop every view. The auth
-        // middleware has already restored (and identified) the session by now.
+        // route's URL. The auth middleware has already restored (and identified)
+        // the session by now, so there is nothing to wait for.
         router.afterEach((to, _from, failure) => {
             if (failure) return;
             // The OAuth return URL carries the user's JWT; never send it.
