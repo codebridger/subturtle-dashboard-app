@@ -1,0 +1,6 @@
+# Workspace-level Dart / Flutter output. Each member keeps its own .gitignore too.
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+*.iml
+.idea/
