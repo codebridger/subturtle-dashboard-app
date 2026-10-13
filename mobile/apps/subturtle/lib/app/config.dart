@@ -16,12 +16,22 @@ abstract final class AppConfig {
   );
 
   /// Google sign-in. The web OAuth client id (also called the "server client id").
-  /// The backend only accepts Google tokens issued to a client id it lists, so the
-  /// iOS / Android client ids must be added on the server side too (see README).
-  static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+  /// The backend only accepts Google tokens issued to a client id it lists; the
+  /// iOS ids below are listed on the dev and prod servers (see README).
+  /// Defaults to the dev or prod client, following the API.
+  static const googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: _prod ? '245138511605-ssnsukvird7dt9p102p6s9s8038di8ko.apps.googleusercontent.com' : '466506592387-pnshik2s2k3amvfj7rqup0de9kvvpqj1.apps.googleusercontent.com',
+  );
 
-  /// iOS OAuth client id (needed by google_sign_in on iOS).
-  static const googleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+  /// iOS OAuth client id (needed by google_sign_in on iOS). Its reversed form is
+  /// the URL scheme in Info.plist, set per build by ios/scripts/google_url_scheme.sh.
+  static const googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+    defaultValue: _prod ? '245138511605-5vr7dnonm8rgg56du01v8i430ia7t0g1.apps.googleusercontent.com' : '466506592387-14p1j715ifm1ag1qva3k1dh3ro4c88ci.apps.googleusercontent.com',
+  );
+
+  static const _prod = apiBaseUrl == ApiEnvironment.prod;
 
   /// Shows "Create an account with a code". The backend's sign-up code is only
   /// known outside production (`123456`); in production it is random and never sent.

@@ -1,2 +1,7 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+
+// Google sign-in URL scheme: the dev iOS client unless the pre-build
+// script (scripts/google_url_scheme.sh) wrote another one for this build.
+GOOGLE_REVERSED_CLIENT_ID=com.googleusercontent.apps.466506592387-14p1j715ifm1ag1qva3k1dh3ro4c88ci
+#include? "DartDefines.xcconfig"

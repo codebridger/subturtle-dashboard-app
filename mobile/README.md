@@ -31,8 +31,8 @@ Settings are passed with `--dart-define`:
 | --- | --- | --- |
 | `API_BASE_URL` | DEV API (`https://subturtle-api-466506592387.europe-west4.run.app`) | The backend. PROD is `https://subturtle-api-245138511605.europe-west4.run.app`. For a local server: `http://localhost:8080` (iOS simulator) or `http://10.0.2.2:8080` (Android emulator). |
 | `DASHBOARD_URL` | dev or prod dashboard, following the API | Where "Manage" and "More on the web" open. |
-| `GOOGLE_SERVER_CLIENT_ID` | empty | The web OAuth client id. Without it, the Google button shows "not set up". See [Google sign-in](#google-sign-in). |
-| `GOOGLE_IOS_CLIENT_ID` | empty | The iOS OAuth client id. |
+| `GOOGLE_SERVER_CLIENT_ID` | dev or prod web client, following the API | The web OAuth client id. See [Google sign-in](#google-sign-in). |
+| `GOOGLE_IOS_CLIENT_ID` | dev or prod iOS client, following the API | The iOS OAuth client id. Its reversed form becomes the iOS URL scheme. |
 | `ENABLE_CODE_SIGNUP` | `false` | Shows "Create an account with a code". This only works against a non-production server (the code is `123456` there). |
 | `SAVE_ASSISTANT_BACKEND` | `false` | Save a phrase uses the `save_assistant` server functions: the server translates, answers and keeps the chat history. Off: the app calls `translateWithContext` / `translationAdvice` itself and keeps chats on the phone. Turn it on only against a server that has the module (branch `claude/save-assistant-backend`). |
 
@@ -135,7 +135,7 @@ mobile/
 | --- | --- |
 | **Sign in with Apple** | No Apple route on the server. The App Store requires it when Google sign-in is offered. Also needs account linking for people who signed up with Google on the web. |
 | **Email one-time-code sign-in** | `/user/register_id` makes a code, but nothing emails it, and in production the code is random on purpose (it would let anyone reset any account). A real passwordless flow needs a "send code by email" + "sign in with code" route. |
-| **Mobile Google client ids** | `/auth/google/access-token-login` only accepts tokens issued to the web client or ids in `GOOGLE_OAUTH_CLIENT_ID_EXTENSION`. Add the iOS and Android OAuth client ids there (config only, no code). |
+| **Android Google client id** | The iOS clients are on the server list. Android still needs its own OAuth client (package + SHA-1) added to `GOOGLE_OAUTH_CLIENT_ID_EXTENSION` (config only, no code). |
 | **In-app purchase** | Plans and minute top-ups are Stripe-only. Apple / Google may require in-app purchase; that needs receipt checks and store webhooks. For now "Manage" opens the web. |
 | **Delete account API** | Both stores require in-app account deletion. Today the app offers "email us". |
 | **Offline grade sync** | Review needs cached cards and a way to send late grades (and rules when the web also graded). Today an offline grade is kept for the session and retried, but not stored across app restarts. |
@@ -168,14 +168,41 @@ App Links on the dashboard domain need hosting files and are not set up yet.
 ## Google sign-in
 
 The code uses `google_sign_in` 7 and sends the Google **access token** to
-`/auth/google/access-token-login`. To turn it on:
+`/auth/google/access-token-login`.
 
-1. Create iOS and Android OAuth clients in the Google Cloud project of the
-   backend (Android needs the app's SHA-1).
-2. Add both client ids to the server's `GOOGLE_OAUTH_CLIENT_ID_EXTENSION`
-   (comma-separated) in each environment.
-3. iOS: add the reversed iOS client id as a URL scheme in `ios/Runner/Info.plist`.
-4. Build with `--dart-define=GOOGLE_SERVER_CLIENT_ID=… --dart-define=GOOGLE_IOS_CLIENT_ID=…`.
+**iOS: done.** The iOS OAuth clients exist (bundle id `app.subturtle.subturtle`)
+and are on the dev and prod servers' `GOOGLE_OAUTH_CLIENT_ID_EXTENSION` list.
+(The dev API was restarted to pick them up; prod needs a restart before prod
+builds can sign in.)
+
+| | Server (web) client | iOS client |
+| --- | --- | --- |
+| dev | `466506592387-pnshik2s2k3amvfj7rqup0de9kvvpqj1` | `466506592387-14p1j715ifm1ag1qva3k1dh3ro4c88ci` |
+| prod | `245138511605-ssnsukvird7dt9p102p6s9s8038di8ko` | `245138511605-5vr7dnonm8rgg56du01v8i430ia7t0g1` |
+
+(Each id ends in `.apps.googleusercontent.com`. Client ids are public, not secrets.)
+
+- `GOOGLE_SERVER_CLIENT_ID` and `GOOGLE_IOS_CLIENT_ID` default to the dev ids,
+  or the prod ids when `API_BASE_URL` is the prod API. A plain `flutter run`
+  signs in against dev; pass the defines only to use other clients.
+- The reversed iOS client id is the URL scheme Google returns to. `Info.plist`
+  reads it from the `GOOGLE_REVERSED_CLIENT_ID` build setting. A scheme
+  pre-action, `ios/scripts/google_url_scheme.sh`, writes it per build to
+  `ios/Flutter/DartDefines.xcconfig` (git-ignored) from the Dart defines: the
+  reversed `GOOGLE_IOS_CLIENT_ID` when given, the prod client for the prod API,
+  else dev. `Debug.xcconfig` and `Release.xcconfig` default to dev.
+
+```bash
+flutter run                                                                  # dev
+flutter run --dart-define=API_BASE_URL=https://subturtle-api-245138511605.europe-west4.run.app   # prod
+```
+
+**Android: not done.** It needs its own OAuth client in each Google Cloud
+project (package `app.subturtle.subturtle` plus the SHA-1 of the signing key:
+the debug keystore for development, the Play upload / app signing key for
+release), and that client id added to the server list. No code change: Android
+finds its client by package and SHA-1, and uses the same server client id.
+Until then, the Google button on Android shows "That didn't go through".
 
 ## Voice
 

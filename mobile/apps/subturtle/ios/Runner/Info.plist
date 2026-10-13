@@ -75,6 +75,14 @@
 				<string>subturtle</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.subturtle.google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
 		<!-- Google sign-in on iOS also needs the REVERSED iOS client id here
 		     (com.googleusercontent.apps.…). See mobile/README.md. -->
 	</array>

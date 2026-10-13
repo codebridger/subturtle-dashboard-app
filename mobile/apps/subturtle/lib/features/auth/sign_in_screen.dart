@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math';
 import 'dart:ui' show ImageFilter;
 
@@ -94,7 +95,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
     setState(() => _waitingForGoogle = true);
     final g = GoogleSignIn.instance;
-    await g.initialize(clientId: AppConfig.googleIosClientId.isEmpty ? null : AppConfig.googleIosClientId, serverClientId: AppConfig.googleServerClientId);
+    // The iOS client id is for iOS only; Android finds its client by package name and SHA-1.
+    final iosClient = Platform.isIOS && AppConfig.googleIosClientId.isNotEmpty ? AppConfig.googleIosClientId : null;
+    await g.initialize(clientId: iosClient, serverClientId: AppConfig.googleServerClientId);
     const scopes = ['email', 'profile'];
     final account = await g.authenticate(scopeHint: scopes);
     final auth = await account.authorizationClient.authorizationForScopes(scopes) ?? await account.authorizationClient.authorizeScopes(scopes);
