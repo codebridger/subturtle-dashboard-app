@@ -9,6 +9,7 @@ import 'package:subturtle/features/live_session/gemini_live_client.dart';
 import 'package:subturtle/features/review/review_logic.dart';
 import 'package:subturtle/shared/format.dart';
 import 'package:subturtle/shared/languages.dart';
+import 'package:subturtle/shared/widgets.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 
 ReviewItem item({int level = 3, String? chunk = 'had to', String? sentence = 'I had to get out of there.'}) => ReviewItem(
@@ -96,6 +97,22 @@ void main() {
       await q.flush();
       expect(sent, ['a']);
       expect(q.failed, isEmpty);
+    });
+  });
+
+  group('dashboard links', () {
+    test('signed in: the login_with_token handoff, with the page as redirect', () {
+      final url = Uri.parse(dashboardLink('https://dev.dashboard.subturtle.app', '/settings/subscription?suggest=learner&from=mobile', token: 'h.p.s'));
+      expect(url.path, '/');
+      // Everything after # stays in the browser: the token is never sent to a server.
+      final route = Uri.parse(url.fragment);
+      expect(route.path, '/auth/login_with_token');
+      expect(route.queryParameters['token'], 'h.p.s');
+      expect(route.queryParameters['redirect'], '/settings/subscription?suggest=learner&from=mobile');
+    });
+
+    test('signed out: the plain page', () {
+      expect(dashboardLink('https://d.app', '/statistic'), 'https://d.app/#/statistic');
     });
   });
 

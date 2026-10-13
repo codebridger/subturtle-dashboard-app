@@ -143,7 +143,7 @@ class MeScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           _Group(
             children: [
-              _LinkRow(icon: StIcons.chart, label: 'Progress and review settings on the web', onTap: () => openExternal(context, '${AppConfig.dashboardUrl}/#/statistic')),
+              _LinkRow(icon: StIcons.chart, label: 'Progress and review settings on the web', onTap: () => openDashboard(context, ref, '/statistic')),
               _LinkRow(
                 icon: StIcons.chrome,
                 label: 'Copy the Chrome extension link',

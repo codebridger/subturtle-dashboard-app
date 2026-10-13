@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
-import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
@@ -23,7 +22,9 @@ class PlansScreen extends ConsumerStatefulWidget {
 class _PlansScreenState extends ConsumerState<PlansScreen> {
   bool _yearly = false;
 
-  void _manage() => openExternal(context, '${AppConfig.dashboardUrl}/#/settings/subscription');
+  /// The web subscription page, signed in. [suggest] opens it with that plan picked.
+  void _manage([String? suggest]) =>
+      openDashboard(context, ref, Uri(path: '/settings/subscription', queryParameters: {'suggest': ?suggest, 'from': 'mobile'}).toString());
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +86,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                         for (final p in list)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: _TierCard(plan: p, yearly: _yearly, current: sub.value?.tier == p.id),
+                            child: _TierCard(plan: p, yearly: _yearly, current: sub.value?.tier == p.id, onTap: () => _manage(p.id)),
                           ),
                       ],
                     ),
@@ -200,10 +201,13 @@ class _Meter extends StatelessWidget {
 }
 
 class _TierCard extends StatelessWidget {
-  const _TierCard({required this.plan, required this.yearly, required this.current});
+  const _TierCard({required this.plan, required this.yearly, required this.current, required this.onTap});
   final TierPlan plan;
   final bool yearly;
   final bool current;
+
+  /// Opens the web subscription page with this plan picked.
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -216,6 +220,8 @@ class _TierCard extends StatelessWidget {
     final key = plan.featureLabels.isNotEmpty ? plan.featureLabels.first : plan.tagline;
     final more = plan.featureLabels.skip(1).take(2).join(' · ');
     return StCard(
+      onTap: onTap,
+      semanticLabel: '${plan.name}, $price${current ? ', current plan' : ''}. Opens the plan on the web.',
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       elevation: current ? StCardElevation.md : StCardElevation.xs,
       borderColor: current ? c.primary : null,

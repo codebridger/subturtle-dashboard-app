@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app/config.dart';
+import '../app/providers.dart';
 import 'format.dart';
 
 /// Shows loading, error and data for an [AsyncValue] with the app's states:
@@ -203,6 +205,22 @@ class HighlightedSentence extends StatelessWidget {
 }
 
 /// Opens [url] in the browser (or the mail app for `mailto:`).
+/// Opens the web dashboard at [path] (a hash route such as
+/// `/settings/subscription?suggest=learner`), already signed in.
+///
+/// Uses the dashboard's `login_with_token` handoff, as the Chrome extension
+/// does: the token rides in the URL fragment, which is never sent to a
+/// server, and the page drops it from the address bar before anything reads
+/// the URL. `redirect` must be a same-origin path; the page checks it.
+Future<void> openDashboard(BuildContext context, WidgetRef ref, String path) =>
+    openExternal(context, dashboardLink(AppConfig.dashboardUrl, path, token: ref.read(apiProvider).auth.token));
+
+/// The URL [openDashboard] opens. Without a token it is the plain page (the
+/// dashboard then asks to sign in).
+String dashboardLink(String base, String path, {String? token}) => token == null || token.isEmpty
+    ? '$base/#$path'
+    : '$base/#/auth/login_with_token?${Uri(queryParameters: {'token': token, 'redirect': path}).query}';
+
 Future<void> openExternal(BuildContext context, String url) async {
   final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   if (!ok && context.mounted) showStToast(context, title: "Couldn't open the link.", color: StToastColor.danger);
