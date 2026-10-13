@@ -20,12 +20,34 @@ class SecureTokenStore implements TokenStore {
   final FlutterSecureStorage _s;
   static const _key = 'subturtle.token';
 
+  // A Keychain / Keystore error must not stop the app: treat it as "no saved session".
   @override
-  Future<String?> read() => _s.read(key: _key);
+  Future<String?> read() async {
+    try {
+      return await _s.read(key: _key);
+    } catch (e) {
+      debugPrint('Token read failed: $e');
+      return null;
+    }
+  }
+
   @override
-  Future<void> write(String token) => _s.write(key: _key, value: token);
+  Future<void> write(String token) async {
+    try {
+      await _s.write(key: _key, value: token);
+    } catch (e) {
+      debugPrint('Token write failed: $e');
+    }
+  }
+
   @override
-  Future<void> clear() => _s.delete(key: _key);
+  Future<void> clear() async {
+    try {
+      await _s.delete(key: _key);
+    } catch (e) {
+      debugPrint('Token delete failed: $e');
+    }
+  }
 }
 
 // ---------------------------------------------------------------- auth
@@ -51,9 +73,15 @@ class AuthController extends Notifier<AuthState> {
 
   SubturtleApi get _api => ref.read(apiProvider);
 
+  /// Never leaves the app on the splash screen: any failure here means "signed out".
   Future<void> restore() async {
-    final user = await _api.auth.restore();
-    state = user == null || user.isAnonymous ? const AuthState(AuthStatus.signedOut) : AuthState(AuthStatus.signedIn, user);
+    try {
+      final user = await _api.auth.restore().timeout(const Duration(seconds: 20));
+      state = user == null || user.isAnonymous ? const AuthState(AuthStatus.signedOut) : AuthState(AuthStatus.signedIn, user);
+    } catch (e) {
+      debugPrint('Session restore failed: $e');
+      state = const AuthState(AuthStatus.signedOut);
+    }
   }
 
   Future<void> signedIn(AuthUser user) async {

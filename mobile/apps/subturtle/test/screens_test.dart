@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:subturtle/app/providers.dart';
+import 'package:subturtle_api/subturtle_api.dart';
 
 import 'fake_backend.dart';
 
 void main() {
+  test('a failing token store ends in signed out, not on the splash screen', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: FakeBackend().client, tokenStore: _BrokenStore());
+    final c = ProviderContainer(overrides: [apiProvider.overrideWithValue(api), prefsProvider.overrideWithValue(prefs)]);
+    addTearDown(c.dispose);
+    await c.read(authProvider.notifier).restore();
+    expect(c.read(authProvider).status, AuthStatus.signedOut);
+  });
+
   testWidgets('signed out: sign in screen with Google and email', (tester) async {
     await pumpApp(tester, signedIn: false);
     expect(find.text('Learn English from what you watch'), findsOneWidget);
@@ -112,4 +126,13 @@ void main() {
     await tester.settle();
     expect(tester.takeException(), isNull);
   });
+}
+
+class _BrokenStore implements TokenStore {
+  @override
+  Future<String?> read() => Future.error(Exception('keychain error'));
+  @override
+  Future<void> write(String token) async {}
+  @override
+  Future<void> clear() async {}
 }

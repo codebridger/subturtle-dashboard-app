@@ -5,6 +5,7 @@
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Debug builds only: allow http:// so the app can talk to a local server
-         (for example --dart-define=API_BASE_URL=http://10.0.2.2:8080). -->
+         (for example API_BASE_URL=http://10.0.2.2:8080). No double hyphen
+         is allowed inside an XML comment. -->
     <application android:usesCleartextTraffic="true"/>
 </manifest>
