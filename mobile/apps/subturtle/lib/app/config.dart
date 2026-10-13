@@ -31,6 +31,15 @@ abstract final class AppConfig {
     defaultValue: _prod ? '245138511605-5vr7dnonm8rgg56du01v8i430ia7t0g1.apps.googleusercontent.com' : '466506592387-14p1j715ifm1ag1qva3k1dh3ro4c88ci.apps.googleusercontent.com',
   );
 
+  /// Stripe publishable key (public), for the local-price probe on Plans. The
+  /// same keys as the dashboard (`infra/public/<env>.env`), following the API.
+  static const stripePublishableKey = String.fromEnvironment(
+    'STRIPE_PUBLISHABLE_KEY',
+    defaultValue: _prod
+        ? 'pk_live_51QFZu6JzqwOMGRBggVK7qChV7WJ3EWk8ptlqfMxzjVs9j8oVwKrpVcXjptIKAfE0w4tf2JTBnTQuKHWsRdzUMPYD00SQ2kV7V8'
+        : 'pk_test_51QFZu6JzqwOMGRBgHCKPt0QEnHGzURefEc4yZiYVJ9dWrTuElQ0B2V6hPhIEhU8bzrii946JHurHLvrnyn2lbv8F00cfcuTYB3',
+  );
+
   static const _prod = apiBaseUrl == ApiEnvironment.prod;
 
   /// Shows "Create an account with a code". The backend's sign-up code is only

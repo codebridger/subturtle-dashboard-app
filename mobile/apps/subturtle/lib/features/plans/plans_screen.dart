@@ -7,6 +7,7 @@ import 'package:subturtle_ui/subturtle_ui.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
+import 'local_pricing.dart';
 
 final plansProvider = FutureProvider<List<TierPlan>>((ref) => ref.read(apiProvider).subscription.getPlans());
 
@@ -32,6 +33,8 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
     final sub = ref.watch(subscriptionProvider);
     final plans = ref.watch(plansProvider);
     final hasYearly = plans.value?.any((p) => p.annualGbp != null) ?? false;
+    // Local prices, like the web (Stripe Adaptive Pricing); GBP until known or for paid users.
+    final local = ref.watch(localPricingProvider);
     return Scaffold(
       body: Column(
         children: [
@@ -86,7 +89,14 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                         for (final p in list)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: _TierCard(plan: p, yearly: _yearly, current: sub.value?.tier == p.id, onTap: () => _manage(p.id)),
+                            child: _TierCard(
+                              plan: p,
+                              yearly: _yearly,
+                              current: sub.value?.tier == p.id,
+                              local: local.value,
+                              pricing: local.isLoading,
+                              onTap: () => _manage(p.id),
+                            ),
                           ),
                       ],
                     ),
@@ -105,13 +115,16 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                 StButton(label: 'Manage on the web', iconRight: StIcons.external, size: StSize.lg, block: true, onPressed: _manage),
                 const SizedBox(height: 8),
                 Text(
-                  'For now, plans and extra minutes are bought on the web. Prices are in GBP. Plans renew automatically; cancel any time.',
+                  local.value == null
+                      ? 'For now, plans and extra minutes are bought on the web. Prices are in GBP. Plans renew automatically; cancel any time.'
+                      : 'For now, plans and extra minutes are bought on the web. Prices are in your currency, as charged at checkout. Plans renew automatically; cancel any time.',
                   textAlign: TextAlign.center,
                   style: StType.base(size: 11, weight: FontWeight.w600).copyWith(color: c.textMuted),
                 ),
               ],
             ),
           ),
+          const PricingProbeHost(),
         ],
       ),
     );
@@ -201,10 +214,16 @@ class _Meter extends StatelessWidget {
 }
 
 class _TierCard extends StatelessWidget {
-  const _TierCard({required this.plan, required this.yearly, required this.current, required this.onTap});
+  const _TierCard({required this.plan, required this.yearly, required this.current, required this.onTap, this.local, this.pricing = false});
   final TierPlan plan;
   final bool yearly;
   final bool current;
+
+  /// Local prices when known; else GBP.
+  final LocalPricing? local;
+
+  /// Still finding the local prices: a placeholder, so GBP does not flash first.
+  final bool pricing;
 
   /// Opens the web subscription page with this plan picked.
   final VoidCallback onTap;
@@ -212,11 +231,12 @@ class _TierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.st;
+    String amount(double gbp) => local?.format(gbp) ?? Fmt.gbp(gbp);
     final price = !plan.isPaid
         ? 'Free'
         : yearly
-            ? (plan.annualGbp == null ? '' : '${Fmt.gbp(plan.annualGbp!)}/yr')
-            : (plan.monthlyGbp == null ? '' : '${Fmt.gbp(plan.monthlyGbp!)}/mo');
+            ? (plan.annualGbp == null ? '' : '${amount(plan.annualGbp!)}/yr')
+            : (plan.monthlyGbp == null ? '' : '${amount(plan.monthlyGbp!)}/mo');
     final key = plan.featureLabels.isNotEmpty ? plan.featureLabels.first : plan.tagline;
     final more = plan.featureLabels.skip(1).take(2).join(' · ');
     return StCard(
@@ -237,7 +257,10 @@ class _TierCard extends StatelessWidget {
               if (!current && plan.highlight) StBadge(plan.badge ?? 'Most popular', color: StBadgeColor.primary),
               if (!plan.live) const StBadge('Coming soon'),
               const Spacer(),
-              Text(price, style: StType.titleSmall.copyWith(color: c.textStrong, fontWeight: FontWeight.w900)),
+              if (pricing && plan.isPaid)
+                const StSkeleton(width: 72, height: 18)
+              else
+                Text(price, style: StType.titleSmall.copyWith(color: c.textStrong, fontWeight: FontWeight.w900)),
             ],
           ),
           const SizedBox(height: 3),

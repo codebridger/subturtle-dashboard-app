@@ -268,6 +268,14 @@ class SubscriptionRepository extends _Repo {
     final res = await fn.run('getSubscriptionPlans', const <String, dynamic>{});
     return listOf(res, TierPlan.fromJson);
   }
+
+  /// A Stripe Checkout session (`ui_mode: custom`, Adaptive Pricing on) for
+  /// [tierId]. Returns its client secret, for Stripe.js. The server refuses it
+  /// for paid users (no stacking plans). [successUrl] is where Stripe returns.
+  Future<String> createCheckoutSession({required String tierId, String cadence = 'monthly', required String successUrl}) async {
+    final res = await fn.run('createCustomCheckoutSession', {'userId': uid, 'tierId': tierId, 'cadence': cadence, 'successUrl': successUrl});
+    return str(asJson(res)['clientSecret']);
+  }
 }
 
 /// Coach sessions, voice side (`live_session` module) and history.

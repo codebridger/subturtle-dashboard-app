@@ -132,6 +132,55 @@ void main() {
     expect(textContaining('credit'), findsNothing);
   });
 
+  group('Plans: local prices', () {
+    void seedPlans(FakeBackend b) {
+      b.functions['getSubscriptionPlans'] = (_) => [
+            {'id': 'starter', 'name': 'Starter', 'isPaid': false, 'featureLabels': ['Save up to 200 phrases a month']},
+            {'id': 'reader', 'name': 'Reader', 'isPaid': true, 'pricing': {'monthly': {'gbp': 4.49}, 'annual': {'gbp': 43.0}}, 'featureLabels': ['Everything in Starter']},
+            {'id': 'learner', 'name': 'Learner', 'isPaid': true, 'highlight': true, 'pricing': {'monthly': {'gbp': 10.99}}, 'featureLabels': ['Everything in Reader']},
+          ];
+      b.functions['createCustomCheckoutSession'] = (_) => {'clientSecret': 'cs_test_secret'};
+    }
+
+    Future<void> openPlans(WidgetTester tester) async {
+      await tester.settle();
+      await tester.tap(find.text('Me').last);
+      await tester.settle();
+      await tester.tap(find.text('Starter plan'));
+      await tester.settle();
+    }
+
+    testWidgets('a free user sees the prices Stripe would charge in their currency', (tester) async {
+      final probe = FakePricingProbe({'currency': 'eur', 'fxRate': 1.2311, 'minor': 553});
+      final backend = await pumpApp(tester, seed: seedPlans, pricingProbe: probe);
+      await openPlans(tester);
+      expect(probe.runs, 1);
+      final session = backend.calls.lastWhere((c) => c.$1 == 'createCustomCheckoutSession').$2;
+      expect(session['tierId'], 'reader');
+      expect(session['successUrl'], endsWith('/#/payment-success'));
+      expect(find.text('€13.53/mo'), findsOneWidget, reason: '10.99 × 1.2311');
+      expect(textContaining('Prices are in your currency'), findsOneWidget);
+    });
+
+    testWidgets('a paid user keeps GBP and never opens a checkout', (tester) async {
+      final probe = FakePricingProbe({'currency': 'eur', 'fxRate': 1.2});
+      final backend = await pumpApp(tester, pricingProbe: probe, seed: (b) {
+        seedPlans(b);
+        final details = b.functions['getSubscriptionDetails']!;
+        b.functions['getSubscriptionDetails'] = (a) => {...(details(a) as Map), 'is_freemium': false, 'tier': 'learner'};
+      });
+      await tester.settle();
+      await tester.tap(find.text('Me').last);
+      await tester.settle();
+      await tester.tap(textContaining('Learner plan').first);
+      await tester.settle();
+      expect(probe.runs, 0);
+      expect(backend.called('createCustomCheckoutSession'), isEmpty);
+      expect(find.text('£10.99/mo'), findsWidgets);
+      expect(textContaining('€'), findsNothing);
+    });
+  });
+
   testWidgets('Coach: Starter sees history as a paid feature', (tester) async {
     await pumpApp(tester, seed: (b) => b.functions['list-live-sessions'] = (_) => throw Exception());
     await tester.settle();
