@@ -233,7 +233,7 @@ import { Modal } from 'pilotui/complex';
 import { useLiveSessionGeminiTextStore } from '~/stores/liveSessionGeminiText';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
-import { buildInstructions, buildPracticeTools, resolveNativeLanguage, returnToLabelKey } from '~/utils/livePractice';
+import { buildInstructions, buildPracticeTools, cardSelectedMessage, LIVE_PRACTICE, resolveNativeLanguage, returnToLabelKey, welcomeMessage } from '~/utils/livePractice';
 import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -333,6 +333,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    // Leaving the page must end the session; the store outlives the page.
+    if (liveSessionStore.isSessionActive) liveSessionStore.endLiveSession();
     if (aiSilenceTimer) clearTimeout(aiSilenceTimer);
     document.body.classList.remove('overflow-hidden');
     document.documentElement.classList.remove('overflow-hidden');
@@ -413,7 +415,10 @@ const tools = buildPracticeTools({
     setActiveIndex: (index) => {
         phraseIndex.value = index;
     },
-    onFinish: () => endLiveSession(),
+    // Close after the coach's goodbye, not over it (shared rule finishDelayMs).
+    onFinish: () => {
+        setTimeout(() => endLiveSession(), LIVE_PRACTICE.rules.finishDelayMs);
+    },
 });
 
 onMounted(async () => {
@@ -428,7 +433,7 @@ onMounted(async () => {
         return;
     }
 
-    if (selectedPhrases.value.length === 1) phraseIndex.value = 0;
+    if (LIVE_PRACTICE.rules.singlePhraseStartsActive && selectedPhrases.value.length === 1) phraseIndex.value = 0;
 
     createLiveSession();
 });
@@ -492,11 +497,8 @@ function handleSessionEvent(eventData: any) {
 }
 
 function triggerTheConversation() {
-    const message = `Welcome the user and explain that they can click on any vocabulary card to practice that specific word. Tell them to click on a vocabulary card to start practicing.`;
     // No microphone in text mode — invite the user to type instead.
-    liveSessionStore.triggerConversation(
-        message + '\nThe user will type their responses, so encourage them to write back.'
-    );
+    liveSessionStore.triggerConversation(welcomeMessage('text'));
 }
 
 function handleTimerWarning(_timeRemaining: number) {
@@ -523,7 +525,7 @@ function selectPhrase(index: number) {
     // Use triggerConversation (not sendMessage) so this system-style nudge
     // doesn't show up in the chat as a fake "user" message.
     liveSessionStore.triggerConversation(
-        `The user selected a different vocabulary: "${phrase.phrase}". Let's start practicing on it.`
+        cardSelectedMessage(phrase.phrase)
     );
 }
 

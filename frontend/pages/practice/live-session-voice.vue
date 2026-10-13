@@ -281,7 +281,7 @@ import { Modal } from 'pilotui/complex';
 import { MIC_UNAVAILABLE_CODE, useLiveSessionGeminiStore } from '~/stores/liveSessionGemini';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
-import { buildInstructions, buildPracticeTools, resolveNativeLanguage, returnToLabelKey } from '~/utils/livePractice';
+import { buildInstructions, buildPracticeTools, cardSelectedMessage, LIVE_PRACTICE, resolveNativeLanguage, returnToLabelKey, welcomeMessage } from '~/utils/livePractice';
 import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -430,6 +430,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    // Leaving the page (browser back, a link) must stop the mic, the socket and
+    // the minute count; the store outlives the page.
+    if (liveSessionStore.isSessionActive) liveSessionStore.endLiveSession();
     if (aiSilenceTimer) clearTimeout(aiSilenceTimer);
     document.body.classList.remove('overflow-hidden');
     document.documentElement.classList.remove('overflow-hidden');
@@ -483,7 +486,10 @@ const tools = buildPracticeTools({
     setActiveIndex: (index) => {
         phraseIndex.value = index;
     },
-    onFinish: () => endLiveSession(),
+    // Close after the spoken goodbye, not over it (shared rule finishDelayMs).
+    onFinish: () => {
+        setTimeout(() => endLiveSession(), LIVE_PRACTICE.rules.finishDelayMs);
+    },
 });
 
 onMounted(async () => {
@@ -499,7 +505,7 @@ onMounted(async () => {
     }
 
     // Auto-activate when there's a single phrase (e.g. Practice now).
-    if (selectedPhrases.value.length === 1) phraseIndex.value = 0;
+    if (LIVE_PRACTICE.rules.singlePhraseStartsActive && selectedPhrases.value.length === 1) phraseIndex.value = 0;
 
     if (isVoiceBudgetEmpty()) {
         voiceLock.value = { notIncluded: voiceBase.value <= 0 };
@@ -653,9 +659,7 @@ function handleSessionEvent(eventData: any) {
 }
 
 function triggerTheConversation() {
-    const message = `Welcome the user and explain that they can click on any vocabulary card to practice that specific word. Tell them to click on a vocabulary card to start practicing.`;
-    const microphoneNotice = `Then encourage the user to unmute the microphone, microphone is ${liveSessionStore.getMicrophoneMuted ? 'muted' : 'unmuted'}`;
-    liveSessionStore.triggerConversation(message + '\n' + microphoneNotice);
+    liveSessionStore.triggerConversation(welcomeMessage('voice', liveSessionStore.getMicrophoneMuted));
 }
 
 function handleTimerWarning(_timeRemaining: number) {
@@ -685,7 +689,7 @@ function selectPhrase(index: number) {
     // doesn't show up in the chat as a fake "user" message — and so it can't
     // be misinterpreted as the user practicing the phrase.
     liveSessionStore.triggerConversation(
-        `The user selected a different vocabulary: "${phrase.phrase}". Let's start practicing on it.`
+        cardSelectedMessage(phrase.phrase)
     );
 }
 

@@ -36,6 +36,9 @@ jobs:
               - '.github/workflows/test.yml'
             frontend:
               - 'frontend/**'
+              # The live coach spec is shared with mobile; its Vitest test checks both copies.
+              - 'shared/**'
+              - 'mobile/packages/subturtle_api/lib/src/coach/live_practice_spec.g.dart'
               - '.github/workflows/test.yml'
             landing:
               - 'landing/**'
