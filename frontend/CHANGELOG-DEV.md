@@ -1,3 +1,10 @@
+# [1.3.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.2-dev.1...v1.3.0-dev.1) (2026-10-13)
+
+
+### Features
+
+* **server:** add save assistant sessions ([1ecd4b1](https://github.com/codebridger/subturtle-dashboard-app/commit/1ecd4b1464d086b85d81afa99e7ef93c775a15b3))
+
 ## [1.2.2-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.1...v1.2.2-dev.1) (2026-10-12)
 
 
