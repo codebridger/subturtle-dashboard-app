@@ -6,7 +6,6 @@ import 'package:subturtle_ui/subturtle_ui.dart';
 
 import '../../app/providers.dart';
 import '../../shared/format.dart';
-import '../../shared/widgets.dart';
 import '../coach/coach_home_screen.dart';
 import 'chat_bubbles.dart';
 import 'session_launch.dart';
@@ -50,15 +49,13 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
     super.dispose();
   }
 
+  /// Ends at once, as on the web. With nothing practised there is no recap:
+  /// go straight back.
   Future<void> _end() async {
-    // Ask only when the session is very short, to catch a mis-tap.
-    if (_voice.status == VoiceStatus.live && _voice.elapsed.inSeconds < 30) {
-      final ok = await confirmSheet(context, title: 'End the session?', confirm: 'End', cancel: 'Keep talking');
-      if (!ok) return;
-    }
     await _voice.end();
     ref.invalidate(subscriptionProvider);
     ref.invalidate(coachHistoryProvider);
+    if (_voice.done.isEmpty && mounted) _leave();
   }
 
   void _leave() {
@@ -126,7 +123,11 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                 ],
               ),
             ),
-            PhraseStrip(phrases: widget.launch.phrases, active: v.active, done: v.done, onTap: v.selectPhrase),
+            PhraseStrip(phrases: widget.launch.phrases, active: v.active, done: v.done, onTap: v.selectPhrase, showTranslations: v.showTranslations),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+              child: Text('${v.done.length} of ${widget.launch.phrases.length} practised', style: StType.bodySmall.copyWith(color: c.textMuted)),
+            ),
             Expanded(child: _center(context)),
             _bottom(context),
           ],
@@ -138,18 +139,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
   Widget _center(BuildContext context) {
     final c = context.st;
     final v = _voice;
-    if (v.status == VoiceStatus.ended) {
-      final practised = v.done.length + (v.active >= 0 ? 1 : 0);
-      return Center(
-        child: StEmptyState(
-          icon: StIcons.confetti,
-          color: StBadgeColor.accent,
-          title: 'Session done',
-          description: '${Fmt.minutes(v.elapsed)} talked · ${Fmt.plural(practised, 'phrase')} practised. The transcript is in Coach.',
-          action: StButton(label: 'Back to Coach', onPressed: _leave),
-        ),
-      );
-    }
+    if (v.status == VoiceStatus.ended) return _Recap(phrases: widget.launch.phrases, done: v.done, onDone: _leave);
     if (v.status == VoiceStatus.error) {
       final e = v.error;
       final plan = e is ApiException && (e.isTierLimit || e.code == ApiException.voicePaused || e.code == ApiException.aiCreditExhausted);
@@ -175,45 +165,70 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
       );
     }
     final connecting = v.status == VoiceStatus.connecting || v.status == VoiceStatus.reconnecting;
+    // The web's status words (live-practice.status.*), touch version.
     final status = switch (v.status) {
       VoiceStatus.connecting => 'Connecting…',
-      VoiceStatus.reconnecting => 'Trying to reconnect…',
+      VoiceStatus.reconnecting => 'Reconnecting…',
       VoiceStatus.capReached => 'Muted',
-      _ => v.muted ? 'Muted' : (v.coachSpeaking ? 'Coach is speaking' : 'Listening'),
+      _ => v.coachSpeaking ? 'Coach is speaking…' : (v.muted ? 'Tap the mic to speak' : 'Listening — go ahead'),
     };
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          _CoachOrb(speaking: v.coachSpeaking && !connecting, dimmed: connecting),
-          const SizedBox(height: 18),
-          Semantics(
-            liveRegion: true,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (connecting) ...[SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.rose600)), const SizedBox(width: 8)],
-                Text(status, style: StType.base(size: 14, weight: FontWeight.w800).copyWith(color: c.rose600)),
-              ],
-            ),
+    final lines = v.transcript.where((l) => l.text.trim().isNotEmpty).toList();
+    final activePhrase = v.active >= 0 ? widget.launch.phrases[v.active].phrase : null;
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        _CoachOrb(speaking: v.coachSpeaking && !connecting, dimmed: connecting, size: lines.isEmpty ? 150 : 96),
+        const SizedBox(height: 12),
+        Semantics(
+          liveRegion: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (connecting) ...[SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.rose600)), const SizedBox(width: 8)],
+              Text(status, style: StType.base(size: 14, weight: FontWeight.w800).copyWith(color: c.rose600)),
+            ],
           ),
-          const SizedBox(height: 18),
-          if (v.captions && (v.coachLine.isNotEmpty || v.userLine.isNotEmpty))
-            StCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const StEyebrow.section('Captions'),
-                  const SizedBox(height: 6),
-                  if (v.coachLine.isNotEmpty) ChatBubble(text: v.coachLine, fromUser: false, phrases: widget.launch.phrases),
-                  if (v.userLine.isNotEmpty) ChatBubble(text: v.userLine, fromUser: true),
-                ],
-              ),
-            ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: lines.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    children: [
+                      Text.rich(
+                        activePhrase == null
+                            ? const TextSpan(text: 'Tap any vocabulary card to start practicing')
+                            : TextSpan(children: [const TextSpan(text: 'Currently practicing: '), TextSpan(text: activePhrase, style: const TextStyle(fontWeight: FontWeight.w900))]),
+                        textAlign: TextAlign.center,
+                        style: StType.bodyMedium.copyWith(color: c.textBody),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Your conversation will appear here.', textAlign: TextAlign.center, style: StType.bodySmall.copyWith(color: c.textMuted)),
+                    ],
+                  ),
+                )
+              // Newest at the bottom, kept in view as the conversation grows.
+              : ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  itemCount: lines.length,
+                  itemBuilder: (_, i) {
+                    final l = lines[lines.length - 1 - i];
+                    return Column(
+                      crossAxisAlignment: l.fromUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2, left: 4, right: 4),
+                          child: Text(l.fromUser ? 'You' : 'Coach', style: StType.labelMedium.copyWith(color: c.textFaint)),
+                        ),
+                        ChatBubble(text: l.text, fromUser: l.fromUser, phrases: l.fromUser ? const [] : widget.launch.phrases),
+                      ],
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
@@ -274,11 +289,11 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               StIconButton(
-                icon: v.captions ? StIcons.captions : StIcons.captionsOff,
-                semanticLabel: v.captions ? 'Captions on' : 'Captions off',
+                icon: v.showTranslations ? StIcons.captions : StIcons.captionsOff,
+                semanticLabel: v.showTranslations ? 'Hide translations' : 'Show translations',
                 size: StSize.lg,
                 round: true,
-                onPressed: v.toggleCaptions,
+                onPressed: v.toggleTranslations,
               ),
               _MuteButton(muted: v.muted, enabled: v.status == VoiceStatus.live, onTap: v.toggleMute),
               StIconButton(icon: StIcons.keyboard, semanticLabel: 'End and continue in text', size: StSize.lg, round: true, onPressed: _switchToText),
@@ -336,9 +351,12 @@ class _MuteButton extends StatelessWidget {
 /// The coach "avatar": a rose orb whose ring pulses while the coach speaks
 /// (a static ring under reduced motion).
 class _CoachOrb extends StatefulWidget {
-  const _CoachOrb({required this.speaking, required this.dimmed});
+  const _CoachOrb({required this.speaking, required this.dimmed, this.size = 132});
   final bool speaking;
   final bool dimmed;
+
+  /// Smaller once the conversation needs the room.
+  final double size;
 
   @override
   State<_CoachOrb> createState() => _CoachOrbState();
@@ -384,9 +402,10 @@ class _CoachOrbState extends State<_CoachOrb> with SingleTickerProviderStateMixi
           final alpha = widget.speaking ? (reduced ? 0.25 : 0.30 * (1 - t)) : 0.0;
           return Opacity(
             opacity: widget.dimmed ? 0.45 : 1,
-            child: Container(
-              width: 132,
-              height: 132,
+            child: AnimatedContainer(
+              duration: StMotion.base,
+              width: widget.size,
+              height: widget.size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.rose400, c.rose600]),
@@ -396,11 +415,64 @@ class _CoachOrbState extends State<_CoachOrb> with SingleTickerProviderStateMixi
                 ],
               ),
               alignment: Alignment.center,
-              child: const StIcon(StIcons.soundwave, size: 56, color: Colors.white),
+              child: StIcon(StIcons.soundwave, size: widget.size * 0.42, color: Colors.white),
             ),
           );
         },
       ),
+    );
+  }
+}
+
+/// "Practice complete": what was practised this session (the web's recap).
+class _Recap extends StatelessWidget {
+  const _Recap({required this.phrases, required this.done, required this.onDone});
+  final List<Phrase> phrases;
+  final Set<int> done;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.st;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(color: c.accentSoft, borderRadius: BorderRadius.circular(StRadius.x2l)),
+            alignment: Alignment.center,
+            child: StIcon(StIcons.confetti, size: 40, color: c.jade600),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Semantics(header: true, child: Text('Practice complete', textAlign: TextAlign.center, style: StType.headline.copyWith(color: c.textStrong))),
+        const SizedBox(height: 6),
+        Text(
+          'You practiced ${done.length} of ${phrases.length} phrases this session.',
+          textAlign: TextAlign.center,
+          style: StType.base(size: 16, weight: FontWeight.w600).copyWith(color: c.textMuted),
+        ),
+        const SizedBox(height: 20),
+        for (var i = 0; i < phrases.length; i++)
+          Semantics(
+            label: '${phrases[i].phrase}, ${done.contains(i) ? 'practised' : 'not practised'}',
+            excludeSemantics: true,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  StIcon(done.contains(i) ? StIcons.check : StIcons.closeBold, size: 20, color: done.contains(i) ? c.jade600 : c.textFaint),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(phrases[i].phrase, style: StType.titleSmall.copyWith(color: done.contains(i) ? c.textStrong : c.textMuted))),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 24),
+        StButton(label: 'Done', size: StSize.lg, block: true, onPressed: onDone),
+      ],
     );
   }
 }

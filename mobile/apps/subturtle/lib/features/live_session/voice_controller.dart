@@ -73,6 +73,14 @@ class DeviceVoiceAudio implements VoiceAudio {
 /// → connect → say hello. Transcript lines and token usage are saved while the
 /// session runs; voice time is charged once at the end, counting only the
 /// time the socket was connected.
+/// One line of the voice transcript. [text] grows while the speaker talks.
+class TranscriptLine {
+  TranscriptLine({required this.id, required this.fromUser, required this.text});
+  final String id;
+  final bool fromUser;
+  String text;
+}
+
 class VoiceController extends ChangeNotifier {
   VoiceController({required this.repo, required this.launch, required this.isFreemium, VoiceAudio? audio, this.onHaptic, GeminiLiveClient Function(GeminiLiveToken token, String? resume)? clientFactory})
       : _audio = audio ?? DeviceVoiceAudio(),
@@ -89,12 +97,17 @@ class VoiceController extends ChangeNotifier {
 
   VoiceStatus status = VoiceStatus.connecting;
   Object? error;
-  bool muted = false;
-  bool captions = true;
+  /// The mic starts muted, as on the web: the learner unmutes to talk.
+  bool muted = LivePracticeSpec.micStartsMuted;
+  bool showTranslations = true;
   bool coachSpeaking = false;
-  String coachLine = '';
-  String userLine = '';
-  int active = -1;
+
+  /// The whole conversation so far, oldest first.
+  final List<TranscriptLine> transcript = [];
+  late int active = LivePracticeSpec.singlePhraseStartsActive && launch.phrases.length == 1 ? 0 : -1;
+
+  /// Phrases practised: the learner spoke while it was the active one (shared
+  /// rule `practicedOn: user-turn`). Activating alone does not count.
   final Set<int> done = {};
 
   /// Seconds allowed this session (from the token); 0 = unknown.
@@ -112,7 +125,9 @@ class VoiceController extends ChangeNotifier {
   Timer? _speakingOff;
   Timer? _resumeTimer;
   int _turn = 0;
-  final _lineIds = <bool, String>{};
+
+  /// The line each speaker is still adding to (index in [transcript]).
+  final _open = <bool, int>{};
   Map<String, dynamic> _totalUsage = {};
   bool _disposed = false;
 
@@ -133,7 +148,7 @@ class VoiceController extends ChangeNotifier {
       await _audio.startSpeaker();
       await _connect(token);
       WakelockPlus.enable().ignore();
-      _client!.sendText(CoachPractice.welcomeVoice);
+      _client!.sendText(CoachPractice.welcomeVoice(micMuted: muted));
       final mic = await _audio.startMic();
       _mic = mic.listen((chunk) {
         if (!muted && status == VoiceStatus.live) _client?.sendAudio(chunk);
@@ -172,21 +187,18 @@ class VoiceController extends ChangeNotifier {
         });
         _notify();
       case LiveTranscript(:final text, :final fromUser, :final finished):
-        if (fromUser) {
-          userLine = _lineIds.containsKey(true) ? '$userLine$text' : text;
-        } else {
-          coachLine = _lineIds.containsKey(false) ? '$coachLine$text' : text;
-        }
-        _lineIds.putIfAbsent(fromUser, () => '${fromUser ? 'user' : 'ai'}-$_turn-${DateTime.now().millisecondsSinceEpoch}');
-        if (finished) _flushLine(fromUser);
+        _append(fromUser, text);
+        if (finished) _save(fromUser);
         _notify();
       case LiveInterrupted():
+        // Save what was said, but keep the lines open: the rest of the sentence
+        // joins the same line (as on the web).
         _audio.flushSpeaker();
-        _flushLine(true);
-        _flushLine(false);
+        _save(true);
+        _save(false);
       case LiveTurnComplete():
-        _flushLine(true);
-        _flushLine(false);
+        _close(true);
+        _close(false);
         _turn++;
       case LiveToolCall(:final calls):
         final responses = <Map<String, dynamic>>[];
@@ -197,7 +209,7 @@ class VoiceController extends ChangeNotifier {
         }
         _client?.sendToolResponses(responses);
         _notify();
-        if (finish) Future<void>.delayed(const Duration(seconds: 4), end);
+        if (finish) Future<void>.delayed(LivePracticeSpec.finishDelay, end);
       case LiveUsage(:final usage):
         _totalUsage = GeminiLiveClient.addUsage(_totalUsage, usage);
         if (_sessionId != null) repo.reportUsage(_sessionId!, partial: usage, total: _totalUsage).ignore();
@@ -212,17 +224,33 @@ class VoiceController extends ChangeNotifier {
     }
   }
 
-  void _flushLine(bool fromUser) {
-    final id = _lineIds.remove(fromUser);
-    final text = fromUser ? userLine : coachLine;
-    if (id == null || text.trim().isEmpty || _sessionId == null) return;
-    repo.saveDialogs(_sessionId!, [DialogLine(id: id, content: text.trim(), fromUser: fromUser)]).catchError((_) {});
+  void _append(bool fromUser, String text) {
+    final at = _open[fromUser];
+    if (at == null) {
+      _open[fromUser] = transcript.length;
+      transcript.add(TranscriptLine(id: '${fromUser ? 'user' : 'ai'}-$_turn-${DateTime.now().millisecondsSinceEpoch}', fromUser: fromUser, text: text));
+    } else {
+      transcript[at].text += text;
+    }
+    // A learner line with words in it practises the active phrase.
+    if (fromUser && active >= 0 && transcript[_open[true]!].text.trim().isNotEmpty) done.add(active);
   }
 
-  void _activate(int i) {
-    if (active >= 0 && active != i) done.add(active);
-    active = i;
+  /// Upserts a speaker's open line (by id) on the server.
+  void _save(bool fromUser) {
+    final at = _open[fromUser];
+    if (at == null || _sessionId == null) return;
+    final line = transcript[at];
+    if (line.text.trim().isEmpty) return;
+    repo.saveDialogs(_sessionId!, [DialogLine(id: line.id, content: line.text.trim(), fromUser: fromUser)]).catchError((_) {});
   }
+
+  void _close(bool fromUser) {
+    _save(fromUser);
+    _open.remove(fromUser);
+  }
+
+  void _activate(int i) => active = i;
 
   /// The learner tapped a phrase card.
   void selectPhrase(int i) {
@@ -238,8 +266,9 @@ class VoiceController extends ChangeNotifier {
     _notify();
   }
 
-  void toggleCaptions() {
-    captions = !captions;
+  /// Translations on the phrase cards (off = self-test, as on the web).
+  void toggleTranslations() {
+    showTranslations = !showTranslations;
     _notify();
   }
 
@@ -297,8 +326,8 @@ class VoiceController extends ChangeNotifier {
   Future<void> end() async {
     if (status == VoiceStatus.ended) return;
     _pauseClock();
-    _flushLine(true);
-    _flushLine(false);
+    _close(true);
+    _close(false);
     _set(VoiceStatus.ended);
     await _teardown(debit: true);
   }

@@ -26,6 +26,7 @@ import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { useProfileStore } from '~/stores/profile';
+import { fillSpec, LIVE_PRACTICE } from '~/utils/livePractice';
 import type {
     LiveServerMessage,
     Session,
@@ -187,8 +188,9 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
             await setupAudio();
             await connectLive(sessionMeta.client_secret.value);
 
-            // Mic starts muted so the user explicitly chooses to start speaking.
-            toggleMicrophone(false);
+            // Mic starts muted so the user explicitly chooses to start speaking
+            // (shared rule, shared/live-practice/spec.json).
+            toggleMicrophone(!LIVE_PRACTICE.rules.micStartsMuted);
 
             sessionStarted.value = true;
             voiceSessionStartedAt = Date.now();
@@ -205,6 +207,10 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
      * Safe to call multiple times.
      */
     function endLiveSession() {
+        // Save the lines still being spoken; otherwise a turn cut off by End is lost.
+        const openLines = [currentUserDialogId, currentAiDialogId].filter((d): d is string => !!d);
+        if (openLines.length) flushDialogToServer(openLines);
+
         // Debit consumed voice minutes once, on final teardown (spans reconnects).
         // The server rounds seconds up to whole minutes. A session that never
         // started (e.g. token/grant failed) leaves this null, so nothing is debited.
@@ -700,29 +706,35 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     function handleToolCalls(functionCalls: FunctionCall[]) {
         if (!session || !sessionTools) return;
-        const responses = functionCalls.map((call) => {
+        const pending = functionCalls.map((call) => {
             const name = call.name as string;
             const args = call.args || {};
             const tool = sessionTools![name];
             let result: any;
             if (!tool) {
-                result = { success: false, message: `Function ${name} not found` };
+                result = { success: false, message: fillSpec(LIVE_PRACTICE.messages.toolNotFound, { name }) };
             } else {
                 try {
-                    const out = tool.handler(args);
-                    result = out instanceof Promise ? out : Promise.resolve(out);
+                    result = tool.handler(args);
                 } catch (err) {
                     result = { success: false, message: String(err) };
                 }
             }
-            return { id: call.id, name, response: { output: result } };
+            // A handler may be async: wait for its value. Sending the Promise itself
+            // serialises to {} and the model never sees the result.
+            return Promise.resolve(result)
+                .catch((err) => ({ success: false, message: String(err) }))
+                .then((output) => ({ id: call.id, name, response: { output } }));
         });
 
-        try {
-            session.sendToolResponse({ functionResponses: responses });
-        } catch (err) {
-            console.warn('Failed to send Gemini tool response', err);
-        }
+        Promise.all(pending).then((functionResponses) => {
+            if (!session) return;
+            try {
+                session.sendToolResponse({ functionResponses });
+            } catch (err) {
+                console.warn('Failed to send Gemini tool response', err);
+            }
+        });
     }
 
     // ----- Internals: dialog accumulation + persistence -----

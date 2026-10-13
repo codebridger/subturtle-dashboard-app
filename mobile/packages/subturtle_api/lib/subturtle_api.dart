@@ -13,6 +13,7 @@ import 'src/core/rest_client.dart';
 import 'src/repositories/repositories.dart';
 
 export 'src/coach/coach_practice.dart';
+export 'src/coach/live_practice_spec.dart';
 export 'src/core/api_exception.dart';
 export 'src/core/auth.dart';
 export 'src/core/providers.dart';

@@ -145,19 +145,24 @@ class _TypingBubbleState extends State<TypingBubble> with SingleTickerProviderSt
   }
 }
 
-/// The horizontal phrase cards on top of a live session: ✓ done, ● active.
+/// The horizontal phrase cards on top of a live session: ✓ practised, ● active.
+/// With [showTranslations] off the translations read `••••` (self-test mode,
+/// as on the web).
 class PhraseStrip extends StatelessWidget {
-  const PhraseStrip({super.key, required this.phrases, required this.active, required this.done, required this.onTap});
+  const PhraseStrip({super.key, required this.phrases, required this.active, required this.done, required this.onTap, this.showTranslations = true});
   final List<Phrase> phrases;
   final int active;
   final Set<int> done;
   final ValueChanged<int> onTap;
+  final bool showTranslations;
+
+  static final _rtl = RegExp(r'[\u0590-\u08FF]');
 
   @override
   Widget build(BuildContext context) {
     final c = context.st;
     return SizedBox(
-      height: 72,
+      height: 90,
       child: Semantics(
         label: 'Phrases in this session',
         child: ListView.separated(
@@ -171,7 +176,7 @@ class PhraseStrip extends StatelessWidget {
             return Semantics(
               button: true,
               selected: isActive,
-              label: '${i + 1}. ${phrases[i].phrase}${isDone ? ', practised' : ''}${isActive ? ', now' : ''}. Double-tap to practise this one.',
+              label: '${i + 1}. ${phrases[i].phrase}${showTranslations ? ', ${phrases[i].translation}' : ''}${isDone ? ', practised' : ''}${isActive ? ', now' : ''}. Double-tap to practise this one.',
               excludeSemantics: true,
               child: StPressable(
                 onTap: () => onTap(i),
@@ -191,6 +196,12 @@ class PhraseStrip extends StatelessWidget {
                         children: [
                           Text(isActive ? '${i + 1} · now' : '${i + 1}', style: StType.base(size: 11, weight: FontWeight.w800).copyWith(color: isActive ? c.rose600 : c.textFaint)),
                           Text(phrases[i].phrase, style: StType.base(size: 14, weight: FontWeight.w800).copyWith(color: isActive || isDone ? c.textStrong : c.textMuted)),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 180),
+                            child: showTranslations
+                                ? StL1Text(phrases[i].translation, rtl: _rtl.hasMatch(phrases[i].translation), maxLines: 1, style: StType.bodySmall.copyWith(color: c.textMuted, fontWeight: FontWeight.w400))
+                                : Text('••••', style: StType.bodySmall.copyWith(color: c.textFaint)),
+                          ),
                         ],
                       ),
                     ),

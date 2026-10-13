@@ -128,7 +128,7 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
             else
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Text('${_chat.done.length + (_chat.active >= 0 ? 1 : 0)} of ${widget.launch.phrases.length} practised', style: StType.bodySmall.copyWith(color: c.textMuted)),
+                child: Text('${_chat.done.length} of ${widget.launch.phrases.length} practised', style: StType.bodySmall.copyWith(color: c.textMuted)),
               ),
             Expanded(child: _messages(context, starting)),
             if (_chat.capReached)

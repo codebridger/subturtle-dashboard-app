@@ -15,7 +15,8 @@ enum TextChatStatus { starting, ready, waiting, ended, error }
 /// the coach's tool calls (`activate_phrase`, `finish_practice`) locally, the
 /// same loop as the web store `liveSessionGeminiText`.
 class TextChatController extends ChangeNotifier {
-  TextChatController({required this.repo, required this.phrases, required this.instructions, required this.metadata, this.messageCap});
+  TextChatController({required this.repo, required this.phrases, required this.instructions, required this.metadata, this.messageCap})
+      : active = LivePracticeSpec.singlePhraseStartsActive && phrases.length == 1 ? 0 : -1;
 
   final TextChatRepository repo;
   final List<Phrase> phrases;
@@ -32,7 +33,10 @@ class TextChatController extends ChangeNotifier {
   /// True when the chat reached its message cap; the composer is then off.
   bool capReached = false;
   bool wrapUpWarning = false;
-  int active = -1;
+  int active;
+
+  /// Phrases practised: the learner wrote while it was the active one
+  /// (shared rule `practicedOn: user-turn`). Activating alone does not count.
   final Set<int> done = {};
   String? _sessionId;
 
@@ -62,6 +66,7 @@ class TextChatController extends ChangeNotifier {
     if (t.isEmpty || _sessionId == null || status == TextChatStatus.waiting || capReached) return;
     final msg = ChatMessage(text: t, fromUser: true);
     messages.add(msg);
+    if (active >= 0) done.add(active);
     await _sendUser(msg);
   }
 
@@ -124,10 +129,7 @@ class TextChatController extends ChangeNotifier {
     }
   }
 
-  void _activate(int i) {
-    if (active >= 0 && active != i) done.add(active);
-    active = i;
-  }
+  void _activate(int i) => active = i;
 
   /// Runs tool calls until the model answers with text.
   Future<void> _run(TextTurnResult result) async {

@@ -113,18 +113,18 @@ void main() {
     expect(c.status, VoiceStatus.live);
     expect(c.maxSeconds, 300);
     expect(socket.sent.first.containsKey('setup'), isTrue);
-    expect(socket.sent[1]['realtimeInput']['text'], contains('Welcome the user'));
+    expect(socket.sent[1]['realtimeInput']['text'], CoachPractice.welcomeVoice(micMuted: true));
 
-    // Mic audio goes out while unmuted, not while muted.
-    audio.mic.add(Uint8List.fromList([1, 2, 3, 4]));
-    await Future<void>.delayed(Duration.zero);
-    expect(socket.sent.last['realtimeInput']['audio']['mimeType'], 'audio/pcm;rate=16000');
-    c.toggleMute();
+    // The mic starts muted, as on the web: nothing goes out until the learner unmutes.
+    expect(c.muted, isTrue);
     final before = socket.sent.length;
     audio.mic.add(Uint8List.fromList([5, 6]));
     await Future<void>.delayed(Duration.zero);
     expect(socket.sent.length, before);
     c.toggleMute();
+    audio.mic.add(Uint8List.fromList([1, 2, 3, 4]));
+    await Future<void>.delayed(Duration.zero);
+    expect(socket.sent.last['realtimeInput']['audio']['mimeType'], 'audio/pcm;rate=16000');
 
     // Coach audio, a tool call, a transcript line, a turn end.
     socket.serverSends({
@@ -150,19 +150,59 @@ void main() {
     expect(audio.played, [9, 9]);
     expect(c.active, 1);
     expect(socket.sent.last['toolResponse']['functionResponses'][0]['response']['output']['phrase'], 'get out of');
-    expect(c.coachLine, "Let's practise get out of.");
+    expect(c.transcript.single.text, "Let's practise get out of.");
+    expect(c.done, isEmpty, reason: 'activating a phrase does not practise it');
     final dialogs = backend.calls.where((x) => x.$1 == 'update-live-session-record' && (x.$2['update'] as Map).containsKey('dialogs'));
     expect(dialogs, isNotEmpty);
     final usage = backend.calls.where((x) => x.$1 == 'update-live-session-record' && (x.$2['update'] as Map).containsKey('partialUsage'));
     expect(usage.single.$2['update']['partialUsage']['total_tokens'], 5);
 
-    // Interrupted: drop queued audio.
+    // The learner speaks while "get out of" is active: now it is practised.
+    socket.serverSends({'serverContent': {'inputTranscription': {'text': 'I had to get'}}});
+    await Future<void>.delayed(Duration.zero);
+    expect(c.done, {1});
+
+    // Interrupted: drop queued audio, but the learner's sentence stays one line.
     socket.serverSends({'serverContent': {'interrupted': true}});
+    socket.serverSends({'serverContent': {'inputTranscription': {'text': ' out of there.'}}});
     await Future<void>.delayed(Duration.zero);
     expect(audio.flushes, 1);
+    expect(c.transcript.where((l) => l.fromUser).single.text, 'I had to get out of there.');
 
     await c.end();
     expect(c.status, VoiceStatus.ended);
+    c.dispose();
+  });
+
+  test('picking phrase 2 does not mark phrase 1 practised (the reported bug)', () async {
+    final backend = FakeBackend()..seedDefaults();
+    backend.functions['request-gemini-live-session-ephemeral-token'] = (_) => {
+          'model': 'gemini-3.1-flash-live-preview',
+          'voice': 'Kore',
+          'voice_session_max_seconds': 300,
+          'client_secret': {'value': 'tok'},
+        };
+    backend.functions['create-live-session-record'] = (_) => {'_id': 's1'};
+    backend.functions['update-live-session-record'] = (_) => {'success': true};
+    final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: backend.client, tokenStore: MemoryTokenStore('h.eyJpZCI6InUxIn0.s'));
+    await api.auth.restore();
+    final socket = FakeSocket();
+    const phrases = [Phrase(id: '1', phrase: 'pissed off', translation: 'عصبانی'), Phrase(id: '2', phrase: 'now', translation: 'الان')];
+    final c = VoiceController(
+      repo: api.liveSessions,
+      launch: const SessionLaunch(bundle: Bundle(id: 'b1', title: 'ST'), phrases: phrases, voice: 'Kore', nativeLanguage: 'Persian'),
+      isFreemium: true,
+      audio: FakeAudio(),
+      clientFactory: (token, resume) => GeminiLiveClient(token: token.token, model: token.model, voice: 'Kore', instructions: 'x', tools: CoachPractice.tools, socketFactory: (_) => socket),
+    );
+    await c.start();
+    expect(c.active, -1, reason: 'two phrases: none active until one is picked');
+    c.selectPhrase(0);
+    c.selectPhrase(1);
+    expect(c.active, 1);
+    expect(c.done, isEmpty);
+    expect(socket.sent.last['realtimeInput']['text'], CoachPractice.cardTapped(phrases[1]));
+    await c.end();
     c.dispose();
   });
 
