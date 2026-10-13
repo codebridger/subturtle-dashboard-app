@@ -56,9 +56,13 @@ enum AuthStatus { unknown, signedOut, signedIn }
 
 @immutable
 class AuthState {
-  const AuthState(this.status, [this.user]);
+  const AuthState(this.status, [this.user, this.expired = false]);
   final AuthStatus status;
   final AuthUser? user;
+
+  /// Signed out because the server rejected the saved token (not because the
+  /// learner tapped Sign out). Sign in shows a "your session ended" note.
+  final bool expired;
 }
 
 /// Sign-in state. The router listens to it to show Sign in or the app.
@@ -67,7 +71,7 @@ class AuthController extends Notifier<AuthState> {
   AuthState build() {
     final api = ref.read(apiProvider);
     // A request that carried a token came back 401/412: the token is dead.
-    api.client.onUnauthorized = (_) => signOut();
+    api.client.onUnauthorized = (_) => signOut(expired: true);
     return const AuthState(AuthStatus.unknown);
   }
 
@@ -88,9 +92,9 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(AuthStatus.signedIn, user);
   }
 
-  Future<void> signOut() async {
+  Future<void> signOut({bool expired = false}) async {
     await _api.auth.signOut();
-    state = const AuthState(AuthStatus.signedOut);
+    state = AuthState(AuthStatus.signedOut, null, expired);
   }
 }
 

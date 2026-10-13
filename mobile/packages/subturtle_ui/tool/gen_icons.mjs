@@ -1,7 +1,7 @@
 // Generates lib/src/icons/st_icon_data.g.dart from Iconify icon data.
 //
 // Usage (from packages/subturtle_ui):
-//   node tool/gen_icons.mjs <iconify-icons.js from the design handoff> [more files...]
+//   node tool/gen_icons.mjs <iconify-icons.js from the design handoff> tool/extra_icons.js
 //
 // Sources it understands:
 //   - ../../../ui/src/icon/icons.generated.ts (always read; the web kit's icon set)

@@ -393,30 +393,47 @@ class StStatTile extends StatelessWidget {
     final tile = icon == null
         ? null
         : Container(
-            width: compact ? 40 : 52,
-            height: compact ? 40 : 52,
-            decoration: BoxDecoration(color: bg, borderRadius: StRadius.brMd),
+            width: compact ? 32 : 52,
+            height: compact ? 32 : 52,
+            decoration: BoxDecoration(color: bg, borderRadius: compact ? StRadius.brSm : StRadius.brMd),
             alignment: Alignment.center,
-            child: StIcon(icon!, size: compact ? 22 : 28, color: fg),
+            child: StIcon(icon!, size: compact ? 18 : 28, color: fg),
           );
-    final number = Text(value, style: StType.base(size: 28, weight: FontWeight.w900, height: 1).copyWith(color: c.textStrong));
-    final caption = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: StType.bodyMedium.copyWith(color: c.textMuted));
+    final number = Text(
+      value,
+      maxLines: 1,
+      style: StType.base(size: 28, weight: FontWeight.w900, height: 1).copyWith(color: c.textStrong, fontFeatures: const [FontFeature.tabularFigures()]),
+    );
+    final caption = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: compact ? TextAlign.center : TextAlign.start,
+      style: compact ? StType.base(size: 12, weight: FontWeight.w700, height: 1.35).copyWith(color: c.textMuted) : StType.bodyMedium.copyWith(color: c.textMuted),
+    );
     return Semantics(
       label: '$label: $value',
       excludeSemantics: true,
       child: Container(
-        padding: compact ? const EdgeInsets.all(12) : const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: compact ? const EdgeInsets.fromLTRB(8, 14, 8, 12) : const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: c.surfaceCard,
           border: Border.all(color: c.borderSubtle),
           borderRadius: StRadius.brLg,
-          boxShadow: context.stShadows.sm,
+          boxShadow: compact ? context.stShadows.xs : context.stShadows.sm,
         ),
+        // Compact: icon chip, number, label, each centred on its own line, so
+        // three tiles fit in a row on a phone without the text wrapping.
         child: compact
             ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: [?tile, const SizedBox(height: 10), number, const SizedBox(height: 4), caption],
+                children: [
+                  ?tile,
+                  if (tile != null) const SizedBox(height: 8),
+                  FittedBox(fit: BoxFit.scaleDown, child: number),
+                  const SizedBox(height: 2),
+                  caption,
+                ],
               )
             : Row(children: [?tile, const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [number, caption]))]),
       ),

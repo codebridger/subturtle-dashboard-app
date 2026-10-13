@@ -18,19 +18,39 @@ void main() {
     expect(c.read(authProvider).status, AuthStatus.signedOut);
   });
 
-  testWidgets('signed out: sign in screen with Google and email', (tester) async {
+  testWidgets('signed out: sign in with Google, Apple (coming soon) and email', (tester) async {
     await pumpApp(tester, signedIn: false);
-    expect(find.text('Learn English from what you watch'), findsOneWidget);
+    await tester.settle();
+    expect(find.text('Heading to Today'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Pick a way to continue.'), findsOneWidget);
     expect(find.bySemanticsLabel('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with email'), findsOneWidget);
-    expect(find.textContaining('Apple'), findsNothing, reason: 'no backend support for Sign in with Apple');
+    expect(find.bySemanticsLabel('Continue with email'), findsOneWidget);
+    expect(find.textContaining('Your session ended'), findsNothing, reason: 'a first visit is not an expired session');
 
-    await tester.tap(find.text('Continue with email'));
-    await tester.pumpAndSettle();
+    // No Apple route on the backend yet: the button explains instead of failing.
+    await tester.tap(find.bySemanticsLabel('Continue with Apple'));
+    await tester.settle();
+    expect(find.text('Sign in with Apple is coming soon'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Continue with email'));
+    await tester.settle();
     expect(find.text('Password'), findsOneWidget);
     await tester.tap(find.text('Sign in'));
-    await tester.pumpAndSettle();
+    await tester.settle();
     expect(find.text('Please enter a valid email.'), findsOneWidget);
+    expect(find.text("That didn't go through"), findsOneWidget);
+  });
+
+  testWidgets('a rejected token signs out with the session-ended note', (tester) async {
+    await pumpApp(tester);
+    await tester.settle();
+    // What the API client's onUnauthorized hook does when a call comes back 401/412.
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    await container.read(authProvider.notifier).signOut(expired: true);
+    await tester.settle();
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.textContaining('Your session ended'), findsOneWidget);
   });
 
   testWidgets('Today shows the review hero and the tab bar', (tester) async {
@@ -85,7 +105,8 @@ void main() {
     await tester.tap(find.widgetWithText(GestureDetector, 'Learned').last);
     await tester.settle();
     expect(backend.called('submit-review'), hasLength(2));
-    expect(find.text('Nice work. 2 reviewed.'), findsOneWidget);
+    expect(find.text('Nice work'), findsOneWidget);
+    expect(find.text('You reviewed 2 phrases.'), findsOneWidget);
     expect(find.text('figure out'), findsOneWidget, reason: 'forgotten phrase listed to look at again');
   });
 

@@ -104,7 +104,8 @@ Future<FakeBackend> pumpApp(WidgetTester tester, {bool signedIn = true, void Fun
   addTearDown(tester.view.reset);
   await container.read(authProvider.notifier).restore();
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: RepaintBoundary(key: boundaryKey, child: const SubturtleApp())));
-  await tester.pumpAndSettle();
+  // Not pumpAndSettle: Sign in has endless decorative motion (drifting cards).
+  await tester.settle();
   return backend;
 }
 

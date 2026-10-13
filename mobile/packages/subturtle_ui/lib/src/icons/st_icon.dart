@@ -104,6 +104,7 @@ abstract final class StIcons {
   static const captionsOff = 'solar:eye-closed-bold-duotone';
   static const soundwave = 'solar:soundwave-bold';
   static const send = 'solar:arrow-right-bold';
+  static const sendUp = 'solar:arrow-up-bold';
 
   // Content.
   static const fire = 'solar:fire-bold-duotone';
@@ -112,9 +113,11 @@ abstract final class StIcons {
   static const chatDots = 'solar:chat-round-dots-bold';
   static const confetti = 'solar:confetti-bold-duotone';
   static const clock = 'solar:clock-circle-bold-duotone';
+  static const clockBold = 'solar:clock-circle-bold';
   static const refreshCircle = 'solar:refresh-circle-bold';
   static const lightbulb = 'solar:lightbulb-bold';
   static const translation = 'solar:translation-2-bold';
+  static const translationDuo = 'solar:translation-2-bold-duotone';
   static const crown = 'solar:crown-bold-duotone';
   static const chart = 'solar:chart-2-bold-duotone';
   static const video = 'solar:videocamera-record-bold';
@@ -134,4 +137,5 @@ abstract final class StIcons {
   static const monitor = 'solar:monitor-bold-duotone';
   static const google = 'logos:google-icon';
   static const chrome = 'logos:chrome';
+  static const apple = 'logos:apple';
 }
