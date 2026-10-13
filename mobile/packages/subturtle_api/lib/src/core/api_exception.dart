@@ -7,7 +7,8 @@
 /// - the data provider: a plain text body
 ///
 /// Business errors start with an upper-case code: `TIER_LIMIT_REACHED`,
-/// `AI_CREDIT_EXHAUSTED`, `VOICE_PAUSED`, `COACH_UNAVAILABLE`, `ALREADY_SUBSCRIBED`.
+/// `AI_CREDIT_EXHAUSTED`, `VOICE_PAUSED`, `COACH_UNAVAILABLE`, `SAVE_ASSISTANT_UNAVAILABLE`,
+/// `ALREADY_SUBSCRIBED`.
 /// [code] and [detail] hold the two halves.
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode, this.isNetwork = false}) {
@@ -47,6 +48,7 @@ class ApiException implements Exception {
   static const aiCreditExhausted = 'AI_CREDIT_EXHAUSTED';
   static const voicePaused = 'VOICE_PAUSED';
   static const coachUnavailable = 'COACH_UNAVAILABLE';
+  static const saveAssistantUnavailable = 'SAVE_ASSISTANT_UNAVAILABLE';
 
   bool get isTierLimit => code == tierLimitReached;
 

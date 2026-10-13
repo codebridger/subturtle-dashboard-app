@@ -354,6 +354,156 @@ void main() {
     });
   });
 
+  group('SaveAssistantRepository', () {
+    const sentence = 'I had to get out of there.';
+    final translation = {
+      'translation': {'phrase': 'مجبور شدم از آنجا بیرون بروم'},
+      'direction': {'source': 'ltr', 'target': 'rtl'},
+      'language_info': {'source': 'en', 'target': 'fa'},
+      'chunks': [
+        {'text': 'get out of', 'type': 'phrasal_verb'},
+      ],
+    };
+
+    test('createSaveSession sends the message, language and source', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('createSaveSession', {
+        'sessionId': 's1',
+        'candidates': [
+          {'text': sentence, 'type': 'full'},
+          {'text': 'get out of', 'type': 'phrasal_verb'},
+        ],
+        'translation': translation,
+        'messageId': 'm2',
+      });
+      final start = await api.saveAssistant.createSession(message: sentence, targetLanguage: 'Persian', source: 'share', app: 'YouTube');
+      expect(start.sessionId, 's1');
+      expect(start.candidates.map((c) => c.text), [sentence, 'get out of']);
+      expect(start.candidates.first.isFull, isTrue);
+      expect(start.translation.chunks.single.text, 'get out of');
+      expect(server.last('createSaveSession').args, {
+        'userId': 'me',
+        'message': sentence,
+        'targetLanguage': 'Persian',
+        'source': {'kind': 'share', 'app': 'YouTube'},
+      });
+    });
+
+    test('saveSessionTurn: a pick returns a translation, a message returns a reply', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('saveSessionTurn', {'translation': translation, 'messageId': 'm4', 'cached': true, 'wrapUp': false});
+      final pick = await api.saveAssistant.pick('s1', 'get out of');
+      expect(pick.cached, isTrue);
+      expect(pick.translation.targetIsRtl, isTrue);
+      expect(server.last('saveSessionTurn').args, {'userId': 'me', 'sessionId': 's1', 'pick': 'get out of'});
+
+      server.onFunction('saveSessionTurn', {
+        'reply': ' It is informal. ',
+        'messageId': 'm6',
+        'wrapUp': true,
+        'candidates': [
+          {'text': sentence, 'type': 'full'},
+          {'text': 'get out of', 'type': 'phrasal_verb'},
+          {'text': 'had to', 'type': 'collocation'},
+        ],
+      });
+      final reply = await api.saveAssistant.ask('s1', 'Is it formal?');
+      expect(reply.reply, 'It is informal.');
+      expect(reply.wrapUp, isTrue);
+      expect(reply.candidates!.last.text, 'had to');
+      expect(server.last('saveSessionTurn').args, {'userId': 'me', 'sessionId': 's1', 'message': 'Is it formal?'});
+
+      server.onFunction('saveSessionTurn', {'reply': 'Yes.', 'messageId': 'm8', 'wrapUp': false});
+      expect((await api.saveAssistant.ask('s1', 'More?')).candidates, isNull, reason: 'no new options: no list');
+    });
+
+    test('attachSavedPhrase links a saved phrase; a repeat is not an error', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('attachSavedPhrase', {'attached': true, 'messageId': 'm9', 'savedCount': 1});
+      final first = await api.saveAssistant.attachSavedPhrase('s1', phraseId: 'p9', bundleId: 'b1');
+      expect(first.attached, isTrue);
+      expect(server.last('attachSavedPhrase').args, {'userId': 'me', 'sessionId': 's1', 'phraseId': 'p9', 'bundleId': 'b1'});
+      server.onFunction('attachSavedPhrase', {'attached': false, 'savedCount': 1});
+      final again = await api.saveAssistant.attachSavedPhrase('s1', phraseId: 'p9');
+      expect(again.attached, isFalse);
+      expect(again.savedCount, 1);
+      expect(server.last('attachSavedPhrase').args.containsKey('bundleId'), isFalse);
+    });
+
+    test('listSaveSessions: filters, paging and rows', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('listSaveSessions', [
+        {'sessionId': 's1', 'title': sentence, 'savedCount': 1, 'savedPhrases': ['get out of'], 'lastMessageAt': '2026-10-13T10:42:00.000Z'},
+      ]);
+      final rows = await api.saveAssistant.listSessions(query: ' eye ', onlySaved: true, limit: 50, before: DateTime.utc(2026, 10, 13, 12));
+      expect(rows.single.savedPhrases, ['get out of']);
+      expect(rows.single.lastMessageAt!.toUtc(), DateTime.utc(2026, 10, 13, 10, 42));
+      expect(server.last('listSaveSessions').args, {'userId': 'me', 'query': 'eye', 'onlySaved': true, 'limit': 50, 'before': '2026-10-13T12:00:00.000Z'});
+
+      await api.saveAssistant.listSessions();
+      expect(server.last('listSaveSessions').args, {'userId': 'me', 'limit': 20});
+    });
+
+    test('getSaveSession reads messages of every kind', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('getSaveSession', {
+        'sessionId': 's1',
+        'title': 'I had to get out…',
+        'candidates': [
+          {'text': sentence, 'type': 'full'},
+        ],
+        'savedPhraseIds': ['p9'],
+        'savedPhrases': ['get out of'],
+        'messages': [
+          {'id': 'm1', 'role': 'user', 'kind': 'text', 'text': sentence, 'createdAt': '2026-10-13T10:40:00.000Z'},
+          {'id': 'm2', 'role': 'assistant', 'kind': 'translation', 'text': sentence, 'payload': translation},
+          {'id': 'm3', 'role': 'assistant', 'kind': 'saved', 'payload': {'phraseId': 'p9', 'phrase': 'get out of', 'bundleId': 'b1'}},
+        ],
+      });
+      final s = await api.saveAssistant.getSession('s1');
+      expect(s.firstMessage, sentence, reason: 'the full first message, not the shortened title');
+      expect(s.messages[1].translation!.translation, 'مجبور شدم از آنجا بیرون بروم');
+      expect(s.messages[2].savedPhraseId, 'p9');
+      expect(s.messages[2].savedBundleId, 'b1');
+      expect(server.last('getSaveSession').args, {'userId': 'me', 'sessionId': 's1'});
+    });
+
+    test('deleteSaveSession: one or all', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('deleteSaveSession', {'deleted': 1});
+      expect(await api.saveAssistant.deleteSession('s1'), 1);
+      expect(server.last('deleteSaveSession').args, {'userId': 'me', 'sessionId': 's1'});
+      server.onFunction('deleteSaveSession', {'deleted': 3});
+      expect(await api.saveAssistant.deleteAll(), 3);
+      expect(server.last('deleteSaveSession').args, {'userId': 'me', 'all': true});
+    });
+
+    test('the three save assistant errors keep their codes', () async {
+      final (api, server) = await signedIn(id: 'me');
+      Future<ApiException> errorFor(String message) async {
+        server.onFunction('saveSessionTurn', {'status': 'error', 'message': message}, status: 400);
+        try {
+          await api.saveAssistant.ask('s1', 'Is it formal?');
+        } on ApiException catch (e) {
+          return e;
+        }
+        throw StateError('expected an ApiException');
+      }
+
+      final credit = await errorFor("AI_CREDIT_EXHAUSTED: AI features are paused — this month's AI budget is used up.");
+      expect(credit.code, ApiException.aiCreditExhausted);
+
+      final cap = await errorFor('TIER_LIMIT_REACHED: "text_chat_messages_per_chat" limit reached (60)');
+      expect(cap.isTierLimit, isTrue);
+      expect(cap.feature, 'text_chat_messages_per_chat');
+      expect(cap.limit, 60);
+
+      final down = await errorFor('SAVE_ASSISTANT_UNAVAILABLE: the assistant could not answer. Please try again.');
+      expect(down.code, ApiException.saveAssistantUnavailable);
+      expect(down.detail, 'the assistant could not answer. Please try again.');
+    });
+  });
+
   group('CoachPractice', () {
     final phrases = [
       const Phrase(id: '1', phrase: 'had to', translation: 'باید', translationLanguage: 'Persian'),

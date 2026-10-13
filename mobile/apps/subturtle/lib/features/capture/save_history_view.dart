@@ -38,9 +38,10 @@ class _SaveHistoryViewState extends ConsumerState<SaveHistoryView> {
       danger: true,
     );
     if (!ok) return;
-    final repo = ref.read(saveSessionRepositoryProvider);
-    for (final s in await repo.list()) {
-      await repo.delete(s.id);
+    try {
+      await ref.read(saveSessionRepositoryProvider).clear();
+    } catch (e) {
+      if (mounted) showStToast(context, title: friendlyError(e), color: StToastColor.danger);
     }
     ref.invalidate(saveSessionsProvider);
   }

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/languages.dart';
@@ -14,14 +15,23 @@ import '../phrase/phrase_parts.dart';
 import '../today/today_screen.dart';
 import 'bundle_picker.dart';
 import 'save_assistant.dart';
+import 'save_engine.dart';
 import 'save_history_view.dart';
 import 'save_session.dart';
 
-/// Save-assistant chats for the signed-in user, kept on the phone for now.
-final saveSessionRepositoryProvider = Provider<SaveSessionRepository>((ref) {
+/// Where the save assistant works: the `save_assistant` backend with
+/// `--dart-define=SAVE_ASSISTANT_BACKEND=true`, else on the phone (chats kept
+/// per signed-in user). Tests override it.
+final saveEngineProvider = Provider<SaveEngine>((ref) {
+  final api = ref.read(apiProvider);
+  final language = (ref.watch(languageProvider).value ?? AppLanguage.all.first).name;
+  if (AppConfig.saveAssistantBackend) return ServerSaveEngine(api: api, languageName: language);
   final userId = ref.watch(authProvider.select((a) => a.user?.id)) ?? 'anonymous';
-  return LocalSaveSessionRepository(ref.read(prefsProvider), userId: userId);
+  return LocalSaveEngine(api: api, history: LocalSaveSessionRepository(ref.read(prefsProvider), userId: userId), languageName: language);
 });
+
+/// The chats for Recent and Save history.
+final saveSessionRepositoryProvider = Provider<SaveSessionRepository>((ref) => ref.watch(saveEngineProvider).history);
 
 /// All chats, newest first. Invalidated when the sheet closes.
 final saveSessionsProvider = FutureProvider<List<SaveSession>>((ref) => ref.watch(saveSessionRepositoryProvider).list());
@@ -65,12 +75,12 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
     super.initState();
     _assistant = SaveAssistant(
       api: ref.read(apiProvider),
-      repo: ref.read(saveSessionRepositoryProvider),
+      engine: ref.read(saveEngineProvider),
       languageName: (ref.read(languageProvider).value ?? AppLanguage.all.first).name,
     )..addListener(_onChange);
     _pickDefaultBundle();
     final text = widget.initialText?.trim() ?? '';
-    if (text.isNotEmpty) _start(text);
+    if (text.isNotEmpty) _start(text, source: 'share');
   }
 
   @override
@@ -92,12 +102,18 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
     setState(() => _bundle = bundles.where((b) => b.id == wanted).firstOrNull ?? bundles.firstOrNull);
   }
 
-  void _start(String text) {
+  void _start(String text, {String source = 'typed'}) {
     setState(() {
       _view = _View.chat;
       _saveError = null;
     });
-    _assistant.start(text);
+    _assistant.start(text, source: source);
+  }
+
+  /// A new chat from the chat's own "New chat" button.
+  void _newChat() {
+    ref.invalidate(saveSessionsProvider);
+    setState(() => _view = _View.start);
   }
 
   void _open(SaveSession s) {
@@ -195,6 +211,7 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
                     onSave: _save,
                     onUndo: _undo,
                     onChangeBundle: _chooseBundle,
+                    onNewChat: _newChat,
                   )
                 : _StartView(onSend: _start, onOpen: _open, onSeeAll: _showHistory),
           ),
@@ -263,7 +280,7 @@ class SheetHeader extends StatelessWidget {
 
 class _StartView extends ConsumerStatefulWidget {
   const _StartView({required this.onSend, required this.onOpen, required this.onSeeAll});
-  final ValueChanged<String> onSend;
+  final void Function(String text, {String source}) onSend;
   final ValueChanged<SaveSession> onOpen;
   final VoidCallback onSeeAll;
 
@@ -307,7 +324,7 @@ class _StartViewState extends ConsumerState<_StartView> {
 
   Future<void> _paste() async {
     final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim() ?? '';
-    if (text.isNotEmpty) widget.onSend(text);
+    if (text.isNotEmpty) widget.onSend(text, source: 'paste');
   }
 
   @override
@@ -363,7 +380,7 @@ class _StartViewState extends ConsumerState<_StartView> {
                 ),
                 const SizedBox(height: 18),
                 if (sessions.isEmpty)
-                  _TryOne(onPick: widget.onSend)
+                  _TryOne(onPick: (t) => widget.onSend(t))
                 else ...[
                   Row(
                     children: [
@@ -522,13 +539,22 @@ class _TryOne extends StatelessWidget {
 // ------------------------------------------------------------------ chat
 
 class _ChatView extends StatefulWidget {
-  const _ChatView({required this.assistant, required this.bundle, required this.saveError, required this.onSave, required this.onUndo, required this.onChangeBundle});
+  const _ChatView({
+    required this.assistant,
+    required this.bundle,
+    required this.saveError,
+    required this.onSave,
+    required this.onUndo,
+    required this.onChangeBundle,
+    required this.onNewChat,
+  });
   final SaveAssistant assistant;
   final Bundle? bundle;
   final String? saveError;
   final VoidCallback onSave;
   final ValueChanged<String> onUndo;
   final VoidCallback onChangeBundle;
+  final VoidCallback onNewChat;
 
   @override
   State<_ChatView> createState() => _ChatViewState();
@@ -544,9 +570,14 @@ class _ChatViewState extends State<_ChatView> {
     final items = <Widget>[
       const _Bubble(fromUser: false, text: assistantGreeting),
       _Bubble(fromUser: true, text: s.sentence),
-      _PhraseCard(assistant: a, bundle: widget.bundle, saveError: widget.saveError, onSave: widget.onSave, onUndo: widget.onUndo, onChangeBundle: widget.onChangeBundle),
+      if (a.startError != null)
+        _ProblemCard(error: a.startError!, onRetry: a.retryStart, onNewChat: widget.onNewChat)
+      else
+        _PhraseCard(assistant: a, bundle: widget.bundle, saveError: widget.saveError, onSave: widget.onSave, onUndo: widget.onUndo, onChangeBundle: widget.onChangeBundle),
       for (final l in s.log) _Bubble(fromUser: l.fromUser, text: l.text),
       if (a.thinking) const _Typing(),
+      if (a.limit != null) _ProblemCard(error: a.limit!, onNewChat: widget.onNewChat),
+      if (a.wrapUp && a.limit == null) const _Bubble(fromUser: false, text: 'This chat is almost full. Send a new sentence to start a fresh one.'),
     ];
     return Semantics(
       liveRegion: true,
@@ -594,6 +625,67 @@ class _Bubble extends StatelessWidget {
               textDirection: rtl ? TextDirection.rtl : null,
               style: StType.bodyLarge.copyWith(color: fromUser ? c.paper : c.textBody),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A failed start or a plan limit, in place of an answer. A limit (AI budget,
+/// message cap) offers plans or a new chat; anything else offers Try again.
+class _ProblemCard extends StatelessWidget {
+  const _ProblemCard({required this.error, this.onRetry, required this.onNewChat});
+  final Object error;
+  final VoidCallback? onRetry;
+  final VoidCallback onNewChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.st;
+    final e = error;
+    final credit = e is ApiException && e.code == ApiException.aiCreditExhausted;
+    final full = e is ApiException && e.isTierLimit;
+    return FractionallySizedBox(
+      widthFactor: 0.86,
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+        decoration: BoxDecoration(color: c.warningSoft, borderRadius: StRadius.brLg),
+        child: Semantics(
+          liveRegion: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(padding: const EdgeInsets.only(top: 1), child: StIcon(StIcons.danger, size: 20, color: c.amber600)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(saveAssistantError(e), style: StType.bodyMedium.copyWith(color: c.ink700))),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 4,
+                children: [
+                  if (credit)
+                    StButton(
+                      label: 'See plans',
+                      variant: StButtonVariant.ghost,
+                      size: StSize.sm,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        GoRouter.of(context).go('/me/plan');
+                      },
+                    )
+                  else if (full)
+                    StButton(label: 'New chat', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: onNewChat)
+                  else if (onRetry != null)
+                    StButton(label: 'Try again', icon: StIcons.refresh, variant: StButtonVariant.ghost, size: StSize.sm, onPressed: onRetry),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -696,7 +788,13 @@ class _PhraseCard extends ConsumerWidget {
               Divider(height: 1, thickness: 1, color: c.borderSubtle),
               Padding(padding: const EdgeInsets.fromLTRB(14, 10, 8, 12), child: _Translation(assistant: a, phrase: phrase, language: lang)),
               if (saved != null)
-                _SavedFooter(bundleTitle: saved.bundleTitle, onUndo: () => onUndo(phrase))
+                _SavedFooter(
+                  bundleTitle: saved.bundleTitle.isNotEmpty
+                      ? saved.bundleTitle
+                      : ref.watch(bundlesProvider).value?.where((b) => b.id == saved.bundleId).firstOrNull?.title ?? 'your bundle',
+                  // Undo needs the bundle; a chat from the server may not say which one.
+                  onUndo: saved.bundleId.isEmpty ? null : () => onUndo(phrase),
+                )
               else
                 Container(
                   decoration: BoxDecoration(border: Border(top: BorderSide(color: c.borderSubtle))),
@@ -824,7 +922,7 @@ class _Translation extends StatelessWidget {
 class _SavedFooter extends StatelessWidget {
   const _SavedFooter({required this.bundleTitle, required this.onUndo});
   final String bundleTitle;
-  final VoidCallback onUndo;
+  final VoidCallback? onUndo;
 
   @override
   Widget build(BuildContext context) {
@@ -839,7 +937,7 @@ class _SavedFooter extends StatelessWidget {
             StIcon(StIcons.check, size: 20, color: c.jade600),
             const SizedBox(width: 8),
             Expanded(child: Text('Saved to $bundleTitle', style: StType.base(size: 14, weight: FontWeight.w800, height: 1.3).copyWith(color: c.jade700))),
-            StButton(label: 'Undo', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: onUndo),
+            if (onUndo != null) StButton(label: 'Undo', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: onUndo),
           ],
         ),
       ),

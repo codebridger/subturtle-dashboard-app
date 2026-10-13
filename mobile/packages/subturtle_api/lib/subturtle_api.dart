@@ -19,6 +19,7 @@ export 'src/core/providers.dart';
 export 'src/core/rest_client.dart';
 export 'src/models/account.dart';
 export 'src/models/content.dart';
+export 'src/models/save_assistant.dart';
 export 'src/repositories/repositories.dart';
 
 /// Everything the app needs to talk to the backend, built once at start.
@@ -37,6 +38,7 @@ class SubturtleApi {
     subscription = SubscriptionRepository(functions, data, uid);
     liveSessions = LiveSessionRepository(functions, data, uid);
     textChat = TextChatRepository(functions, data, uid);
+    saveAssistant = SaveAssistantRepository(functions, data, uid);
   }
 
   final RestClient client;
@@ -51,6 +53,7 @@ class SubturtleApi {
   late final SubscriptionRepository subscription;
   late final LiveSessionRepository liveSessions;
   late final TextChatRepository textChat;
+  late final SaveAssistantRepository saveAssistant;
 
   String get baseUrl => client.baseUrl;
 }

@@ -115,6 +115,9 @@ abstract class SaveSessionRepository {
   Future<void> put(SaveSession session);
 
   Future<void> delete(String id);
+
+  /// Removes every chat. Saved phrases stay in their bundles.
+  Future<void> clear();
 }
 
 /// Keeps chats as JSON in [SharedPreferences], one list per signed-in user so
@@ -148,6 +151,9 @@ class LocalSaveSessionRepository implements SaveSessionRepository {
 
   @override
   Future<void> delete(String id) async => _write((await list()).where((s) => s.id != id).toList());
+
+  @override
+  Future<void> clear() => _prefs.remove(_key);
 
   Future<void> _write(List<SaveSession> items) => _prefs.setString(_key, jsonEncode([for (final s in items) s.toJson()]));
 }

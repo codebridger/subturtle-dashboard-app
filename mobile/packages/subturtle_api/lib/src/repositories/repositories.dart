@@ -3,6 +3,7 @@ import '../core/providers.dart';
 import '../models/account.dart';
 import '../models/content.dart';
 import '../models/json.dart';
+import '../models/save_assistant.dart';
 
 /// Gives repositories the signed-in user's id. The server's caller guard
 /// rejects any other id, so this must be the token's id.
@@ -375,4 +376,68 @@ class TextChatRepository extends _Repo {
     final res = await fn.run('text-turn', {'userId': uid, 'sessionId': sessionId, 'input': input});
     return TextTurnResult.fromJson(res);
   }
+}
+
+/// The save assistant's conversations (`save_assistant` module). The server
+/// keeps the history and does the translation work: the app sends only the
+/// new message or the phrase it picked.
+///
+/// Errors: `AI_CREDIT_EXHAUSTED` (budget used up), `TIER_LIMIT_REACHED:
+/// "text_chat_messages_per_chat"` (the session is full) and
+/// `SAVE_ASSISTANT_UNAVAILABLE` (the AI provider failed; nothing was stored).
+class SaveAssistantRepository extends _Repo {
+  SaveAssistantRepository(super.fn, super.data, super.userId);
+
+  /// Starts a session with [message]. [source] is `share`, `paste` or `typed`.
+  Future<SaveSessionStart> createSession({required String message, required String targetLanguage, String? sourceLanguage, String? source, String? app}) async {
+    final res = await fn.run('createSaveSession', {
+      'userId': uid,
+      'message': message,
+      'targetLanguage': targetLanguage,
+      'sourceLanguage': ?sourceLanguage,
+      if (source != null) 'source': {'kind': source, 'app': ?app},
+    });
+    return SaveSessionStart.fromJson(res);
+  }
+
+  /// The translation of one of the session's candidates ([phrase] is its text).
+  Future<SavePickResult> pick(String sessionId, String phrase) async {
+    final res = await fn.run('saveSessionTurn', {'userId': uid, 'sessionId': sessionId, 'pick': phrase});
+    return SavePickResult.fromJson(res);
+  }
+
+  /// A follow-up question about the phrase shown last.
+  Future<SaveReplyResult> ask(String sessionId, String message) async {
+    final res = await fn.run('saveSessionTurn', {'userId': uid, 'sessionId': sessionId, 'message': message});
+    return SaveReplyResult.fromJson(res);
+  }
+
+  /// Links a phrase saved with `createPhrase` to the session. Safe to repeat.
+  Future<SaveAttachResult> attachSavedPhrase(String sessionId, {required String phraseId, String? bundleId}) async {
+    final res = await fn.run('attachSavedPhrase', {'userId': uid, 'sessionId': sessionId, 'phraseId': phraseId, 'bundleId': ?bundleId});
+    return SaveAttachResult.fromJson(res);
+  }
+
+  /// Newest first. For the next page, pass the last row's [lastMessageAt] as [before].
+  Future<List<SaveSessionSummary>> listSessions({String? query, bool onlySaved = false, int limit = 20, DateTime? before}) async {
+    final res = await fn.run('listSaveSessions', {
+      'userId': uid,
+      if (query != null && query.trim().isNotEmpty) 'query': query.trim(),
+      if (onlySaved) 'onlySaved': true,
+      'limit': limit,
+      if (before != null) 'before': before.toUtc().toIso8601String(),
+    });
+    return listOf(res, SaveSessionSummary.fromJson);
+  }
+
+  Future<SaveSessionDetail> getSession(String sessionId) async {
+    final res = await fn.run('getSaveSession', {'userId': uid, 'sessionId': sessionId});
+    return SaveSessionDetail.fromJson(res);
+  }
+
+  /// Removes one conversation. Saved phrases stay in their bundles.
+  Future<int> deleteSession(String sessionId) async => integer(asJson(await fn.run('deleteSaveSession', {'userId': uid, 'sessionId': sessionId}))['deleted']);
+
+  /// Removes every conversation of the user.
+  Future<int> deleteAll() async => integer(asJson(await fn.run('deleteSaveSession', {'userId': uid, 'all': true}))['deleted']);
 }

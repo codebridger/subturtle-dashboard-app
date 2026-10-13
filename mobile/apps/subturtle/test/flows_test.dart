@@ -193,6 +193,162 @@ void main() {
     expect(backend.called('translateWithContext'), hasLength(1));
   });
 
+  group('Save assistant on the server', () {
+    const sentence = 'I had to get out of there before it got worse.';
+    Map<String, dynamic> card(String text) => {
+          'translation': {'phrase': {'get out of': 'بیرون رفتن', 'had to': 'مجبور بودن'}[text] ?? 'جمله'},
+          'direction': {'source': 'ltr', 'target': 'rtl'},
+          'chunks': [],
+          'linguistic_data': {'type': 'phrasal verb', 'definition': 'To leave.', 'phonetic': {'transliteration': ''}, 'formality_level': 'informal'},
+        };
+
+    void seedServer(FakeBackend b) {
+      b.functions['createSaveSession'] = (args) => {
+            'sessionId': 's1',
+            'candidates': [
+              {'text': args['message'], 'type': 'full'},
+              {'text': 'get out of', 'type': 'phrasal_verb'},
+              {'text': 'had to', 'type': 'collocation'},
+            ],
+            'translation': card(args['message'] as String),
+            'messageId': 'm2',
+          };
+      b.functions['saveSessionTurn'] = (args) => args.containsKey('pick')
+          ? {'translation': card(args['pick'] as String), 'messageId': 'm4', 'cached': false, 'wrapUp': false}
+          : {'reply': 'It is informal.', 'messageId': 'm6', 'wrapUp': true};
+      b.functions['attachSavedPhrase'] = (_) => {'attached': true, 'messageId': 'm7', 'savedCount': 1};
+      b.functions['createPhrase'] = (args) => {'_id': 'p9', 'phrase': args['phrase'], 'translation': args['translation']};
+      b.functions['listSaveSessions'] = (_) => [];
+    }
+
+    Future<void> send(WidgetTester tester, String text) async {
+      await tester.tap(find.bySemanticsLabel('Save a phrase'));
+      await tester.settle();
+      await tester.enterText(find.byType(TextField).first, text);
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Send'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+    }
+
+    testWidgets('the chat runs on save_assistant functions, not the translation ones', (tester) async {
+      final backend = await pumpApp(tester, saveAssistantBackend: true, seed: seedServer);
+      await tester.settle();
+      await send(tester, sentence);
+
+      expect(backend.calls.lastWhere((c) => c.$1 == 'createSaveSession').$2, {'userId': 'u1', 'message': sentence, 'targetLanguage': 'Persian', 'source': {'kind': 'typed'}});
+      // Chips in sentence order, without the whole sentence; the first is picked.
+      expect(backend.calls.lastWhere((c) => c.$1 == 'saveSessionTurn').$2['pick'], 'had to');
+      expect(find.text('مجبور بودن'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('get out of'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(backend.calls.lastWhere((c) => c.$1 == 'attachSavedPhrase').$2, {'userId': 'u1', 'sessionId': 's1', 'phraseId': 'p9', 'bundleId': 'b1'});
+
+      await tester.tap(find.bySemanticsLabel('Is it formal?'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(backend.calls.lastWhere((c) => c.$1 == 'saveSessionTurn').$2, {'userId': 'u1', 'sessionId': 's1', 'message': 'Is "get out of" formal?'});
+      expect(find.text('It is informal.'), findsOneWidget);
+      expect(textContaining('This chat is almost full'), findsOneWidget, reason: 'wrapUp came back true');
+
+      expect(backend.called('translateWithContext'), isEmpty);
+      expect(backend.called('translationAdvice'), isEmpty);
+    });
+
+    testWidgets('SAVE_ASSISTANT_UNAVAILABLE on start offers Try again', (tester) async {
+      var fail = true;
+      final backend = await pumpApp(tester, saveAssistantBackend: true, seed: (b) {
+        seedServer(b);
+        final create = b.functions['createSaveSession']!;
+        b.functions['createSaveSession'] = (args) {
+          if (fail) throw ApiException('SAVE_ASSISTANT_UNAVAILABLE: the assistant could not answer. Please try again.');
+          return create(args);
+        };
+      });
+      await tester.settle();
+      await send(tester, sentence);
+      expect(find.text("The assistant couldn't answer. Please try again."), findsOneWidget);
+      fail = false;
+      await tester.tap(find.text('Try again'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(find.text('مجبور بودن'), findsOneWidget);
+      expect(backend.called('createSaveSession'), hasLength(2));
+    });
+
+    testWidgets('AI_CREDIT_EXHAUSTED shows the limit card with plans', (tester) async {
+      await pumpApp(tester, saveAssistantBackend: true, seed: (b) {
+        seedServer(b);
+        b.functions['saveSessionTurn'] = (args) => args.containsKey('pick')
+            ? {'translation': card(args['pick'] as String), 'messageId': 'm4', 'wrapUp': false}
+            : throw ApiException("AI_CREDIT_EXHAUSTED: AI features are paused — this month's AI budget is used up.");
+      });
+      await tester.settle();
+      await send(tester, sentence);
+      await tester.tap(find.bySemanticsLabel('Is it formal?'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(find.text('The coach and translations are paused until your plan renews.'), findsOneWidget);
+      expect(find.text('See plans'), findsOneWidget);
+    });
+
+    testWidgets('TIER_LIMIT_REACHED (message cap) offers a new chat', (tester) async {
+      await pumpApp(tester, saveAssistantBackend: true, seed: (b) {
+        seedServer(b);
+        b.functions['saveSessionTurn'] = (args) => args.containsKey('pick')
+            ? {'translation': card(args['pick'] as String), 'messageId': 'm4', 'wrapUp': false}
+            : throw ApiException('TIER_LIMIT_REACHED: "text_chat_messages_per_chat" limit reached (60)');
+      });
+      await tester.settle();
+      await send(tester, sentence);
+      await tester.tap(find.bySemanticsLabel('Is it formal?'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(find.text('This chat has reached its message limit. Start a new one.'), findsOneWidget);
+      await tester.tap(find.text('New chat'));
+      await tester.settle();
+      expect(find.text('What do you want to learn?'), findsOneWidget);
+    });
+
+    testWidgets('history comes from the server and reopens a chat with getSaveSession', (tester) async {
+      final backend = await pumpApp(tester, saveAssistantBackend: true, seed: (b) {
+        seedServer(b);
+        b.functions['listSaveSessions'] = (_) => [
+              {'sessionId': 's1', 'title': 'I had to get out of there…', 'savedCount': 1, 'savedPhrases': ['get out of'], 'lastMessageAt': DateTime.now().toUtc().toIso8601String()},
+            ];
+        b.functions['getSaveSession'] = (_) => {
+              'sessionId': 's1',
+              'title': 'I had to get out of there…',
+              'candidates': [
+                {'text': sentence, 'type': 'full'},
+                {'text': 'get out of', 'type': 'phrasal_verb'},
+              ],
+              'messages': [
+                {'id': 'm1', 'role': 'user', 'kind': 'text', 'text': sentence},
+                {'id': 'm2', 'role': 'assistant', 'kind': 'translation', 'text': sentence, 'payload': card(sentence)},
+                {'id': 'm3', 'role': 'user', 'kind': 'text', 'text': 'get out of'},
+                {'id': 'm4', 'role': 'assistant', 'kind': 'translation', 'text': 'get out of', 'payload': card('get out of')},
+                {'id': 'm5', 'role': 'assistant', 'kind': 'saved', 'payload': {'phraseId': 'p9', 'phrase': 'get out of', 'bundleId': 'b1'}},
+                {'id': 'm6', 'role': 'user', 'kind': 'text', 'text': 'Is it formal?'},
+                {'id': 'm7', 'role': 'assistant', 'kind': 'text', 'text': 'It is informal.'},
+              ],
+            };
+      });
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Save a phrase'));
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Save history'));
+      await tester.settle();
+      expect(find.text('1 session · 1 phrase saved'), findsOneWidget);
+      await tester.tap(textContaining('I had to get out of there').first);
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(find.text(sentence), findsOneWidget, reason: 'the full first message, not the short title');
+      expect(find.text('بیرون رفتن'), findsOneWidget, reason: 'the stored card, no new pick');
+      expect(find.text('Saved to Stranger Things S2'), findsOneWidget);
+      expect(find.text('It is informal.'), findsOneWidget);
+      expect(find.text('get out of'), findsWidgets);
+      expect(backend.called('saveSessionTurn'), isEmpty);
+    });
+  });
+
   testWidgets('Pool: reveal, next, done moves words to review', (tester) async {
     final backend = await pumpApp(tester, seed: (b) {
       b.functions['get-board'] = (_) => [];

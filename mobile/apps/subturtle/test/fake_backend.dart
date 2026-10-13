@@ -8,6 +8,8 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:subturtle/app/app.dart';
 import 'package:subturtle/app/providers.dart';
+import 'package:subturtle/features/capture/capture_sheet.dart';
+import 'package:subturtle/features/capture/save_engine.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 
 /// A fake Subturtle backend for widget tests. No network, no real account.
@@ -90,14 +92,31 @@ class FakeBackend {
 }
 
 /// Pumps the whole app with the fake backend.
-Future<FakeBackend> pumpApp(WidgetTester tester, {bool signedIn = true, void Function(FakeBackend b)? seed, Size size = const Size(390, 844), ThemeMode? theme, Key? boundaryKey}) async {
+/// [saveAssistantBackend] runs Save a phrase on the `save_assistant` functions
+/// (as `--dart-define=SAVE_ASSISTANT_BACKEND=true` does) instead of on the phone.
+Future<FakeBackend> pumpApp(
+  WidgetTester tester, {
+  bool signedIn = true,
+  void Function(FakeBackend b)? seed,
+  Size size = const Size(390, 844),
+  ThemeMode? theme,
+  Key? boundaryKey,
+  bool saveAssistantBackend = false,
+}) async {
   final backend = FakeBackend()..signedIn = signedIn;
   backend.seedDefaults();
   seed?.call(backend);
   SharedPreferences.setMockInitialValues({'language': 'Persian', 'haptics': false, 'theme': ?theme?.name});
   final prefs = await SharedPreferences.getInstance();
   final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: backend.client, tokenStore: MemoryTokenStore(signedIn ? 'header.eyJpZCI6InUxIn0.sig' : null));
-  final container = ProviderContainer(overrides: [apiProvider.overrideWithValue(api), prefsProvider.overrideWithValue(prefs)], retry: (_, _) => null);
+  final container = ProviderContainer(
+    overrides: [
+      apiProvider.overrideWithValue(api),
+      prefsProvider.overrideWithValue(prefs),
+      if (saveAssistantBackend) saveEngineProvider.overrideWith((ref) => ServerSaveEngine(api: api, languageName: 'Persian')),
+    ],
+    retry: (_, _) => null,
+  );
   addTearDown(container.dispose);
   tester.view.physicalSize = size * 3;
   tester.view.devicePixelRatio = 3;

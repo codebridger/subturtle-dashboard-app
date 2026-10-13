@@ -27,6 +27,11 @@ abstract final class AppConfig {
   /// known outside production (`123456`); in production it is random and never sent.
   static const enableCodeSignUp = bool.fromEnvironment('ENABLE_CODE_SIGNUP', defaultValue: false);
 
+  /// Save a phrase talks to the `save_assistant` backend, which translates,
+  /// answers and keeps the chat history. Off by default: the functions are not
+  /// on the dev server yet, so the app translates itself and keeps chats on the phone.
+  static const saveAssistantBackend = bool.fromEnvironment('SAVE_ASSISTANT_BACKEND', defaultValue: false);
+
   static const termsUrl = 'https://subturtle.app/terms';
   static const privacyUrl = 'https://subturtle.app/privacy';
   static const contactEmail = 'mailto:info@codebridger.co.uk';

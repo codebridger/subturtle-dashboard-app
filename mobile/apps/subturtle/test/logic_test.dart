@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:subturtle/features/capture/capture_sheet.dart';
 import 'package:subturtle/features/capture/save_assistant.dart';
+import 'package:subturtle/features/capture/save_engine.dart';
 import 'package:subturtle/features/capture/save_history_view.dart';
 import 'package:subturtle/features/capture/save_session.dart';
 import 'package:subturtle/features/live_session/gemini_live_client.dart';
@@ -104,6 +105,20 @@ void main() {
         phrasesIn('I had to get out of there before it got worse.', ['got worse', 'get out of', 'had to', 'GET OUT OF', 'not here', ' ']),
         ['had to', 'get out of', 'got worse'],
       );
+    });
+
+    test('server candidates: sentence order, no whole sentence, tutor additions last', () {
+      const sentence = 'I had to get out of there before it got worse.';
+      final chips = shownCandidates(sentence, const [
+        SaveCandidate(text: sentence, type: 'full'),
+        SaveCandidate(text: 'got worse', type: 'collocation'),
+        SaveCandidate(text: 'keep an eye on', type: 'idiom'),
+        SaveCandidate(text: 'had to', type: 'collocation'),
+      ]);
+      expect(chips, ['had to', 'got worse', 'keep an eye on']);
+      // A short message is its own phrase.
+      expect(shownCandidates('no wonder', const [SaveCandidate(text: 'no wonder', type: 'full'), SaveCandidate(text: 'wonder')]), ['no wonder']);
+      expect(shownCandidates(sentence, const [SaveCandidate(text: sentence, type: 'full')]), [sentence]);
     });
 
     test('the input bar tells a question from a new sentence', () {

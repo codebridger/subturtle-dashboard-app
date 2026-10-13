@@ -34,6 +34,7 @@ Settings are passed with `--dart-define`:
 | `GOOGLE_SERVER_CLIENT_ID` | empty | The web OAuth client id. Without it, the Google button shows "not set up". See [Google sign-in](#google-sign-in). |
 | `GOOGLE_IOS_CLIENT_ID` | empty | The iOS OAuth client id. |
 | `ENABLE_CODE_SIGNUP` | `false` | Shows "Create an account with a code". This only works against a non-production server (the code is `123456` there). |
+| `SAVE_ASSISTANT_BACKEND` | `false` | Save a phrase uses the `save_assistant` server functions: the server translates, answers and keeps the chat history. Off: the app calls `translateWithContext` / `translationAdvice` itself and keeps chats on the phone. Turn it on only against a server that has the module (branch `claude/save-assistant-backend`). |
 
 Example:
 
@@ -144,6 +145,7 @@ mobile/
 | **Board "next step" order and more card types** | `get-board` only returns `leitner_review`. The app builds the other cards itself. |
 | **Streak and "minutes talked" for every plan** | The streak reuses `generateChartDataForInsertionRatio`, which is locked below Learner. |
 | **Email the Chrome extension link** | No "send me the link" function; the app copies the link instead. |
+| **Undo a save in a server chat** | `save_assistant` has no "detach" function. Undo removes the phrase from its bundle, but the server chat still lists it as saved. |
 | **Session history for Starter** | `list-live-sessions` is locked for Starter, so the Coach list shows a lock. |
 
 ## Share sheet
