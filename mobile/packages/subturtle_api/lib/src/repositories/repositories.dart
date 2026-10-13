@@ -212,6 +212,28 @@ class TranslationRepository extends _Repo {
     return DetailedTranslation.fromJson(res);
   }
 
+  /// Answers a follow-up question about [phrase] ("Is it formal?") in the
+  /// learner's language. [history] is the chat so far, oldest first, as
+  /// `(role, text)` pairs where role is `user` or `assistant`. Returns the
+  /// reply text, or '' when the tutor had nothing to say.
+  Future<String> advise({
+    required String phrase,
+    required String context,
+    required String message,
+    List<(String, String)> history = const [],
+    String? targetLanguage,
+  }) async {
+    final res = await fn.run('translationAdvice', {
+      'phrase': phrase,
+      'context': context,
+      'message': message,
+      'history': [for (final (role, text) in history) {'role': role, 'text': text}],
+      'sourceLanguage': 'English',
+      'targetLanguage': ?targetLanguage,
+    });
+    return str(asJson(res)['reply']).trim();
+  }
+
   /// MP3 for [text] as a `data:audio/mp3;base64,…` URI (use it as is).
   Future<String> speak(String text, {String languageCode = 'en-US', String voiceName = 'en-US-Standard-A'}) async {
     final res = await fn.run('textToSpeechBase64', {'text': text, 'languageCode': languageCode, 'voiceName': voiceName});

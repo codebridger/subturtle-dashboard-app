@@ -232,6 +232,30 @@ void main() {
       expect(args['linguistic_data']['formality_level'], 'informal');
     });
 
+    test('translation advice sends the chat history and reads the reply', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('translationAdvice', {'reply': '  It is informal.  '});
+      final reply = await api.translation.advise(
+        phrase: 'get out of',
+        context: 'I had to get out of there.',
+        message: 'Is it formal?',
+        history: const [('user', 'I had to get out of there.'), ('assistant', 'Which part?')],
+        targetLanguage: 'Persian',
+      );
+      expect(reply, 'It is informal.');
+      final args = server.last('translationAdvice').args;
+      expect(args['message'], 'Is it formal?');
+      expect(args['history'], [
+        {'role': 'user', 'text': 'I had to get out of there.'},
+        {'role': 'assistant', 'text': 'Which part?'},
+      ]);
+      expect(args['targetLanguage'], 'Persian');
+
+      // The tutor may answer with chunk edits only; that is "no reply".
+      server.onFunction('translationAdvice', {'chunks': []});
+      expect(await api.translation.advise(phrase: 'x', context: 'x', message: 'highlight x'), '');
+    });
+
     test('subscription: free and paid voice maths', () async {
       final free = SubscriptionDetails.fromJson({
         'is_freemium': true,

@@ -54,8 +54,59 @@ void main() {
     }, skip: _dir.isEmpty);
   }
 
-  testWidgets('screenshot sign in', (tester) async {
-    await pumpApp(tester, signedIn: false, boundaryKey: key);
-    await shot(tester, 'light-00-sign-in');
-  }, skip: _dir.isEmpty);
+  for (final theme in [ThemeMode.light, ThemeMode.dark]) {
+    testWidgets('screenshot sign in ${theme.name}', (tester) async {
+      await pumpApp(tester, signedIn: false, theme: theme, boundaryKey: key);
+      await shot(tester, '${theme.name}-00-sign-in');
+    }, skip: _dir.isEmpty);
+
+    testWidgets('screenshot summary ${theme.name}', (tester) async {
+      await pumpApp(tester, theme: theme, boundaryKey: key);
+      await tester.settle();
+      await tester.tap(find.text('Start review'));
+      await tester.settle();
+      await tester.tap(find.text('Show answer'));
+      await tester.settle();
+      await tester.tap(find.widgetWithText(GestureDetector, 'Forgot').last);
+      await tester.settle();
+      await tester.tap(find.text('Show answer'));
+      await tester.settle();
+      await tester.tap(find.widgetWithText(GestureDetector, 'Learned').last);
+      await shot(tester, '${theme.name}-11-summary');
+    }, skip: _dir.isEmpty);
+
+    testWidgets('screenshots save assistant ${theme.name}', (tester) async {
+      const sentence = 'I had to get out of there before it got worse.';
+      await pumpApp(tester, theme: theme, boundaryKey: key, seed: (b) {
+        b.functions['translateWithContext'] = (args) => {
+              'translation': {'phrase': args['phrase'] == 'had to' ? 'مجبور بودن' : 'بیرون رفتن، ترک کردن'},
+              'direction': {'source': 'ltr', 'target': 'rtl'},
+              'chunks': args['phrase'] == sentence
+                  ? [
+                      {'text': 'had to'},
+                      {'text': 'get out of'},
+                      {'text': 'got worse'},
+                    ]
+                  : [],
+              'linguistic_data': {'type': 'phrasal verb', 'definition': 'To leave a place, often quickly or to escape something bad.', 'phonetic': {'transliteration': 'get owt uv'}, 'formality_level': 'informal'},
+            };
+        b.functions['createPhrase'] = (args) => {'_id': 'p9', 'phrase': args['phrase'], 'translation': args['translation']};
+        b.functions['translationAdvice'] = (_) => {'reply': 'It is informal but very common. In formal writing you can use "leave".'};
+      });
+      await tester.tap(find.bySemanticsLabel('Save a phrase'));
+      await shot(tester, '${theme.name}-07-save-start');
+      await tester.enterText(find.byType(TextField).first, sentence);
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Send'));
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('get out of'));
+      await shot(tester, '${theme.name}-08-save-chat');
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Is it formal?'));
+      await shot(tester, '${theme.name}-09-save-chat-saved');
+      await tester.tap(find.bySemanticsLabel('Save history'));
+      await shot(tester, '${theme.name}-10-save-history');
+    }, skip: _dir.isEmpty);
+  }
 }

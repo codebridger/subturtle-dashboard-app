@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:subturtle/app/router.dart';
 import 'package:subturtle/features/live_session/text_chat_controller.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 
@@ -84,39 +86,111 @@ void main() {
     });
   });
 
-  testWidgets('Capture: paste, tap words, save to a bundle', (tester) async {
+  testWidgets('Save assistant: send, pick a phrase, save, undo, ask, then history', (tester) async {
+    const sentence = 'I had to get out of there before it got worse.';
     final backend = await pumpApp(tester, seed: (b) {
-      b.functions['translateWithContext'] = (args) => {
-            'translation': {'phrase': 'بیرون رفتن'},
-            'direction': {'source': 'ltr', 'target': 'rtl'},
-            'language_info': {'source': 'en', 'target': 'fa'},
-            'chunks': [],
-            'linguistic_data': {'isValid': true, 'type': 'phrasal verb', 'definition': 'leave', 'phonetic': {'transliteration': ''}, 'formality_level': 'informal'},
-          };
+      b.functions['translateWithContext'] = (args) {
+        final phrase = args['phrase'] as String;
+        return {
+          'translation': {'phrase': {'had to': 'مجبور بودن', 'get out of': 'بیرون رفتن'}[phrase] ?? 'جمله'},
+          'direction': {'source': 'ltr', 'target': 'rtl'},
+          'language_info': {'source': 'en', 'target': 'fa'},
+          // The whole sentence comes back with its phrases.
+          'chunks': phrase == sentence
+              ? [
+                  {'text': 'get out of', 'type': 'phrasal_verb'},
+                  {'text': 'had to', 'type': 'collocation'},
+                ]
+              : [],
+          'linguistic_data': {'isValid': true, 'type': 'phrasal verb', 'definition': 'To leave a place.', 'phonetic': {'transliteration': 'get owt uv'}, 'formality_level': 'informal'},
+        };
+      };
       b.functions['createPhrase'] = (args) => {'_id': 'p9', 'phrase': args['phrase'], 'translation': args['translation']};
+      b.functions['removePhrase'] = (_) => {'success': true};
+      b.functions['translationAdvice'] = (_) => {'reply': 'It is informal but very common.'};
     });
     await tester.settle();
     await tester.tap(find.bySemanticsLabel('Save a phrase'));
     await tester.settle();
-    expect(find.text('Paste or type a sentence'), findsOneWidget);
-    await tester.enterText(find.byType(TextField).first, 'I had to get out of there before it got worse.');
+    expect(find.text('What do you want to learn?'), findsOneWidget);
+    expect(find.text('OR TRY ONE'), findsOneWidget, reason: 'no history yet');
+    expect(find.text('Ask, or paste a new sentence…'), findsNothing, reason: 'no input bar before the first message');
+
+    await tester.enterText(find.byType(TextField).first, sentence);
     await tester.settle();
-    await tester.tap(find.text('Next'));
-    await tester.settle();
-    expect(find.text('Tap at least one word'), findsOneWidget);
-    await tester.tap(find.text('get'));
-    await tester.tap(find.text('of'));
-    await tester.settle(const Duration(milliseconds: 200), 10);
-    expect(find.text('get out of'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Send'));
+    await tester.settle(const Duration(milliseconds: 100), 15);
+    expect(find.text('Which part do you want to learn?'), findsOneWidget);
+    // Chips come in sentence order; the first one is picked and translated.
+    expect(find.bySemanticsLabel('had to'), findsOneWidget);
+    expect(find.text('مجبور بودن'), findsOneWidget);
+    expect(find.text('Ask, or paste a new sentence…'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('get out of'));
+    await tester.settle(const Duration(milliseconds: 100), 15);
     expect(find.text('بیرون رفتن'), findsOneWidget);
+    expect(find.text('Say it: get owt uv'), findsOneWidget);
+
     await tester.tap(find.text('Save to Stranger Things S2'));
-    await tester.settle(const Duration(milliseconds: 200), 10);
+    await tester.settle(const Duration(milliseconds: 100), 15);
     final create = backend.calls.lastWhere((c) => c.$1 == 'createPhrase').$2;
     expect(create['phrase'], 'get out of');
     expect(create['type'], 'linguistic');
     expect(create['bundleIds'], ['b1']);
     expect(create['translation_language'], 'Persian');
-    expect(create['context'], 'I had to get out of there before it got worse.');
+    expect(create['context'], sentence);
+    expect(find.text('Saved to Stranger Things S2'), findsOneWidget);
+    expect(textContaining('Want to save "had to" too?'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.settle(const Duration(milliseconds: 100), 15);
+    expect(backend.calls.lastWhere((c) => c.$1 == 'removePhrase').$2['phraseId'], 'p9');
+    expect(find.text('Save to Stranger Things S2'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Is it formal?'));
+    await tester.settle(const Duration(milliseconds: 100), 15);
+    expect(backend.calls.lastWhere((c) => c.$1 == 'translationAdvice').$2['phrase'], 'get out of');
+    expect(find.text('It is informal but very common.'), findsOneWidget);
+
+    // Back on the prompt, the chat is in Recent and in Save history.
+    await tester.tap(find.bySemanticsLabel('Close'));
+    await tester.settle();
+    await tester.tap(find.bySemanticsLabel('Save a phrase'));
+    await tester.settle();
+    expect(find.text('RECENT'), findsOneWidget);
+    expect(textContaining('Asked only'), findsOneWidget, reason: 'the save was undone');
+
+    await tester.tap(find.bySemanticsLabel('Save history'));
+    await tester.settle();
+    expect(find.text('1 session · 0 phrases saved'), findsOneWidget);
+    expect(find.text('TODAY'), findsWidgets);
+    await tester.enterText(find.byType(TextField).first, 'elephant');
+    await tester.settle();
+    expect(find.text('Nothing found'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'worse');
+    await tester.settle();
+    await tester.tap(textContaining('I had to get out of there').first);
+    await tester.settle(const Duration(milliseconds: 100), 15);
+    expect(find.text('It is informal but very common.'), findsOneWidget, reason: 'the chat reopens where it was');
+  });
+
+  testWidgets('Save assistant: shared text opens straight in the chat', (tester) async {
+    final backend = await pumpApp(tester, seed: (b) {
+      b.functions['translateWithContext'] = (args) => {
+            'translation': {'phrase': 'جای تعجب نیست'},
+            'direction': {'source': 'ltr', 'target': 'rtl'},
+            'chunks': [],
+          };
+    });
+    await tester.settle();
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    container.read(routerProvider).go('/capture?text=no%20wonder');
+    await tester.settle(const Duration(milliseconds: 100), 15);
+    expect(find.text('no wonder'), findsWidgets, reason: 'the shared text is the first message');
+    expect(find.text('جای تعجب نیست'), findsOneWidget);
+    expect(find.text('Ask, or paste a new sentence…'), findsOneWidget);
+    // Two words: no need to look for phrases inside it, one translation call.
+    expect(backend.called('translateWithContext'), hasLength(1));
   });
 
   testWidgets('Pool: reveal, next, done moves words to review', (tester) async {

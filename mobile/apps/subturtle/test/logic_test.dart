@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:subturtle/features/capture/word_selection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:subturtle/features/capture/capture_sheet.dart';
+import 'package:subturtle/features/capture/save_assistant.dart';
+import 'package:subturtle/features/capture/save_history_view.dart';
+import 'package:subturtle/features/capture/save_session.dart';
 import 'package:subturtle/features/live_session/gemini_live_client.dart';
 import 'package:subturtle/features/review/review_logic.dart';
 import 'package:subturtle/shared/format.dart';
@@ -94,34 +98,75 @@ void main() {
     });
   });
 
-  group('WordSelection', () {
-    test('short shares start fully selected', () {
-      final s = WordSelection.fromSentence('get out of');
-      expect(s.phrase, 'get out of');
+  group('Save assistant', () {
+    test('phrases are the chunks found in the sentence, in sentence order, once', () {
+      expect(
+        phrasesIn('I had to get out of there before it got worse.', ['got worse', 'get out of', 'had to', 'GET OUT OF', 'not here', ' ']),
+        ['had to', 'get out of', 'got worse'],
+      );
     });
 
-    test('tap one, tap another = range; third tap restarts', () {
-      var s = WordSelection.fromSentence('I had to get out of there before it got worse.');
-      expect(s.isEmpty, isTrue);
-      s = s.tap(3);
-      expect(s.phrase, 'get');
-      s = s.tap(5);
-      expect(s.phrase, 'get out of');
-      s = s.tap(1);
-      expect(s.phrase, 'had');
+    test('the input bar tells a question from a new sentence', () {
+      expect(looksLikeQuestion('Is it formal?'), isTrue);
+      expect(looksLikeQuestion('give me another example'), isTrue);
+      expect(looksLikeQuestion('Explain the grammar'), isTrue);
+      expect(looksLikeQuestion('She got out of the car and ran inside.'), isFalse);
     });
 
-    test('tapping an end of a range shrinks it', () {
-      var s = WordSelection.fromSentence('I had to get out of there before it got worse.').tap(3).tap(5);
-      s = s.tap(5);
-      expect(s.phrase, 'get out');
-      s = s.tap(3);
-      expect(s.phrase, 'out');
+    test('history groups and times', () {
+      final now = DateTime(2026, 10, 13, 18);
+      expect(historyGroup(DateTime(2026, 10, 13, 9), now), 'Today');
+      expect(historyGroup(DateTime(2026, 10, 12, 23), now), 'Yesterday');
+      expect(historyGroup(DateTime(2026, 10, 8), now), 'This week');
+      expect(historyGroup(DateTime(2026, 10, 6), now), 'Earlier');
+      expect(historyTime(DateTime(2026, 10, 13, 10, 42), now), '10:42');
+      expect(historyTime(DateTime(2026, 10, 2), now), '2 Oct');
     });
 
-    test('edge punctuation is trimmed', () {
-      final s = WordSelection.fromSentence('before it got worse.').tap(2).tap(3);
-      expect(s.phrase, 'got worse');
+    final saved = SaveSession(
+      id: 'a',
+      sentence: 'I had to get out of there.',
+      createdAt: DateTime(2026, 10, 13, 10),
+      updatedAt: DateTime(2026, 10, 13, 10, 32),
+      candidates: const ['had to', 'get out of'],
+      picked: 1,
+      saved: const [SavedPhraseRef(text: 'get out of', phraseId: 'p1', bundleId: 'b1', bundleTitle: 'Stranger Things S2')],
+      log: const [ChatLine(fromUser: true, text: 'Is it formal?'), ChatLine(fromUser: false, text: 'It is informal.')],
+    );
+    final asked = SaveSession(id: 'b', sentence: 'What does "keep an eye on" mean?', createdAt: DateTime(2026, 10, 12), updatedAt: DateTime(2026, 10, 12));
+
+    test('search looks in sentences and saved phrases; the filter keeps chats that saved', () {
+      expect(filterSessions([saved, asked], query: 'EYE'), [asked]);
+      expect(filterSessions([saved, asked], query: 'get out'), [saved]);
+      expect(filterSessions([saved, asked], savedOnly: true), [saved]);
+      expect(filterSessions([saved, asked], query: 'nothing like this'), isEmpty);
+    });
+
+    test('recent rows say what was saved and when', () {
+      expect(recentMeta(saved, DateTime(2026, 10, 13, 10, 42)), '1 saved · 10 min ago');
+      expect(recentMeta(asked, DateTime(2026, 10, 13, 10, 42)), 'Asked only · Yesterday');
+    });
+
+    test('chats survive a round trip, per user, newest first, capped', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = LocalSaveSessionRepository(prefs, userId: 'u1', maxSessions: 2);
+      await repo.put(asked);
+      await repo.put(saved);
+      final back = await repo.list();
+      expect(back.map((s) => s.id), ['a', 'b']);
+      expect(back.first.saved.single.phraseId, 'p1');
+      expect(back.first.log.last.text, 'It is informal.');
+      expect(back.first.picked, 1);
+      expect(await LocalSaveSessionRepository(prefs, userId: 'u2').list(), isEmpty, reason: 'another account sees nothing');
+
+      await repo.put(SaveSession(id: 'c', sentence: 'x', createdAt: DateTime(2026, 10, 13, 11), updatedAt: DateTime(2026, 10, 13, 11)));
+      expect((await repo.list()).map((s) => s.id), ['c', 'a'], reason: 'only the newest 2 are kept');
+      await repo.delete('a');
+      expect((await repo.list()).map((s) => s.id), ['c']);
+
+      await prefs.setString('saveSessions.v1.u1', 'not json');
+      expect(await repo.list(), isEmpty, reason: 'a broken store starts empty instead of failing');
     });
   });
 
