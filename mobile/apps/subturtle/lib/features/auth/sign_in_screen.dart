@@ -64,12 +64,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         await ref.read(authProvider.notifier).signedIn(user);
       }
     } on GoogleSignInException catch (e) {
+      // The screen stays kind; the log says what really failed.
+      debugPrint('Google sign-in failed: ${e.code.name}: ${e.description} ${e.details ?? ''}');
       setState(() => _error = e.code == GoogleSignInExceptionCode.canceled
           ? 'The sign-in window closed before you finished. Try once more.'
           : "We couldn't sign you in with Google. Please try again.");
     } on ApiException catch (e) {
       setState(() => _error = e.isNetwork ? "You're offline. Connect to sign in." : _messageFor(key, e));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Sign-in failed: $e');
       setState(() => _error = "We couldn't sign you in. Please try again.");
     } finally {
       if (mounted) {

@@ -145,14 +145,21 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
   Widget _messages(BuildContext context, bool starting) {
     if (_chat.status == TextChatStatus.error) {
       final e = _chat.error;
-      final plan = e is ApiException && e.isTierLimit;
-      return Center(
-        child: ErrorPanel(
-          title: plan ? friendlyError(e) : "We couldn't start the chat.",
-          error: plan ? null : e,
-          onRetry: plan ? null : _chat.start,
-        ),
-      );
+      // A plan limit (chat count, AI budget used up) won't pass on a retry: say
+      // why and offer plans, as the web's limit modal does.
+      final plan = e is ApiException && (e.isTierLimit || e.code == ApiException.aiCreditExhausted);
+      if (plan) {
+        return Center(
+          child: StEmptyState(
+            compact: true,
+            icon: StIcons.danger,
+            color: StBadgeColor.warning,
+            title: friendlyError(e),
+            action: StButton(label: 'See plans', onPressed: () => context.go('/me/plan')),
+          ),
+        );
+      }
+      return Center(child: ErrorPanel(title: "We couldn't start the chat.", error: e, onRetry: _chat.start));
     }
     final items = _chat.messages;
     return ListView(
