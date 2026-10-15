@@ -213,6 +213,18 @@ describe("fallbacks", () => {
 describe("rules", () => {
   it("only one answer per question counts", async () => {
     const { testId } = await start({ userId: USER, language: "de" });
+    // Both answers must read the test before either saves, or the second one is simply
+    // the answer to question 2. Hold each call at the model until both have arrived there
+    // (they read the test first), so the reads always overlap.
+    const recorded = mockGenerate.getMockImplementation()!;
+    let waiting = 0;
+    let release: () => void = () => undefined;
+    const bothArrived = new Promise<void>((resolve) => (release = resolve));
+    mockGenerate.mockImplementation(async (request: any) => {
+      if (++waiting >= 2) release();
+      await Promise.race([bothArrived, new Promise((resolve) => setTimeout(resolve, 2000))]);
+      return recorded(request);
+    });
     const [a, b] = await Promise.allSettled([answer({ userId: USER, testId, text: "eins" }), answer({ userId: USER, testId, text: "zwei" })]);
     const fulfilled = [a, b].filter((r) => r.status === "fulfilled");
     expect(fulfilled).toHaveLength(1);
