@@ -12,6 +12,8 @@ export const LANGUAGE_PROFILE = LANGUAGE_PROFILE_COLLECTION;
 
 export const DEFAULT_POOL_AGE_CUTOFF_DAYS = 7;
 export const DEFAULT_POOL_CHUNK_SIZE = 10;
+/** New phrases a day taken in when the language profile sets no `newPhrasesPerDay`. */
+export const DEFAULT_NEW_PHRASES_PER_DAY = 20;
 
 export interface PoolSettings {
   poolAgeCutoffDays: number;
@@ -30,7 +32,7 @@ export async function findLanguageProfile(userId: string, language: LangCode): P
   return ((await col.findOne({ userId, language })) as any) || null;
 }
 
-function positive(value: unknown): number | undefined {
+export function positive(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 

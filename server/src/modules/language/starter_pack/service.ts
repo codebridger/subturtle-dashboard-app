@@ -17,12 +17,13 @@ import { getCollection } from "@modular-rest/server";
 import { BUNDLE_COLLECTION, DATABASE, LANGUAGE_PROFILE_COLLECTION, PHRASE_COLLECTION, PROFILE_COLLECTION } from "../../../config";
 import { LangCode, requestLanguage, toCode, toTitle } from "../../../languages/helper";
 import { hasFeature } from "../../../languages/registry";
+import { DEFAULT_NEW_PHRASES_PER_DAY } from "../../../languages/language-settings";
 import { StarterPackItem, audioUrlFor, getStarterPack, translationFor } from "../../../languages/starter-pack";
 import { LanguageError, LanguageService } from "../service";
 import type { LanguageProfile } from "../types";
 
 /** New starter phrases a day when the language has no `newPhrasesPerDay`. */
-export const DEFAULT_STARTER_INTAKE = 20;
+export const DEFAULT_STARTER_INTAKE = DEFAULT_NEW_PHRASES_PER_DAY;
 
 /** Most item ids one call takes. */
 export const MAX_ITEMS_PER_CALL = 200;
