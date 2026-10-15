@@ -37,7 +37,7 @@ const errorKey = ref<string | null>(null);
 
 onMounted(async () => {
     const raw = route.query.session as string | undefined;
-    const request = await setup.resolve(raw);
+    const request = await setup.resolve(raw, route.query.language?.toString());
 
     if (setup.errorKey || !request) {
         errorKey.value = setup.errorKey || 'live-practice.toast.no-session-data';
