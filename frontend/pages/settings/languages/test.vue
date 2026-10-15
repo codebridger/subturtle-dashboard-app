@@ -189,19 +189,25 @@
         busy.value = true;
         failed.value = '';
         try {
+            let applied: boolean | undefined;
+            let level = result.value.startLevel;
             if (testId.value) {
-                const state = await languageApi.finishLevelTest(testId.value, true).catch((e) => {
+                const res = await languageApi.finishLevelTest(testId.value, true).catch((e) => {
                     console.error('finish-level-test failed:', e);
                     return null;
                 });
-                if (state) language.setState(state);
+                if (res?.state) language.setState(res.state);
+                applied = res?.applied;
+                if (res?.result?.startLevel) level = res.result.startLevel;
             }
             if (isManage.value) {
                 await language.refreshState();
                 router.push('/settings/languages');
                 return;
             }
-            await ensureAdded(result.value.startLevel, 'test');
+            // `applied: false` means the language is not added yet; add it with the test's level.
+            if (applied !== true || language.summaryFor(lang.value)?.status !== 'active') await ensureAdded(level, 'test');
+            else if (language.activeLanguage !== lang.value) await language.switchLanguage(lang.value);
             if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'test' });
             router.push('/board');
         } catch (error) {

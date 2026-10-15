@@ -112,6 +112,11 @@ export interface StarterPackItem {
     id: string;
     text: string;
     translation: string;
+    /** The language `translation` is in (the own language, or a fallback such as English). */
+    translationLanguage?: LangCode;
+    lemma?: string;
+    form?: string;
+    /** Absent until the pack's audio is generated (B-22). */
     audioUrl?: string;
     band: 1 | 2 | 3;
     group: string;
@@ -120,6 +125,10 @@ export interface StarterPackItem {
 export interface StarterPack {
     items: StarterPackItem[];
     heard: string[];
+    state?: StarterPackState;
+    total?: number;
+    groups?: { id: string; name: string }[];
+    version?: number;
 }
 
 export interface LanguageSettingsArgs {

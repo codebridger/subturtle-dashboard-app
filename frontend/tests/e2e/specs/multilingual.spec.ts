@@ -125,7 +125,8 @@ function createFakeServer(opts: FakeOptions = {}) {
                 if (testTurn > 3) return { status: 200, data: { index: 3, total: 3, done: true, result: { startLevel: 'A2', reason: 'You answered in short sentences and used the past once.' } } };
                 return { status: 200, data: { turn: { ai: `Frage ${testTurn}` }, index: testTurn, total: 3, done: false } };
             case 'finish-level-test':
-                return { status: 200, data: { state } };
+                // The language is not added yet, so the server applies nothing (`applied: false`).
+                return { status: 200, data: { state, result: { startLevel: 'A2', reason: 'Short sentences.' }, applied: false, language: 'de' } };
             case 'get-board':
                 return { status: 200, data: { language: state.learningLanguage, newLanguage: !active.find((l: Summary) => l.code === state.learningLanguage)?.phraseCount, activities: [] } };
             case 'get-starter-pack':
@@ -135,14 +136,23 @@ function createFakeServer(opts: FakeOptions = {}) {
                         items: [
                             { id: 'de-greetings-01', text: 'Hallo!', translation: 'سلام!', band: 1, group: 'greetings' },
                             { id: 'de-greetings-02', text: 'Guten Morgen!', translation: 'صبح بخیر!', band: 1, group: 'greetings' },
+                            ...((opts as any).extraPackItems ?? []),
                         ],
                         heard: (opts as any).heard ?? [],
+                        groups: [{ id: 'greetings', name: 'Greetings' }, { id: 'small-talk', name: 'Small talk' }],
+                        total: 2,
+                        version: 1,
                     },
                 };
             case 'complete-starter-pack-items': {
-                packHeard.push(...args.itemIds);
-                return { status: 200, data: { heard: packHeard.length, total: 2, done: packHeard.length >= 2 } };
+                // Over today's intake: the server defers anything from the "small-talk" group.
+                const deferred = args.itemIds.filter((id: string) => id.includes('small-talk'));
+                const added = args.itemIds.filter((id: string) => !deferred.includes(id));
+                packHeard.push(...added);
+                return { status: 200, data: { heard: packHeard.length, total: 2, done: packHeard.length >= 2, added, deferred } };
             }
+            case 'textToSpeechBase64':
+                return { status: 200, data: 'data:audio/mp3;base64,' };
             case 'skip-starter-pack':
                 return { status: 200, data: { state } };
             case 'check-cloze-answer':
@@ -460,5 +470,27 @@ test.describe('Multilingual dashboard', () => {
         await expect
             .poll(() => fake.calls.find((c) => c.name === 'get-coach-instructions')?.args)
             .toMatchObject({ language: 'de', explanationLanguage: 'tr', phraseIds: ['p1'], mode: 'text' });
+    });
+
+    test('the starter pack speaks by language, names its groups and keeps deferred items for tomorrow', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de')], active: 'de' });
+        await boot(page, fake);
+        await page.route('**/function/run', async (route) => {
+            if (route.request().method() === 'OPTIONS') return route.fallback();
+            const { name } = route.request().postDataJSON() || {};
+            if (name !== 'get-starter-pack') return route.fallback();
+            const res = fake.handle(name, {});
+            res.data.items.push({ id: 'de-small-talk-01', text: 'Wie geht’s?', translation: 'چطوری؟', band: 2, group: 'small-talk' });
+            return respond(route, 200, { status: 'success', data: res.data });
+        });
+        await page.goto('/#/practice/starter-pack');
+
+        await expect(page.getByRole('heading', { name: 'Small talk' })).toBeVisible();
+        await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Play' }).click();
+        await expect.poll(() => fake.calls.find((c) => c.name === 'textToSpeechBase64')?.args).toEqual({ userId: USER_ID, text: 'Hallo!', language: 'de' });
+
+        await page.getByTestId('pack-item-de-small-talk-01').getByRole('button', { name: 'Mark as heard' }).click();
+        await expect(page.getByTestId('pack-item-de-small-talk-01')).toContainText('Tomorrow');
+        await expect(page.getByText('That is enough new phrases for today.')).toBeVisible();
     });
 });
