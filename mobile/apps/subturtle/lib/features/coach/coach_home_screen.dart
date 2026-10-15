@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
@@ -87,7 +88,7 @@ class CoachHomeScreen extends ConsumerWidget {
               const StIconTile(icon: StIcons.lock, color: StBadgeColor.neutral),
               const SizedBox(width: 12),
               Expanded(child: Text('Your past sessions show here on a paid plan.', style: StType.bodyMedium.copyWith(color: c.textBody))),
-              StButton(label: 'Plans', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: () => context.go('/me/plan')),
+              if (AppConfig.purchaseLinks) StButton(label: 'Plans', variant: StButtonVariant.ghost, size: StSize.sm, onPressed: () => context.go('/me/plan')),
             ],
           ),
         );

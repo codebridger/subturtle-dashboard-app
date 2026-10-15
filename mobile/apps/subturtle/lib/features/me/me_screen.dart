@@ -9,6 +9,7 @@ import 'package:subturtle_ui/subturtle_ui.dart';
 import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/languages.dart';
+import '../../shared/format.dart';
 import '../../shared/widgets.dart';
 
 final _versionProvider = FutureProvider<String>((ref) async {
@@ -173,7 +174,7 @@ class MeScreen extends ConsumerWidget {
                 },
               ),
               const SizedBox(width: 8),
-              StButton(label: 'Delete account', icon: StIcons.trash, variant: StButtonVariant.ghost, tone: StTone.danger, size: StSize.sm, onPressed: () => _deleteAccount(context)),
+              StButton(label: 'Delete account', icon: StIcons.trash, variant: StButtonVariant.ghost, tone: StTone.danger, size: StSize.sm, onPressed: () => _deleteAccount(context, ref)),
             ],
           ),
           const SizedBox(height: 10),
@@ -197,15 +198,24 @@ class MeScreen extends ConsumerWidget {
   }
 
   /// There is no delete-account API yet, so this explains how to ask for it.
-  Future<void> _deleteAccount(BuildContext context) async {
+  /// Deletes the account in the app (App Store 5.1.1(v)): phrases, bundles,
+  /// reviews, coach sessions and a paid plan go with it.
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
     final ok = await confirmSheet(
       context,
       title: 'Delete your account?',
-      body: 'For now we delete accounts by request. Send us an email from the address you sign in with, and we will delete your account and all your phrases.',
-      confirm: 'Email us',
+      body: 'This deletes your account and everything in it: your phrases, bundles, reviews and coach sessions. A paid plan is cancelled. This cannot be undone.',
+      confirm: 'Delete my account',
       danger: true,
     );
-    if (ok && context.mounted) await openExternal(context, '${AppConfig.contactEmail}?subject=Delete%20my%20Subturtle%20account');
+    if (!ok || !context.mounted) return;
+    try {
+      await ref.read(apiProvider).profile.deleteAccount();
+      if (context.mounted) showStToast(context, title: 'Your account was deleted.');
+      await ref.read(authProvider.notifier).signOut();
+    } catch (e) {
+      if (context.mounted) showStToast(context, title: "We couldn't delete your account.", description: friendlyError(e), color: StToastColor.danger);
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import 'package:subturtle/app/app.dart';
 import 'package:subturtle/app/providers.dart';
 import 'package:subturtle/features/capture/capture_sheet.dart';
 import 'package:subturtle/features/capture/save_engine.dart';
+import 'package:subturtle/features/plans/local_pricing.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 
 /// A fake Subturtle backend for widget tests. No network, no real account.
@@ -102,6 +103,7 @@ Future<FakeBackend> pumpApp(
   ThemeMode? theme,
   Key? boundaryKey,
   bool saveAssistantBackend = false,
+  PricingProbe? pricingProbe,
 }) async {
   final backend = FakeBackend()..signedIn = signedIn;
   backend.seedDefaults();
@@ -114,6 +116,8 @@ Future<FakeBackend> pumpApp(
       apiProvider.overrideWithValue(api),
       prefsProvider.overrideWithValue(prefs),
       if (saveAssistantBackend) saveEngineProvider.overrideWith((ref) => ServerSaveEngine(api: api, languageName: 'Persian')),
+      // No WebView in tests: by default Stripe "keeps GBP".
+      pricingProbeProvider.overrideWithValue(pricingProbe ?? FakePricingProbe(null)),
     ],
     retry: (_, _) => null,
   );
@@ -140,3 +144,16 @@ extension Settle on WidgetTester {
 Finder textContaining(String s) => find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText() ?? '').contains(s));
 
 Widget wrap(Widget w) => MaterialApp(home: w);
+
+/// Answers the local-price probe with [reply] (null = no localization).
+class FakePricingProbe implements PricingProbe {
+  FakePricingProbe(this.reply);
+  final Map<String, dynamic>? reply;
+  int runs = 0;
+
+  @override
+  Future<Map<String, dynamic>?> run({required String clientSecret, required String publishableKey, required String origin}) async {
+    runs++;
+    return reply;
+  }
+}

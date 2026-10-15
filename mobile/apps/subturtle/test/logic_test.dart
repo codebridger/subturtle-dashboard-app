@@ -6,6 +6,7 @@ import 'package:subturtle/features/capture/save_engine.dart';
 import 'package:subturtle/features/capture/save_history_view.dart';
 import 'package:subturtle/features/capture/save_session.dart';
 import 'package:subturtle/features/live_session/gemini_live_client.dart';
+import 'package:subturtle/features/plans/local_pricing.dart';
 import 'package:subturtle/features/review/review_logic.dart';
 import 'package:subturtle/shared/format.dart';
 import 'package:subturtle/shared/languages.dart';
@@ -97,6 +98,26 @@ void main() {
       await q.flush();
       expect(sent, ['a']);
       expect(q.failed, isEmpty);
+    });
+  });
+
+  group('local pricing', () {
+    final now = DateTime(2026, 10, 13);
+    test("Stripe's own rate wins; the line item is the fallback", () {
+      expect(localPricingFromProbe({'currency': 'eur', 'fxRate': 1.2311, 'minor': 553}, probeGbp: 4.49, now: now)!.fxRate, 1.2311);
+      expect(localPricingFromProbe({'currency': 'EUR', 'minor': 553}, probeGbp: 4.49, now: now)!.fxRate, closeTo(553 / 449, 1e-9));
+    });
+
+    test('GBP, errors and missing rates mean no localization', () {
+      expect(localPricingFromProbe({'currency': 'gbp', 'fxRate': 1}, probeGbp: 4.49, now: now), isNull);
+      expect(localPricingFromProbe({'currency': 'eur'}, probeGbp: 4.49, now: now), isNull);
+      expect(localPricingFromProbe({}, probeGbp: 4.49, now: now), isNull);
+    });
+
+    test('formats in the local currency', () {
+      final eur = LocalPricing(currency: 'eur', fxRate: 1.2311, at: now);
+      expect(eur.format(10.99), '€13.53');
+      expect(LocalPricing.fromJson(eur.toJson())!.currency, 'eur');
     });
   });
 

@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
+import '../../app/config.dart';
 import '../../shared/format.dart';
 
 /// What the learner picked on the voice cap sheet.
@@ -59,8 +60,10 @@ class _VoiceCap extends StatelessWidget {
               StProgressBar(value: sub.voiceTotal.toDouble(), max: sub.voiceTotal.toDouble(), color: StBadgeColor.danger, size: StSize3.sm, semanticLabel: 'Voice minutes used'),
             ],
             const SizedBox(height: 20),
-            StButton(label: 'Get more minutes', icon: StIcons.add, size: StSize.lg, block: true, onPressed: () => Navigator.pop(context, VoiceCapChoice.getMore)),
-            const SizedBox(height: 10),
+            if (AppConfig.purchaseLinks) ...[
+              StButton(label: 'Get more minutes', icon: StIcons.add, size: StSize.lg, block: true, onPressed: () => Navigator.pop(context, VoiceCapChoice.getMore)),
+              const SizedBox(height: 10),
+            ],
             StButton(
               label: 'Use text chat instead',
               icon: StIcons.keyboard,

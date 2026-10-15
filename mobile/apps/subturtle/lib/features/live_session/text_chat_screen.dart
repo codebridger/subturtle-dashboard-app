@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
@@ -155,7 +156,7 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
             icon: StIcons.danger,
             color: StBadgeColor.warning,
             title: friendlyError(e),
-            action: StButton(label: 'See plans', onPressed: () => context.go('/me/plan')),
+            action: AppConfig.purchaseLinks ? StButton(label: 'See plans', onPressed: () => context.go('/me/plan')) : null,
           ),
         );
       }

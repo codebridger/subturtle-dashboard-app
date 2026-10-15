@@ -251,6 +251,10 @@ class ProfileRepository extends _Repo {
     return doc == null ? null : Profile.fromJson(doc);
   }
 
+  /// Deletes the account and everything in it (phrases, bundles, reviews,
+  /// sessions, profile), and cancels a paid plan. Cannot be undone.
+  Future<void> deleteAccount() => fn.run('delete-account', {'userId': uid});
+
   Future<void> updateName(String name) => data.updateOne(database: Db.userContent, collection: Db.profile, query: {'refId': uid}, update: {'name': name.trim()});
 }
 
@@ -267,6 +271,14 @@ class SubscriptionRepository extends _Repo {
   Future<List<TierPlan>> getPlans() async {
     final res = await fn.run('getSubscriptionPlans', const <String, dynamic>{});
     return listOf(res, TierPlan.fromJson);
+  }
+
+  /// A Stripe Checkout session (`ui_mode: custom`, Adaptive Pricing on) for
+  /// [tierId]. Returns its client secret, for Stripe.js. The server refuses it
+  /// for paid users (no stacking plans). [successUrl] is where Stripe returns.
+  Future<String> createCheckoutSession({required String tierId, String cadence = 'monthly', required String successUrl}) async {
+    final res = await fn.run('createCustomCheckoutSession', {'userId': uid, 'tierId': tierId, 'cadence': cadence, 'successUrl': successUrl});
+    return str(asJson(res)['clientSecret']);
   }
 }
 

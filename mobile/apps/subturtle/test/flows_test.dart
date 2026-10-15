@@ -288,7 +288,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Is it formal?'));
       await tester.settle(const Duration(milliseconds: 100), 15);
       expect(find.text('The coach and translations are paused until your plan renews.'), findsOneWidget);
-      expect(find.text('See plans'), findsOneWidget);
+      expect(find.text('See plans'), findsNothing, reason: 'store builds have no purchase links');
     });
 
     testWidgets('TIER_LIMIT_REACHED (message cap) offers a new chat', (tester) async {

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../coach/coach_home_screen.dart';
@@ -253,6 +254,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
+                if (AppConfig.purchaseLinks) ...[
                 Expanded(
                   child: StButton(
                     label: v.isFreemium ? 'See plans' : 'Get more minutes',
@@ -264,6 +266,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
+                ],
                 Expanded(child: StButton(label: 'Continue in text', variant: StButtonVariant.outline, tone: StTone.neutral, block: true, onPressed: _switchToText)),
               ],
             ),

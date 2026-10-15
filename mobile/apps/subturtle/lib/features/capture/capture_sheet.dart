@@ -669,7 +669,7 @@ class _ProblemCard extends StatelessWidget {
               Wrap(
                 spacing: 4,
                 children: [
-                  if (credit)
+                  if (credit && AppConfig.purchaseLinks)
                     StButton(
                       label: 'See plans',
                       variant: StButtonVariant.ghost,
@@ -815,6 +815,7 @@ class _PhraseCard extends ConsumerWidget {
                         onPressed: limitReached || bundle == null || a.saving ? null : onSave,
                       ),
                       if (limitReached)
+                        if (AppConfig.purchaseLinks)
                         Center(
                           child: StButton(
                             label: 'See plans',
