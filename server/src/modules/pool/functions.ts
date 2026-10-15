@@ -1,5 +1,6 @@
 import { defineFunction } from "@modular-rest/server";
 import { PoolService } from "./service";
+import { ReviewLogService } from "../review_log/service";
 
 // Frontend API: the user's pooled phrases of one language (`language`, else the active
 // one), oldest first, joined to phrase docs (each carries `confirmed_chunk` +
@@ -21,11 +22,13 @@ const completePoolSession = defineFunction({
   name: "complete-pool-session",
   permissionTypes: ["user_access"],
   callback: async (context) => {
-    const { phraseIds, userId, language } = context;
+    const { phraseIds, userId, language, eventKey } = context;
     if (!userId) throw new Error("Unauthorized");
     if (!Array.isArray(phraseIds)) throw new Error("phraseIds must be an array");
 
-    await PoolService.promote(userId, phraseIds as string[], { encountered: true, language });
+    const promoted = await PoolService.promote(userId, phraseIds as string[], { encountered: true, language });
+    // Append-only history for the knowledge map (B-30); never fails the session.
+    await ReviewLogService.recordPoolSession(userId, promoted, { eventKey });
     return { success: true };
   },
 });

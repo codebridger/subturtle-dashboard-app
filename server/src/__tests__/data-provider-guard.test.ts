@@ -545,6 +545,7 @@ describe("collectionPolicy for the real collections", () => {
       "user_content.board_activity": null,
       "user_content.coach_explanation_flag": null, // server-only Coach flags (B-19)
       "user_content.pool": null,
+      "user_content.review_log": null, // server-only answer history (B-30)
       "cms.legacy_usage": null, // server-only counters of old field names (B-17)
       "cms.scheduled_job": null,
     });

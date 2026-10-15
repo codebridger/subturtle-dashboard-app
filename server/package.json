@@ -14,7 +14,10 @@
     "download:docs": "node scripts/download_docs.js",
     "setup:stripe": "ts-node --transpile-only scripts/setup-stripe-pricing.ts",
     "spike:firestore": "ts-node --transpile-only scripts/firestore-go-no-go.ts",
-    "starter-pack:audio": "ts-node --transpile-only scripts/generate-starter-pack-audio.ts"
+    "starter-pack:audio": "ts-node --transpile-only scripts/generate-starter-pack-audio.ts",
+    "migrate:multilingual": "ts-node --transpile-only scripts/multilingual-backfill.ts",
+    "migrate:multilingual-indexes": "ts-node --transpile-only scripts/multilingual-indexes.ts",
+    "migrate:review-log-snapshot": "ts-node --transpile-only scripts/review-log-snapshot.ts"
   },
   "author": "Navid Shad <navidshad72@gmail.com>",
   "license": "MIT",

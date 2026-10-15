@@ -4,11 +4,11 @@
  * the profile, then to the default, so learners whose data has not moved keep their settings.
  */
 import { getCollection } from "@modular-rest/server";
-import { DATABASE, PROFILE_COLLECTION } from "../config";
+import { DATABASE, LANGUAGE_PROFILE_COLLECTION, PROFILE_COLLECTION } from "../config";
 import { LangCode } from "./helper";
 
 // The language module's collection (modules/language/db.ts).
-export const LANGUAGE_PROFILE = "language_profile";
+export const LANGUAGE_PROFILE = LANGUAGE_PROFILE_COLLECTION;
 
 export const DEFAULT_POOL_AGE_CUTOFF_DAYS = 7;
 export const DEFAULT_POOL_CHUNK_SIZE = 10;

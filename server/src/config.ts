@@ -65,3 +65,7 @@ export const LANGUAGE_INTEREST_COLLECTION = "language_interest";
 // Starter's language limit (Council 008). Paid tiers read `max_learning_languages` from
 // their Stripe product metadata (ADR-004); see modules/language/plan.ts.
 export const FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES = 1;
+
+// Review log (B-30): append-only answers and Pool sessions, one row per event, plus one
+// `snapshot` row per card from the one-time migration. Server-only; nobody reads it yet.
+export const REVIEW_LOG_COLLECTION = "review_log";

@@ -60,7 +60,7 @@ beforeAll(async () => {
   Profiles = db.model(PROFILE_COLLECTION);
   LanguageProfiles = db.model(LANGUAGE_PROFILE);
   db.model(BUNDLE_COLLECTION);
-  // The unique indexes the index script builds (scripts/multilingual-indexes.mjs).
+  // The unique indexes the index script builds (scripts/multilingual-indexes.ts).
   await Leitner.collection.createIndex({ userId: 1, language: 1 }, { unique: true });
   await Pools.collection.createIndex({ userId: 1, language: 1 }, { unique: true });
   await Board.collection.createIndex({ userId: 1, type: 1, language: 1, refId: 1 }, { unique: true });
@@ -149,6 +149,15 @@ describe("Leitner per language", () => {
     await call(leitnerFns, "reset-system", { userId: ALICE, language: "de" });
     expect((await call(leitnerFns, "get-stats", { userId: ALICE, language: "de" })).totalItems).toBe(0);
     expect((await call(leitnerFns, "get-stats", { userId: ALICE, language: "en" })).totalItems).toBe(1);
+  });
+
+  it("update-settings writes Pool settings to that language's profile when it has one", async () => {
+    await LanguageProfiles.create({ userId: ALICE, language: "de", poolAgeCutoffDays: 30 });
+    await call(leitnerFns, "update-settings", { userId: ALICE, language: "de", settings: { poolAgeCutoffDays: 3 } });
+    expect((await call(leitnerFns, "get-stats", { userId: ALICE, language: "de" })).settings.poolAgeCutoffDays).toBe(3);
+    expect(((await LanguageProfiles.findOne({ userId: ALICE, language: "de" }).lean()) as any).poolAgeCutoffDays).toBe(3);
+    // English has no language profile: the profile value applies.
+    expect((await LeitnerService.getSettings(ALICE, "en")).poolAgeCutoffDays).toBe(3);
   });
 
   it("get-or-create is one upsert: parallel calls leave one document per language", async () => {

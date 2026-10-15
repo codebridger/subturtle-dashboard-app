@@ -52,7 +52,7 @@ const leitnerSystemSchema = new Schema<LeitnerSystem>(
   {
     userId: { type: String, required: true },
     // One document per (userId, language). The unique index is built by
-    // scripts/multilingual-indexes.mjs after duplicates are merged (ADR-006 point 11).
+    // scripts/multilingual-indexes.ts after duplicates are merged (ADR-006 point 11).
     language: { type: String },
     // Mixed, as Mongoose 5 stored the nested `type: {...}` this used to be (typePojoToMixed).
     // Mongoose 6+ would turn that into a subdocument: defaults applied to legacy documents

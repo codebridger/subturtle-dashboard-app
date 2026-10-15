@@ -1,5 +1,5 @@
 import { LeitnerItem, ReviewItem } from "./db";
-import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION } from "../../config";
+import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION, LANGUAGE_PROFILE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
@@ -7,7 +7,7 @@ import { ScheduleService } from "../schedule/service";
 import { pickPrimaryChunkText } from "../../utils/chunk";
 import { LangCode, langOf, languageFilter, toCode } from "../../languages/helper";
 import { getLearnerLanguages, resolveLanguage, resolvePhraseLanguage } from "../../languages/learner";
-import { poolSettings } from "../../languages/language-settings";
+import { findLanguageProfile, poolSettings } from "../../languages/language-settings";
 import { getOrCreate } from "../../utils/get-or-create";
 import { clozeFields } from "./cloze-cue";
 
@@ -266,14 +266,15 @@ export class LeitnerService {
    * Records one answer. `result` is the three-way result (`true` / `false` still work for old
    * callers: right / wrong). Right moves the card up a box, wrong moves it down (twice wrong
    * at box 1 sends it back to the Pool), and close keeps its box and schedules it again at
-   * that box's interval (Q4). Returns the language and the card's box after the answer.
+   * that box's interval (Q4). Returns the language and the card's box before and after the
+   * answer (`boxLevel` null: the card went back to the Pool).
    */
   static async submitReview(
     userId: string,
     phraseId: string,
     result: ReviewResult | boolean,
     language?: LangCode
-  ): Promise<{ language: LangCode; boxLevel: number | null }> {
+  ): Promise<{ language: LangCode; boxLevel: number | null; fromBox: number | null }> {
     const outcome: ReviewResult = typeof result === "boolean" ? (result ? "right" : "wrong") : result;
     const isCorrect = outcome === "right";
     const lang = await resolvePhraseLanguage(userId, phraseId, language);
@@ -287,6 +288,7 @@ export class LeitnerService {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
     const itemIndex = system.items.findIndex((i: LeitnerItem) => i.phraseId.toString() === phraseId.toString());
     const item = itemIndex >= 0 ? system.items[itemIndex] : null;
+    const fromBox = item ? item.boxLevel : null;
 
     let newItem: LeitnerItem;
     const now = new Date();
@@ -361,7 +363,7 @@ export class LeitnerService {
 
     // Sync Board State after review (don't re-toast during session)
     await this.refreshBoard(userId, lang, false);
-    return { language: lang, boxLevel };
+    return { language: lang, boxLevel, fromBox };
   }
 
   private static calculateNextDate(boxLevel: number, intervals: number[]): Date {
@@ -439,6 +441,19 @@ export class LeitnerService {
     }
     if (Object.keys(profilePayload).length > 0) {
       await profileCol.updateOne({ refId: userId }, { $set: profilePayload }, { upsert: true });
+    }
+
+    // The Pool settings are per language (ADR-006 point 2): when this language has a
+    // language profile, write them there too, or its value would hide the one just set.
+    const languagePool: any = {};
+    if (profilePayload.poolAgeCutoffDays !== undefined) languagePool.poolAgeCutoffDays = profilePayload.poolAgeCutoffDays;
+    if (profilePayload.poolChunkSize !== undefined) languagePool.poolChunkSize = profilePayload.poolChunkSize;
+    if (Object.keys(languagePool).length > 0) {
+      const languageProfile = await findLanguageProfile(userId, lang);
+      if (languageProfile?._id) {
+        const languageProfiles = await getCollection(DATABASE, LANGUAGE_PROFILE_COLLECTION);
+        await languageProfiles.updateOne({ _id: languageProfile._id }, { $set: languagePool });
+      }
     }
 
     // Sync schedule if interval or hour changed
