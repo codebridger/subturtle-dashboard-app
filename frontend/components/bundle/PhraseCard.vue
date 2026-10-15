@@ -95,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+    import { scopedLanguage } from '~/utils/languageScope';
     /**
      * One row of the bundle detail screen, rebuilt on subturtle-ui.
      *
@@ -246,9 +247,12 @@
     async function playPhraseAudio() {
         isLoadingAudio.value = true;
 
-        // Create a unique key for this audio content
-        const voiceName = 'en-US-Wavenet-A';
-        const cacheKey = `audio-${voiceName}-${simpleHash(phrase.value.toLocaleLowerCase())}`;
+        // Create a unique key for this audio content. English keeps its voice; another learning
+        // language sends only `language`, and the server picks that language's non-HD voice
+        // (the register's Chirp3-HD `ttsVoice` is refused by this function).
+        const speechLanguage = (props.phrase as any)?.language || scopedLanguage() || 'en';
+        const voiceName = speechLanguage === 'en' ? 'en-US-Wavenet-A' : undefined;
+        const cacheKey = `audio-${voiceName ?? speechLanguage}-${simpleHash(phrase.value.toLocaleLowerCase())}`;
 
         // Check if audio is already cached
         let audioContent = localStorage.getItem(cacheKey);
@@ -258,10 +262,7 @@
             audioContent = await functionProvider
                 .run<string>({
                     name: 'textToSpeechBase64',
-                    args: {
-                        text: phrase.value,
-                        voiceName: voiceName,
-                    },
+                    args: voiceName ? { text: phrase.value, voiceName } : { text: phrase.value, language: speechLanguage },
                 })
                 .catch((err) => null);
 

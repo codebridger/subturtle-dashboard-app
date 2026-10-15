@@ -1106,7 +1106,9 @@
             "skipped": "Starter pack skipped.",
             "go-today": "Go to Today",
             "empty": "The starter pack for {language} is not ready yet.",
-            "error": "We could not load the starter pack. Please try again."
+            "error": "We could not load the starter pack. Please try again.",
+            "deferred": "That is enough new phrases for today. It is offered again tomorrow.",
+            "tomorrow": "Tomorrow"
         },
         "cloze": {
             "cue": "{lemma} · {form}",

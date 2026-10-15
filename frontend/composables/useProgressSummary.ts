@@ -90,7 +90,7 @@ export function useProgressSummary() {
                     args: withLanguage({ userId: authUser.value?.id }),
                 }),
                 chart(withLanguage(chartArgs)),
-                scopedLanguage() ? chart(chartArgs) : Promise.resolve(null),
+                scopedLanguage() ? chart({ ...chartArgs, language: 'all' } as typeof chartArgs) : Promise.resolve(null),
             ]);
 
             totals.value = stats;
@@ -109,7 +109,9 @@ export function useProgressSummary() {
             const previous = prev7.reduce((sum, [, n]) => sum + n, 0);
             weekDelta.value = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
 
-            streak.value = streakFrom(rawAll ? densify(rawAll, WINDOW) : series);
+            // The server's streak counts every language (B-23); older servers send none.
+            const serverStreak = (stats as any)?.streak;
+            streak.value = typeof serverStreak === 'number' ? serverStreak : streakFrom(rawAll ? densify(rawAll, WINDOW) : series);
         } catch {
             locked.value = true;
         } finally {

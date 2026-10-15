@@ -1,6 +1,7 @@
 import { authentication, functionProvider } from '@modular-rest/client';
 import type {
     AddLanguageArgs,
+    CefrStart,
     LangCode,
     LanguageCapabilities,
     LanguageSettingsArgs,
@@ -126,11 +127,22 @@ export const languageApi = {
 
     startLevelTest: (language: LangCode) => call<LevelTestStart>('start-level-test', { language }),
     answerLevelTest: (testId: string, text: string) => call<LevelTestAnswer>('answer-level-test', { testId, text }),
-    finishLevelTest: (testId: string, accept: boolean) => call<{ state: LanguageState }>('finish-level-test', { testId, accept }).then(unwrapState),
+    /**
+     * `applied` is false when the language is not added yet: the caller then adds it with
+     * `result.startLevel` and source "test" (contract, finish-level-test).
+     */
+    finishLevelTest: (testId: string, accept: boolean) =>
+        call<{ state: LanguageState; result?: { startLevel: CefrStart; reason: string }; applied?: boolean; language?: LangCode }>('finish-level-test', {
+            testId,
+            accept,
+        }).then((res) => ({ state: unwrapState(res), result: res?.result, applied: res?.applied, language: res?.language })),
 
     getStarterPack: (language: LangCode) => call<StarterPack>('get-starter-pack', { language }),
+    /** `added` joined the review; `deferred` were over today's intake and are offered again tomorrow. */
     completeStarterPackItems: (language: LangCode, itemIds: string[]) =>
-        call<{ heard: number; total: number; done: boolean }>('complete-starter-pack-items', { language, itemIds }),
+        call<{ heard: number; total: number; done: boolean; added?: string[]; deferred?: string[] }>('complete-starter-pack-items', { language, itemIds }),
+    /** Speech for a learning language: `language` only, never the register's HD `ttsVoice`. */
+    speak: (text: string, language: LangCode) => call<string>('textToSpeechBase64', { text, language }),
     skipStarterPack: (language: LangCode) => call<{ state: LanguageState }>('skip-starter-pack', { language }).then(unwrapState),
 
     checkClozeAnswer: (args: { phraseId: string; answer: string; language?: LangCode }) =>

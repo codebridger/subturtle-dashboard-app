@@ -37,10 +37,12 @@
                     <StIconButton icon="solar:volume-loud-bold-duotone" variant="soft" color="neutral" :aria-label="t('languages.starter.play')" @click="play(item)" />
                     <span class="flex min-w-0 flex-grow flex-col">
                         <LangText :code="language.activeLanguage" class="text-st-base font-extrabold text-st-strong">{{ item.text }}</LangText>
-                        <LangText :code="language.ownLanguage" class="text-st-sm font-semibold text-st-muted">{{ item.translation }}</LangText>
+                        <LangText :code="item.translationLanguage || language.ownLanguage" class="text-st-sm font-semibold text-st-muted">{{ item.translation }}</LangText>
                     </span>
                     <StBadge :color="item.band === 1 ? 'accent' : item.band === 2 ? 'info' : 'neutral'">{{ t(`languages.starter.band-${item.band}`) }}</StBadge>
+                    <span v-if="deferred.has(item.id)" class="text-st-xs font-bold text-st-muted" :title="t('languages.starter.deferred')">{{ t('languages.starter.tomorrow') }}</span>
                     <StButton
+                        v-else
                         size="sm"
                         :variant="heard.has(item.id) ? 'soft' : 'outline'"
                         :color="heard.has(item.id) ? 'accent' : 'neutral'"
@@ -52,6 +54,8 @@
                     </StButton>
                 </div>
             </section>
+
+            <p v-if="deferredNote" role="status" class="rounded-st-md bg-st-info-soft px-4 py-3 text-st-sm font-bold text-st-sky-600">{{ t('languages.starter.deferred') }}</p>
 
             <p v-if="!items.length" class="text-st-base font-semibold text-st-muted">{{ t('languages.starter.empty', { language: name }) }}</p>
         </template>
@@ -93,6 +97,10 @@
     const error = ref('');
     const items = ref<StarterPackItem[]>([]);
     const heard = ref(new Set<string>());
+    /** Over today's intake (`deferred`): shown as "Tomorrow" and offered again then. */
+    const deferred = ref(new Set<string>());
+    const deferredNote = ref(false);
+    const groupNames = ref<Record<string, string>>({});
     const done = ref(false);
 
     const groups = computed(() => {
@@ -101,7 +109,7 @@
             if (!map.has(item.group)) map.set(item.group, []);
             map.get(item.group)!.push(item);
         }
-        return [...map.entries()].map(([id, list]) => ({ id, label: groupLabel(id), items: list }));
+        return [...map.entries()].map(([id, list]) => ({ id, label: groupNames.value[id] || groupLabel(id), items: list }));
     });
 
     /** "small-talk" → "Small talk". The pack's own group names are English ids. */
@@ -111,21 +119,33 @@
     }
 
     let audio: HTMLAudioElement | null = null;
-    function play(item: StarterPackItem) {
+    const speechCache = new Map<string, string>();
+
+    /**
+     * The recorded file when the pack has one (B-22); otherwise the server's speech for the
+     * language — `language` only, never the register's HD `ttsVoice`, which that function
+     * refuses — and the browser's own voice as the last resort.
+     */
+    async function play(item: StarterPackItem) {
         audio?.pause();
-        if (item.audioUrl) {
-            audio = new Audio(item.audioUrl);
-            audio.play().catch(() => speak(item.text));
-        } else {
+        try {
+            let src = item.audioUrl || speechCache.get(item.id);
+            if (!src) {
+                src = await languageApi.speak(item.text, language.activeLanguage);
+                if (src) speechCache.set(item.id, src);
+            }
+            if (!src) throw new Error('no audio');
+            audio = new Audio(src);
+            await audio.play();
+        } catch {
             speak(item.text);
         }
     }
 
-    /** No recorded audio yet (B-22 is separate): the browser voice for the language is the fallback. */
     function speak(text: string) {
         if (!('speechSynthesis' in window)) return;
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = language.capsFor()?.ttsVoice?.split('-').slice(0, 2).join('-') || language.activeLanguage;
+        utterance.lang = language.activeLanguage;
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utterance);
     }
@@ -137,6 +157,8 @@
             const pack = await languageApi.getStarterPack(language.activeLanguage);
             items.value = pack.items ?? [];
             heard.value = new Set(pack.heard ?? []);
+            deferred.value = new Set();
+            groupNames.value = Object.fromEntries((pack.groups ?? []).map((g) => [g.id, g.name]));
             done.value = items.value.length > 0 && heard.value.size >= items.value.length;
         } catch (e) {
             console.error('Starter pack failed to load:', e);
@@ -150,6 +172,14 @@
         heard.value = new Set([...heard.value, item.id]);
         try {
             const res = await languageApi.completeStarterPackItems(language.activeLanguage, [item.id]);
+            if (res?.deferred?.includes(item.id)) {
+                const next = new Set(heard.value);
+                next.delete(item.id);
+                heard.value = next;
+                deferred.value = new Set([...deferred.value, item.id]);
+                deferredNote.value = true;
+                return;
+            }
             if (res?.done) {
                 done.value = true;
                 trackLanguageEvent(ANALYTICS_EVENTS.STARTER_PACK_DONE, { language: language.activeLanguage });
