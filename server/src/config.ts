@@ -54,3 +54,12 @@ export const BOARD_ACTIVITY_COLLECTION = "board_activity";
 // Pool Module (first-encounter queue — one doc per user, lives alongside phrases)
 export const DATABASE_POOL = DATABASE;
 export const POOL_COLLECTION = "pool";
+
+// Language module (multilingual, ADR-006): one language_profile per (user, language), the
+// source of truth for which languages a learner has; language_interest is the "Tell me"
+// counter for languages not offered yet.
+export const LANGUAGE_PROFILE_COLLECTION = "language_profile";
+export const LANGUAGE_INTEREST_COLLECTION = "language_interest";
+// Starter's language limit (Council 008). Paid tiers read `max_learning_languages` from
+// their Stripe product metadata (ADR-004); see modules/language/plan.ts.
+export const FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES = 1;
