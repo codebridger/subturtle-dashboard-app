@@ -120,7 +120,9 @@ describe("get-starter-pack", () => {
     expect(pack.items[1].audioUrl).toBeUndefined();
   });
 
-  it("is not available for a language whose starter pack is switched off", async () => {
+  it("is not available for a language that is switched off or has no pack", async () => {
+    expect((await getStarterPack({ userId: USER, language: "sv" })).total).toBe(1);
+    process.env.LANGUAGES_ENABLED = "en,de";
     await expect(getStarterPack({ userId: USER, language: "sv" })).rejects.toThrow(/^not_available/);
     await expect(getStarterPack({ userId: USER, language: "pt" })).rejects.toThrow(/^not_available/);
   });
