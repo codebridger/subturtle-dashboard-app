@@ -42,7 +42,9 @@ void main() {
     var s = (await api.languages.state())!;
     expect(s.plan, isNotEmpty);
     expect(s.maxLanguages, greaterThan(0));
-    print('fresh state: active=${s.learningLanguage} onboarding=${s.onboardingState} plan=${s.plan} max=${s.maxLanguages} langs=${s.languages.map((l) => '${l.code}:${l.status}').toList()}');
+    print(
+      'fresh state: active=${s.learningLanguage} onboarding=${s.onboardingState} plan=${s.plan} max=${s.maxLanguages} langs=${s.languages.map((l) => '${l.code}:${l.status}').toList()}',
+    );
 
     s = await api.languages.setTranslationLanguage('fa');
     expect(s.translationLanguage, 'fa');
@@ -82,7 +84,40 @@ void main() {
   test('missing round-1 functions fall back instead of failing', () async {
     final cloze = await api.review.checkCloze(phraseId: '000000000000000000000000', answer: 'x').then<Object?>((v) => v, onError: (Object e) => e);
     print('check-cloze-answer on an unknown phrase: $cloze');
-    final coach = await api.liveSessions.getCoachInstructions(explanationLanguage: 'fa', phraseIds: const [], mode: 'text', language: 'de').then<Object?>((v) => v, onError: (Object e) => e);
+    final coach = await api.liveSessions
+        .getCoachInstructions(explanationLanguage: 'fa', phraseIds: const [], mode: 'text', language: 'de')
+        .then<Object?>((v) => v, onError: (Object e) => e);
     print('get-coach-instructions: ${coach is CoachInstructions ? '${coach.instructions.length} chars, voice ${coach.voiceName}' : coach}');
+  }, skip: skip);
+
+  test('the chat test runs before adding; its level goes to add-language', () async {
+    final first = await api.languages.startLevelTest('fr');
+    final id = first.testId!;
+    expect(first.turn!.ai, isNotEmpty);
+    print('Q1: ${first.turn!.ai} | help: ${first.turn!.help}');
+    var step = first;
+    var n = 0;
+    while (!step.done && n++ < 10) {
+      step = await api.languages.answerLevelTest(id, "Je m'appelle Sara et j'habite à Berlin.");
+    }
+    expect(step.done, isTrue);
+    expect(CefrStart.all, contains(step.result!.startLevel));
+    print('result: ${step.result!.startLevel} - ${step.result!.reason}');
+    // The phone adds the language with the level, then accepts the test.
+    final s = await api.languages.add('fr', startLevel: step.result!.startLevel, startLevelSource: 'test').then<Object>((v) => v, onError: (Object e) => e);
+    print('add after test: ${s is LanguageState ? 'active=${s.active}' : s}');
+    final done = await api.languages.finishLevelTest(id, accept: true);
+    expect(done.languages, isNotEmpty);
+  }, skip: skip);
+
+  test('the starter pack of an added language (German, from the test above)', () async {
+    final pack = await api.starterPacks.get('de');
+    expect(pack.items.length, greaterThan(50));
+    final first = pack.items.first;
+    print('pack: ${pack.items.length} items; first: ${first.text} = ${first.translation} (band ${first.band}, ${first.group})');
+    final p = await api.starterPacks.complete('de', [first.id]);
+    expect(p.heard, greaterThanOrEqualTo(1));
+    final s = await api.starterPacks.skip('de');
+    expect(s.summaryOf('de')?.starterPack.state, isNotNull);
   }, skip: skip);
 }
