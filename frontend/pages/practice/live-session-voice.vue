@@ -558,7 +558,13 @@ async function createLiveSession() {
             onUpdate: handleSessionEvent,
         })
         .then(() => {
-            analytic.track('live-session_started', { provider: 'gemini', mode: 'voice' });
+            // Best-effort: without a Mixpanel token (local, CI) track() throws, and an unguarded
+            // call here sent a session that had started fine into the error screen.
+            try {
+                analytic.track('live-session_started', { provider: 'gemini', mode: 'voice' });
+            } catch (e) {
+                console.error('Failed to track live-session_started:', e);
+            }
             triggerTheConversation();
             // Refresh the freemium counter so the session-quota UI reflects
             // the slot we just consumed.
