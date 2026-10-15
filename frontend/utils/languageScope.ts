@@ -27,3 +27,21 @@ export function withLanguage<T extends Record<string, any>>(args: T): T & { lang
     if (!language || args.language) return args;
     return { ...args, language };
 }
+
+/**
+ * The query filter for a collection the client reads directly through the data provider
+ * (bundles). Empty while multilingual is off. Stored documents with no `language` are English
+ * (ADR-006, no backfill needed), so an English query also matches them; `null` in `$in`
+ * matches a missing field.
+ */
+export function languageQuery(): Record<string, any> {
+    const language = scopedLanguage();
+    if (!language) return {};
+    return language === 'en' ? { language: { $in: ['en', null] } } : { language };
+}
+
+/** The `language` field for a document the client inserts directly (a new bundle). */
+export function languageField(): { language?: string } {
+    const language = scopedLanguage();
+    return language ? { language } : {};
+}

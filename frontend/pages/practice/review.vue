@@ -1,9 +1,11 @@
 <template>
-    <LeitnerReviewSession :items="items" :loading="loading" :title="$t('review.title')"
+    <LeitnerReviewSession :items="items" :loading="loading" :title="title"
         @submit-result="handleSubmitResult" @end-session="endSession" />
 </template>
 
 <script setup lang="ts">
+import { useStudyingTitle } from '~/composables/useStudyingTitle';
+import type { ReviewResult } from '~/types/language.type';
 import { useLeitnerStore } from '~/stores/leitner';
 import { storeToRefs } from 'pinia';
 import LeitnerReviewSession from '~/components/practice/LeitnerReviewSession.vue';
@@ -15,6 +17,9 @@ definePageMeta({
     layout: 'default',
     middleware: ['auth'],
 });
+
+// "Review · German": which language is being studied (D-13).
+const title = useStudyingTitle('review.title');
 
 const router = useRouter();
 const leitnerStore = useLeitnerStore();
@@ -34,8 +39,8 @@ onMounted(async () => {
     }
 });
 
-async function handleSubmitResult(phraseId: string, isCorrect: boolean) {
-    await leitnerStore.submitReview(phraseId, isCorrect);
+async function handleSubmitResult(phraseId: string, isCorrect: boolean, result?: ReviewResult) {
+    await leitnerStore.submitReview(phraseId, isCorrect, result);
 }
 
 function endSession() {

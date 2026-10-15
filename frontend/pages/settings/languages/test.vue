@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StButton, StProgressBar } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import LangText from '~/components/language/LangText.vue';
@@ -162,7 +163,7 @@
             if (res.done) {
                 // A finished test with no result is a failure: start at A1 (B-31).
                 result.value = res.result ?? { startLevel: 'A1', reason: t('languages.test.failed') };
-                trackLanguageEvent('level_test_done', { language: lang.value, start_level: result.value.startLevel });
+                trackLanguageEvent(ANALYTICS_EVENTS.LEVEL_TEST_DONE, { language: lang.value, start_level: result.value.startLevel });
             } else if (res.turn) {
                 log.value.push({ ai: true, text: res.turn.ai, help: res.turn.help });
             }
@@ -201,7 +202,7 @@
                 return;
             }
             await ensureAdded(result.value.startLevel, 'test');
-            if (isFirstRun.value) trackLanguageEvent('first_run_done', { language: lang.value, start_level_source: 'test' });
+            if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'test' });
             router.push('/board');
         } catch (error) {
             console.error('Accepting the level test failed:', error);
@@ -227,7 +228,7 @@
                 return;
             }
             await ensureAdded('A1', 'default');
-            if (isFirstRun.value) trackLanguageEvent('first_run_done', { language: lang.value, start_level_source: 'default' });
+            if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'default' });
             router.push(language.features(lang.value).starterPack ? '/practice/starter-pack' : '/board');
         } catch (error: any) {
             if (error?.code === 'upgrade_needed') router.push('/settings/languages/add');
