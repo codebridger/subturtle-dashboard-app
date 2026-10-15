@@ -145,6 +145,9 @@ function createFakeServer(opts: FakeOptions = {}) {
             }
             case 'skip-starter-pack':
                 return { status: 200, data: { state } };
+            case 'check-cloze-answer':
+                // A stand-in for server/src/languages/answer-check.ts: a typo is "close".
+                return { status: 200, data: args.answer === 'gegangne' ? { result: 'close', expected: 'gegangen', reason: 'typo' } : { result: 'close', expected: 'gegangen', reason: 'form' } };
             case 'get-review-session':
                 return { status: 200, data: (opts as any).review ?? [] };
             case 'get-stats':
@@ -415,5 +418,27 @@ test.describe('Multilingual dashboard', () => {
 
         await expect(page.getByTestId('scope-language').first()).toHaveText('German only');
         await expect(page.getByTestId('scope-all').first()).toHaveText('All languages');
+    });
+
+    test('fill the gap takes the cue from the review item and the reason from the server', async ({ page }) => {
+        const phrase = {
+            _id: 'p2',
+            type: 'linguistic',
+            phrase: 'gegangen',
+            translation: 'رفته',
+            context: 'Wir sind gestern gegangen.',
+            language: 'de',
+            chunks: [{ text: 'gegangen', type: 'other', confidence: 0.9 }],
+        };
+        const review = [{ phrase, boxLevel: 3, cue: { lemma: 'gehen', form: 'past participle' }, acceptedAnswers: ['gegangen'] }];
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { phraseCount: 1 })], active: 'de', review });
+        await boot(page, fake);
+        await page.goto('/#/practice/review');
+
+        await expect(page.getByTestId('cloze-cue')).toHaveText('gehen · past participle');
+        await page.locator('input[type="text"]').fill('gegangne');
+        await page.getByRole('button', { name: 'Check' }).click();
+        await expect(page.getByTestId('cloze-status')).toContainText('check the spelling');
+        expect(fake.calls.find((c) => c.name === 'check-cloze-answer')?.args).toMatchObject({ phraseId: 'p2', answer: 'gegangne', language: 'de' });
     });
 });

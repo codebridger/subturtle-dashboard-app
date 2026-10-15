@@ -43,6 +43,9 @@ describe("LeitnerService Timing Tests", () => {
 		};
 
 		(getCollection as any).mockImplementation((db: string, col: string) => {
+			// No profile and no language profile: an old account, English only.
+			if (col === "language_profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
+			if (col === "profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
 			if (col === "leitner_system") return Promise.resolve(mockSystemCollection);
 			if (col === "phrase") return Promise.resolve(mockPhraseCollection);
 			return Promise.resolve({});
@@ -59,7 +62,7 @@ describe("LeitnerService Timing Tests", () => {
 		const items = await LeitnerService.getDueItems(userId);
 
 		expect(items).toEqual([]);
-		expect(mockSystemCollection.findOne).toHaveBeenCalledWith({ userId });
+		expect(mockSystemCollection.findOne).toHaveBeenCalledWith({ userId, language: { $in: ["en", null] } });
 	});
 
 	it("Case 2: Phrase Addition - should make a newly added phrase immediately due", async () => {
@@ -118,7 +121,8 @@ describe("LeitnerService Timing Tests", () => {
 			true,
 			"singleton",
 			undefined,
-			true
+			true,
+			"en"
 		);
 	});
 
@@ -379,7 +383,8 @@ describe("LeitnerService Timing Tests", () => {
 			false, // shouldToast is false when dueCount is 0
 			"singleton",
 			undefined,
-			true // persistent
+			true, // persistent
+			"en"
 		);
 	});
 });

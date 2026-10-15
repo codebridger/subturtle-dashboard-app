@@ -10,6 +10,10 @@ jest.mock("@modular-rest/server", () => ({
 	Permission: class { },
 }));
 
+// A request with no language works on the active language; these profiles have none, so
+// English, which also matches rows from before multilingual.
+const EN = { language: { $in: ["en", null] } };
+
 describe("BoardService Tests", () => {
 	let mockCollection: any;
 	const userId = "user_123";
@@ -33,13 +37,18 @@ describe("BoardService Tests", () => {
 
 			await BoardService.refreshActivity(userId, "test_type", { count: 1 }, true);
 
-			expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({
-				userId,
-				type: "test_type",
-				state: "toasted",
-				persistent: false,
-				meta: { count: 1 }
-			}));
+			// Get-or-create is one upsert (ADR-006 point 3), keyed by user, type and language.
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ userId, type: "test_type", ...EN },
+				{ $setOnInsert: expect.objectContaining({
+					language: "en",
+					state: "toasted",
+					persistent: false,
+					meta: { count: 1 }
+				}) },
+				{ upsert: true }
+			);
+			expect(mockCollection.create).not.toHaveBeenCalled();
 		});
 
 		it("should create an idle persistent activity when it doesn't exist and persistent is true but shouldToast is false", async () => {
@@ -47,13 +56,18 @@ describe("BoardService Tests", () => {
 
 			await BoardService.refreshActivity(userId, "test_type", { isActive: true }, false, "singleton", undefined, true);
 
-			expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({
-				userId,
-				type: "test_type",
-				state: "idle",
-				persistent: true,
-				meta: { isActive: true }
-			}));
+			// Get-or-create is one upsert (ADR-006 point 3), keyed by user, type and language.
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ userId, type: "test_type", ...EN },
+				{ $setOnInsert: expect.objectContaining({
+					language: "en",
+					state: "idle",
+					persistent: true,
+					meta: { isActive: true }
+				}) },
+				{ upsert: true }
+			);
+			expect(mockCollection.create).not.toHaveBeenCalled();
 		});
 
 		it("should update an existing activity and preserve persistence", async () => {
@@ -116,6 +130,7 @@ describe("BoardService Tests", () => {
 
 			expect(mockCollection.find).toHaveBeenCalledWith({
 				userId,
+				...EN,
 				$or: [
 					{ state: "toasted" },
 					{ persistent: true, "meta.isActive": true }
@@ -129,7 +144,7 @@ describe("BoardService Tests", () => {
 			await BoardService.consumeActivity(userId, "test_type");
 
 			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ userId, type: "test_type" },
+				{ userId, type: "test_type", ...EN },
 				expect.objectContaining({
 					$set: expect.objectContaining({ state: "idle" })
 				})

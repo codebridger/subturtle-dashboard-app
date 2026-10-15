@@ -110,9 +110,11 @@ const { clozeData, clozeAnswers, clozeChecked, checkResults, gradeResults, cardR
         () => props.chunks || [],
         {
             language: () => props.language,
-            // `check-cloze-answer` takes one answer per phrase, so it judges single-blank cards.
+            // `check-cloze-answer` takes one answer per phrase and checks it against the phrase's
+            // primary chunk (highest confidence), so it judges a card whose one blank is that chunk.
             serverCheck: async (answer) => {
                 if (!props.serverCheck || !props.phraseId || (clozeData.value?.blanks.length ?? 0) !== 1) return null;
+                if ((clozeData.value!.blanks[0].chunk.text || '') !== (primaryChunk(props.chunks)?.text || '')) return null;
                 try {
                     const res = await languageApi.checkClozeAnswer({ phraseId: props.phraseId, answer, language: props.language ?? undefined });
                     // Only a real verdict replaces the local one.
@@ -126,11 +128,22 @@ const { clozeData, clozeAnswers, clozeChecked, checkResults, gradeResults, cardR
 
 watch(cardResult, (result) => emit('result', result));
 
+/**
+ * The chunk the server checks: highest confidence, the earlier one on a tie
+ * (server/src/languages/cloze.ts). Compared by text: reactive arrays can wrap the same chunk twice.
+ */
+function primaryChunk(chunks?: Chunk[]) {
+    if (!chunks?.length) return null;
+    return chunks.reduce((a, b) => ((b?.confidence ?? 0) > (a?.confidence ?? 0) ? b : a));
+}
+
 /** "gehen · past participle" — shown only when the chunk carries a cue (B-15). */
 function cueFor(chunk: Chunk) {
     const c = chunk as ClozeChunk;
-    if (!c.lemma && !c.form) return '';
-    return [c.lemma, c.form].filter(Boolean).join(' · ');
+    // The server fills a missing lemma with the chunk text itself; showing it would give the answer away.
+    const lemma = c.lemma && c.lemma.trim().toLowerCase() !== (c.text || '').trim().toLowerCase() ? c.lemma : '';
+    if (!lemma && !c.form) return '';
+    return [lemma, c.form].filter(Boolean).join(' · ');
 }
 
 function blankClass(blankIndex: number) {
@@ -148,7 +161,9 @@ const statusText = computed(() => {
     if (cardResult.value === 'close' && closeBlank.value) {
         const g = gradeResults[closeBlank.value.blankIndex];
         // Q4: "Almost" with the right form.
-        return g.reason === 'accent' ? `Almost: mind the accent: ${g.expected}` : `Almost: right word, check the ending: ${g.expected}`;
+        if (g.reason === 'accent') return `Almost: mind the accent: ${g.expected}`;
+        if (g.reason === 'typo') return `Almost: check the spelling: ${g.expected}`;
+        return `Almost: right word, check the ending: ${g.expected}`;
     }
     return wrongCount.value + ' to fix — edit and check again';
 });
