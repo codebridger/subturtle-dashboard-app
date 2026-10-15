@@ -107,7 +107,8 @@ void main() {
     final s = await api.languages.add('fr', startLevel: step.result!.startLevel, startLevelSource: 'test').then<Object>((v) => v, onError: (Object e) => e);
     print('add after test: ${s is LanguageState ? 'active=${s.active}' : s}');
     final done = await api.languages.finishLevelTest(id, accept: true);
-    expect(done.languages, isNotEmpty);
+    expect(done.state.languages, isNotEmpty);
+    expect(done.result, isNotNull);
   }, skip: skip);
 
   test('the starter pack of an added language (German, from the test above)', () async {
