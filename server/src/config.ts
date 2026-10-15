@@ -6,6 +6,8 @@ export const BUNDLE_COLLECTION = "phrase_bundle";
 // Live session collections
 export const LIVE_SESSION_COLLECTION = "live_session";
 export const LIVE_SESSION_TEXT_COLLECTION = "live_session_text";
+// "This explanation looks wrong" flags on Coach turns (B-19, Q10). Server only.
+export const COACH_EXPLANATION_FLAG_COLLECTION = "coach_explanation_flag";
 
 // Save assistant (mobile "Save a phrase" chat) conversations
 export const SAVE_ASSISTANT_SESSION_COLLECTION = "save_assistant_session";
