@@ -1,3 +1,10 @@
+# [1.3.0-dev.13](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.12...v1.3.0-dev.13) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** read check-cloze-answer reason and the review item's cue (D-14) ([3561379](https://github.com/codebridger/subturtle-dashboard-app/commit/3561379cd98e5fba676dce92c52cffd3b07774dd))
+
 # [1.3.0-dev.12](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.11...v1.3.0-dev.12) (2026-10-15)
 
 
