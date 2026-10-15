@@ -21,6 +21,12 @@ export type Chunk = {
   transliteration?: string;
   /** Model confidence that this is a useful learnable chunk (0-1) */
   confidence: number;
+  /** Dictionary form for the fill-in-the-gap cue ("anfangen", "der Tisch"); B-15 */
+  lemma?: string;
+  /** English label of the form used in the text ("past tense"); empty for the dictionary form */
+  form?: string;
+  /** Answers a fill-in-the-gap accepts, the exact text first (B-18) */
+  acceptedAnswers?: string[];
 };
 
 export type LinguisticData = {
@@ -83,6 +89,10 @@ const chunkSchema = new Schema(
     definition: { type: String },
     transliteration: { type: String },
     confidence: { type: Number },
+    // The fill-in-the-gap cue (B-15, B-18). Missing on chunks saved before multilingual.
+    lemma: { type: String },
+    form: { type: String },
+    acceptedAnswers: { type: [String], default: undefined },
   },
   { _id: false }
 );
