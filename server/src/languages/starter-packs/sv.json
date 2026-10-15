@@ -399,7 +399,7 @@
       "lemma": "tack",
       "form": "tack",
       "translations": {
-        "fa": "بله، لطفاً.",
+        "fa": "بله، ممنون می‌شوم.",
         "ar": "نعم، من فضلك.",
         "es": "Sí, por favor.",
         "vi": "Vâng, cho tôi xin.",
@@ -639,8 +639,8 @@
       "id": "sv-questions-08",
       "text": "Vem är det?",
       "translations": {
-        "fa": "او کیست؟",
-        "ar": "من هذا؟",
+        "fa": "آن کیست؟",
+        "ar": "من ذلك؟",
         "es": "¿Quién es?",
         "vi": "Đó là ai?",
         "en": "Who is that?",
@@ -995,7 +995,7 @@
         "fa": "دنبال گوشی‌ام می‌گردم.",
         "ar": "أبحث عن هاتفي.",
         "es": "Estoy buscando mi teléfono.",
-        "vi": "Tôi đang tìm điện thoại của tôi.",
+        "vi": "Tôi đang tìm điện thoại của mình.",
         "en": "I'm looking for my phone.",
         "tr": "Telefonumu arıyorum."
       },
@@ -2139,7 +2139,7 @@
         "fa": "شماره‌ات چند است؟",
         "ar": "ما رقم هاتفك؟",
         "es": "¿Cuál es tu número?",
-        "vi": "Số điện thoại của bạn là gì?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
         "en": "What's your number?",
         "tr": "Numaran kaç?"
       },

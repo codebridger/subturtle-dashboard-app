@@ -605,7 +605,7 @@
       "text": "¿Quién es ese?",
       "translations": {
         "fa": "او کیست؟",
-        "ar": "من هذا؟",
+        "ar": "من ذلك؟",
         "vi": "Đó là ai?",
         "en": "Who is that?",
         "tr": "O kim?"
@@ -1197,7 +1197,7 @@
       "translations": {
         "fa": "اینجاست.",
         "ar": "إنه هنا.",
-        "vi": "Nó ở đây.",
+        "vi": "Ở đây này.",
         "en": "It's here.",
         "tr": "Burada."
       },
@@ -1260,7 +1260,7 @@
         "ar": "إلى الأمام مباشرة.",
         "vi": "Đi thẳng.",
         "en": "Straight ahead.",
-        "tr": "Dümdüz ileri."
+        "tr": "Dümdüz gidin."
       },
       "band": 2,
       "group": "places",
@@ -1789,7 +1789,7 @@
       "translations": {
         "fa": "برای تعطیلات اینجا هستم.",
         "ar": "أنا هنا في عطلة.",
-        "vi": "Tôi đến đây để đi nghỉ.",
+        "vi": "Tôi đến đây du lịch.",
         "en": "I'm here on holiday.",
         "tr": "Tatil için buradayım."
       },
@@ -2007,7 +2007,7 @@
       "translations": {
         "fa": "شماره تلفنت چند است؟",
         "ar": "ما رقم هاتفك؟",
-        "vi": "Số điện thoại của bạn là gì?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
         "en": "What's your phone number?",
         "tr": "Telefon numaran ne?"
       },
@@ -2149,7 +2149,7 @@
       "translations": {
         "fa": "خوشم می‌آید.",
         "ar": "يعجبني.",
-        "vi": "Tôi thích nó.",
+        "vi": "Tôi thích cái này.",
         "en": "I like it.",
         "tr": "Hoşuma gidiyor."
       },
@@ -2268,7 +2268,7 @@
       "text": "¡Felicidades!",
       "translations": {
         "fa": "تبریک می‌گویم!",
-        "ar": "مبروك!",
+        "ar": "تهانينا!",
         "vi": "Chúc mừng!",
         "en": "Congratulations!",
         "tr": "Tebrikler!"

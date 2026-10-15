@@ -643,7 +643,7 @@
       "form": "ist",
       "translations": {
         "fa": "او کیست؟",
-        "ar": "من هذا؟",
+        "ar": "من ذلك؟",
         "es": "¿Quién es?",
         "vi": "Đó là ai vậy?",
         "en": "Who's that?",
@@ -1267,7 +1267,7 @@
         "fa": "اینجاست.",
         "ar": "إنه هنا.",
         "es": "Está aquí.",
-        "vi": "Nó ở đây.",
+        "vi": "Ở đây này.",
         "en": "It's here.",
         "tr": "Burada."
       },
@@ -1900,7 +1900,7 @@
         "fa": "برای تعطیلات اینجا هستم.",
         "ar": "أنا هنا في إجازة.",
         "es": "Estoy aquí de vacaciones.",
-        "vi": "Tôi đến đây để đi nghỉ.",
+        "vi": "Tôi đến đây du lịch.",
         "en": "I'm here on holiday.",
         "tr": "Burada tatildeyim."
       },
@@ -2408,7 +2408,7 @@
       "form": "Glückwunsch",
       "translations": {
         "fa": "تبریک می‌گویم!",
-        "ar": "مبروك!",
+        "ar": "تهانينا!",
         "es": "¡Felicidades!",
         "vi": "Chúc mừng!",
         "en": "Congratulations!",

@@ -601,7 +601,7 @@
       "text": "Who's that?",
       "translations": {
         "fa": "آن کیست؟",
-        "ar": "من هذا؟",
+        "ar": "من ذلك؟",
         "es": "¿Quién es ese?",
         "vi": "Đó là ai?",
         "tr": "O kim?"
@@ -1667,7 +1667,7 @@
         "fa": "چطور به فرودگاه بروم؟",
         "ar": "كيف أصل إلى المطار؟",
         "es": "¿Cómo llego al aeropuerto?",
-        "vi": "Đi đến sân bay thế nào?",
+        "vi": "Làm sao để đến sân bay?",
         "tr": "Havalimanına nasıl giderim?"
       },
       "band": 2,
@@ -1822,7 +1822,7 @@
         "fa": "لطفاً همین‌جا نگه دارید.",
         "ar": "توقف هنا من فضلك.",
         "es": "Pare aquí, por favor.",
-        "vi": "Cho tôi dừng ở đây.",
+        "vi": "Cho tôi xuống ở đây.",
         "tr": "Burada durun, lütfen."
       },
       "band": 3,
@@ -1990,7 +1990,7 @@
         "fa": "شماره‌ات چند است؟",
         "ar": "ما رقم هاتفك؟",
         "es": "¿Cuál es tu número de teléfono?",
-        "vi": "Số điện thoại của bạn là gì?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
         "tr": "Telefon numaran ne?"
       },
       "band": 2,
@@ -2241,7 +2241,7 @@
       "text": "Congratulations!",
       "translations": {
         "fa": "تبریک می‌گویم!",
-        "ar": "مبروك!",
+        "ar": "تهانينا!",
         "es": "¡Felicidades!",
         "vi": "Chúc mừng!",
         "tr": "Tebrikler!"

@@ -644,7 +644,7 @@
       "text": "C'est qui ?",
       "translations": {
         "fa": "او کیست؟",
-        "ar": "من هذا؟",
+        "ar": "من ذلك؟",
         "es": "¿Quién es?",
         "vi": "Đó là ai vậy?",
         "en": "Who is that?",
@@ -722,7 +722,7 @@
         "fa": "مطمئنی؟",
         "ar": "هل أنت متأكد؟",
         "es": "¿Estás seguro?",
-        "vi": "Bạn chắc không?",
+        "vi": "Bạn có chắc không?",
         "en": "Are you sure?",
         "tr": "Emin misin?"
       },
@@ -998,7 +998,7 @@
         "fa": "دنبال گوشی‌ام می‌گردم.",
         "ar": "أبحث عن هاتفي.",
         "es": "Estoy buscando mi teléfono.",
-        "vi": "Tôi đang tìm điện thoại của tôi.",
+        "vi": "Tôi đang tìm điện thoại.",
         "en": "I'm looking for my phone.",
         "tr": "Telefonumu arıyorum."
       },
@@ -1957,7 +1957,7 @@
         "fa": "لطفاً همین‌جا نگه دارید.",
         "ar": "توقف هنا من فضلك.",
         "es": "Pare aquí, por favor.",
-        "vi": "Cho tôi dừng ở đây.",
+        "vi": "Cho tôi xuống ở đây.",
         "en": "Stop here, please.",
         "tr": "Burada durun, lütfen."
       },
@@ -2137,7 +2137,7 @@
         "fa": "شماره‌ات چند است؟",
         "ar": "ما رقم هاتفك؟",
         "es": "¿Cuál es tu número?",
-        "vi": "Số điện thoại của bạn là gì?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
         "en": "What's your number?",
         "tr": "Numaran ne?"
       },

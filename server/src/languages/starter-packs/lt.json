@@ -282,7 +282,7 @@
         "fa": "خوش آمدید!",
         "ar": "أهلاً وسهلاً!",
         "es": "¡Bienvenidos!",
-        "vi": "Chào mừng!",
+        "vi": "Chào mừng bạn!",
         "en": "Welcome!",
         "tr": "Hoş geldiniz!"
       },
@@ -1887,7 +1887,7 @@
         "fa": "برای تعطیلات اینجا هستم.",
         "ar": "أنا هنا في عطلة.",
         "es": "Estoy aquí de vacaciones.",
-        "vi": "Tôi đến đây để đi nghỉ.",
+        "vi": "Tôi đến đây du lịch.",
         "en": "I'm here on holiday.",
         "tr": "Burada tatildeyim."
       },
@@ -1937,7 +1937,7 @@
         "fa": "لطفاً اینجا نگه دارید.",
         "ar": "توقف هنا، من فضلك.",
         "es": "Pare aquí, por favor.",
-        "vi": "Cho tôi dừng ở đây.",
+        "vi": "Cho tôi xuống ở đây.",
         "en": "Stop here, please.",
         "tr": "Burada durun, lütfen."
       },
@@ -2111,7 +2111,7 @@
         "fa": "شماره تلفنت چند است؟",
         "ar": "ما رقم هاتفك؟",
         "es": "¿Cuál es tu número de teléfono?",
-        "vi": "Số điện thoại của bạn là gì?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
         "en": "What's your phone number?",
         "tr": "Telefon numaran ne?"
       },
@@ -2256,7 +2256,7 @@
         "fa": "خوشم می‌آید.",
         "ar": "يعجبني.",
         "es": "Me gusta.",
-        "vi": "Tôi thích.",
+        "vi": "Tôi thích cái này.",
         "en": "I like it.",
         "tr": "Hoşuma gidiyor."
       },
@@ -2377,7 +2377,7 @@
       "text": "Sveikinu!",
       "translations": {
         "fa": "تبریک می‌گویم!",
-        "ar": "مبروك!",
+        "ar": "تهانينا!",
         "es": "¡Felicidades!",
         "vi": "Chúc mừng!",
         "en": "Congratulations!",
