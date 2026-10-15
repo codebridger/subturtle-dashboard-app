@@ -64,6 +64,7 @@ class LearningLanguageCaps {
     this.ttsVoice = '',
     this.enabled = true,
     this.features = const LanguageFeatures(),
+    this.serverSpeechVoice,
   });
 
   final String code;
@@ -81,10 +82,17 @@ class LearningLanguageCaps {
   /// "German · Deutsch" (pickers show both names; English shows once).
   String get label => nativeName.isEmpty || nativeName == name ? name : '$name · $nativeName';
 
+  /// The register's non-HD voice for phrase audio (`speechVoice`), when the
+  /// server sends it.
+  final String? serverSpeechVoice;
+
   /// A voice `textToSpeechBase64` accepts for this language. The server refuses
   /// HD voices (the register's Chirp 3 HD ones are for the Coach), so phrase
-  /// audio uses a standard voice that Google has for the language.
+  /// audio uses the register's `speechVoice`, else a standard voice Google has
+  /// for the language ([speechVoices]).
   String get speechVoice {
+    final server = serverSpeechVoice;
+    if (server != null && server.isNotEmpty && !server.contains('HD')) return server;
     if (ttsVoice.isNotEmpty && !ttsVoice.contains('HD')) return ttsVoice;
     return speechVoices[ttsLanguageCode] ?? speechVoices[_defaultLocales[code]] ?? '$ttsLanguageCode-Standard-A';
   }
@@ -118,6 +126,7 @@ class LearningLanguageCaps {
       ttsVoice: str(j['ttsVoice']),
       enabled: boolean(j['enabled'], true),
       features: LanguageFeatures.fromJson(j['features']),
+      serverSpeechVoice: strOrNull(j['speechVoice']),
     );
   }
 

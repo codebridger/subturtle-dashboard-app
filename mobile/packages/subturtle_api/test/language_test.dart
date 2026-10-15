@@ -200,6 +200,10 @@ void main() {
         expect(caps.speechVoice, isNot(contains('HD')), reason: code);
       }
       expect(const LearningLanguageCaps(code: 'de', name: 'German', nativeName: 'Deutsch', ttsVoice: 'de-DE-Chirp3-HD-Kore').speechVoice, 'de-DE-Neural2-G');
+      // The register's speechVoice wins when the server sends it; an HD one is ignored.
+      final fromServer = LearningLanguageCaps.fromJson({'code': 'de', 'name': 'German', 'ttsVoice': 'de-DE-Chirp3-HD-Kore', 'speechVoice': 'de-DE-Wavenet-G'});
+      expect(fromServer.speechVoice, 'de-DE-Wavenet-G');
+      expect(LearningLanguageCaps.fromJson({'code': 'de', 'speechVoice': 'de-DE-Chirp3-HD-Puck'}).speechVoice, 'de-DE-Neural2-G');
     });
 
     test('submit-review reply and the board without language stay readable', () async {
