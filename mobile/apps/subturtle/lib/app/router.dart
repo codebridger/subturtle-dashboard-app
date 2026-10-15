@@ -9,6 +9,10 @@ import '../features/bundles/bundles_screen.dart';
 import '../features/capture/capture_sheet.dart';
 import '../features/coach/coach_home_screen.dart';
 import '../features/coach/transcript_screen.dart';
+import '../features/languages/add_language_screen.dart';
+import '../features/languages/languages_screen.dart';
+import '../features/languages/level_test_screen.dart';
+import '../features/languages/starter_pack_screen.dart';
 import '../features/live_session/session_launch.dart';
 import '../features/live_session/text_chat_screen.dart';
 import '../features/live_session/voice_screen.dart';
@@ -27,6 +31,8 @@ final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref.listen(authProvider, (_, _) => refresh.value++);
+  // A new account (or one whose languages were all removed) goes to the first run.
+  ref.listen(languageStateProvider.select((s) => s.value?.needsLanguage), (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -43,6 +49,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atSplash = state.matchedLocation == '/splash';
       if (status == AuthStatus.unknown) return atSplash ? null : '/splash';
       if (status == AuthStatus.signedOut) return atSignIn ? null : '/signin';
+      // First run (L10): a 2.0 server says the account has no language yet.
+      // Only a loaded state redirects: while it loads, or when it failed, the
+      // learner is never trapped on the first-run screen.
+      final needsLanguage = ref.read(languageStateProvider).value?.needsLanguage ?? false;
+      final inFirstRun = state.matchedLocation == '/welcome' || state.matchedLocation == '/level-test' || state.matchedLocation == '/starter';
+      if (needsLanguage && !inFirstRun) return '/welcome';
+      if (!needsLanguage && state.matchedLocation == '/welcome') return '/today';
       if (atSignIn || atSplash) return '/today';
       return null;
     },
@@ -71,7 +84,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(
               path: '/me',
               builder: (_, _) => const MeScreen(),
-              routes: [GoRoute(path: 'plan', builder: (_, _) => const PlansScreen())],
+              routes: [
+                GoRoute(path: 'plan', builder: (_, _) => const PlansScreen()),
+                GoRoute(
+                  path: 'languages',
+                  builder: (_, _) => const LanguagesScreen(),
+                  routes: [GoRoute(path: ':code', builder: (_, s) => ManageLanguageScreen(language: s.pathParameters['code']!))],
+                ),
+              ],
             ),
           ]),
         ],
@@ -81,6 +101,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         pageBuilder: (_, s) => MaterialPage(fullscreenDialog: true, child: ReviewScreen(bundleId: s.uri.queryParameters['bundle'])),
       ),
+      // Languages (2.0): the first run, Add a language, the chat test and the starter pack.
+      GoRoute(path: '/welcome', parentNavigatorKey: _rootKey, builder: (_, _) => const AddLanguageScreen(firstRun: true)),
+      GoRoute(
+        path: '/add-language',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (_, s) => MaterialPage(fullscreenDialog: true, child: AddLanguageScreen(preselect: s.uri.queryParameters['lang'])),
+      ),
+      GoRoute(
+        path: '/level-test',
+        parentNavigatorKey: _rootKey,
+        builder: (_, s) => LevelTestScreen(
+          language: s.uri.queryParameters['lang'] ?? 'en',
+          from: LevelTestFrom.parse(s.uri.queryParameters['from']),
+          goals: (s.uri.queryParameters['goals'] ?? '').split(',').where((g) => g.isNotEmpty).toList(),
+        ),
+      ),
+      GoRoute(path: '/starter', parentNavigatorKey: _rootKey, builder: (_, s) => StarterPackScreen(language: s.uri.queryParameters['lang'] ?? 'en')),
       GoRoute(path: '/pool', parentNavigatorKey: _rootKey, pageBuilder: (_, _) => const MaterialPage(fullscreenDialog: true, child: PoolScreen())),
       GoRoute(
         path: '/coach/voice',

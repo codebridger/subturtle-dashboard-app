@@ -172,7 +172,7 @@ class _PhraseSheetState extends ConsumerState<PhraseSheet> {
                 Row(
                   children: [
                     Expanded(child: Semantics(header: true, child: Text(p.phrase, style: StType.headline.copyWith(color: c.textStrong)))),
-                    SpeakButton(text: p.phrase),
+                    SpeakButton(text: p.phrase, language: p.language),
                     if (widget.bundleId != null) StIconButton(icon: StIcons.more, semanticLabel: 'More options', variant: StButtonVariant.ghost, onPressed: _more),
                   ],
                 ),

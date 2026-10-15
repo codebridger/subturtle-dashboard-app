@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { type BoardActivityType, type LeitnerItemType } from '~/types/database.type';
 import { analytic } from '~/plugins/mixpanel';
-import { withLanguage } from '~/utils/languageScope';
+import { scopedLanguage, withLanguage } from '~/utils/languageScope';
 import { onLanguageSwitch } from '~/stores/language';
 import type { ReviewResult } from '~/types/language.type';
 
@@ -110,7 +110,8 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			await functionProvider.run({
 				name: 'submit-review',
-				args: withLanguage({ phraseId, isCorrect, ...(result ? { result } : {}), userId: authUser.value?.id })
+				// `result` only to a multilingual server; today's server reads `isCorrect` alone.
+				args: withLanguage({ phraseId, isCorrect, ...(result && scopedLanguage() ? { result } : {}), userId: authUser.value?.id })
 			});
 
 			// Remove from local session to show progress (if needed)

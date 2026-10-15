@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col gap-6">
-        <StPageHeader :title="t('live-session.session-history')" :overline="t('live-session.history-overline')" :subtitle="t('live-session.6-months-expiry')">
+        <StPageHeader :title="t('live-session.session-history')" :overline="historyOverline" :subtitle="t('live-session.6-months-expiry')">
             <template #actions>
                 <StButton color="primary" icon="solar:add-circle-bold" @click="goToNewSession">{{ t('live-session.new-session') }}</StButton>
             </template>
@@ -148,6 +148,7 @@
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StInput, StSegmentedControl, StSkeleton } from 'subturtle-ui';
     import { withLanguage } from '~/utils/languageScope';
     import StPageHeader from '~/components/common/StPageHeader.vue';
+    import { useLanguageStore } from '~/stores/language';
     import StPagination from '~/components/common/StPagination.vue';
     import InlineNotice from '~/components/common/InlineNotice.vue';
     import { useInlineFeatureLock } from '~/composables/useTierLimitModal';
@@ -156,6 +157,11 @@
     import { formatSessionDuration } from '~/utils/duration';
 
     const { t } = useI18n();
+    const language = useLanguageStore();
+    // "Recent German sessions": history is per language (D-17); the list already asks for it.
+    const historyOverline = computed(() =>
+        language.enabled ? t('languages.sessions-in', { language: language.nameOf(language.activeLanguage) }) : t('live-session.history-overline')
+    );
     const router = useRouter();
 
     definePageMeta({

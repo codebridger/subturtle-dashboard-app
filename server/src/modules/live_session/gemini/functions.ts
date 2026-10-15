@@ -28,10 +28,19 @@ import {
 import { AI_CREDIT_EXHAUSTED_CODE, VOICE_PAUSED_CODE } from "../../subscription/config";
 import { EntitlementLimitError } from "../../subscription/enforcement";
 import { GeminiLiveSessionType } from "./types";
+import { buildCoachSession } from "../coach/service";
 
 interface GeminiPracticeSetup {
   userId: string;
-  instructions: string;
+  /**
+   * The raw system prompt (today's clients). A multilingual client may leave it out and
+   * send `language`, `explanationLanguage` and `phraseIds`: the server then builds the
+   * prompt itself (B-19).
+   */
+  instructions?: string;
+  language?: string;
+  explanationLanguage?: string;
+  phraseIds?: string[];
   voice?: string;
   tools?: any[];
   /**
@@ -58,7 +67,8 @@ export const requestGeminiEphemeralToken = defineFunction({
   callback: async function (
     setup: GeminiPracticeSetup
   ): Promise<GeminiLiveSessionType> {
-    const { userId, instructions, voice, tools, isResume } = setup;
+    const { userId, tools, isResume } = setup;
+    let { instructions, voice } = setup;
 
     // Operator kill switch for voice cost spikes: with VOICE_SESSIONS_PAUSED=true
     // on the API service, new sessions are refused before any freemium slot is
@@ -68,6 +78,15 @@ export const requestGeminiEphemeralToken = defineFunction({
       throw new Error(
         `${VOICE_PAUSED_CODE}: Voice practice is paused for a short while.`
       );
+    }
+
+    // B-19: no raw prompt → the server builds it (and refuses a language with no voice
+    // Coach) before any freemium slot is used.
+    if (!instructions) {
+      if (!setup.language && !setup.phraseIds) throw new Error("instructions are required");
+      const coach = await buildCoachSession(userId, { ...setup, mode: "voice" });
+      instructions = coach.instructions;
+      voice = voice || coach.voiceName;
     }
 
     // AI features are the only thing the credit budget gates. `minCredits: 1`
@@ -172,7 +191,7 @@ export const requestGeminiEphemeralToken = defineFunction({
       const session: GeminiLiveSessionType = {
         model: GEMINI_LIVE_SESSION_MODEL,
         voice: voiceName,
-        instructions,
+        instructions: instructions as string,
         modalities: ["AUDIO"],
         expires_at: expiresAtSec,
         voice_session_max_seconds: voiceSessionMaxSeconds,

@@ -1,3 +1,25 @@
+# [1.3.0-dev.11](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.10...v1.3.0-dev.11) (2026-10-15)
+
+
+### Features
+
+* **server:** build the Coach prompt on the server, per learning language (B-19, B-20) ([b0ec32c](https://github.com/codebridger/subturtle-dashboard-app/commit/b0ec32cf4d3d078df7a7aaf2a8467d31a182aa41))
+
+# [1.3.0-dev.10](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.9...v1.3.0-dev.10) (2026-10-15)
+
+
+### Features
+
+* **server:** the shared fill-in-the-gap checker and check-cloze-answer (B-18) ([e33feda](https://github.com/codebridger/subturtle-dashboard-app/commit/e33fedac26afb631dd826fe2e0533745e0ec4f26))
+
+# [1.3.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.8...v1.3.0-dev.9) (2026-10-15)
+
+
+### Features
+
+* **frontend:** board, bundles, review and fill-the-gap per language (D-11 to D-14, D-19) ([ad370c9](https://github.com/codebridger/subturtle-dashboard-app/commit/ad370c9afe177d5280deebae5128dba9eaae4f7f))
+* **frontend:** settings scope labels, Coach explains in, explanation flag, history and progress per language (D-10, D-15 to D-18, D-22) ([28f90cc](https://github.com/codebridger/subturtle-dashboard-app/commit/28f90ccd4f81e0868327a44353f86fb513b1a1f6))
+
 # [1.3.0-dev.8](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.7...v1.3.0-dev.8) (2026-10-15)
 
 

@@ -11,7 +11,11 @@ import '../../shared/widgets.dart';
 import 'start_session_sheet.dart';
 
 /// Recent coach sessions. Session history is a paid feature on the backend.
-final coachHistoryProvider = FutureProvider<CoachSessionPage>((ref) => ref.read(apiProvider).liveSessions.listSessions(limit: 20));
+/// Recent Coach sessions of the active language.
+final coachHistoryProvider = FutureProvider<CoachSessionPage>((ref) async {
+  final lang = await ref.watch(activeLanguageProvider.future);
+  return ref.read(apiProvider).liveSessions.listSessions(limit: 20, language: lang);
+});
 
 /// S11 · Coach: the minutes meter, "Start a session", and recent sessions.
 class CoachHomeScreen extends ConsumerWidget {

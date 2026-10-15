@@ -1,4 +1,5 @@
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import { scopedLanguage } from '~/utils/languageScope';
 
 /**
  * The setup of the most recent session this browser started, so "Repeat your last session"
@@ -11,6 +12,16 @@ import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
  */
 const KEY = 'subturtle:last-live-session';
 
+/**
+ * One last session per learning language (D-17): a German bundle must never be offered while
+ * the learner studies Spanish. English, and everything while multilingual is off, keeps the
+ * original key, so the button a learner already had survives the update.
+ */
+function keyFor(): string {
+    const language = scopedLanguage();
+    return language && language !== 'en' ? `${KEY}:${language}` : KEY;
+}
+
 export interface LastSession {
     bundleId: string;
     mode: 'voice' | 'text';
@@ -21,7 +32,7 @@ export interface LastSession {
 
 export function rememberLastSession(entry: Omit<LastSession, 'at'>) {
     try {
-        localStorage.setItem(KEY, JSON.stringify({ ...entry, at: Date.now() }));
+        localStorage.setItem(keyFor(), JSON.stringify({ ...entry, at: Date.now() }));
     } catch {
         // Private mode / blocked storage: the button just stays hidden.
     }
@@ -29,7 +40,7 @@ export function rememberLastSession(entry: Omit<LastSession, 'at'>) {
 
 export function readLastSession(): LastSession | null {
     try {
-        const raw = localStorage.getItem(KEY);
+        const raw = localStorage.getItem(keyFor());
         if (!raw) return null;
         const parsed = JSON.parse(raw) as LastSession;
         return parsed?.bundleId && parsed?.setup ? parsed : null;

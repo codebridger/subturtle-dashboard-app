@@ -125,7 +125,7 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
               ),
             ),
             if (_stripOpen)
-              PhraseStrip(phrases: widget.launch.phrases, active: _chat.active, done: _chat.done, onTap: _chat.selectPhrase)
+              PhraseStrip(phrases: widget.launch.phrases, active: _chat.active, done: _chat.done, onTap: _chat.selectPhrase, l1Rtl: ref.watch(l1Provider).value?.rtl)
             else
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

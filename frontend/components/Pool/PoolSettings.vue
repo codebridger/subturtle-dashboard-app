@@ -19,7 +19,7 @@
 					<div class="flex items-start gap-3">
 						<Icon name="iconify solar--hourglass-line-duotone" class="mt-0.5 !h-5 !w-5 shrink-0 text-secondary/50" />
 						<div>
-							<div class="font-bold text-gray-800 dark:text-gray-200">{{ $t('pool.age_cutoff') }}</div>
+							<div class="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">{{ $t('pool.age_cutoff') }} <ScopeLabel scope="language" /></div>
 							<p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('pool.age_cutoff_desc') }}</p>
 						</div>
 					</div>
@@ -35,7 +35,7 @@
 					<div class="flex items-start gap-3">
 						<Icon name="iconify solar--layers-minimalistic-bold-duotone" class="mt-0.5 !h-5 !w-5 shrink-0 text-secondary/50" />
 						<div>
-							<div class="font-bold text-gray-800 dark:text-gray-200">{{ $t('pool.chunk_size') }}</div>
+							<div class="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">{{ $t('pool.chunk_size') }} <ScopeLabel scope="language" /></div>
 							<p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('pool.chunk_size_desc') }}</p>
 						</div>
 					</div>
@@ -51,7 +51,7 @@
 					<div class="flex items-start gap-3">
 						<Icon name="iconify solar--clock-circle-bold-duotone" class="mt-0.5 !h-5 !w-5 shrink-0 text-secondary/50" />
 						<div>
-							<div class="font-bold text-gray-800 dark:text-gray-200">{{ $t('pool.daily_review_time') }}</div>
+							<div class="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">{{ $t('pool.daily_review_time') }} <ScopeLabel scope="all" /></div>
 							<p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('pool.daily_review_time_desc') }}</p>
 						</div>
 					</div>
@@ -82,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+import ScopeLabel from '~/components/language/ScopeLabel.vue';
 import { ref, watch } from 'vue';
 import { withLanguage } from '~/utils/languageScope';
 import { Button, Card, Icon } from 'pilotui/elements';

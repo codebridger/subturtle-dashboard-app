@@ -241,6 +241,7 @@ class LanguageSummary {
     this.explanationLanguage,
     this.starterPack = const StarterPackSummary(),
     this.purgeAt,
+    this.newPhrasesPerDay,
   });
 
   final String code;
@@ -263,6 +264,9 @@ class LanguageSummary {
   /// When a removed language is deleted for good.
   final DateTime? purgeAt;
 
+  /// New phrases a day from the Pool, when the server sends it.
+  final int? newPhrasesPerDay;
+
   bool get isActive => status == 'active';
   bool get isPaused => status == 'paused';
   bool get isRemoved => status == 'removed';
@@ -280,6 +284,7 @@ class LanguageSummary {
       explanationLanguage: strOrNull(j['explanationLanguage']),
       starterPack: StarterPackSummary.fromJson(j['starterPack']),
       purgeAt: date(j['purgeAt']),
+      newPhrasesPerDay: intOrNull(j['newPhrasesPerDay'] ?? asJson(j['settings'])['newPhrasesPerDay']),
     );
   }
 }

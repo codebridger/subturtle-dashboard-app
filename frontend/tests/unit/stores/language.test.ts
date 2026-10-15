@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 
+vi.mock('vue', async () => await vi.importActual('vue'));
 const run = vi.hoisted(() => vi.fn());
 vi.mock('@modular-rest/client', () => ({ functionProvider: { run }, authentication: { user: { id: 'u1' } } }));
 vi.mock('~/plugins/mixpanel', () => ({ analytic: { track: vi.fn() }, registerLanguageAnalytics: vi.fn() }));

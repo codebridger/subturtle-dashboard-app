@@ -89,6 +89,8 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
 
     // ----- Module-scoped, non-reactive -----
     let sessionId: string | null = null;
+    /** The same id, reactive, for the page (the Coach explanation flag, D-16). */
+    const activeSessionId = ref<string | null>(null);
     let sessionTools: CreateOptions['tools'] | null = null;
     let onUpdateCallback: ((data: any) => void) | null = null;
     let lastFailedInput: TextTurnInput | null = null;
@@ -107,6 +109,7 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
         coachHasReplied.value = false;
         lastFailedInput = null;
         sessionId = null;
+        activeSessionId.value = null;
         sessionTools = options.tools;
         onUpdateCallback = options.onUpdate || null;
         metadata.value = options.metadata || null;
@@ -124,6 +127,7 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
                 },
             });
             sessionId = res.sessionId;
+            activeSessionId.value = sessionId;
             sessionStarted.value = true;
             connState.value = 'ready';
             return { success: true, session: res };
@@ -250,6 +254,7 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
 
     return {
         // State
+        activeSessionId,
         sessionStarted,
         conversationDialogs,
         tokenUsage,

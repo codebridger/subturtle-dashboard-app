@@ -63,3 +63,15 @@ class AppLanguage {
   @override
   int get hashCode => code.hashCode;
 }
+
+/// Whether [text] starts in a right-to-left script (Arabic, Persian, Hebrew,
+/// Urdu). Only for text with no known language, such as the sign-in sample
+/// cards shown before there is a profile; everywhere else the direction comes
+/// from the learner's own language.
+bool startsRightToLeft(String text) {
+  for (final r in text.runes) {
+    if ((r >= 0x0590 && r <= 0x08FF) || (r >= 0xFB1D && r <= 0xFDFF) || (r >= 0xFE70 && r <= 0xFEFF)) return true;
+    if ((r >= 0x41 && r <= 0x5A) || (r >= 0x61 && r <= 0x7A) || (r >= 0xC0 && r <= 0x24F) || (r >= 0x0370 && r <= 0x04FF) || r >= 0x3040) return false;
+  }
+  return false;
+}
