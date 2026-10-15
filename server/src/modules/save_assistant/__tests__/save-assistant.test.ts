@@ -197,6 +197,7 @@ describe("save assistant: full flow for one user", () => {
         savedCount: 1,
         savedPhrases: ["get out of"],
         lastMessageAt: expect.any(Date),
+        language: "en",
       },
     ]);
     expect(list[0]).not.toHaveProperty("messages");
