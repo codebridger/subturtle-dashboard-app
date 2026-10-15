@@ -1,3 +1,10 @@
+# [1.3.0-dev.21](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.20...v1.3.0-dev.21) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** speak with voices the TTS function accepts; follow the updated language contract (M-12, M-14, M-06) ([d0255c9](https://github.com/codebridger/subturtle-dashboard-app/commit/d0255c9d94af062dc7eb9581edeafbb3367b349f))
+
 # [1.3.0-dev.20](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.19...v1.3.0-dev.20) (2026-10-15)
 
 
