@@ -559,6 +559,7 @@ class _LanguageGroups extends ConsumerWidget {
 
   Future<int?> _pickPerDay(BuildContext context, String name, int? current) => showStBottomSheet<int>(
         context: context,
+        useRootNavigator: true,
         builder: (ctx) => StSheet(
           title: 'New phrases a day',
           child: Column(

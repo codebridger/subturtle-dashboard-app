@@ -105,7 +105,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           if (multilingual)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 10, 0),
-              child: Row(children: [const Flexible(child: ActiveLanguagePill(caption: 'Saves go here')), const Spacer(), avatar]),
+              child: Row(children: [const Expanded(child: Align(alignment: Alignment.centerLeft, child: ActiveLanguagePill(caption: 'Saves go here'))), const SizedBox(width: 8), avatar]),
             ),
           StPageHeader(
             eyebrow: multilingual ? 'Today · $langName' : 'Today',
