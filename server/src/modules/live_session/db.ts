@@ -17,6 +17,10 @@ const liveSessionSchema = new Schema<LiveSessionRecordType>(
     usage: { type: Object },
     dialogs: { type: [Object], default: [] },
     metadata: { type: Object, default: {} },
+    // The learning language and the Coach's explanation language (B-13). Missing on
+    // sessions from before multilingual: English.
+    language: { type: String },
+    explanationLanguage: { type: String },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

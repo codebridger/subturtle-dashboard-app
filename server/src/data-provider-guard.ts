@@ -21,6 +21,10 @@
  *   references a client can point at anyone's documents, so populated documents are
  *   pinned to the caller too.
  *
+ * It also logs, and never blocks, a client read of a per-language collection that names no
+ * `language` (ADR-006 point 10, work list B-26), so the team can find the screens that still
+ * read every language at once.
+ *
  * Registered through createRest's `onBeforeInit`, next to functionCallerGuard. Like that
  * guard it only decodes the token: the data-provider router's own auth middleware still
  * verifies the signature, so a forged administrator claim gains nothing here.
@@ -109,6 +113,34 @@ export const SERVER_OWNED_FIELDS: Record<string, string[]> = {
     "knowledgeMapEnabled",
   ],
 };
+
+/**
+ * Collections whose documents belong to one learning language (ADR-006 point 4). A client
+ * read of one of them that names no `language` is logged (B-26). Add a collection here when
+ * it gains `language`.
+ */
+export const LANGUAGE_COLLECTIONS = [
+  "user_content.phrase",
+  "user_content.phrase_bundle",
+  "user_content.live_session",
+  "user_content.live_session_text",
+  "user_content.save_assistant_session",
+];
+
+/** The tag on every missing-language log line; a log-based metric counts it for the team. */
+export const MISSING_LANGUAGE_TAG = "missing_language_read";
+
+export interface MissingLanguageRead {
+  tag: typeof MISSING_LANGUAGE_TAG;
+  userId: string;
+  collection: string;
+  op: string;
+  query: string;
+}
+
+export type MissingLanguageLogger = (entry: MissingLanguageRead) => void;
+
+const defaultMissingLanguageLogger: MissingLanguageLogger = (entry) => console.warn(JSON.stringify(entry));
 
 // `options` keys are called as Mongoose query methods (`query[key](value)`), so only plain
 // paging and shaping methods are allowed: `setQuery`, `merge`, `or`, `deleteMany`, … would
@@ -384,6 +416,53 @@ function applyPolicy(request: PolicyRequest) {
   }
 }
 
+/** True when a filter names `language`, at the top level or inside $and / $or / $nor. */
+function mentionsLanguage(filter: unknown, depth = 0): boolean {
+  if (depth > 8) return false;
+  if (Array.isArray(filter)) return filter.some((item) => mentionsLanguage(item, depth + 1));
+  if (!isPlainObject(filter)) return false;
+  if ("language" in filter) return true;
+  return ["$and", "$or", "$nor"].some((key) => mentionsLanguage(filter[key], depth + 1));
+}
+
+/**
+ * The client's filter for a read, or undefined when the read is by id (the screens open one
+ * known document; that is not a missing-language read).
+ */
+function readFilter(op: string, body: Record<string, any>): unknown | undefined {
+  if (op === "aggregate") {
+    const pipeline = Array.isArray(body.pipelines) ? body.pipelines : [];
+    return pipeline.filter((stage: any) => isPlainObject(stage) && "$match" in stage).map((stage: any) => stage.$match);
+  }
+  const query = body.query;
+  if (isPlainObject(query) && "_id" in query) return undefined;
+  return query ?? {};
+}
+
+/**
+ * Logs a client read of a per-language collection that names no language (B-26). Runs on the
+ * filter the guard let through (its owner field is not a language). Never throws and never
+ * blocks the request. By-id reads (`findByIds`, or a filter on `_id`) are skipped.
+ */
+function warnMissingLanguage(op: string, body: Record<string, any>, callerId: string, log: MissingLanguageLogger) {
+  try {
+    if (op === "findbyids") return;
+    const key = `${body.database}.${body.collection}`;
+    if (!LANGUAGE_COLLECTIONS.includes(key)) return;
+    const filter = readFilter(op, body);
+    if (filter === undefined || mentionsLanguage(filter)) return;
+    let query = "";
+    try {
+      query = JSON.stringify(filter).slice(0, 500);
+    } catch {
+      query = "[unserialisable]";
+    }
+    log({ tag: MISSING_LANGUAGE_TAG, userId: callerId, collection: key, op, query });
+  } catch {
+    // A warning must never break a read.
+  }
+}
+
 /** Keeps only the caller's documents in a findByIds result. */
 function filterOwnResults(ctx: GuardContext, policy: CollectionPolicy, callerId: string) {
   const data = ctx.body?.data;
@@ -392,7 +471,8 @@ function filterOwnResults(ctx: GuardContext, policy: CollectionPolicy, callerId:
   ctx.body = { ...ctx.body, data: data.filter((doc: any) => doc && String(doc[field]) === callerId) };
 }
 
-export function createDataProviderGuard(lookup: CollectionLookup) {
+export function createDataProviderGuard(lookup: CollectionLookup, options: { logMissingLanguage?: MissingLanguageLogger } = {}) {
+  const logMissingLanguage = options.logMissingLanguage || defaultMissingLanguageLogger;
   return async function dataProviderGuard(ctx: GuardContext, next: () => Promise<unknown>) {
     const match = DATA_PROVIDER_PATH.exec(ctx.path) || DATA_PROVIDER_PATH.exec(decodedPath(ctx.path));
     if (!match) return next();
@@ -422,6 +502,8 @@ export function createDataProviderGuard(lookup: CollectionLookup) {
       if (!policy) return next();
 
       applyPolicy({ op, body, database: body.database, info, policy, callerId: caller.id, lookup });
+      // Only reads the guard let through; the owner filter it added names no language.
+      if (READ_OPS.includes(op)) warnMissingLanguage(op, body, caller.id, logMissingLanguage);
 
       await next();
       if (op === "findbyids") filterOwnResults(ctx, policy, caller.id);

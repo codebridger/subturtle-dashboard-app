@@ -1,3 +1,30 @@
+# [1.3.0-dev.18](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.17...v1.3.0-dev.18) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** never trap the learner when the server has no chat test or starter pack yet ([43e0369](https://github.com/codebridger/subturtle-dashboard-app/commit/43e0369325d0a2103bf5a68b1d8a5e7a07a18175))
+* **mobile:** the switcher opens over the tab bar; the pill's caption is not cut; own-language chip shows the code ([d593983](https://github.com/codebridger/subturtle-dashboard-app/commit/d593983c1fa888de2d6c7aa12e5916c54db83149))
+
+# [1.3.0-dev.17](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.16...v1.3.0-dev.17) (2026-10-15)
+
+
+### Features
+
+* **server:** sessions and progress per language, and the missing-language warning (B-13, B-23, B-26) ([50b372b](https://github.com/codebridger/subturtle-dashboard-app/commit/50b372b5c2ff0e7529f401f2fcdf1440f9adbc58))
+
+# [1.3.0-dev.16](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.15...v1.3.0-dev.16) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** avoid distinct and array-index queries on Firestore (B-19, B-31) ([4d3950a](https://github.com/codebridger/subturtle-dashboard-app/commit/4d3950a416e55b2b7bf487a58e26d0d87c0494aa))
+
+
+### Features
+
+* **server:** starter packs on for every launch language (B-21) ([6c7a58a](https://github.com/codebridger/subturtle-dashboard-app/commit/6c7a58a48fad91f31eb3631fc06e4f696e86d295))
+
 # [1.3.0-dev.15](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.14...v1.3.0-dev.15) (2026-10-15)
 
 
