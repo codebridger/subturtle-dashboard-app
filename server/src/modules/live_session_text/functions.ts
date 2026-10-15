@@ -44,6 +44,7 @@ import {
 } from "./utils";
 import type { TextSessionRecordType, TextTurnInput } from "./types";
 import { buildCoachSession } from "../live_session/coach/service";
+import { sessionLanguages } from "../live_session/session-language";
 
 // Surface a soft "wrap up soon" flag this many user messages before the per-chat
 // cap (Council 004: e.g. message 51 of a 60-message Reader chat).
@@ -242,6 +243,7 @@ const createTextSession = defineFunction({
       dialogs: [],
       usage: emptyUsage(),
       metadata: metadata || {},
+      ...(await sessionLanguages(userId, context)),
       textChatConsumed: true,
     });
 
