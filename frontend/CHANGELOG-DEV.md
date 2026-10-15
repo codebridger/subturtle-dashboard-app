@@ -1,3 +1,11 @@
+# [1.3.0-dev.18](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.17...v1.3.0-dev.18) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** never trap the learner when the server has no chat test or starter pack yet ([43e0369](https://github.com/codebridger/subturtle-dashboard-app/commit/43e0369325d0a2103bf5a68b1d8a5e7a07a18175))
+* **mobile:** the switcher opens over the tab bar; the pill's caption is not cut; own-language chip shows the code ([d593983](https://github.com/codebridger/subturtle-dashboard-app/commit/d593983c1fa888de2d6c7aa12e5916c54db83149))
+
 # [1.3.0-dev.17](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.16...v1.3.0-dev.17) (2026-10-15)
 
 
