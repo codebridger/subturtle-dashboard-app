@@ -547,26 +547,42 @@ abstract final class ReviewResult {
 
 /// `check-cloze-answer`.
 class ClozeCheck {
-  const ClozeCheck({required this.result, required this.expected});
+  const ClozeCheck({required this.result, required this.expected, this.reason});
 
   /// right, close or wrong.
   final String result;
   final String expected;
 
+  /// Why, when the server says (e.g. a missing accent).
+  final String? reason;
+
   factory ClozeCheck.fromJson(dynamic v) {
     final j = asJson(v);
-    return ClozeCheck(result: str(j['result'], ReviewResult.wrong), expected: str(j['expected']));
+    return ClozeCheck(result: str(j['result'], ReviewResult.wrong), expected: str(j['expected']), reason: strOrNull(j['reason']));
   }
 }
 
 /// `get-coach-instructions`: the Coach prompt built on the server.
 class CoachInstructions {
-  const CoachInstructions({required this.instructions, this.voiceName});
+  const CoachInstructions({required this.instructions, this.voiceName, this.explanationLanguage, this.explanationSwitchedToEnglish = false});
   final String instructions;
+
+  /// The Gemini voice for the session (the one asked for, else the language's).
   final String? voiceName;
+
+  /// The language the Coach will explain in.
+  final String? explanationLanguage;
+
+  /// Many learners flagged this pair's explanations, so the Coach explains in English.
+  final bool explanationSwitchedToEnglish;
 
   factory CoachInstructions.fromJson(dynamic v) {
     final j = asJson(v);
-    return CoachInstructions(instructions: str(j['instructions']), voiceName: strOrNull(j['voiceName']));
+    return CoachInstructions(
+      instructions: str(j['instructions']),
+      voiceName: strOrNull(j['voiceName']),
+      explanationLanguage: strOrNull(j['explanationLanguage']),
+      explanationSwitchedToEnglish: boolean(j['explanationSwitchedToEnglish']),
+    );
   }
 }

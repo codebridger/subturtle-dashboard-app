@@ -227,7 +227,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                         ChatBubble(text: l.text, fromUser: l.fromUser, phrases: l.fromUser ? const [] : widget.launch.phrases),
                         // Under the Coach's explanation: "This looks wrong" (S13).
                         if (!l.fromUser && ref.watch(multilingualProvider))
-                          ExplanationFlag(sessionId: v.sessionId, turnIndex: lines.take(lines.length - 1 - i).where((x) => !x.fromUser).length),
+                          ExplanationFlag(language: widget.launch.language, explanationLanguage: widget.launch.explanationLanguage, sessionId: v.sessionId, turnIndex: lines.take(lines.length - 1 - i).where((x) => !x.fromUser).length),
                       ],
                     );
                   },

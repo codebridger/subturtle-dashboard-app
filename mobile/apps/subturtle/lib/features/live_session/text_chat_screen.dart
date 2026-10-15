@@ -180,7 +180,7 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
             onRetry: () => _chat.retry(m),
           ),
           if (!m.fromUser && ref.watch(multilingualProvider))
-            Align(alignment: Alignment.centerLeft, child: ExplanationFlag(sessionId: _chat.sessionId, turnIndex: items.take(i).where((x) => !x.fromUser).length)),
+            Align(alignment: Alignment.centerLeft, child: ExplanationFlag(language: widget.launch.language, explanationLanguage: widget.launch.explanationLanguage, sessionId: _chat.sessionId, turnIndex: items.take(i).where((x) => !x.fromUser).length)),
         ],
         if (starting || _chat.status == TextChatStatus.waiting) const TypingBubble(),
         if (_chat.error != null && _chat.status == TextChatStatus.ready && !_chat.capReached)

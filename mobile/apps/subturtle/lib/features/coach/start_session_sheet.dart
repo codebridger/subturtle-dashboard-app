@@ -152,25 +152,25 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
       ref.read(settingsProvider.notifier).setLastVoice(voice);
       // The Coach prompt is built on the server for this language (Q3). A
       // server without it gets the prompt the app builds from the shared spec.
-      String? serverPrompt;
+      CoachInstructions? ci;
       if (ref.read(multilingualProvider)) {
-        final ci = await api.liveSessions.getCoachInstructions(
+        ci = await api.liveSessions.getCoachInstructions(
           language: learning.code,
           explanationLanguage: explain ?? lang?.code ?? 'en',
           phraseIds: [for (final p in phrases) p.id],
           mode: mode == CoachMode.voice ? 'voice' : 'text',
+          voice: voice,
         );
-        serverPrompt = ci?.instructions;
       }
       final launch = SessionLaunch(
         bundle: bundle,
         phrases: phrases,
-        voice: voice,
+        voice: ci?.voiceName ?? voice,
         nativeLanguage: lang?.name ?? 'auto',
         language: learning.code,
         languageName: learning.name,
-        explanationLanguage: explain,
-        serverInstructions: serverPrompt,
+        explanationLanguage: ci?.explanationLanguage ?? explain,
+        serverInstructions: ci?.instructions,
       );
       if (!mounted) return;
       final router = GoRouter.of(context);

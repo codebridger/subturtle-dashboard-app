@@ -43,6 +43,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
   final _typed = TextEditingController();
   final _typedFocus = FocusNode();
   ClozeResult? _clozeResult;
+
+  /// The answer the server expected (it may differ from the blank's text).
+  String? _expected;
+  bool _checking = false;
   bool _keyboardOpen = false;
 
   @override
@@ -50,7 +54,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     final api = ref.read(apiProvider);
-    _queue = GradeQueue((g) => api.review.submit(g.phraseId, learned: g.learned));
+    _queue = GradeQueue((g) => api.review.submit(g.phraseId, learned: g.learned, result: g.result));
     _typedFocus.addListener(() => setState(() => _keyboardOpen = _typedFocus.hasFocus));
     _load();
   }
@@ -108,12 +112,34 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
     SemanticsService.sendAnnouncement(View.of(context), 'Answer. ${_item.phrase.translation}', TextDirection.ltr);
   }
 
-  void _checkCloze(Cloze cloze) {
-    final res = checkAnswer(_typed.text, cloze.answer);
-    if (res == ClozeResult.correct) ref.read(hapticsProvider).medium();
+  /// Checks the typed answer: on the server when it can (so every surface
+  /// agrees on right, close and wrong, M-11), else on the phone.
+  Future<void> _checkCloze(Cloze cloze) async {
+    if (_checking) return;
     _typedFocus.unfocus();
+    final item = _item;
+    final language = item.phrase.languageCode;
+    var res = checkAnswer(_typed.text, cloze.answer, language: language, accepted: cloze.accepted);
+    String? expected;
+    if (ref.read(multilingualProvider) && _typed.text.trim().isNotEmpty) {
+      setState(() => _checking = true);
+      try {
+        final server = await ref.read(apiProvider).review.checkCloze(phraseId: item.phraseId, answer: _typed.text, language: language);
+        if (server != null) {
+          res = ClozeResult.fromServer(server.result);
+          if (server.expected.isNotEmpty) expected = server.expected;
+        }
+      } catch (e) {
+        // The phone's own check stands in when the server cannot answer.
+        debugPrint('check-cloze-answer failed: $e');
+      }
+      if (!mounted || _item.phraseId != item.phraseId) return;
+    }
+    if (res == ClozeResult.correct) ref.read(hapticsProvider).medium();
     setState(() {
+      _checking = false;
       _clozeResult = res;
+      _expected = expected;
       _revealed = true;
     });
   }
@@ -122,7 +148,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
     if (!_revealed) return;
     final h = ref.read(hapticsProvider);
     learned ? h.medium() : h.light();
-    final grade = Grade(_index, _item.phraseId, learned);
+    // Close keeps the card in its box (Q4); Learned after "Almost" is close.
+    final grade = Grade(_index, _item.phraseId, learned, result: (_clozeResult ?? ClozeResult.correct).reviewResult(learned: learned));
     final settings = ref.read(settingsProvider.notifier);
     if (!ref.read(settingsProvider).swipeHintSeen) settings.markSwipeHintSeen();
     _queue.add(grade);
@@ -143,6 +170,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
         _index++;
         _revealed = false;
         _clozeResult = null;
+        _expected = null;
         _typed.clear();
       });
     }
@@ -287,6 +315,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
           cloze: cloze,
           revealed: _revealed,
           clozeResult: _clozeResult,
+          expected: _expected,
           typed: _typed.text,
           showTapHint: cloze == null && !_revealed && _hintUses < 3,
         ),
@@ -359,6 +388,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
       bottom = _ClozeInput(
         controller: _typed,
         focusNode: _typedFocus,
+        checking: _checking,
         onCheck: () => _checkCloze(cloze),
         onShow: () {
           _typedFocus.unfocus();
@@ -406,12 +436,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
 
 /// The card: front, or front + answer once revealed.
 class _CardFace extends ConsumerWidget {
-  const _CardFace({super.key, required this.item, required this.cloze, required this.revealed, required this.clozeResult, required this.typed, required this.showTapHint});
+  const _CardFace({super.key, required this.item, required this.cloze, required this.revealed, required this.clozeResult, required this.typed, required this.showTapHint, this.expected});
 
   final ReviewItem item;
   final Cloze? cloze;
   final bool revealed;
   final ClozeResult? clozeResult;
+  final String? expected;
   final String typed;
   final bool showTapHint;
 
@@ -446,7 +477,7 @@ class _CardFace extends ConsumerWidget {
             HighlightedSentence(sentence: p.context!, highlight: p.phrase, style: StType.bodyLarge.copyWith(color: c.textMuted)),
           ],
         ] else
-          _ClozeSentence(cloze: cloze!, result: clozeResult, typed: typed, rtl: l1IsRtl(ref, p)),
+          _ClozeSentence(cloze: cloze!, result: clozeResult, typed: typed, rtl: l1IsRtl(ref, p), expected: expected),
         if (showTapHint) ...[
           const SizedBox(height: 28),
           Center(child: Text('Tap card to see answer', style: StType.bodySmall.copyWith(color: c.textFaint))),
@@ -489,15 +520,19 @@ class _CardFace extends ConsumerWidget {
 }
 
 class _ClozeSentence extends StatelessWidget {
-  const _ClozeSentence({required this.cloze, required this.result, required this.typed, required this.rtl});
+  const _ClozeSentence({required this.cloze, required this.result, required this.typed, required this.rtl, this.expected});
   final Cloze cloze;
   final ClozeResult? result;
   final String typed;
   final bool rtl;
 
+  /// The server's expected answer, when it checked.
+  final String? expected;
+
   @override
   Widget build(BuildContext context) {
     final c = context.st;
+    final answer = expected ?? cloze.answer;
     final style = StType.base(size: 22, weight: FontWeight.w700, height: 1.5).copyWith(color: c.textStrong);
     InlineSpan blank;
     if (result == null) {
@@ -514,17 +549,39 @@ class _ClozeSentence extends StatelessWidget {
         ),
       );
     } else if (result == ClozeResult.correct) {
-      blank = TextSpan(text: cloze.answer, style: TextStyle(color: c.jade700, backgroundColor: c.accentSoft, fontWeight: FontWeight.w900));
+      blank = TextSpan(text: typed.trim().isEmpty ? answer : typed.trim(), style: TextStyle(color: c.jade700, backgroundColor: c.accentSoft, fontWeight: FontWeight.w900));
     } else {
       blank = TextSpan(children: [
         if (typed.trim().isNotEmpty) TextSpan(text: '${typed.trim()} ', style: TextStyle(color: c.textMuted, decoration: TextDecoration.lineThrough)),
-        TextSpan(text: cloze.answer, style: TextStyle(color: c.rose700, backgroundColor: c.primarySoft, fontWeight: FontWeight.w900)),
+        TextSpan(text: answer, style: TextStyle(color: result == ClozeResult.close ? c.amber600 : c.rose700, backgroundColor: result == ClozeResult.close ? c.warningSoft : c.primarySoft, fontWeight: FontWeight.w900)),
       ]);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text.rich(TextSpan(style: style, children: [TextSpan(text: '"${cloze.before}'), blank, TextSpan(text: '${cloze.after}"')])),
+        if (cloze.hasCue) ...[
+          const SizedBox(height: 12),
+          // L8 · the cue chip: the base word and the form asked for.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Semantics(
+              label: 'Cue: ${cloze.cueLemma}${cloze.cueForm == null ? '' : ', ${cloze.cueForm}'}',
+              excludeSemantics: true,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(color: c.infoSoft, borderRadius: StRadius.brMd),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Cue: ${cloze.cueLemma}', style: StType.base(size: 15, weight: FontWeight.w800).copyWith(color: c.textStrong)),
+                    if (cloze.cueForm != null) Text(cloze.cueForm!, style: StType.bodySmall.copyWith(color: c.textMuted)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         if (result != null) ...[
           const SizedBox(height: 10),
           Semantics(
@@ -537,8 +594,8 @@ class _ClozeSentence extends StatelessWidget {
                   child: Text(
                     switch (result!) {
                       ClozeResult.correct => 'Right!',
-                      ClozeResult.close => 'Almost! The answer is ${cloze.answer}.',
-                      ClozeResult.wrong => 'The answer is ${cloze.answer}.',
+                      ClozeResult.close => cloze.hasCue ? 'Close. Right word, check the ending. The answer is $answer.' : 'Almost! The answer is $answer.',
+                      ClozeResult.wrong => 'The answer is $answer.',
                     },
                     style: StType.bodyMedium.copyWith(color: c.textBody, fontWeight: FontWeight.w700),
                   ),
@@ -565,11 +622,12 @@ class _ClozeSentence extends StatelessWidget {
 }
 
 class _ClozeInput extends StatelessWidget {
-  const _ClozeInput({required this.controller, required this.focusNode, required this.onCheck, required this.onShow});
+  const _ClozeInput({required this.controller, required this.focusNode, required this.onCheck, required this.onShow, this.checking = false});
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onCheck;
   final VoidCallback onShow;
+  final bool checking;
 
   @override
   Widget build(BuildContext context) {
@@ -586,7 +644,7 @@ class _ClozeInput extends StatelessWidget {
           onSubmitted: (_) => onCheck(),
         ),
         const SizedBox(height: 12),
-        StButton(label: 'Check', size: StSize.lg, block: true, icon: StIcons.check, onPressed: onCheck),
+        StButton(label: 'Check', size: StSize.lg, block: true, icon: StIcons.check, loading: checking, onPressed: checking ? null : onCheck),
         StButton(label: "I don't know, show me", variant: StButtonVariant.ghost, tone: StTone.neutral, size: StSize.lg, block: true, onPressed: onShow),
       ],
     );

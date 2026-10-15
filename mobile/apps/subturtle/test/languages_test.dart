@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subturtle/features/languages/language_ui.dart';
+import 'package:subturtle/features/live_session/session_launch.dart';
+import 'package:subturtle/features/review/review_logic.dart';
 import 'package:subturtle/shared/languages.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
@@ -414,6 +416,121 @@ void main() {
       await tester.tap(find.text('Save to Stranger Things S2'));
       await tester.settle(const Duration(milliseconds: 100), 15);
       expect(argsOf(b, 'createPhrase').last['language'], 'de');
+    });
+  });
+
+  group('Coach (M-10)', () {
+    testWidgets('the prompt comes from the server; the chat is in German; flag a wrong explanation', (tester) async {
+      final langs = FakeLanguageServer(active: 'de', startLevels: {'en': 'B1', 'de': 'A2'})..seededLanguages = {'en', 'de'};
+      final b = await pumpApp(tester, languages: langs, seed: (b) {
+        b.paths['/data-provider/findByIds'] = (body) => [
+              {'_id': 'p1', 'phrase': 'ich muss', 'translation': 'باید', 'language': 'de'},
+            ];
+        b.functions['get-coach-instructions'] = (a) => {'instructions': 'SERVER PROMPT for ${a['language']}', 'voiceName': 'Kore', 'explanationLanguage': 'fa'};
+        b.functions['create-text-session'] = (_) => {'sessionId': 's1'};
+        b.functions['text-turn'] = (_) => {'done': true, 'text': 'Hallo! "ich muss" heißt: man hat keine Wahl.'};
+        b.functions['flag-coach-explanation'] = (a) => {'on': a['on']};
+      });
+      await tester.tap(find.text('Coach'));
+      await tester.settle();
+      expect(eyebrow('AI coaching · German'), findsOneWidget);
+      expect(eyebrow('Recent German sessions'), findsOneWidget);
+      await tester.tap(find.text('Start a session'));
+      await tester.settle();
+      expect(find.text('Persian · checked by a teacher'), findsOneWidget, reason: 'Coach explains in, with who checked it');
+      await tester.tap(find.text('Text'));
+      await tester.settle();
+      await tester.tap(find.text('Start text chat'));
+      await tester.settle();
+
+      final ci = argsOf(b, 'get-coach-instructions').single;
+      expect(ci['language'], 'de');
+      expect(ci['explanationLanguage'], 'fa');
+      expect(ci['mode'], 'text');
+      final create = argsOf(b, 'create-text-session').single;
+      expect(create['instructions'], 'SERVER PROMPT for de');
+      expect(create['language'], 'de');
+      expect(create['explanationLanguage'], 'fa');
+      expect(find.text('Write in German…'), findsOneWidget);
+
+      await tester.tap(find.text('This looks wrong'));
+      await tester.settle();
+      expect(argsOf(b, 'flag-coach-explanation').single, containsPair('turnIndex', 0));
+      expect(find.text('Thanks, we will check this explanation.'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      await tester.settle();
+      expect(argsOf(b, 'flag-coach-explanation').last['on'], isFalse);
+    });
+
+    test('voice previews speak the learning language', () {
+      const de = LearningLanguageCaps(code: 'de', name: 'German', nativeName: 'Deutsch', ttsVoice: 'de-DE-Chirp3-HD-Kore');
+      expect(coachPreviewVoiceFor('Puck', de), 'de-DE-Chirp3-HD-Puck');
+      expect(coachPreviewVoiceFor('Puck', LearningLanguageCaps.english), 'en-US-Neural2-D');
+      expect(coachPreviewLine('de'), startsWith('Hallo'));
+      expect(coachPreviewLine('en'), startsWith('Hi'));
+    });
+  });
+
+  group('fill the gap (M-11)', () {
+    ReviewItem item({List<String> accepted = const ['bin'], String? lemma = 'sein', String? form = 'present perfect, ich'}) => ReviewItem.fromJson({
+          'phraseId': 'p1',
+          'boxLevel': 3,
+          'phrase': {'_id': 'p1', 'phrase': 'ich bin gekommen', 'translation': 'من آمدم', 'context': 'Gestern bin ich zu spät nach Hause gekommen.', 'language': 'de'},
+          'source_sentence': 'Gestern bin ich zu spät nach Hause gekommen.',
+          'cue': {'lemma': ?lemma, 'form': ?form},
+          'acceptedAnswers': accepted,
+        });
+
+    test('the blank and cue come from the server; a cue that is the answer is hidden', () {
+      final c = Cloze.fromItem(item())!;
+      expect(c.answer, 'bin');
+      expect(c.cueLemma, 'sein');
+      expect(c.cueForm, 'present perfect, ich');
+      expect(Cloze.fromItem(item(lemma: 'bin'))!.hasCue, isFalse, reason: 'old chunks: the server sets the lemma to the text');
+    });
+
+    test('accents are "almost"; contractions are English only; accepted answers count', () {
+      expect(checkAnswer('strasse', 'Straße', language: 'de'), ClozeResult.close);
+      expect(checkAnswer('ecole', 'école', language: 'fr'), ClozeResult.close);
+      expect(checkAnswer('école', 'école', language: 'fr'), ClozeResult.correct);
+      expect(checkAnswer("I'm", 'I am'), ClozeResult.correct);
+      expect(checkAnswer("c'est", 'ce est', language: 'fr'), isNot(ClozeResult.correct));
+      expect(checkAnswer('gemusst', 'musste', language: 'de', accepted: ['gemusst']), ClozeResult.correct);
+      expect(ClozeResult.close.reviewResult(learned: true), 'close');
+      expect(ClozeResult.correct.reviewResult(learned: true), 'right');
+      expect(ClozeResult.close.reviewResult(learned: false), 'wrong');
+    });
+
+    testWidgets('the server says close: "Almost" with the right form, and the grade is close', (tester) async {
+      final langs = FakeLanguageServer(active: 'de', startLevels: {'en': 'B1', 'de': 'A1'})..seededLanguages = {'en', 'de'};
+      final b = await pumpApp(tester, languages: langs, seed: (b) {
+        b.functions['get-review-session'] = (_) => [
+              {
+                'phraseId': 'p1',
+                'boxLevel': 3,
+                'phrase': {'_id': 'p1', 'phrase': 'ich bin gekommen', 'translation': 'من آمدم', 'context': 'Gestern bin ich zu spät nach Hause gekommen.', 'language': 'de'},
+                'source_sentence': 'Gestern bin ich zu spät nach Hause gekommen.',
+                'cue': {'lemma': 'sein', 'form': 'present perfect, ich'},
+                'acceptedAnswers': ['bin'],
+              },
+            ];
+        b.functions['check-cloze-answer'] = (a) => {'result': 'close', 'expected': 'bin'};
+      });
+      await tester.tap(find.text('Start review'));
+      await tester.settle();
+      expect(find.text('Cue: sein'), findsOneWidget);
+      expect(find.text('present perfect, ich'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'bist');
+      await tester.tap(find.text('Check'));
+      await tester.settle();
+      expect(argsOf(b, 'check-cloze-answer').single, containsPair('answer', 'bist'));
+      expect(argsOf(b, 'check-cloze-answer').single, containsPair('language', 'de'));
+      expect(find.text('Close. Right word, check the ending. The answer is bin.'), findsOneWidget);
+      await tester.tap(find.widgetWithText(GestureDetector, 'Learned').last);
+      await tester.settle();
+      final submit = argsOf(b, 'submit-review').single;
+      expect(submit['result'], 'close', reason: 'close keeps the card in its box');
+      expect(submit['language'], 'de');
     });
   });
 

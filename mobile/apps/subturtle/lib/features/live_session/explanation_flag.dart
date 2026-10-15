@@ -9,13 +9,17 @@ import '../../shared/format.dart';
 /// that turn with `flag-coach-explanation`; it then reads "Thanks, we will
 /// check this explanation" with Undo.
 class ExplanationFlag extends ConsumerStatefulWidget {
-  const ExplanationFlag({super.key, required this.sessionId, required this.turnIndex});
+  const ExplanationFlag({super.key, required this.sessionId, required this.turnIndex, this.language, this.explanationLanguage});
 
   /// The session record. Null until it exists (the flag is hidden then).
   final String? sessionId;
 
   /// Which Coach turn this is, counting Coach messages from 0.
   final int turnIndex;
+
+  /// The session's learning and explanation languages.
+  final String? language;
+  final String? explanationLanguage;
 
   @override
   ConsumerState<ExplanationFlag> createState() => _ExplanationFlagState();
@@ -33,7 +37,7 @@ class _ExplanationFlagState extends ConsumerState<ExplanationFlag> {
       _on = on;
     });
     try {
-      await ref.read(apiProvider).liveSessions.flagExplanation(sessionId: id, turnIndex: widget.turnIndex, on: on);
+      await ref.read(apiProvider).liveSessions.flagExplanation(sessionId: id, turnIndex: widget.turnIndex, on: on, language: widget.language, explanationLanguage: widget.explanationLanguage);
     } catch (e) {
       if (!mounted) return;
       setState(() => _on = !on);
