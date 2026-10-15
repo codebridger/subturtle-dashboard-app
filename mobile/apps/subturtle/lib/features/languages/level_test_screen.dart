@@ -270,7 +270,16 @@ class _LevelTestScreenState extends ConsumerState<LevelTestScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: _testId == null
-                      ? ErrorPanel(title: "We couldn't start the chat test.", error: _error, onRetry: _begin)
+                      ? (_error is ApiException && (_error as ApiException).isMissingFunction
+                          // A server without the chat test: never a dead end.
+                          ? StEmptyState(
+                              compact: true,
+                              icon: StIcons.chatDots,
+                              color: StBadgeColor.info,
+                              title: 'The chat test is not ready yet',
+                              description: widget.from == LevelTestFrom.manage ? 'Your start point stays as it is.' : 'Start at A1 for now. You can take the test later from Languages.',
+                            )
+                          : ErrorPanel(title: "We couldn't start the chat test.", error: _error, onRetry: _begin))
                       : Text(friendlyError(_error!), style: StType.bodySmall.copyWith(color: c.red600)),
                 ),
             ],

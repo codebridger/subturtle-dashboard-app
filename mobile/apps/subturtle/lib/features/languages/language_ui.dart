@@ -116,7 +116,7 @@ class ActiveLanguagePill extends ConsumerWidget {
 /// L1 · the language switcher sheet.
 Future<void> openLanguageSwitcher(BuildContext context, WidgetRef ref) {
   ref.read(hapticsProvider).selection();
-  return showStBottomSheet<void>(context: context, builder: (_) => const LanguageSwitcherSheet());
+  return showStBottomSheet<void>(context: context, useRootNavigator: true, builder: (_) => const LanguageSwitcherSheet());
 }
 
 class LanguageSwitcherSheet extends ConsumerStatefulWidget {
@@ -245,7 +245,8 @@ class OwnLanguageRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.st;
-    final short = language.nativeName.characters.take(2).toString();
+    // "فا" for a right-to-left script (as drawn), the code for the others ("EN").
+    final short = language.rtl ? language.nativeName.characters.take(2).toString() : language.code.toUpperCase();
     return Semantics(
       button: true,
       label: 'Your own language is ${language.name}. Change it',

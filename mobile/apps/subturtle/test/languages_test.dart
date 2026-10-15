@@ -217,6 +217,30 @@ void main() {
     });
   });
 
+  group('a server without the chat test or starter packs yet', () {
+    testWidgets('the chat test says it is not ready; A1 leads on; the pack says coming soon with a way back', (tester) async {
+      final langs = FakeLanguageServer(active: null)
+        ..failures['start-level-test'] = 'Function with name start-level-test not found'
+        ..failures['get-starter-pack'] = 'Function with name get-starter-pack not found';
+      final b = await pumpApp(tester, languages: langs);
+      await tester.tap(find.text('German'));
+      await tester.settle();
+      await tester.tap(find.text('Next: German'));
+      await tester.settle();
+      await tester.tap(find.text('Start the chat test'));
+      await tester.settle();
+      expect(find.text('The chat test is not ready yet'), findsOneWidget);
+      await tester.tap(find.text('Stop and start at A1'));
+      await tester.settle();
+      expect(argsOf(b, 'add-language').single['startLevel'], 'A1');
+      expect(find.text('The German starter pack is coming soon'), findsOneWidget);
+      expect(find.bySemanticsLabel('Back to Today'), findsOneWidget, reason: 'never a dead end');
+      await tester.tap(find.text('Go to Today'));
+      await tester.settle();
+      expect(eyebrow('Today · German'), findsOneWidget);
+    });
+  });
+
   group('first run (L10)', () {
     testWidgets('a new account chooses a language; no close button; English offered', (tester) async {
       final langs = FakeLanguageServer(active: null);
