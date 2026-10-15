@@ -110,6 +110,9 @@
                             }}
                         </p>
                         <MarkdownMessage :content="dialog.content" />
+                        <!-- "This looks wrong" under every Coach line (D-16), once multilingual is on. -->
+                        <CoachFlag v-if="language.enabled && dialog.speaker === 'ai'" :session-id="liveSessionStore.activeSessionId"
+                            :turn-index="aiTurnIndex(dialog.id)" :language="language.activeLanguage" />
                     </div>
                 </TransitionGroup>
             </section>
@@ -233,7 +236,10 @@ import { Modal } from 'pilotui/complex';
 import { useLiveSessionGeminiTextStore } from '~/stores/liveSessionGeminiText';
 import { useLivePracticeSetupStore } from '~/stores/livePracticeSetup';
 import { useProfileStore } from '~/stores/profile';
-import { buildInstructions, buildPracticeTools, cardSelectedMessage, LIVE_PRACTICE, resolveNativeLanguage, returnToLabelKey, welcomeMessage } from '~/utils/livePractice';
+import { buildPracticeTools, cardSelectedMessage, LIVE_PRACTICE, returnToLabelKey, welcomeMessage } from '~/utils/livePractice';
+import { resolveCoachInstructions } from '~/utils/coachInstructions';
+import CoachFlag from '~/components/language/CoachFlag.vue';
+import { useLanguageStore } from '~/stores/language';
 import MarkdownMessage from '~/components/practice/MarkdownMessage.vue';
 import FreemiumLimitationModal from '~/components/freemium_alerts/LimitationModal.vue';
 import FreemiumTimer from '~/components/freemium_alerts/FreemiumTimer.vue';
@@ -286,6 +292,10 @@ const isDev = import.meta.env.DEV;
 
 // ---- Live transcript + status state ----
 const transcriptScroll = ref<HTMLElement | null>(null);
+
+const language = useLanguageStore();
+/** The Coach's turn number (from 0) of a dialog, for the explanation flag. */
+const aiTurnIndex = (dialogId: string) => visibleDialogs.value.filter((d) => d.speaker === 'ai').findIndex((d) => d.id === dialogId);
 
 const visibleDialogs = computed(() =>
     liveSessionStore.conversationDialogs.filter((d) => d.content?.trim().length)
@@ -438,9 +448,8 @@ onMounted(async () => {
     createLiveSession();
 });
 
-function createLiveSession() {
-    const nativeLanguage = resolveNativeLanguage(setup.request, selectedPhrases.value);
-    const finalInstructions = buildInstructions(selectedPhrases.value, nativeLanguage);
+async function createLiveSession() {
+    const { instructions: finalInstructions } = await resolveCoachInstructions(setup.request, selectedPhrases.value, 'text');
 
     liveSessionStore
         .createLiveSession({

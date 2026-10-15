@@ -2,7 +2,7 @@
     <div class="flex flex-col gap-[22px]">
         <StPageHeader
             :title="t('statistic.your-statistic')"
-            :overline="t('statistic.overline')"
+            :overline="progressOverline"
             :subtitle="t('statistic.subtitle')"
         >
             <template v-if="showInstallCta" #actions>
@@ -158,6 +158,7 @@
 </template>
 
 <script setup lang="ts">
+    import { useLanguageStore } from '~/stores/language';
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StIconButton, StSkeleton, StStatTile } from 'subturtle-ui';
@@ -167,6 +168,11 @@
     import { useLeitnerStore } from '~/stores/leitner';
 
     const { t } = useI18n();
+    const language = useLanguageStore();
+    // "Your German progress": counts and the chart are per language, the streak global (D-18).
+    const progressOverline = computed(() =>
+        language.enabled ? t('languages.progress-in', { language: language.nameOf(language.activeLanguage) }) : t('statistic.overline')
+    );
     const router = useRouter();
     const config = useRuntimeConfig();
     const { extensionPresent } = useExtensionPresence();

@@ -10,7 +10,9 @@ import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/languages.dart';
 import '../../shared/format.dart';
+import '../../shared/settings_rows.dart';
 import '../../shared/widgets.dart';
+import '../languages/own_language_picker.dart';
 
 final _versionProvider = FutureProvider<String>((ref) async {
   final info = await PackageInfo.fromPlatform();
@@ -104,8 +106,28 @@ class MeScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _PlanRow(sub: sub),
+          _PlanRow(sub: sub, shared: ref.watch(multilingualProvider)),
           const SizedBox(height: 14),
+          if (ref.watch(multilingualProvider)) ...[
+            const _LanguageGroups(),
+            const SizedBox(height: 14),
+            SettingsGroup(
+              label: 'All languages',
+              children: [
+                SettingsRow(label: 'Haptics', trailing: StSwitch(value: settings.haptics, onChanged: ref.read(settingsProvider.notifier).setHaptics, semanticLabel: 'Haptics')),
+                SettingsRow(
+                  label: 'Theme',
+                  last: true,
+                  trailing: StSegmentedControl<ThemeMode>(
+                    small: true,
+                    segments: const [StSegment(ThemeMode.system, 'System'), StSegment(ThemeMode.light, 'Light'), StSegment(ThemeMode.dark, 'Dark')],
+                    value: settings.themeMode,
+                    onChanged: ref.read(settingsProvider.notifier).setTheme,
+                  ),
+                ),
+              ],
+            ),
+          ] else
           _Group(
             children: [
               _Row(
@@ -144,7 +166,7 @@ class MeScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           _Group(
             children: [
-              _LinkRow(icon: StIcons.chart, label: 'Progress and review settings on the web', onTap: () => openDashboard(context, ref, '/statistic')),
+              _LinkRow(icon: StIcons.chart, label: ref.watch(multilingualProvider) ? 'Progress, map and review settings on the web' : 'Progress and review settings on the web', onTap: () => openDashboard(context, ref, '/statistic')),
               _LinkRow(
                 icon: StIcons.chrome,
                 label: 'Copy the Chrome extension link',
@@ -246,8 +268,11 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _PlanRow extends StatelessWidget {
-  const _PlanRow({required this.sub});
+  const _PlanRow({required this.sub, this.shared = false});
   final AsyncValue<SubscriptionDetails> sub;
+
+  /// Voice minutes are shared by every language (2.0).
+  final bool shared;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +280,7 @@ class _PlanRow extends StatelessWidget {
     final s = sub.value;
     if (s == null) return sub.hasError ? const SizedBox.shrink() : const StSkeleton(height: 64, radius: StRadius.lg);
     final low = s.hasVoice && s.voiceRemaining <= s.voiceTotal * 0.2;
-    final line = !s.hasVoice ? 'Text chat with your coach' : '${s.voiceRemaining} of ${s.voiceTotal} voice minutes left';
+    final line = !s.hasVoice ? 'Text chat with your coach' : '${s.voiceRemaining} of ${s.voiceTotal} voice minutes left${shared ? ' · all languages' : ''}';
     return Semantics(
       button: true,
       label: '${s.tierName} plan. $line. Open your plan.',
@@ -440,4 +465,114 @@ class _LanguagePickerState extends State<_LanguagePicker> {
       ),
     );
   }
+}
+
+/// S17 · the language settings, grouped by what they change: **Languages**
+/// (the own language, every language), and **German only** (settings of the
+/// active language). The group label is the scope.
+class _LanguageGroups extends ConsumerWidget {
+  const _LanguageGroups();
+
+  static const _perDay = [3, 5, 8, 10, 15];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(languageStateProvider).value;
+    final caps = ref.watch(languageCapsProvider).value ?? LanguageCapabilities.fallback;
+    final l1 = ref.watch(l1Provider).value;
+    if (state == null) return const SkeletonList(count: 2);
+    final active = caps.learningByCode(state.active) ?? LearningLanguageCaps.english;
+    final summary = state.summaryOf(state.active);
+    final explain = summary?.explanationLanguage ?? state.translationLanguage;
+    final explainName = caps.ownByCode(explain)?.name ?? l1?.name ?? '';
+    final learning = [for (final l in state.studying) caps.learningByCode(l.code)?.name ?? l.code.toUpperCase()].join(', ');
+    final controller = ref.read(languageStateProvider.notifier);
+
+    Future<void> run(Future<void> Function() f) async {
+      try {
+        await f();
+      } catch (e) {
+        if (context.mounted) showStToast(context, title: friendlyError(e), color: StToastColor.danger);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsGroup(
+          label: 'Languages',
+          children: [
+            SettingsRow(
+              label: 'My language',
+              sublabel: 'Translations and explanations',
+              value: l1 == null ? null : Text(l1.name),
+              semanticLabel: 'My language, ${l1?.name ?? ''}. Change it',
+              onTap: () async {
+                final code = await pickOwnLanguage(
+                  context,
+                  ref,
+                  title: 'My language',
+                  subtitle: 'We translate phrases and explain grammar in this language. It applies to all your languages.',
+                  current: state.translationLanguage ?? l1?.code,
+                );
+                if (code != null) await run(() => controller.setTranslationLanguage(code));
+              },
+            ),
+            SettingsRow(label: 'Languages I am learning', value: Text(learning), last: true, onTap: () => context.push('/me/languages')),
+          ],
+        ),
+        const SizedBox(height: 14),
+        SettingsGroup(
+          label: '${active.name} only',
+          children: [
+            if (active.features.coachText || active.features.coachVoice)
+              SettingsRow(
+                label: 'Coach explains in',
+                value: Text(explainName),
+                semanticLabel: 'Coach explains in $explainName. Change it',
+                onTap: () async {
+                  final code = await pickOwnLanguage(
+                    context,
+                    ref,
+                    title: 'Coach explains in',
+                    subtitle: 'The Coach speaks ${active.name} and explains in this language. This setting is for ${active.name} only.',
+                    current: explain,
+                    showReview: true,
+                  );
+                  if (code != null && code != explain) await run(() => controller.updateSettings(state.active, explanationLanguage: code));
+                },
+              ),
+            SettingsRow(
+              label: 'New phrases a day',
+              value: summary?.newPhrasesPerDay == null ? null : Text('${summary!.newPhrasesPerDay}'),
+              last: true,
+              onTap: () async {
+                final n = await _pickPerDay(context, active.name, summary?.newPhrasesPerDay);
+                if (n != null) await run(() => controller.updateSettings(state.active, newPhrasesPerDay: n));
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<int?> _pickPerDay(BuildContext context, String name, int? current) => showStBottomSheet<int>(
+        context: context,
+        builder: (ctx) => StSheet(
+          title: 'New phrases a day',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('How many new $name phrases come from the Pool each day. This setting is for $name only.', style: StType.bodyMedium.copyWith(color: ctx.st.textMuted)),
+              const SizedBox(height: 12),
+              for (final n in _perDay) ...[
+                StLanguageOption(code: '$n', title: Fmt.plural(n, 'phrase'), selected: n == current, onTap: () => Navigator.pop(ctx, n)),
+                const SizedBox(height: 8),
+              ],
+              SizedBox(height: MediaQuery.paddingOf(ctx).bottom),
+            ],
+          ),
+        ),
+      );
 }

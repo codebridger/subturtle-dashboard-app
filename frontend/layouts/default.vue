@@ -31,6 +31,9 @@
                 </template>
 
                 <template #header-right>
+                    <!-- The language menu (D-02): left of the theme switch, hidden while
+                         multilingual is off. -->
+                    <LanguageMenu />
                     <PartialThemeSwitcher />
                     <PartialProfileMenu />
                 </template>
@@ -88,6 +91,7 @@ import { useTierLimitModal } from '~/composables/useTierLimitModal';
 import { DASHBOARD_NAV_ROUTES, activeNavId } from '~/composables/useDashboardNavigatorItems';
 import { useLeitnerStore } from '~/stores/leitner';
 import { usePageCrumbState } from '~/composables/usePageCrumb';
+import LanguageMenu from '~/components/language/LanguageMenu.vue';
 
 const { t, te } = useI18n();
 const { open: tierLimitOpen, feature: tierLimitFeature, closeTierLimitModal } = useTierLimitModal();

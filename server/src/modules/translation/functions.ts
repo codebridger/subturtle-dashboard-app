@@ -10,28 +10,36 @@ import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
 } from "../../utils/analytics";
+import { isAutoOrUnknown, toCode } from "../../languages/helper";
+import { loadLearnerLanguages, readTranslationLanguage, resolveLanguage } from "./language";
 
 /**
- * Function to translate a phrase with its context
- * Uses OpenRouter to generate linguistic data in the required schema format
+ * Translate a phrase with its context (B-14, B-15, B-17).
+ *
+ * - The own language comes from `translationLanguage`, or the old `targetLanguage`.
+ * - The learning language (`language`, else the learner's active one) is sent to the
+ *   prompt, so an "auto" source no longer reads "from  to Persian".
+ * - Detailed mode returns the full data plus `detectedLanguage`, `resolvedLanguage` and
+ *   `inProfile`. Simple mode keeps returning the bare translation string unless the caller
+ *   sends `withLanguage: true`; then it returns `{ translation, detectedLanguage,
+ *   resolvedLanguage, inProfile }`.
  */
 const translateWithContext = defineFunction({
   name: "translateWithContext",
   permissionTypes: ["anonymous_access"],
   callback: async (params: TranslateWithContextParams) => {
-    // Extract parameters
-    let {
-      phrase,
-      context,
-      translationType = "simple",
-      sourceLanguage = "",
-      targetLanguage = "",
-    } = params;
+    const { phrase, context, translationType = "simple" } = params;
 
-    // normalize the source language
-    if (sourceLanguage.toLowerCase() === "auto") {
-      sourceLanguage = "";
-    }
+    // "auto" (or nothing) lets the model detect the language.
+    let sourceLanguage = typeof params.sourceLanguage === "string" ? params.sourceLanguage.trim() : "";
+    if (isAutoOrUnknown(sourceLanguage)) sourceLanguage = "";
+
+    const own = readTranslationLanguage(params, "translateWithContext");
+    const learner = await loadLearnerLanguages(params.userId);
+    const requested = toCode(params.language);
+    // A `language` the learner has stands in for the active one in the resolution.
+    const scope = requested && learner.languages.includes(requested) ? { ...learner, active: requested } : learner;
+    const learningLanguage = requested ?? learner.active ?? undefined;
 
     // Server-truth usage event (docs/metrics: Backend Tracking Plan). Fired on
     // every request, before the call, so failures are counted too — the error
@@ -42,30 +50,39 @@ const translateWithContext = defineFunction({
       {
         translation_type: translationType,
         source_lang: sourceLanguage || "auto",
-        target_lang: targetLanguage,
+        target_lang: own.value,
+        learning_lang: learningLanguage || "unknown",
+        legacy_target_language: own.usedOldName,
       }
     );
 
+    const languages = {
+      sourceLanguage,
+      translationLanguage: own.value,
+      learningLanguage,
+    };
+
     try {
       if (translationType === "detailed") {
-        return getDetailedTranslation({
-          phrase,
-          context,
-          sourceLanguage,
-          targetLanguage,
-        });
+        const result = await getDetailedTranslation({ phrase, context, ...languages });
+        const detected = result?.language_info?.source || sourceLanguage;
+        return { ...result, ...resolveLanguage(detected, scope) };
       }
 
-      return getSimpleTranslation({
-        phrase,
-        context,
-        sourceLanguage,
-        targetLanguage,
-      });
+      if (params.withLanguage === true) {
+        const result = await getSimpleTranslation({ phrase, context, ...languages, withLanguage: true });
+        return {
+          translation: result?.translation ?? "",
+          ...resolveLanguage(result?.source || sourceLanguage, scope),
+        };
+      }
+
+      return await getSimpleTranslation({ phrase, context, ...languages });
     } catch (error: unknown) {
       console.error("Translation error:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      if (errorMessage.startsWith("Failed to translate text")) throw error;
       throw new Error(`Failed to translate text: ${errorMessage}`);
     }
   },
@@ -207,14 +224,16 @@ const translationAdvice = defineFunction({
     }
 
     try {
-      return getTranslationAdvice({
+      const own = readTranslationLanguage(params, "translationAdvice");
+      return await getTranslationAdvice({
         phrase,
         context,
         message,
         currentChunks: params.currentChunks,
         history: params.history,
         sourceLanguage: params.sourceLanguage,
-        targetLanguage: params.targetLanguage,
+        translationLanguage: own.value,
+        learningLanguage: toCode(params.learningLanguage),
       });
     } catch (error: unknown) {
       console.error("Translation advice error:", error);

@@ -1,18 +1,22 @@
 <template>
-	<PoolReviewSession :items="items" :loading="loading" :title="$t('pool.title')" @complete="handleComplete"
+	<PoolReviewSession :items="items" :loading="loading" :title="title" @complete="handleComplete"
 		@end-session="endSession" />
 </template>
 
 <script setup lang="ts">
+import { useStudyingTitle } from '~/composables/useStudyingTitle';
 import { usePoolStore } from '~/stores/pool';
 import { storeToRefs } from 'pinia';
 import PoolReviewSession from '~/components/practice/PoolReviewSession.vue';
 
 definePageMeta({
-	// @ts-ignore
-	layout: 'empty',
+	// The app shell, so the language menu is on every screen (D-04).
+	layout: 'default',
 	middleware: ['auth'],
 });
+
+// "Review · German": which language is being studied (D-13).
+const title = useStudyingTitle('pool.title');
 
 const router = useRouter();
 const poolStore = usePoolStore();

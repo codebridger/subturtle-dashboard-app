@@ -1,0 +1,367 @@
+{
+  "language": "fr",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "fr-polite-05",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'___-moi.' with cue 'excuser' accepts both Excusez (vous) and Excuse (tu, given in the note); en/fa/ar/vi translations do not force a register. The only other word is 'moi', so drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "fr-needs-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'___ une seconde.' with cue 'attendre' accepts both Attends and Attendez (the note even gives the vous form); en/vi/ar translations do not force tu. Move the cloze to the invariant noun.",
+          "fix": {
+            "lemma": "seconde",
+            "form": "seconde"
+          }
+        },
+        {
+          "id": "fr-needs-14",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'___ la police !' with cue 'appeler' accepts Appelez and Appelle (given in the note); en/vi translations do not force the register. Move the cloze to 'police'.",
+          "fix": {
+            "lemma": "police",
+            "form": "police"
+          }
+        },
+        {
+          "id": "fr-polite-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'désolé' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-questions-13",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked 'sûr' changes with the listener's gender (sûre, given in the note); a learner addressing a woman who types 'sûre' would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "es"
+          }
+        },
+        {
+          "id": "fr-needs-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'perdu' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-food-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'végétarien' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-work-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'étudiant' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-work-03",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'occupé' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-feelings-01",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'content' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-feelings-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Blanked word 'fatigué' changes with the speaker's gender (feminine form given in the note); a female learner typing the feminine form would be marked wrong. Move the cloze to the invariant verb.",
+          "fix": {
+            "lemma": "être",
+            "form": "suis"
+          }
+        },
+        {
+          "id": "fr-food-13",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "'سفري' is colloquial (Gulf/Levantine) for takeaway, not MSA; a natural MSA rendering exists.",
+          "fix": {
+            "translations.ar": "سآخذه معي، من فضلك."
+          }
+        },
+        {
+          "id": "fr-greetings-05",
+          "severity": "doubt",
+          "field": "note",
+          "problem": "'Only when someone is going to bed' is too narrow: Bonne nuit is also said when parting late at night. The key point is that it is never a greeting.",
+          "fix": {
+            "note": "Said when someone is going to bed or when parting late at night; never a greeting (use Bonsoir)."
+          }
+        },
+        {
+          "id": "fr-food-15",
+          "severity": "doubt",
+          "field": "note",
+          "problem": "'Je suis plein ... sounds wrong' overstates it: it is heard in casual speech (and is normal in Quebec), just considered sloppy in France. Better to offer a natural alternative.",
+          "fix": {
+            "note": "Literally 'I'm not hungry any more'. Also: J'ai bien mangé. Je suis plein is heard but sounds sloppy in France."
+          }
+        },
+        {
+          "id": "fr-travel-04",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "'Đi đến sân bay thế nào?' is understandable but abrupt; asking for directions usually sounds like 'Làm sao để đến sân bay?'.",
+          "fix": {
+            "translations.vi": "Làm sao để đến sân bay?"
+          }
+        },
+        {
+          "id": "fr-travel-11",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "'Tôi đến đây để đi nghỉ.' is slightly redundant (came here to go on holiday); more natural: 'Tôi đang đi nghỉ ở đây.'",
+          "fix": {
+            "translations.vi": "Tôi đang đi nghỉ ở đây."
+          }
+        }
+      ],
+      "cloze": {
+        "checked": 132,
+        "defensible": 121
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 1
+        },
+        "es": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "en": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "The French texts are correct, natural A1 chunks with proper French spacing before ? and !, accurate notes and consistent register; no text errors found. The weakness is cloze design: 8 targets are gendered adjectives (désolé, perdu, fatigué, sûr...) and 3 are imperatives whose tu/vous form the translation does not force, fixed by moving the blank to an invariant word or dropping it (Tout de suite and je veux bien are fine, since lemma = form). Translations are high quality: one Arabic colloquialism (سفري) and two slightly stilted Vietnamese phrasings."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "fr-polite-05",
+          "status": "clean"
+        },
+        {
+          "id": "fr-needs-06",
+          "status": "clean"
+        },
+        {
+          "id": "fr-needs-14",
+          "status": "clean"
+        },
+        {
+          "id": "fr-polite-06",
+          "status": "clean"
+        },
+        {
+          "id": "fr-questions-13",
+          "status": "clean"
+        },
+        {
+          "id": "fr-needs-09",
+          "status": "clean"
+        },
+        {
+          "id": "fr-food-09",
+          "status": "clean"
+        },
+        {
+          "id": "fr-work-02",
+          "status": "clean"
+        },
+        {
+          "id": "fr-work-03",
+          "status": "clean"
+        },
+        {
+          "id": "fr-feelings-01",
+          "status": "clean"
+        },
+        {
+          "id": "fr-feelings-02",
+          "status": "clean"
+        },
+        {
+          "id": "fr-food-13",
+          "status": "clean"
+        },
+        {
+          "id": "fr-greetings-05",
+          "status": "clean"
+        },
+        {
+          "id": "fr-food-15",
+          "status": "clean"
+        },
+        {
+          "id": "fr-travel-04",
+          "status": "clean"
+        },
+        {
+          "id": "fr-travel-11",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "fr-needs-15",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "'Tôi đang tìm điện thoại của tôi.' is a word-for-word calque of 'my phone': repeating 'tôi' as subject and possessor sounds stilted. Vietnamese uses the reflexive 'của mình' (or drops the possessor).",
+          "fix": {
+            "translations.vi": "Tôi đang tìm điện thoại của mình."
+          }
+        },
+        {
+          "id": "fr-questions-14",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "'أيّهما؟' is dual ('which of the two'), narrower than 'Lequel ?', which works for any number of options. The general MSA form is 'أيّ واحد؟'.",
+          "fix": {
+            "translations.ar": "أيّ واحد؟"
+          }
+        },
+        {
+          "id": "fr-questions-13",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "'Bạn chắc không?' is clipped colloquial; the standard question is 'Bạn có chắc không?'.",
+          "fix": {
+            "translations.vi": "Bạn có chắc không?"
+          }
+        },
+        {
+          "id": "fr-places-08",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "'نزدیک همین‌جاست.' is understandable but unidiomatic; a Persian speaker says 'همین نزدیکی است.' for 'It's near here'.",
+          "fix": {
+            "translations.fa": "همین نزدیکی است."
+          }
+        }
+      ],
+      "finalCleanItems": 146,
+      "doubtful": [
+        "fr-questions-13",
+        "fr-places-08"
+      ]
+    }
+  ],
+  "leadFixes": [],
+  "crossPackFixes": [
+    {
+      "id": "fr-work-10",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "fr-needs-15",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Tôi đang tìm điện thoại."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "fr-questions-08",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "من ذلك؟"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "fr-travel-14",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Cho tôi xuống ở đây."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "fr-questions-13",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Bạn có chắc không?"
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  }
+}

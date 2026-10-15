@@ -124,7 +124,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                 ],
               ),
             ),
-            PhraseStrip(phrases: widget.launch.phrases, active: v.active, done: v.done, onTap: v.selectPhrase, showTranslations: v.showTranslations),
+            PhraseStrip(phrases: widget.launch.phrases, active: v.active, done: v.done, onTap: v.selectPhrase, showTranslations: v.showTranslations, l1Rtl: ref.watch(l1Provider).value?.rtl),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
               child: Text('${v.done.length} of ${widget.launch.phrases.length} practised', style: StType.bodySmall.copyWith(color: c.textMuted)),

@@ -21,8 +21,19 @@
         <div class="my-6 h-px bg-st-line" />
 
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <!-- Multilingual (D-16): "Coach explains in", every own language with who checked it. -->
+            <label v-if="language.enabled" class="block">
+                <span class="mb-2 block text-st-base font-bold text-st-strong">{{ t('languages.coach.explains-in') }}</span>
+                <OwnLanguagePicker
+                    :model-value="formData.explanationLanguage ?? null"
+                    show-reviewed
+                    :aria-label="t('languages.coach.explains-in')"
+                    @update:model-value="formData = { ...formData, explanationLanguage: $event ?? undefined }"
+                />
+                <span class="mt-1.5 block text-st-xs font-semibold text-st-muted">{{ t('languages.coach.explains-in-help') }}</span>
+            </label>
             <!-- Explanation language. "Auto" lets the coach take it from the bundle. -->
-            <label class="block">
+            <label v-else class="block">
                 <span class="mb-2 block text-st-base font-bold text-st-strong">{{ t('live-practice.fallback-label') }}</span>
                 <span class="relative block">
                     <StIcon name="solar:global-linear" :size="20" class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-st-faint" />
@@ -31,7 +42,7 @@
                         class="st-focus-ring h-[52px] w-full appearance-none rounded-st-md border-[1.5px] border-st-line bg-st-card pl-[46px] pr-11 font-st-sans text-st-base font-bold text-st-strong transition duration-150 ease-out focus:border-st-primary"
                     >
                         <option value="auto">{{ t('live-practice.native-language-auto') }}</option>
-                        <option v-for="lang in SUPPORTED_LANGUAGES" :key="lang.code" :value="lang.title">{{ lang.title }}</option>
+                        <option v-for="lang in LANGUAGES" :key="lang.code" :value="lang.name">{{ lang.name }}</option>
                     </select>
                     <StIcon name="solar:alt-arrow-down-linear" :size="20" class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-st-faint" />
                 </span>
@@ -97,12 +108,15 @@
 <script setup lang="ts">
     import { computed } from 'vue';
     import { StIcon, StSegmentedControl } from 'subturtle-ui';
-    import { SUPPORTED_LANGUAGES } from '~/utils/languages.static';
+    import { LANGUAGES } from '~/utils/languages';
+    import OwnLanguagePicker from '~/components/language/OwnLanguagePicker.vue';
+    import { useLanguageStore } from '~/stores/language';
     import VoicePicker from '~/components/live/VoicePicker.vue';
     import { useLiveSessionVoices } from '~/composables/useLiveSessionVoices';
     import type { CoachVoice } from '~/types/live-session.type';
 
     const { t } = useI18n();
+    const language = useLanguageStore();
 
     const props = defineProps<{
         modelValue: {
@@ -113,6 +127,7 @@
             totalPhrases: string;
             nativeLanguage: string;
             mode?: 'voice' | 'text';
+            explanationLanguage?: string;
         };
         // Omitted by the bundle Gemini flow → voices are fetched from the server so
         // the picker matches the extension. The OpenAI/Gemini `StartNew` variants
@@ -129,6 +144,7 @@
                 toPhrase: string;
                 totalPhrases: string;
                 nativeLanguage: string;
+                explanationLanguage?: string;
             }
         ];
     }>();
