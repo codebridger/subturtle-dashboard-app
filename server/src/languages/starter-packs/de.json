@@ -1,0 +1,2471 @@
+{
+  "$schema": "./starter-pack.schema.json",
+  "language": "de",
+  "version": 1,
+  "groups": [
+    {
+      "id": "greetings",
+      "name": "Greetings"
+    },
+    {
+      "id": "polite",
+      "name": "Polite words"
+    },
+    {
+      "id": "questions",
+      "name": "Questions"
+    },
+    {
+      "id": "needs",
+      "name": "Needs and help"
+    },
+    {
+      "id": "time",
+      "name": "Time"
+    },
+    {
+      "id": "places",
+      "name": "Places and directions"
+    },
+    {
+      "id": "food",
+      "name": "Food and drink"
+    },
+    {
+      "id": "travel",
+      "name": "Travel"
+    },
+    {
+      "id": "work",
+      "name": "Work and study"
+    },
+    {
+      "id": "feelings",
+      "name": "Feelings"
+    }
+  ],
+  "items": [
+    {
+      "id": "de-greetings-01",
+      "text": "Hallo!",
+      "translations": {
+        "fa": "سلام!",
+        "ar": "مرحبًا!",
+        "es": "¡Hola!",
+        "vi": "Xin chào!",
+        "en": "Hello!",
+        "tr": "Merhaba!"
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-02",
+      "text": "Hi!",
+      "translations": {
+        "fa": "سلام!",
+        "ar": "أهلًا!",
+        "es": "¡Buenas!",
+        "vi": "Chào!",
+        "en": "Hi!",
+        "tr": "Selam!"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Casual, among friends and young people."
+    },
+    {
+      "id": "de-greetings-03",
+      "text": "Guten Morgen!",
+      "lemma": "Morgen",
+      "form": "Morgen",
+      "translations": {
+        "fa": "صبح بخیر!",
+        "ar": "صباح الخير!",
+        "es": "¡Buenos días!",
+        "vi": "Chào buổi sáng!",
+        "en": "Good morning!",
+        "tr": "Günaydın!"
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-04",
+      "text": "Guten Abend!",
+      "lemma": "Abend",
+      "form": "Abend",
+      "translations": {
+        "fa": "عصر بخیر!",
+        "ar": "مساء الخير!",
+        "es": "¡Buenas noches!",
+        "vi": "Chào buổi tối!",
+        "en": "Good evening!",
+        "tr": "İyi akşamlar!"
+      },
+      "band": 2,
+      "group": "greetings",
+      "note": "A greeting when you arrive in the evening."
+    },
+    {
+      "id": "de-greetings-05",
+      "text": "Gute Nacht!",
+      "lemma": "Nacht",
+      "form": "Nacht",
+      "translations": {
+        "fa": "شب بخیر!",
+        "ar": "تصبح على خير!",
+        "es": "¡Buenas noches!",
+        "vi": "Chúc ngủ ngon!",
+        "en": "Good night!",
+        "tr": "İyi geceler!"
+      },
+      "band": 2,
+      "group": "greetings",
+      "note": "Only when someone goes to bed or you leave late at night."
+    },
+    {
+      "id": "de-greetings-06",
+      "text": "Tschüss!",
+      "translations": {
+        "fa": "خداحافظ!",
+        "ar": "مع السلامة!",
+        "es": "¡Adiós!",
+        "vi": "Tạm biệt!",
+        "en": "Bye!",
+        "tr": "Hoşça kal!"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Everyday goodbye. Formal: Auf Wiedersehen!"
+    },
+    {
+      "id": "de-greetings-07",
+      "text": "Bis später!",
+      "lemma": "später",
+      "form": "später",
+      "translations": {
+        "fa": "بعداً می‌بینمت!",
+        "ar": "أراك لاحقًا!",
+        "es": "¡Hasta luego!",
+        "vi": "Hẹn gặp lại sau nhé!",
+        "en": "See you later!",
+        "tr": "Sonra görüşürüz!"
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-08",
+      "text": "Bis morgen!",
+      "lemma": "morgen",
+      "form": "morgen",
+      "translations": {
+        "fa": "تا فردا!",
+        "ar": "أراك غدًا!",
+        "es": "¡Hasta mañana!",
+        "vi": "Mai gặp nhé!",
+        "en": "See you tomorrow!",
+        "tr": "Yarın görüşürüz!"
+      },
+      "band": 2,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-09",
+      "text": "Wie geht's?",
+      "lemma": "gehen",
+      "form": "geht",
+      "translations": {
+        "fa": "حالت چطور است؟",
+        "ar": "كيف حالك؟",
+        "es": "¿Qué tal?",
+        "vi": "Bạn khỏe không?",
+        "en": "How are you?",
+        "tr": "Nasılsın?"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Polite: Wie geht es Ihnen?"
+    },
+    {
+      "id": "de-greetings-10",
+      "text": "Gut, danke.",
+      "lemma": "gut",
+      "form": "Gut",
+      "translations": {
+        "fa": "خوبم، ممنون.",
+        "ar": "بخير، شكرًا.",
+        "es": "Bien, gracias.",
+        "vi": "Tôi khỏe, cảm ơn.",
+        "en": "Fine, thanks.",
+        "tr": "İyiyim, teşekkürler."
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-11",
+      "text": "Und dir?",
+      "translations": {
+        "fa": "تو چطور؟",
+        "ar": "وأنت؟",
+        "es": "¿Y tú?",
+        "vi": "Còn bạn thì sao?",
+        "en": "And you?",
+        "tr": "Ya sen?"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Polite: Und Ihnen?"
+    },
+    {
+      "id": "de-greetings-12",
+      "text": "Wie heißt du?",
+      "lemma": "heißen",
+      "form": "heißt",
+      "translations": {
+        "fa": "اسمت چیست؟",
+        "ar": "ما اسمك؟",
+        "es": "¿Cómo te llamas?",
+        "vi": "Bạn tên là gì?",
+        "en": "What's your name?",
+        "tr": "Adın ne?"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Polite: Wie heißen Sie?"
+    },
+    {
+      "id": "de-greetings-13",
+      "text": "Ich heiße Anna.",
+      "lemma": "heißen",
+      "form": "heiße",
+      "translations": {
+        "fa": "اسم من آنا است.",
+        "ar": "اسمي آنا.",
+        "es": "Me llamo Anna.",
+        "vi": "Tôi tên là Anna.",
+        "en": "My name is Anna.",
+        "tr": "Benim adım Anna."
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-14",
+      "text": "Freut mich!",
+      "lemma": "freuen",
+      "form": "Freut",
+      "translations": {
+        "fa": "خوشبختم!",
+        "ar": "تشرفت بمعرفتك!",
+        "es": "¡Mucho gusto!",
+        "vi": "Rất vui được gặp bạn!",
+        "en": "Nice to meet you!",
+        "tr": "Memnun oldum!"
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "de-greetings-15",
+      "text": "Herzlich willkommen!",
+      "lemma": "willkommen",
+      "form": "willkommen",
+      "translations": {
+        "fa": "خوش آمدید!",
+        "ar": "أهلًا وسهلًا!",
+        "es": "¡Bienvenido!",
+        "vi": "Chào mừng bạn!",
+        "en": "Welcome!",
+        "tr": "Hoş geldiniz!"
+      },
+      "band": 2,
+      "group": "greetings"
+    },
+    {
+      "id": "de-polite-01",
+      "text": "Bitte.",
+      "translations": {
+        "fa": "لطفاً.",
+        "ar": "من فضلك.",
+        "es": "Por favor.",
+        "vi": "Làm ơn.",
+        "en": "Please.",
+        "tr": "Lütfen."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "Also the reply to Danke (You're welcome)."
+    },
+    {
+      "id": "de-polite-02",
+      "text": "Danke!",
+      "translations": {
+        "fa": "ممنون!",
+        "ar": "شكرًا!",
+        "es": "¡Gracias!",
+        "vi": "Cảm ơn!",
+        "en": "Thanks!",
+        "tr": "Teşekkürler!"
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-03",
+      "text": "Vielen Dank!",
+      "lemma": "Dank",
+      "form": "Dank",
+      "translations": {
+        "fa": "خیلی ممنون!",
+        "ar": "شكرًا جزيلًا!",
+        "es": "¡Muchas gracias!",
+        "vi": "Cảm ơn rất nhiều!",
+        "en": "Thank you very much!",
+        "tr": "Çok teşekkürler!"
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-04",
+      "text": "Gern geschehen!",
+      "lemma": "geschehen",
+      "form": "geschehen",
+      "translations": {
+        "fa": "خواهش می‌کنم!",
+        "ar": "عفوًا!",
+        "es": "¡De nada!",
+        "vi": "Không có gì!",
+        "en": "You're welcome!",
+        "tr": "Rica ederim!"
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "Shorter and just as common: Gerne! or Bitte!"
+    },
+    {
+      "id": "de-polite-05",
+      "text": "Entschuldigung!",
+      "translations": {
+        "fa": "ببخشید!",
+        "ar": "المعذرة!",
+        "es": "¡Disculpe!",
+        "vi": "Xin lỗi!",
+        "en": "Excuse me!",
+        "tr": "Afedersiniz!"
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "To get attention or to squeeze past; also a quick apology."
+    },
+    {
+      "id": "de-polite-06",
+      "text": "Tut mir leid!",
+      "lemma": "leidtun",
+      "form": "leid",
+      "translations": {
+        "fa": "متأسفم!",
+        "ar": "آسف!",
+        "es": "¡Lo siento!",
+        "vi": "Tôi xin lỗi!",
+        "en": "I'm sorry!",
+        "tr": "Özür dilerim!"
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "Casual: Sorry! or Entschuldige!"
+    },
+    {
+      "id": "de-polite-07",
+      "text": "Kein Problem!",
+      "lemma": "Problem",
+      "form": "Problem",
+      "translations": {
+        "fa": "مشکلی نیست!",
+        "ar": "لا مشكلة!",
+        "es": "¡No hay problema!",
+        "vi": "Không sao đâu!",
+        "en": "No problem!",
+        "tr": "Sorun değil!"
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-08",
+      "text": "Ja, gerne!",
+      "translations": {
+        "fa": "بله، لطفاً!",
+        "ar": "نعم، من فضلك!",
+        "es": "¡Sí, por favor!",
+        "vi": "Vâng, cảm ơn!",
+        "en": "Yes, please!",
+        "tr": "Evet, lütfen!"
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "Accepting an offer. Also: Ja, bitte!"
+    },
+    {
+      "id": "de-polite-09",
+      "text": "Nein, danke.",
+      "translations": {
+        "fa": "نه، ممنون.",
+        "ar": "لا، شكرًا.",
+        "es": "No, gracias.",
+        "vi": "Không, cảm ơn.",
+        "en": "No, thanks.",
+        "tr": "Hayır, teşekkürler."
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-10",
+      "text": "Na klar!",
+      "lemma": "klar",
+      "form": "klar",
+      "translations": {
+        "fa": "البته!",
+        "ar": "طبعًا!",
+        "es": "¡Claro!",
+        "vi": "Tất nhiên rồi!",
+        "en": "Of course!",
+        "tr": "Tabii ki!"
+      },
+      "band": 2,
+      "group": "polite",
+      "note": "Casual. More neutral: Natürlich!"
+    },
+    {
+      "id": "de-polite-11",
+      "text": "Können Sie mir helfen?",
+      "lemma": "helfen",
+      "form": "helfen",
+      "translations": {
+        "fa": "می‌توانید به من کمک کنید؟",
+        "ar": "هل يمكنك مساعدتي؟",
+        "es": "¿Me puede ayudar?",
+        "vi": "Bạn có thể giúp tôi được không?",
+        "en": "Could you help me?",
+        "tr": "Bana yardım edebilir misiniz?"
+      },
+      "band": 2,
+      "group": "polite",
+      "note": "To a friend: Kannst du mir helfen?"
+    },
+    {
+      "id": "de-polite-12",
+      "text": "Können Sie das bitte wiederholen?",
+      "lemma": "wiederholen",
+      "form": "wiederholen",
+      "translations": {
+        "fa": "می‌شود لطفاً تکرار کنید؟",
+        "ar": "هل يمكنك أن تكرر ذلك من فضلك؟",
+        "es": "¿Puede repetirlo, por favor?",
+        "vi": "Bạn có thể nhắc lại được không?",
+        "en": "Can you repeat that, please?",
+        "tr": "Tekrar eder misiniz, lütfen?"
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-13",
+      "text": "Etwas langsamer, bitte.",
+      "lemma": "langsam",
+      "form": "langsamer",
+      "translations": {
+        "fa": "کمی آهسته‌تر، لطفاً.",
+        "ar": "أبطأ قليلًا من فضلك.",
+        "es": "Un poco más despacio, por favor.",
+        "vi": "Làm ơn nói chậm hơn một chút.",
+        "en": "A bit more slowly, please.",
+        "tr": "Biraz daha yavaş, lütfen."
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-14",
+      "text": "Ich verstehe das nicht.",
+      "lemma": "verstehen",
+      "form": "verstehe",
+      "translations": {
+        "fa": "متوجه نمی‌شوم.",
+        "ar": "لا أفهم.",
+        "es": "No lo entiendo.",
+        "vi": "Tôi không hiểu.",
+        "en": "I don't understand.",
+        "tr": "Anlamıyorum."
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "de-polite-15",
+      "text": "Ich spreche ein bisschen Deutsch.",
+      "lemma": "sprechen",
+      "form": "spreche",
+      "translations": {
+        "fa": "من کمی آلمانی صحبت می‌کنم.",
+        "ar": "أتكلم الألمانية قليلًا.",
+        "es": "Hablo un poco de alemán.",
+        "vi": "Tôi nói được một chút tiếng Đức.",
+        "en": "I speak a little German.",
+        "tr": "Biraz Almanca konuşuyorum."
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "de-questions-01",
+      "text": "Was ist das?",
+      "lemma": "sein",
+      "form": "ist",
+      "translations": {
+        "fa": "این چیست؟",
+        "ar": "ما هذا؟",
+        "es": "¿Qué es esto?",
+        "vi": "Cái này là gì?",
+        "en": "What's this?",
+        "tr": "Bu ne?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-02",
+      "text": "Was kostet das?",
+      "lemma": "kosten",
+      "form": "kostet",
+      "translations": {
+        "fa": "قیمتش چند است؟",
+        "ar": "بكم هذا؟",
+        "es": "¿Cuánto cuesta?",
+        "vi": "Cái này bao nhiêu tiền?",
+        "en": "How much is it?",
+        "tr": "Bu ne kadar?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-03",
+      "text": "Was bedeutet das?",
+      "lemma": "bedeuten",
+      "form": "bedeutet",
+      "translations": {
+        "fa": "این یعنی چه؟",
+        "ar": "ماذا يعني ذلك؟",
+        "es": "¿Qué significa eso?",
+        "vi": "Cái đó nghĩa là gì?",
+        "en": "What does that mean?",
+        "tr": "Bu ne demek?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-04",
+      "text": "Wie sagt man das auf Deutsch?",
+      "lemma": "sagen",
+      "form": "sagt",
+      "translations": {
+        "fa": "این را به آلمانی چه می‌گویند؟",
+        "ar": "كيف نقول هذا بالألمانية؟",
+        "es": "¿Cómo se dice esto en alemán?",
+        "vi": "Cái này tiếng Đức nói thế nào?",
+        "en": "How do you say that in German?",
+        "tr": "Bu Almanca nasıl söylenir?"
+      },
+      "band": 2,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-05",
+      "text": "Woher kommst du?",
+      "lemma": "kommen",
+      "form": "kommst",
+      "translations": {
+        "fa": "اهل کجایی؟",
+        "ar": "من أين أنت؟",
+        "es": "¿De dónde eres?",
+        "vi": "Bạn đến từ đâu?",
+        "en": "Where are you from?",
+        "tr": "Nerelisin?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Polite: Woher kommen Sie?"
+    },
+    {
+      "id": "de-questions-06",
+      "text": "Wo wohnst du?",
+      "lemma": "wohnen",
+      "form": "wohnst",
+      "translations": {
+        "fa": "کجا زندگی می‌کنی؟",
+        "ar": "أين تسكن؟",
+        "es": "¿Dónde vives?",
+        "vi": "Bạn sống ở đâu?",
+        "en": "Where do you live?",
+        "tr": "Nerede yaşıyorsun?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Polite: Wo wohnen Sie?"
+    },
+    {
+      "id": "de-questions-07",
+      "text": "Wie alt bist du?",
+      "lemma": "alt",
+      "form": "alt",
+      "translations": {
+        "fa": "چند سالت است؟",
+        "ar": "كم عمرك؟",
+        "es": "¿Cuántos años tienes?",
+        "vi": "Bạn bao nhiêu tuổi?",
+        "en": "How old are you?",
+        "tr": "Kaç yaşındasın?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Polite: Wie alt sind Sie?"
+    },
+    {
+      "id": "de-questions-08",
+      "text": "Wer ist das?",
+      "lemma": "sein",
+      "form": "ist",
+      "translations": {
+        "fa": "او کیست؟",
+        "ar": "من هذا؟",
+        "es": "¿Quién es?",
+        "vi": "Đó là ai vậy?",
+        "en": "Who's that?",
+        "tr": "Bu kim?"
+      },
+      "band": 2,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-09",
+      "text": "Warum?",
+      "translations": {
+        "fa": "چرا؟",
+        "ar": "لماذا؟",
+        "es": "¿Por qué?",
+        "vi": "Tại sao?",
+        "en": "Why?",
+        "tr": "Neden?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-10",
+      "text": "Wann?",
+      "translations": {
+        "fa": "کی؟",
+        "ar": "متى؟",
+        "es": "¿Cuándo?",
+        "vi": "Khi nào?",
+        "en": "When?",
+        "tr": "Ne zaman?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-11",
+      "text": "Wirklich?",
+      "translations": {
+        "fa": "واقعاً؟",
+        "ar": "حقًا؟",
+        "es": "¿En serio?",
+        "vi": "Thật không?",
+        "en": "Really?",
+        "tr": "Gerçekten mi?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-12",
+      "text": "Was ist passiert?",
+      "lemma": "passieren",
+      "form": "passiert",
+      "translations": {
+        "fa": "چه اتفاقی افتاد؟",
+        "ar": "ماذا حدث؟",
+        "es": "¿Qué pasó?",
+        "vi": "Đã xảy ra chuyện gì?",
+        "en": "What happened?",
+        "tr": "Ne oldu?"
+      },
+      "band": 2,
+      "group": "questions"
+    },
+    {
+      "id": "de-questions-13",
+      "text": "Bist du sicher?",
+      "lemma": "sicher",
+      "form": "sicher",
+      "translations": {
+        "fa": "مطمئنی؟",
+        "ar": "هل أنت متأكد؟",
+        "es": "¿Estás seguro?",
+        "vi": "Bạn có chắc không?",
+        "en": "Are you sure?",
+        "tr": "Emin misin?"
+      },
+      "band": 3,
+      "group": "questions",
+      "note": "Polite: Sind Sie sicher?"
+    },
+    {
+      "id": "de-questions-14",
+      "text": "Welches meinst du?",
+      "lemma": "meinen",
+      "form": "meinst",
+      "translations": {
+        "fa": "منظورت کدام است؟",
+        "ar": "أيّها تقصد؟",
+        "es": "¿Cuál dices?",
+        "vi": "Bạn nói cái nào?",
+        "en": "Which one do you mean?",
+        "tr": "Hangisini diyorsun?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Welches for das-nouns; welchen for der-nouns, welche for die-nouns."
+    },
+    {
+      "id": "de-questions-15",
+      "text": "Was ist los?",
+      "lemma": "los",
+      "form": "los",
+      "translations": {
+        "fa": "چه شده؟",
+        "ar": "ما بك؟",
+        "es": "¿Qué te pasa?",
+        "vi": "Có chuyện gì vậy?",
+        "en": "What's wrong?",
+        "tr": "Neyin var?"
+      },
+      "band": 3,
+      "group": "questions",
+      "note": "Also just: What's going on?"
+    },
+    {
+      "id": "de-needs-01",
+      "text": "Hilfe!",
+      "translations": {
+        "fa": "کمک!",
+        "ar": "النجدة!",
+        "es": "¡Socorro!",
+        "vi": "Cứu với!",
+        "en": "Help!",
+        "tr": "İmdat!"
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-02",
+      "text": "Ich brauche Hilfe.",
+      "lemma": "brauchen",
+      "form": "brauche",
+      "translations": {
+        "fa": "به کمک نیاز دارم.",
+        "ar": "أحتاج إلى مساعدة.",
+        "es": "Necesito ayuda.",
+        "vi": "Tôi cần giúp đỡ.",
+        "en": "I need help.",
+        "tr": "Yardıma ihtiyacım var."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-03",
+      "text": "Ich habe Hunger.",
+      "lemma": "Hunger",
+      "form": "Hunger",
+      "translations": {
+        "fa": "گرسنه‌ام.",
+        "ar": "أنا جائع.",
+        "es": "Tengo hambre.",
+        "vi": "Tôi đói.",
+        "en": "I'm hungry.",
+        "tr": "Acıktım."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-04",
+      "text": "Ich habe Durst.",
+      "lemma": "Durst",
+      "form": "Durst",
+      "translations": {
+        "fa": "تشنه‌ام.",
+        "ar": "أنا عطشان.",
+        "es": "Tengo sed.",
+        "vi": "Tôi khát nước.",
+        "en": "I'm thirsty.",
+        "tr": "Susadım."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-05",
+      "text": "Ich weiß nicht.",
+      "lemma": "wissen",
+      "form": "weiß",
+      "translations": {
+        "fa": "نمی‌دانم.",
+        "ar": "لا أعرف.",
+        "es": "No sé.",
+        "vi": "Tôi không biết.",
+        "en": "I don't know.",
+        "tr": "Bilmiyorum."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-06",
+      "text": "Einen Moment, bitte.",
+      "lemma": "Moment",
+      "form": "Moment",
+      "translations": {
+        "fa": "یک لحظه، لطفاً.",
+        "ar": "لحظة من فضلك.",
+        "es": "Un momento, por favor.",
+        "vi": "Xin chờ một chút.",
+        "en": "One moment, please.",
+        "tr": "Bir dakika, lütfen."
+      },
+      "band": 1,
+      "group": "needs",
+      "note": "Casual: Warte mal!"
+    },
+    {
+      "id": "de-needs-07",
+      "text": "Ich muss los.",
+      "lemma": "müssen",
+      "form": "muss",
+      "translations": {
+        "fa": "باید بروم.",
+        "ar": "يجب أن أذهب.",
+        "es": "Me tengo que ir.",
+        "vi": "Tôi phải đi rồi.",
+        "en": "I have to go.",
+        "tr": "Gitmem lazım."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-08",
+      "text": "Ich habe eine Frage.",
+      "lemma": "Frage",
+      "form": "Frage",
+      "translations": {
+        "fa": "یک سؤال دارم.",
+        "ar": "لدي سؤال.",
+        "es": "Tengo una pregunta.",
+        "vi": "Tôi có một câu hỏi.",
+        "en": "I have a question.",
+        "tr": "Bir sorum var."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-09",
+      "text": "Ich habe mich verlaufen.",
+      "lemma": "verlaufen",
+      "form": "verlaufen",
+      "translations": {
+        "fa": "راه را گم کرده‌ام.",
+        "ar": "لقد ضللت الطريق.",
+        "es": "Me he perdido.",
+        "vi": "Tôi bị lạc đường rồi.",
+        "en": "I'm lost.",
+        "tr": "Kayboldum."
+      },
+      "band": 2,
+      "group": "needs",
+      "note": "On foot. Lost while driving: Ich habe mich verfahren."
+    },
+    {
+      "id": "de-needs-10",
+      "text": "Ich brauche einen Arzt.",
+      "lemma": "Arzt",
+      "form": "Arzt",
+      "translations": {
+        "fa": "به دکتر نیاز دارم.",
+        "ar": "أحتاج إلى طبيب.",
+        "es": "Necesito un médico.",
+        "vi": "Tôi cần bác sĩ.",
+        "en": "I need a doctor.",
+        "tr": "Doktora ihtiyacım var."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-11",
+      "text": "Mir ist kalt.",
+      "lemma": "kalt",
+      "form": "kalt",
+      "translations": {
+        "fa": "سردم است.",
+        "ar": "أشعر بالبرد.",
+        "es": "Tengo frío.",
+        "vi": "Tôi lạnh.",
+        "en": "I'm cold.",
+        "tr": "Üşüyorum."
+      },
+      "band": 2,
+      "group": "needs",
+      "note": "Not Ich bin kalt, which describes your personality."
+    },
+    {
+      "id": "de-needs-12",
+      "text": "Ich will nach Hause.",
+      "lemma": "wollen",
+      "form": "will",
+      "translations": {
+        "fa": "می‌خواهم به خانه بروم.",
+        "ar": "أريد أن أعود إلى البيت.",
+        "es": "Quiero irme a casa.",
+        "vi": "Tôi muốn về nhà.",
+        "en": "I want to go home.",
+        "tr": "Eve gitmek istiyorum."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-13",
+      "text": "Hier tut es weh.",
+      "lemma": "wehtun",
+      "form": "weh",
+      "translations": {
+        "fa": "اینجا درد می‌کند.",
+        "ar": "يؤلمني هنا.",
+        "es": "Me duele aquí.",
+        "vi": "Chỗ này đau.",
+        "en": "It hurts here.",
+        "tr": "Burası acıyor."
+      },
+      "band": 3,
+      "group": "needs"
+    },
+    {
+      "id": "de-needs-14",
+      "text": "Ruf die Polizei!",
+      "lemma": "Polizei",
+      "form": "Polizei",
+      "translations": {
+        "fa": "به پلیس زنگ بزن!",
+        "ar": "اتصل بالشرطة!",
+        "es": "¡Llama a la policía!",
+        "vi": "Gọi cảnh sát đi!",
+        "en": "Call the police!",
+        "tr": "Polisi ara!"
+      },
+      "band": 3,
+      "group": "needs",
+      "note": "To a stranger: Rufen Sie die Polizei!"
+    },
+    {
+      "id": "de-needs-15",
+      "text": "Ich suche mein Handy.",
+      "lemma": "Handy",
+      "form": "Handy",
+      "translations": {
+        "fa": "دنبال گوشی‌ام می‌گردم.",
+        "ar": "أبحث عن هاتفي.",
+        "es": "Estoy buscando mi teléfono.",
+        "vi": "Tôi đang tìm điện thoại.",
+        "en": "I'm looking for my phone.",
+        "tr": "Telefonumu arıyorum."
+      },
+      "band": 3,
+      "group": "needs",
+      "note": "Handy is the everyday word for a mobile phone."
+    },
+    {
+      "id": "de-time-01",
+      "text": "Wie spät ist es?",
+      "lemma": "spät",
+      "form": "spät",
+      "translations": {
+        "fa": "ساعت چند است؟",
+        "ar": "كم الساعة؟",
+        "es": "¿Qué hora es?",
+        "vi": "Mấy giờ rồi?",
+        "en": "What time is it?",
+        "tr": "Saat kaç?"
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "de-time-02",
+      "text": "Es ist drei Uhr.",
+      "lemma": "Uhr",
+      "form": "Uhr",
+      "translations": {
+        "fa": "ساعت سه است.",
+        "ar": "الساعة الثالثة.",
+        "es": "Son las tres.",
+        "vi": "Bây giờ là ba giờ.",
+        "en": "It's three o'clock.",
+        "tr": "Saat üç."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "de-time-03",
+      "text": "Jetzt sofort.",
+      "lemma": "jetzt",
+      "form": "Jetzt",
+      "translations": {
+        "fa": "همین الان.",
+        "ar": "فورًا.",
+        "es": "Ahora mismo.",
+        "vi": "Ngay bây giờ.",
+        "en": "Right now.",
+        "tr": "Hemen şimdi."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "de-time-04",
+      "text": "Noch nicht.",
+      "lemma": "noch",
+      "form": "Noch",
+      "translations": {
+        "fa": "هنوز نه.",
+        "ar": "ليس بعد.",
+        "es": "Todavía no.",
+        "vi": "Chưa.",
+        "en": "Not yet.",
+        "tr": "Henüz değil."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "de-time-05",
+      "text": "Später.",
+      "translations": {
+        "fa": "بعداً.",
+        "ar": "لاحقًا.",
+        "es": "Más tarde.",
+        "vi": "Để sau nhé.",
+        "en": "Later.",
+        "tr": "Sonra."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "de-time-06",
+      "text": "Heute ist Montag.",
+      "lemma": "Montag",
+      "form": "Montag",
+      "translations": {
+        "fa": "امروز دوشنبه است.",
+        "ar": "اليوم هو الاثنين.",
+        "es": "Hoy es lunes.",
+        "vi": "Hôm nay là thứ Hai.",
+        "en": "Today is Monday.",
+        "tr": "Bugün pazartesi."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "de-time-07",
+      "text": "Morgen früh.",
+      "lemma": "früh",
+      "form": "früh",
+      "translations": {
+        "fa": "فردا صبح.",
+        "ar": "غدًا صباحًا.",
+        "es": "Mañana por la mañana.",
+        "vi": "Sáng mai.",
+        "en": "Tomorrow morning.",
+        "tr": "Yarın sabah."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "de-time-08",
+      "text": "Um wie viel Uhr?",
+      "lemma": "Uhr",
+      "form": "Uhr",
+      "translations": {
+        "fa": "ساعت چند؟",
+        "ar": "في أي ساعة؟",
+        "es": "¿A qué hora?",
+        "vi": "Lúc mấy giờ?",
+        "en": "At what time?",
+        "tr": "Saat kaçta?"
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "de-time-09",
+      "text": "Jeden Tag.",
+      "lemma": "Tag",
+      "form": "Tag",
+      "translations": {
+        "fa": "هر روز.",
+        "ar": "كل يوم.",
+        "es": "Todos los días.",
+        "vi": "Mỗi ngày.",
+        "en": "Every day.",
+        "tr": "Her gün."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "de-time-10",
+      "text": "Nächste Woche.",
+      "lemma": "Woche",
+      "form": "Woche",
+      "translations": {
+        "fa": "هفتهٔ آینده.",
+        "ar": "الأسبوع القادم.",
+        "es": "La próxima semana.",
+        "vi": "Tuần sau.",
+        "en": "Next week.",
+        "tr": "Gelecek hafta."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "de-time-11",
+      "text": "Ich bin spät dran.",
+      "lemma": "spät",
+      "form": "spät",
+      "translations": {
+        "fa": "دیرم شده است.",
+        "ar": "أنا متأخر.",
+        "es": "Voy tarde.",
+        "vi": "Tôi bị muộn rồi.",
+        "en": "I'm running late.",
+        "tr": "Geç kaldım."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "de-time-12",
+      "text": "Gestern Abend.",
+      "lemma": "gestern",
+      "form": "Gestern",
+      "translations": {
+        "fa": "دیشب.",
+        "ar": "مساء أمس.",
+        "es": "Anoche.",
+        "vi": "Tối qua.",
+        "en": "Last night.",
+        "tr": "Dün akşam."
+      },
+      "band": 3,
+      "group": "time",
+      "note": "For late at night: letzte Nacht."
+    },
+    {
+      "id": "de-time-13",
+      "text": "Am Wochenende.",
+      "lemma": "Wochenende",
+      "form": "Wochenende",
+      "translations": {
+        "fa": "آخر هفته.",
+        "ar": "في عطلة نهاية الأسبوع.",
+        "es": "El fin de semana.",
+        "vi": "Vào cuối tuần.",
+        "en": "On the weekend.",
+        "tr": "Hafta sonu."
+      },
+      "band": 3,
+      "group": "time"
+    },
+    {
+      "id": "de-time-14",
+      "text": "Manchmal.",
+      "translations": {
+        "fa": "گاهی.",
+        "ar": "أحيانًا.",
+        "es": "A veces.",
+        "vi": "Thỉnh thoảng.",
+        "en": "Sometimes.",
+        "tr": "Bazen."
+      },
+      "band": 3,
+      "group": "time"
+    },
+    {
+      "id": "de-time-15",
+      "text": "Wir haben Zeit.",
+      "lemma": "Zeit",
+      "form": "Zeit",
+      "translations": {
+        "fa": "وقت داریم.",
+        "ar": "لدينا وقت.",
+        "es": "Tenemos tiempo.",
+        "vi": "Chúng ta còn thời gian.",
+        "en": "We have time.",
+        "tr": "Vaktimiz var."
+      },
+      "band": 3,
+      "group": "time"
+    },
+    {
+      "id": "de-places-01",
+      "text": "Wo ist die Toilette?",
+      "lemma": "Toilette",
+      "form": "Toilette",
+      "translations": {
+        "fa": "دستشویی کجاست؟",
+        "ar": "أين الحمّام؟",
+        "es": "¿Dónde está el baño?",
+        "vi": "Nhà vệ sinh ở đâu?",
+        "en": "Where's the toilet?",
+        "tr": "Tuvalet nerede?"
+      },
+      "band": 1,
+      "group": "places",
+      "note": "Casual: das Klo."
+    },
+    {
+      "id": "de-places-02",
+      "text": "Hier ist es.",
+      "lemma": "hier",
+      "form": "Hier",
+      "translations": {
+        "fa": "اینجاست.",
+        "ar": "إنه هنا.",
+        "es": "Está aquí.",
+        "vi": "Nó ở đây.",
+        "en": "It's here.",
+        "tr": "Burada."
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "de-places-03",
+      "text": "Da drüben.",
+      "lemma": "drüben",
+      "form": "drüben",
+      "translations": {
+        "fa": "آن طرف.",
+        "ar": "هناك.",
+        "es": "Allí.",
+        "vi": "Ở đằng kia.",
+        "en": "Over there.",
+        "tr": "Şurada."
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "de-places-04",
+      "text": "Links.",
+      "translations": {
+        "fa": "سمت چپ.",
+        "ar": "على اليسار.",
+        "es": "A la izquierda.",
+        "vi": "Bên trái.",
+        "en": "On the left.",
+        "tr": "Solda."
+      },
+      "band": 1,
+      "group": "places",
+      "note": "Directions: also nach links (to the left)."
+    },
+    {
+      "id": "de-places-05",
+      "text": "Rechts.",
+      "translations": {
+        "fa": "سمت راست.",
+        "ar": "على اليمين.",
+        "es": "A la derecha.",
+        "vi": "Bên phải.",
+        "en": "On the right.",
+        "tr": "Sağda."
+      },
+      "band": 1,
+      "group": "places",
+      "note": "Directions: also nach rechts (to the right)."
+    },
+    {
+      "id": "de-places-06",
+      "text": "Immer geradeaus.",
+      "lemma": "geradeaus",
+      "form": "geradeaus",
+      "translations": {
+        "fa": "مستقیم بروید.",
+        "ar": "إلى الأمام مباشرةً.",
+        "es": "Todo recto.",
+        "vi": "Cứ đi thẳng.",
+        "en": "Straight ahead.",
+        "tr": "Dümdüz gidin."
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "de-places-07",
+      "text": "Ist es weit?",
+      "lemma": "weit",
+      "form": "weit",
+      "translations": {
+        "fa": "دور است؟",
+        "ar": "هل هو بعيد؟",
+        "es": "¿Está lejos?",
+        "vi": "Có xa không?",
+        "en": "Is it far?",
+        "tr": "Uzak mı?"
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "de-places-08",
+      "text": "Es ist hier in der Nähe.",
+      "lemma": "Nähe",
+      "form": "Nähe",
+      "translations": {
+        "fa": "همین نزدیکی است.",
+        "ar": "إنه قريب من هنا.",
+        "es": "Está cerca de aquí.",
+        "vi": "Nó ở gần đây.",
+        "en": "It's near here.",
+        "tr": "Buraya yakın."
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "de-places-09",
+      "text": "Los geht's!",
+      "lemma": "los",
+      "form": "Los",
+      "translations": {
+        "fa": "برویم!",
+        "ar": "هيا بنا!",
+        "es": "¡Vamos!",
+        "vi": "Đi thôi!",
+        "en": "Let's go!",
+        "tr": "Hadi gidelim!"
+      },
+      "band": 1,
+      "group": "places",
+      "note": "Also: Let's get started!"
+    },
+    {
+      "id": "de-places-10",
+      "text": "Ich bin zu Hause.",
+      "lemma": "sein",
+      "form": "bin",
+      "translations": {
+        "fa": "خانه هستم.",
+        "ar": "أنا في البيت.",
+        "es": "Estoy en casa.",
+        "vi": "Tôi đang ở nhà.",
+        "en": "I'm at home.",
+        "tr": "Evdeyim."
+      },
+      "band": 2,
+      "group": "places",
+      "note": "zu Hause = at home; nach Hause = (going) home."
+    },
+    {
+      "id": "de-places-11",
+      "text": "Wo ist der Supermarkt?",
+      "lemma": "Supermarkt",
+      "form": "Supermarkt",
+      "translations": {
+        "fa": "سوپرمارکت کجاست؟",
+        "ar": "أين السوبرماركت؟",
+        "es": "¿Dónde está el supermercado?",
+        "vi": "Siêu thị ở đâu?",
+        "en": "Where's the supermarket?",
+        "tr": "Süpermarket nerede?"
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "de-places-12",
+      "text": "Haben Sie offen?",
+      "lemma": "offen",
+      "form": "offen",
+      "translations": {
+        "fa": "باز هستید؟",
+        "ar": "هل المحل مفتوح؟",
+        "es": "¿Está abierto?",
+        "vi": "Cửa hàng có mở cửa không?",
+        "en": "Are you open?",
+        "tr": "Açık mısınız?"
+      },
+      "band": 2,
+      "group": "places",
+      "note": "Asking shop staff. About a place: Ist das offen?"
+    },
+    {
+      "id": "de-places-13",
+      "text": "Gibt es hier eine Apotheke?",
+      "lemma": "Apotheke",
+      "form": "Apotheke",
+      "translations": {
+        "fa": "این نزدیکی داروخانه هست؟",
+        "ar": "هل توجد صيدلية قريبة من هنا؟",
+        "es": "¿Hay una farmacia por aquí?",
+        "vi": "Ở gần đây có hiệu thuốc không?",
+        "en": "Is there a pharmacy around here?",
+        "tr": "Buralarda eczane var mı?"
+      },
+      "band": 3,
+      "group": "places"
+    },
+    {
+      "id": "de-places-14",
+      "text": "Wo ist das Krankenhaus?",
+      "lemma": "Krankenhaus",
+      "form": "Krankenhaus",
+      "translations": {
+        "fa": "بیمارستان کجاست؟",
+        "ar": "أين المستشفى؟",
+        "es": "¿Dónde está el hospital?",
+        "vi": "Bệnh viện ở đâu?",
+        "en": "Where's the hospital?",
+        "tr": "Hastane nerede?"
+      },
+      "band": 3,
+      "group": "places"
+    },
+    {
+      "id": "de-places-15",
+      "text": "Es ist geschlossen.",
+      "lemma": "geschlossen",
+      "form": "geschlossen",
+      "translations": {
+        "fa": "بسته است.",
+        "ar": "إنه مغلق.",
+        "es": "Está cerrado.",
+        "vi": "Đóng cửa rồi.",
+        "en": "It's closed.",
+        "tr": "Kapalı."
+      },
+      "band": 3,
+      "group": "places",
+      "note": "Casual: Es ist zu. / Die haben zu."
+    },
+    {
+      "id": "de-food-01",
+      "text": "Einen Kaffee, bitte.",
+      "lemma": "Kaffee",
+      "form": "Kaffee",
+      "translations": {
+        "fa": "یک قهوه، لطفاً.",
+        "ar": "قهوة من فضلك.",
+        "es": "Un café, por favor.",
+        "vi": "Cho tôi một ly cà phê.",
+        "en": "A coffee, please.",
+        "tr": "Bir kahve, lütfen."
+      },
+      "band": 1,
+      "group": "food"
+    },
+    {
+      "id": "de-food-02",
+      "text": "Ein Wasser, bitte.",
+      "lemma": "Wasser",
+      "form": "Wasser",
+      "translations": {
+        "fa": "یک آب، لطفاً.",
+        "ar": "ماءً من فضلك.",
+        "es": "Agua, por favor.",
+        "vi": "Cho tôi một chai nước.",
+        "en": "A water, please.",
+        "tr": "Bir su, lütfen."
+      },
+      "band": 1,
+      "group": "food",
+      "note": "In a restaurant this means bottled water; tap water is Leitungswasser."
+    },
+    {
+      "id": "de-food-03",
+      "text": "Die Speisekarte, bitte.",
+      "lemma": "Speisekarte",
+      "form": "Speisekarte",
+      "translations": {
+        "fa": "منو، لطفاً.",
+        "ar": "قائمة الطعام من فضلك.",
+        "es": "La carta, por favor.",
+        "vi": "Cho tôi xem thực đơn.",
+        "en": "The menu, please.",
+        "tr": "Menüyü alabilir miyim?"
+      },
+      "band": 2,
+      "group": "food",
+      "note": "Often shortened: Die Karte, bitte."
+    },
+    {
+      "id": "de-food-04",
+      "text": "Die Rechnung, bitte.",
+      "lemma": "Rechnung",
+      "form": "Rechnung",
+      "translations": {
+        "fa": "صورت‌حساب، لطفاً.",
+        "ar": "الحساب من فضلك.",
+        "es": "La cuenta, por favor.",
+        "vi": "Cho tôi tính tiền.",
+        "en": "The bill, please.",
+        "tr": "Hesap, lütfen."
+      },
+      "band": 1,
+      "group": "food",
+      "note": "Also very common: Zahlen, bitte!"
+    },
+    {
+      "id": "de-food-05",
+      "text": "Ich nehme das hier.",
+      "lemma": "nehmen",
+      "form": "nehme",
+      "translations": {
+        "fa": "این یکی را می‌خواهم.",
+        "ar": "سآخذ هذا.",
+        "es": "Quiero este.",
+        "vi": "Tôi lấy món này.",
+        "en": "I'll have this one.",
+        "tr": "Bunu alayım."
+      },
+      "band": 1,
+      "group": "food"
+    },
+    {
+      "id": "de-food-06",
+      "text": "Das ist lecker!",
+      "lemma": "lecker",
+      "form": "lecker",
+      "translations": {
+        "fa": "خوشمزه است!",
+        "ar": "إنه لذيذ!",
+        "es": "¡Está delicioso!",
+        "vi": "Ngon quá!",
+        "en": "It's delicious!",
+        "tr": "Çok lezzetli!"
+      },
+      "band": 1,
+      "group": "food"
+    },
+    {
+      "id": "de-food-07",
+      "text": "Guten Appetit!",
+      "lemma": "Appetit",
+      "form": "Appetit",
+      "translations": {
+        "fa": "نوش جان!",
+        "ar": "بالهناء والشفاء!",
+        "es": "¡Buen provecho!",
+        "vi": "Chúc ngon miệng!",
+        "en": "Enjoy your meal!",
+        "tr": "Afiyet olsun!"
+      },
+      "band": 2,
+      "group": "food",
+      "note": "Said before eating; the reply is Danke, gleichfalls!"
+    },
+    {
+      "id": "de-food-08",
+      "text": "Prost!",
+      "translations": {
+        "fa": "به سلامتی!",
+        "ar": "في صحتك!",
+        "es": "¡Salud!",
+        "vi": "Cạn ly!",
+        "en": "Cheers!",
+        "tr": "Şerefe!"
+      },
+      "band": 2,
+      "group": "food",
+      "note": "More formal, e.g. with wine: Zum Wohl!"
+    },
+    {
+      "id": "de-food-09",
+      "text": "Ich bin Vegetarier.",
+      "lemma": "sein",
+      "form": "bin",
+      "translations": {
+        "fa": "من گیاه‌خوارم.",
+        "ar": "أنا نباتي.",
+        "es": "Soy vegetariano.",
+        "vi": "Tôi ăn chay.",
+        "en": "I'm vegetarian.",
+        "tr": "Vejetaryenim."
+      },
+      "band": 3,
+      "group": "food",
+      "note": "A woman says: Ich bin Vegetarierin."
+    },
+    {
+      "id": "de-food-10",
+      "text": "Ohne Zucker, bitte.",
+      "lemma": "Zucker",
+      "form": "Zucker",
+      "translations": {
+        "fa": "بدون شکر، لطفاً.",
+        "ar": "بدون سكر من فضلك.",
+        "es": "Sin azúcar, por favor.",
+        "vi": "Cho tôi không đường nhé.",
+        "en": "No sugar, please.",
+        "tr": "Şekersiz, lütfen."
+      },
+      "band": 3,
+      "group": "food"
+    },
+    {
+      "id": "de-food-11",
+      "text": "Kann ich mit Karte zahlen?",
+      "lemma": "Karte",
+      "form": "Karte",
+      "translations": {
+        "fa": "می‌توانم با کارت پرداخت کنم؟",
+        "ar": "هل يمكنني الدفع بالبطاقة؟",
+        "es": "¿Puedo pagar con tarjeta?",
+        "vi": "Tôi trả bằng thẻ được không?",
+        "en": "Can I pay by card?",
+        "tr": "Kartla ödeyebilir miyim?"
+      },
+      "band": 2,
+      "group": "food"
+    },
+    {
+      "id": "de-food-12",
+      "text": "Einen Tisch für zwei, bitte.",
+      "lemma": "Tisch",
+      "form": "Tisch",
+      "translations": {
+        "fa": "یک میز برای دو نفر، لطفاً.",
+        "ar": "طاولة لشخصين من فضلك.",
+        "es": "Una mesa para dos, por favor.",
+        "vi": "Cho tôi một bàn hai người.",
+        "en": "A table for two, please.",
+        "tr": "İki kişilik bir masa, lütfen."
+      },
+      "band": 2,
+      "group": "food"
+    },
+    {
+      "id": "de-food-13",
+      "text": "Zum Mitnehmen, bitte.",
+      "lemma": "mitnehmen",
+      "form": "Mitnehmen",
+      "translations": {
+        "fa": "بیرون‌بر، لطفاً.",
+        "ar": "للأخذ معي من فضلك.",
+        "es": "Para llevar, por favor.",
+        "vi": "Cho tôi mang đi.",
+        "en": "To take away, please.",
+        "tr": "Paket olsun, lütfen."
+      },
+      "band": 3,
+      "group": "food",
+      "note": "You will be asked: Für hier oder zum Mitnehmen?"
+    },
+    {
+      "id": "de-food-14",
+      "text": "Ist das scharf?",
+      "lemma": "scharf",
+      "form": "scharf",
+      "translations": {
+        "fa": "تند است؟",
+        "ar": "هل هو حار؟",
+        "es": "¿Pica?",
+        "vi": "Có cay không?",
+        "en": "Is it spicy?",
+        "tr": "Acı mı?"
+      },
+      "band": 3,
+      "group": "food"
+    },
+    {
+      "id": "de-food-15",
+      "text": "Ich bin satt.",
+      "lemma": "satt",
+      "form": "satt",
+      "translations": {
+        "fa": "سیر شدم.",
+        "ar": "لقد شبعت.",
+        "es": "Estoy lleno.",
+        "vi": "Tôi no rồi.",
+        "en": "I'm full.",
+        "tr": "Doydum."
+      },
+      "band": 3,
+      "group": "food"
+    },
+    {
+      "id": "de-travel-01",
+      "text": "Wo ist der Bahnhof?",
+      "lemma": "Bahnhof",
+      "form": "Bahnhof",
+      "translations": {
+        "fa": "ایستگاه قطار کجاست؟",
+        "ar": "أين محطة القطار؟",
+        "es": "¿Dónde está la estación de tren?",
+        "vi": "Ga tàu ở đâu?",
+        "en": "Where's the train station?",
+        "tr": "Tren istasyonu nerede?"
+      },
+      "band": 1,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-02",
+      "text": "Eine Fahrkarte, bitte.",
+      "lemma": "Fahrkarte",
+      "form": "Fahrkarte",
+      "translations": {
+        "fa": "یک بلیت، لطفاً.",
+        "ar": "تذكرة واحدة من فضلك.",
+        "es": "Un billete, por favor.",
+        "vi": "Cho tôi một vé.",
+        "en": "One ticket, please.",
+        "tr": "Bir bilet, lütfen."
+      },
+      "band": 1,
+      "group": "travel",
+      "note": "Also common: Ein Ticket, bitte."
+    },
+    {
+      "id": "de-travel-03",
+      "text": "Wo ist das Hotel?",
+      "lemma": "Hotel",
+      "form": "Hotel",
+      "translations": {
+        "fa": "هتل کجاست؟",
+        "ar": "أين الفندق؟",
+        "es": "¿Dónde está el hotel?",
+        "vi": "Khách sạn ở đâu?",
+        "en": "Where's the hotel?",
+        "tr": "Otel nerede?"
+      },
+      "band": 1,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-04",
+      "text": "Wie komme ich zum Flughafen?",
+      "lemma": "Flughafen",
+      "form": "Flughafen",
+      "translations": {
+        "fa": "چطور به فرودگاه بروم؟",
+        "ar": "كيف أصل إلى المطار؟",
+        "es": "¿Cómo llego al aeropuerto?",
+        "vi": "Đến sân bay đi thế nào?",
+        "en": "How do I get to the airport?",
+        "tr": "Havalimanına nasıl giderim?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-05",
+      "text": "Wann fährt der Zug?",
+      "lemma": "Zug",
+      "form": "Zug",
+      "translations": {
+        "fa": "قطار کی حرکت می‌کند؟",
+        "ar": "متى يغادر القطار؟",
+        "es": "¿Cuándo sale el tren?",
+        "vi": "Khi nào tàu chạy?",
+        "en": "When does the train leave?",
+        "tr": "Tren ne zaman kalkıyor?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-06",
+      "text": "Ist hier noch frei?",
+      "lemma": "frei",
+      "form": "frei",
+      "translations": {
+        "fa": "این صندلی خالی است؟",
+        "ar": "هل هذا المقعد شاغر؟",
+        "es": "¿Está libre este asiento?",
+        "vi": "Chỗ này còn trống không?",
+        "en": "Is this seat free?",
+        "tr": "Burası boş mu?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-07",
+      "text": "Ich habe eine Reservierung.",
+      "lemma": "Reservierung",
+      "form": "Reservierung",
+      "translations": {
+        "fa": "رزرو دارم.",
+        "ar": "لدي حجز.",
+        "es": "Tengo una reserva.",
+        "vi": "Tôi đã đặt trước.",
+        "en": "I have a reservation.",
+        "tr": "Rezervasyonum var."
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-08",
+      "text": "Wo ist die Bushaltestelle?",
+      "lemma": "Bushaltestelle",
+      "form": "Bushaltestelle",
+      "translations": {
+        "fa": "ایستگاه اتوبوس کجاست؟",
+        "ar": "أين موقف الحافلات؟",
+        "es": "¿Dónde está la parada de autobús?",
+        "vi": "Trạm xe buýt ở đâu?",
+        "en": "Where's the bus stop?",
+        "tr": "Otobüs durağı nerede?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-09",
+      "text": "Zum Flughafen, bitte.",
+      "lemma": "Flughafen",
+      "form": "Flughafen",
+      "translations": {
+        "fa": "به فرودگاه، لطفاً.",
+        "ar": "إلى المطار من فضلك.",
+        "es": "Al aeropuerto, por favor.",
+        "vi": "Cho tôi ra sân bay.",
+        "en": "To the airport, please.",
+        "tr": "Havalimanına, lütfen."
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-10",
+      "text": "Hier ist mein Pass.",
+      "lemma": "Pass",
+      "form": "Pass",
+      "translations": {
+        "fa": "بفرمایید، این گذرنامهٔ من است.",
+        "ar": "تفضل، هذا جواز سفري.",
+        "es": "Aquí tiene mi pasaporte.",
+        "vi": "Đây là hộ chiếu của tôi.",
+        "en": "Here's my passport.",
+        "tr": "Buyurun, pasaportum."
+      },
+      "band": 2,
+      "group": "travel",
+      "note": "Also: Reisepass."
+    },
+    {
+      "id": "de-travel-11",
+      "text": "Ich bin hier im Urlaub.",
+      "lemma": "Urlaub",
+      "form": "Urlaub",
+      "translations": {
+        "fa": "برای تعطیلات اینجا هستم.",
+        "ar": "أنا هنا في إجازة.",
+        "es": "Estoy aquí de vacaciones.",
+        "vi": "Tôi đến đây để đi nghỉ.",
+        "en": "I'm here on holiday.",
+        "tr": "Burada tatildeyim."
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-12",
+      "text": "Welches Gleis?",
+      "lemma": "Gleis",
+      "form": "Gleis",
+      "translations": {
+        "fa": "کدام سکو؟",
+        "ar": "أي رصيف؟",
+        "es": "¿Qué andén?",
+        "vi": "Sân ga số mấy?",
+        "en": "Which platform?",
+        "tr": "Hangi peron?"
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-13",
+      "text": "Hin und zurück, bitte.",
+      "lemma": "zurück",
+      "form": "zurück",
+      "translations": {
+        "fa": "رفت و برگشت، لطفاً.",
+        "ar": "ذهابًا وإيابًا من فضلك.",
+        "es": "Ida y vuelta, por favor.",
+        "vi": "Cho tôi vé khứ hồi.",
+        "en": "A return ticket, please.",
+        "tr": "Gidiş-dönüş, lütfen."
+      },
+      "band": 3,
+      "group": "travel",
+      "note": "One way only: Nur hin, bitte."
+    },
+    {
+      "id": "de-travel-14",
+      "text": "Halten Sie bitte hier.",
+      "lemma": "halten",
+      "form": "Halten",
+      "translations": {
+        "fa": "لطفاً اینجا نگه دارید.",
+        "ar": "توقف هنا من فضلك.",
+        "es": "Pare aquí, por favor.",
+        "vi": "Dừng ở đây giúp tôi.",
+        "en": "Stop here, please.",
+        "tr": "Burada durun, lütfen."
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "de-travel-15",
+      "text": "Wie lange dauert das?",
+      "lemma": "dauern",
+      "form": "dauert",
+      "translations": {
+        "fa": "چقدر طول می‌کشد؟",
+        "ar": "كم يستغرق ذلك؟",
+        "es": "¿Cuánto tarda?",
+        "vi": "Mất bao lâu?",
+        "en": "How long does it take?",
+        "tr": "Ne kadar sürer?"
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "de-work-01",
+      "text": "Was machst du beruflich?",
+      "lemma": "beruflich",
+      "form": "beruflich",
+      "translations": {
+        "fa": "شغلت چیست؟",
+        "ar": "ماذا تعمل؟",
+        "es": "¿A qué te dedicas?",
+        "vi": "Bạn làm nghề gì?",
+        "en": "What do you do?",
+        "tr": "Ne iş yapıyorsun?"
+      },
+      "band": 1,
+      "group": "work",
+      "note": "Polite: Was machen Sie beruflich?"
+    },
+    {
+      "id": "de-work-02",
+      "text": "Ich bin Student.",
+      "lemma": "sein",
+      "form": "bin",
+      "translations": {
+        "fa": "من دانشجو هستم.",
+        "ar": "أنا طالب.",
+        "es": "Soy estudiante.",
+        "vi": "Tôi là sinh viên.",
+        "en": "I'm a student.",
+        "tr": "Öğrenciyim."
+      },
+      "band": 1,
+      "group": "work",
+      "note": "A woman says: Ich bin Studentin. A school pupil: Schüler / Schülerin."
+    },
+    {
+      "id": "de-work-03",
+      "text": "Ich habe viel zu tun.",
+      "lemma": "tun",
+      "form": "tun",
+      "translations": {
+        "fa": "سرم خیلی شلوغ است.",
+        "ar": "أنا مشغول جدًا.",
+        "es": "Tengo mucho que hacer.",
+        "vi": "Tôi đang bận lắm.",
+        "en": "I've got a lot to do.",
+        "tr": "Çok işim var."
+      },
+      "band": 1,
+      "group": "work",
+      "note": "The everyday way to say you're busy."
+    },
+    {
+      "id": "de-work-04",
+      "text": "Gut gemacht!",
+      "lemma": "machen",
+      "form": "gemacht",
+      "translations": {
+        "fa": "آفرین!",
+        "ar": "أحسنت!",
+        "es": "¡Bien hecho!",
+        "vi": "Làm tốt lắm!",
+        "en": "Well done!",
+        "tr": "Çok iyi iş çıkardın!"
+      },
+      "band": 1,
+      "group": "work"
+    },
+    {
+      "id": "de-work-05",
+      "text": "Ich arbeite im Büro.",
+      "lemma": "Büro",
+      "form": "Büro",
+      "translations": {
+        "fa": "در یک اداره کار می‌کنم.",
+        "ar": "أعمل في مكتب.",
+        "es": "Trabajo en una oficina.",
+        "vi": "Tôi làm việc ở văn phòng.",
+        "en": "I work in an office.",
+        "tr": "Bir ofiste çalışıyorum."
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "de-work-06",
+      "text": "Ich habe ein Meeting.",
+      "lemma": "Meeting",
+      "form": "Meeting",
+      "translations": {
+        "fa": "جلسه دارم.",
+        "ar": "لدي اجتماع.",
+        "es": "Tengo una reunión.",
+        "vi": "Tôi có cuộc họp.",
+        "en": "I have a meeting.",
+        "tr": "Toplantım var."
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Also: eine Besprechung."
+    },
+    {
+      "id": "de-work-07",
+      "text": "Hast du Zeit?",
+      "lemma": "Zeit",
+      "form": "Zeit",
+      "translations": {
+        "fa": "وقت داری؟",
+        "ar": "هل لديك وقت؟",
+        "es": "¿Tienes tiempo?",
+        "vi": "Bạn có rảnh không?",
+        "en": "Do you have time?",
+        "tr": "Vaktin var mı?"
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Polite: Haben Sie Zeit?"
+    },
+    {
+      "id": "de-work-08",
+      "text": "Lass uns anfangen!",
+      "lemma": "anfangen",
+      "form": "anfangen",
+      "translations": {
+        "fa": "بیایید شروع کنیم!",
+        "ar": "لنبدأ!",
+        "es": "¡Empecemos!",
+        "vi": "Bắt đầu thôi!",
+        "en": "Let's start!",
+        "tr": "Hadi başlayalım!"
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Also: Fangen wir an!"
+    },
+    {
+      "id": "de-work-09",
+      "text": "Ich bin fertig.",
+      "lemma": "fertig",
+      "form": "fertig",
+      "translations": {
+        "fa": "کارم تمام شد.",
+        "ar": "انتهيت.",
+        "es": "Ya terminé.",
+        "vi": "Tôi xong rồi.",
+        "en": "I'm done.",
+        "tr": "Bitirdim."
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Can also mean I'm exhausted."
+    },
+    {
+      "id": "de-work-10",
+      "text": "Wie ist deine Nummer?",
+      "lemma": "Nummer",
+      "form": "Nummer",
+      "translations": {
+        "fa": "شماره‌ات چند است؟",
+        "ar": "ما رقم هاتفك؟",
+        "es": "¿Cuál es tu número?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
+        "en": "What's your number?",
+        "tr": "Numaran ne?"
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Polite: Wie ist Ihre Nummer?"
+    },
+    {
+      "id": "de-work-11",
+      "text": "Das ist eine gute Idee.",
+      "lemma": "Idee",
+      "form": "Idee",
+      "translations": {
+        "fa": "فکر خوبی است.",
+        "ar": "هذه فكرة جيدة.",
+        "es": "Es una buena idea.",
+        "vi": "Ý hay đấy.",
+        "en": "That's a good idea.",
+        "tr": "Bu iyi bir fikir."
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "de-work-12",
+      "text": "Sehe ich auch so.",
+      "lemma": "sehen",
+      "form": "Sehe",
+      "translations": {
+        "fa": "من هم همین‌طور فکر می‌کنم.",
+        "ar": "أوافقك الرأي.",
+        "es": "Estoy de acuerdo.",
+        "vi": "Tôi cũng nghĩ vậy.",
+        "en": "I agree.",
+        "tr": "Ben de öyle düşünüyorum."
+      },
+      "band": 3,
+      "group": "work",
+      "note": "Agreeing with an opinion. Agreeing to a plan: Einverstanden!"
+    },
+    {
+      "id": "de-work-13",
+      "text": "Lass mich kurz überlegen.",
+      "lemma": "überlegen",
+      "form": "überlegen",
+      "translations": {
+        "fa": "بگذار کمی فکر کنم.",
+        "ar": "دعني أفكر قليلًا.",
+        "es": "Déjame pensarlo un momento.",
+        "vi": "Để tôi suy nghĩ một chút.",
+        "en": "Let me think for a moment.",
+        "tr": "Bir düşüneyim."
+      },
+      "band": 3,
+      "group": "work"
+    },
+    {
+      "id": "de-work-14",
+      "text": "Kannst du mir eine E-Mail schicken?",
+      "lemma": "schicken",
+      "form": "schicken",
+      "translations": {
+        "fa": "می‌توانی برایم ایمیل بفرستی؟",
+        "ar": "هل يمكنك أن ترسل لي بريدًا إلكترونيًا؟",
+        "es": "¿Me puedes mandar un correo?",
+        "vi": "Bạn gửi email cho tôi được không?",
+        "en": "Can you send me an email?",
+        "tr": "Bana bir e-posta gönderebilir misin?"
+      },
+      "band": 3,
+      "group": "work",
+      "note": "Polite: Können Sie mir eine E-Mail schicken?"
+    },
+    {
+      "id": "de-work-15",
+      "text": "Ich arbeite von zu Hause.",
+      "lemma": "arbeiten",
+      "form": "arbeite",
+      "translations": {
+        "fa": "از خانه کار می‌کنم.",
+        "ar": "أعمل من المنزل.",
+        "es": "Trabajo desde casa.",
+        "vi": "Tôi làm việc ở nhà.",
+        "en": "I work from home.",
+        "tr": "Evden çalışıyorum."
+      },
+      "band": 3,
+      "group": "work",
+      "note": "Also very common: Ich bin im Homeoffice."
+    },
+    {
+      "id": "de-feelings-01",
+      "text": "Ich bin glücklich.",
+      "lemma": "glücklich",
+      "form": "glücklich",
+      "translations": {
+        "fa": "خوشحالم.",
+        "ar": "أنا سعيد.",
+        "es": "Estoy feliz.",
+        "vi": "Tôi rất vui.",
+        "en": "I'm happy.",
+        "tr": "Mutluyum."
+      },
+      "band": 1,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-02",
+      "text": "Ich bin müde.",
+      "lemma": "müde",
+      "form": "müde",
+      "translations": {
+        "fa": "خسته‌ام.",
+        "ar": "أنا متعب.",
+        "es": "Estoy cansado.",
+        "vi": "Tôi mệt.",
+        "en": "I'm tired.",
+        "tr": "Yorgunum."
+      },
+      "band": 1,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-03",
+      "text": "Ich liebe dich.",
+      "lemma": "lieben",
+      "form": "liebe",
+      "translations": {
+        "fa": "دوستت دارم.",
+        "ar": "أحبك.",
+        "es": "Te quiero.",
+        "vi": "Anh yêu em.",
+        "en": "I love you.",
+        "tr": "Seni seviyorum."
+      },
+      "band": 1,
+      "group": "feelings",
+      "note": "Romantic. For friends and family: Ich hab dich lieb."
+    },
+    {
+      "id": "de-feelings-04",
+      "text": "Das gefällt mir.",
+      "lemma": "gefallen",
+      "form": "gefällt",
+      "translations": {
+        "fa": "از این خوشم می‌آید.",
+        "ar": "يعجبني هذا.",
+        "es": "Me gusta.",
+        "vi": "Tôi thích cái này.",
+        "en": "I like it.",
+        "tr": "Bunu beğendim."
+      },
+      "band": 1,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-05",
+      "text": "Das mag ich nicht.",
+      "lemma": "mögen",
+      "form": "mag",
+      "translations": {
+        "fa": "از این خوشم نمی‌آید.",
+        "ar": "لا يعجبني هذا.",
+        "es": "No me gusta.",
+        "vi": "Tôi không thích cái này.",
+        "en": "I don't like it.",
+        "tr": "Bunu sevmiyorum."
+      },
+      "band": 1,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-06",
+      "text": "Super!",
+      "translations": {
+        "fa": "عالی است!",
+        "ar": "رائع!",
+        "es": "¡Genial!",
+        "vi": "Tuyệt vời!",
+        "en": "Great!",
+        "tr": "Harika!"
+      },
+      "band": 1,
+      "group": "feelings",
+      "note": "Also: Toll!"
+    },
+    {
+      "id": "de-feelings-07",
+      "text": "Mach dir keine Sorgen.",
+      "lemma": "Sorge",
+      "form": "Sorgen",
+      "translations": {
+        "fa": "نگران نباش.",
+        "ar": "لا تقلق.",
+        "es": "No te preocupes.",
+        "vi": "Đừng lo.",
+        "en": "Don't worry.",
+        "tr": "Merak etme."
+      },
+      "band": 2,
+      "group": "feelings",
+      "note": "Polite: Machen Sie sich keine Sorgen."
+    },
+    {
+      "id": "de-feelings-08",
+      "text": "Wie schade!",
+      "lemma": "schade",
+      "form": "schade",
+      "translations": {
+        "fa": "حیف شد!",
+        "ar": "يا للأسف!",
+        "es": "¡Qué pena!",
+        "vi": "Tiếc quá!",
+        "en": "That's too bad!",
+        "tr": "Ne yazık!"
+      },
+      "band": 2,
+      "group": "feelings",
+      "note": "Also just: Schade!"
+    },
+    {
+      "id": "de-feelings-09",
+      "text": "Ich bin traurig.",
+      "lemma": "traurig",
+      "form": "traurig",
+      "translations": {
+        "fa": "ناراحتم.",
+        "ar": "أنا حزين.",
+        "es": "Estoy triste.",
+        "vi": "Tôi buồn.",
+        "en": "I'm sad.",
+        "tr": "Üzgünüm."
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-10",
+      "text": "Ich bin krank.",
+      "lemma": "krank",
+      "form": "krank",
+      "translations": {
+        "fa": "مریضم.",
+        "ar": "أنا مريض.",
+        "es": "Estoy enfermo.",
+        "vi": "Tôi bị ốm.",
+        "en": "I'm sick.",
+        "tr": "Hastayım."
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-11",
+      "text": "Ich vermisse dich.",
+      "lemma": "vermissen",
+      "form": "vermisse",
+      "translations": {
+        "fa": "دلم برایت تنگ شده است.",
+        "ar": "اشتقت إليك.",
+        "es": "Te extraño.",
+        "vi": "Tôi nhớ bạn.",
+        "en": "I miss you.",
+        "tr": "Seni özledim."
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-12",
+      "text": "Herzlichen Glückwunsch!",
+      "lemma": "Glückwunsch",
+      "form": "Glückwunsch",
+      "translations": {
+        "fa": "تبریک می‌گویم!",
+        "ar": "مبروك!",
+        "es": "¡Felicidades!",
+        "vi": "Chúc mừng!",
+        "en": "Congratulations!",
+        "tr": "Tebrikler!"
+      },
+      "band": 2,
+      "group": "feelings",
+      "note": "Birthdays: Alles Gute zum Geburtstag!"
+    },
+    {
+      "id": "de-feelings-13",
+      "text": "Mir ist langweilig.",
+      "lemma": "langweilig",
+      "form": "langweilig",
+      "translations": {
+        "fa": "حوصله‌ام سر رفته است.",
+        "ar": "أشعر بالملل.",
+        "es": "Estoy aburrido.",
+        "vi": "Chán quá.",
+        "en": "I'm bored.",
+        "tr": "Canım sıkılıyor."
+      },
+      "band": 3,
+      "group": "feelings",
+      "note": "Not Ich bin langweilig, which means I'm boring."
+    },
+    {
+      "id": "de-feelings-14",
+      "text": "Ich habe Angst.",
+      "lemma": "Angst",
+      "form": "Angst",
+      "translations": {
+        "fa": "می‌ترسم.",
+        "ar": "أنا خائف.",
+        "es": "Tengo miedo.",
+        "vi": "Tôi sợ.",
+        "en": "I'm scared.",
+        "tr": "Korkuyorum."
+      },
+      "band": 3,
+      "group": "feelings"
+    },
+    {
+      "id": "de-feelings-15",
+      "text": "Das ist lustig!",
+      "lemma": "lustig",
+      "form": "lustig",
+      "translations": {
+        "fa": "خنده‌دار است!",
+        "ar": "هذا مضحك!",
+        "es": "¡Qué gracioso!",
+        "vi": "Buồn cười quá!",
+        "en": "That's funny!",
+        "tr": "Çok komik!"
+      },
+      "band": 3,
+      "group": "feelings"
+    }
+  ]
+}
