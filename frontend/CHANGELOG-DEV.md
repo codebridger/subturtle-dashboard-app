@@ -1,3 +1,10 @@
+# [1.3.0-dev.15](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.14...v1.3.0-dev.15) (2026-10-15)
+
+
+### Features
+
+* **frontend:** run the extension's Practice now session in the phrase's language (D-16) ([825b192](https://github.com/codebridger/subturtle-dashboard-app/commit/825b1926d713fe854c47e99bef1ddfa300e6552d))
+
 # [1.3.0-dev.14](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.13...v1.3.0-dev.14) (2026-10-15)
 
 

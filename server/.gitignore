@@ -65,3 +65,6 @@ container.env
 
 # next.js build output
 .next
+
+# Starter pack audio made locally for review (yarn starter-pack:audio, B-22)
+/starter-pack-audio
