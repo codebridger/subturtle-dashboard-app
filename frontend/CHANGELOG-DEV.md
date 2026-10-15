@@ -1,3 +1,11 @@
+# [1.3.0-dev.19](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.18...v1.3.0-dev.19) (2026-10-15)
+
+
+### Features
+
+* **server:** phrases and bundles per language, and old builds default safely (B-08, B-09, B-24, B-25) ([d46f00a](https://github.com/codebridger/subturtle-dashboard-app/commit/d46f00ac72f9bb38aca66056888760682349e6c0))
+* **server:** save each phrase under its learning language (B-08, B-09, B-25) ([990ef7e](https://github.com/codebridger/subturtle-dashboard-app/commit/990ef7e1653c7674a4196647e011420c58926961))
+
 # [1.3.0-dev.18](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.17...v1.3.0-dev.18) (2026-10-15)
 
 
