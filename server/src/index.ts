@@ -5,6 +5,7 @@ import fs from "fs";
 import { authTriggers } from "./triggers";
 import { generateVerificationCode } from "./verification-code";
 import { functionCallerGuard } from "./function-caller-guard";
+import { dataProviderGuard } from "./data-provider-guard";
 // Load .env file
 require("dotenv").config({
   path: path.resolve(__dirname, "../.env"),
@@ -64,9 +65,12 @@ const app = createRest({
     includeUnparsed: true,
   },
   // Runs after koa-body and before the routers: functions only ever see the client's args,
-  // so this pins their userId / refId to the signed-in user (see function-caller-guard.ts).
+  // so this pins their userId / refId to the signed-in user (see function-caller-guard.ts),
+  // and the data provider would otherwise serve every user's documents to any signed-in
+  // user (see data-provider-guard.ts).
   onBeforeInit: (koaApp: any) => {
     koaApp.use(functionCallerGuard);
+    koaApp.use(dataProviderGuard);
   },
   mongo: {
     mongoBaseAddress:
