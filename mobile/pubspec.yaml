@@ -1,0 +1,16 @@
+# Dart pub workspace root for the Subturtle mobile app.
+# Run `flutter pub get` here once; every member below shares one lockfile.
+name: subturtle_mobile_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+workspace:
+  - apps/subturtle
+  - packages/subturtle_ui
+  - packages/subturtle_ui/example
+  - packages/subturtle_api
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

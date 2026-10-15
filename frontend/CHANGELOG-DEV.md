@@ -1,3 +1,56 @@
+# [1.3.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.3...v1.3.0-dev.4) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** rename the account test so module discovery skips it ([1287448](https://github.com/codebridger/subturtle-dashboard-app/commit/1287448273eff5566c4ace95b9936330b9de5171))
+
+
+### Features
+
+* **mobile:** pass App Review: Sign in with Apple, account deletion, no purchase links, iPhone only ([d439f65](https://github.com/codebridger/subturtle-dashboard-app/commit/d439f65ad4176ddb2699d71448a77985f92f308b))
+* **mobile:** show plan prices in the learner's currency, as Stripe charges them ([5990e0f](https://github.com/codebridger/subturtle-dashboard-app/commit/5990e0fc467936f1efeb96e2c0e1db9516152147))
+* **server:** add Sign in with Apple and in-app account deletion ([c33c6f9](https://github.com/codebridger/subturtle-dashboard-app/commit/c33c6f940a613a306af36341748402e0c4d8fe97))
+
+# [1.3.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.2...v1.3.0-dev.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** lock /data-provider to the caller's own data (B-34) ([473d9ce](https://github.com/codebridger/subturtle-dashboard-app/commit/473d9cefcacd3a08116a3ca98b0f1e8610c14815))
+
+# [1.3.0-dev.2](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.1...v1.3.0-dev.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **live-session:** share the coach spec with mobile and make mobile voice match the web ([a20d148](https://github.com/codebridger/subturtle-dashboard-app/commit/a20d1489ea1c8333bb40ad10ac964dd64779cb12))
+* **mobile:** keep the tab bar at its natural height ([1bfde13](https://github.com/codebridger/subturtle-dashboard-app/commit/1bfde1324b912724b0fad424713d11481d6a4ce9))
+* **mobile:** never stay on the splash screen and fix the debug manifest ([850fe98](https://github.com/codebridger/subturtle-dashboard-app/commit/850fe981adf2ca2100feebbe66057f42e7aad345))
+* **mobile:** put sign-in buttons in the thumb zone and share one audio player ([bd6a8d1](https://github.com/codebridger/subturtle-dashboard-app/commit/bd6a8d13bb6f362d8c8d33c0c9aff86a6e5431ad))
+* **mobile:** raise plugin compileSdk so the Android build passes ([99ca028](https://github.com/codebridger/subturtle-dashboard-app/commit/99ca02866cb3e3b9a65c13fadb2a88266034ef76))
+* **mobile:** route unknown links to Today and add the mobile README ([13b2c07](https://github.com/codebridger/subturtle-dashboard-app/commit/13b2c074571c2924efb6b5a0f4bfa19507b417d6))
+* **mobile:** show the plan limit in text chat and log Google sign-in errors ([44844cd](https://github.com/codebridger/subturtle-dashboard-app/commit/44844cdca4360b2bbce3b7977c957494378ad965))
+
+
+### Features
+
+* **mobile:** add API client for the modular-rest backend ([fc5fd76](https://github.com/codebridger/subturtle-dashboard-app/commit/fc5fd767871bc4abc6fd123abc9955f0f6456c6d))
+* **mobile:** add design kit tokens, theme and widgets ([3e65591](https://github.com/codebridger/subturtle-dashboard-app/commit/3e65591eb017ba2b8d9805f7081a034e848df06e))
+* **mobile:** add server-backed save assistant history (behind a setting) ([d6e46c1](https://github.com/codebridger/subturtle-dashboard-app/commit/d6e46c1f6e46c347d0f5637a3f5705e1b145d822))
+* **mobile:** add the Subturtle Flutter app screens ([0ed6453](https://github.com/codebridger/subturtle-dashboard-app/commit/0ed64537d98fa4268e43b5d88f85e2af76bbb422))
+* **mobile:** open the web dashboard signed in from Plans and Me ([50e06e4](https://github.com/codebridger/subturtle-dashboard-app/commit/50e06e425a50eecfe5ff218a94338f81372b74c3))
+* **mobile:** rebuild Sign in and fix the session summary tiles ([893a6c3](https://github.com/codebridger/subturtle-dashboard-app/commit/893a6c3d3b1d498d17c83acd4d8b2b577bb61d74))
+* **mobile:** turn Save a phrase into a save assistant chat ([743de96](https://github.com/codebridger/subturtle-dashboard-app/commit/743de96f6c3470884650da6b243aa7f9a61ca473))
+* **mobile:** wire Google sign-in for iOS with per-environment clients ([70d9b35](https://github.com/codebridger/subturtle-dashboard-app/commit/70d9b356c26ff9dbb0b22df0d1a4306f6fb6f2cb))
+
+# [1.3.0-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.2-dev.1...v1.3.0-dev.1) (2026-10-13)
+
+
+### Features
+
+* **server:** add save assistant sessions ([1ecd4b1](https://github.com/codebridger/subturtle-dashboard-app/commit/1ecd4b1464d086b85d81afa99e7ef93c775a15b3))
+
 ## [1.2.2-dev.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.2.1...v1.2.2-dev.1) (2026-10-12)
 
 

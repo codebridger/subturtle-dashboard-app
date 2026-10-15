@@ -6,6 +6,8 @@ WORKDIR /app
 # source has to be in the image and gets built by frontend's postinstall. The path must stay
 # ../ui relative to this WORKDIR.
 COPY /ui /ui
+# The live coach spec (frontend/utils/livePractice.ts imports ../../shared).
+COPY /shared /shared
 
 COPY /frontend/package.json ./
 COPY /frontend/yarn.lock ./
@@ -30,8 +32,6 @@ WORKDIR /app
 
 COPY /server/package.json ./
 COPY /server/yarn.lock ./
-# @modular-rest/server is a vendored tarball (see server/vendor/README.md).
-COPY /server/vendor ./vendor
 COPY /server/.env ./
 
 RUN yarn install

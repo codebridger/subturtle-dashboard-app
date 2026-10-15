@@ -16,6 +16,7 @@ import { functionProvider } from '@modular-rest/client';
 import type { TextDialogType, TextTokenUsageType, TextTurnInput } from '~/types/live-session-text.type';
 import type { LiveSessionMetadataType } from '~/types/live-session.type';
 import { COACH_UNAVAILABLE_CODE } from '~/types/tiers';
+import { fillSpec, LIVE_PRACTICE } from '~/utils/livePractice';
 
 type ConnState = 'idle' | 'connecting' | 'ready' | 'closed';
 
@@ -198,7 +199,7 @@ export const useLiveSessionGeminiTextStore = defineStore('liveSessionGeminiText'
                     const tool = sessionTools?.[fc.name];
                     let output: any;
                     if (!tool) {
-                        output = { success: false, message: `Function ${fc.name} not found` };
+                        output = { success: false, message: fillSpec(LIVE_PRACTICE.messages.toolNotFound, { name: fc.name }) };
                     } else {
                         try {
                             output = tool.handler(fc.args || {});

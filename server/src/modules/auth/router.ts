@@ -4,6 +4,7 @@ import { google } from "googleapis";
 import { updateUserProfile } from "../profile/service";
 import { LeitnerService } from "../leitner_box/service";
 import { trackServerEvent, SERVER_ANALYTICS_EVENTS } from "../../utils/analytics";
+import { AppleTokenError, createAppleKeyFetcher, verifyAppleIdentityToken } from "./apple";
 
 const name = "auth";
 const auth = new Router();
@@ -21,6 +22,17 @@ const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
 const ACCESS_TOKEN_CLIENT_IDS = [CLIENT_ID, ...(process.env.GOOGLE_OAUTH_CLIENT_ID_EXTENSION || "").split(",")]
   .map((id) => id?.trim())
   .filter((id): id is string => !!id);
+
+// Client IDs whose Sign in with Apple identity tokens /apple/identity-token-login accepts:
+// the iOS app's bundle ID (and a Services ID, should web sign-in ever use Apple).
+// Comma-separated so a new client can be added without dropping the old one.
+const APPLE_CLIENT_IDS = (process.env.APPLE_CLIENT_IDS || "app.subturtle.subturtle")
+  .split(",")
+  .map((id) => id.trim())
+  .filter(Boolean);
+
+// Apple's signing keys, cached in memory for an hour.
+const fetchAppleKeys = createAppleKeyFetcher();
 
 // Note: The redirect uri is the callback route for the web app
 // This route will be called after the user has logged in to google
@@ -251,6 +263,71 @@ auth.get("/google/access-token-login", async (ctx) => {
       }
     }
   }
+
+  ctx.body = reply.create("s", { token });
+});
+
+auth.post("/apple/identity-token-login", async (ctx) => {
+  // Note: Sign in with Apple for the iOS app. The body is { identityToken, fullName? }:
+  // identityToken is ASAuthorizationAppleIDCredential.identityToken (a JWT signed by Apple);
+  // fullName is the name Apple shares on the first authorization only.
+  const body = (ctx.request as any).body || {};
+  const { identityToken, fullName } = body;
+
+  if (!identityToken || typeof identityToken !== "string") {
+    ctx.throw(400, "Invalid identity token");
+    return;
+  }
+
+  let email: string;
+  try {
+    ({ email } = await verifyAppleIdentityToken(identityToken, {
+      audiences: APPLE_CLIENT_IDS,
+      fetchKeys: fetchAppleKeys,
+    }));
+  } catch (error) {
+    if (error instanceof AppleTokenError) {
+      ctx.throw(error.status, error.message);
+    } else {
+      console.error("Sign in with Apple: token verification failed", error);
+      ctx.throw(502, "Could not verify the Apple identity token");
+    }
+    return;
+  }
+
+  // "Hide My Email" relay addresses (@privaterelay.appleid.com) are used as the account
+  // email like any other: Apple keeps them stable for this app.
+  let userId: string;
+  const registeredUser = await userManager.getUserByIdentity(email, "email").catch(() => null);
+
+  if (registeredUser) {
+    userId = registeredUser.id;
+  } else {
+    try {
+      userId = await userManager.registerUser({ email });
+      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, userId, { signup_provider: "apple" });
+    } catch (error) {
+      ctx.throw(500, error instanceof Error ? error.message : "Registration failed");
+      return;
+    }
+
+    const profileName = typeof fullName === "string" ? fullName.trim().slice(0, 200) : "";
+    if (profileName) {
+      try {
+        await updateUserProfile({ refId: userId, name: profileName }, false);
+      } catch (e) {
+        console.error("Failed to save the Apple name on the new profile", e);
+      }
+    }
+  }
+
+  try {
+    await LeitnerService.ensureInitialized(userId);
+  } catch (e) {
+    console.error("Failed to initialize Leitner System on Apple login", e);
+  }
+
+  const token = await userManager.issueTokenForUser(email);
 
   ctx.body = reply.create("s", { token });
 });

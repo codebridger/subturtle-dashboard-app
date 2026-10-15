@@ -2,13 +2,25 @@
 
 ## Overview
 
-SubTurtle Dashboard App is a comprehensive full-stack application designed for managing SubTurtle user content, including Bundles, Practice sessions, and other related features. This dashboard provides an intuitive interface for content management and user interaction.
+SubTurtle helps people learn English from the shows they already watch. Learners hover a subtitle word on Netflix or YouTube (with the [SubTurtle extension](https://github.com/codebridger/subturtle-extension-apps)), save it, and then practise it here in the dashboard.
+
+![SubTurtle: hover, save, review, speak](landing/public/og.jpg)
+
+### What the dashboard does
+
+- **Phrase bundles**: saved words and phrases grouped into bundles, with meaning, examples and pronunciation (Google Text-to-Speech)
+- **Spaced repetition**: a Leitner-box review system that schedules each word for the right day
+- **Flashcards and practice**: quick review sessions with statistics
+- **Live AI coach**: real-time voice and text conversation practice on the Gemini Live API (primary) or OpenAI Realtime (legacy), using the learner's own saved words
+- **Plans and billing**: freemium limits with token-based usage accounting and Stripe subscriptions
+- **Multi-language UI**: interface translations with vue-i18n
 
 ## 🌐 Environments
 
 | Environment | URL                                                                                                                                            |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Production  | [https://subturtle.app/](https://subturtle.app/)                                                                                               |
+| Landing     | [https://subturtle.app/](https://subturtle.app/)                                                                                               |
+| Production  | [https://dashboard.subturtle.app/](https://dashboard.subturtle.app/)                                                                           |
 | Development | [https://subturtle-dashboard-app-dev-344321252651.europe-west4.run.app](https://subturtle-dashboard-app-dev-344321252651.europe-west4.run.app) |
 
 ## 🏗️ Project Structure
@@ -47,11 +59,16 @@ To work across repositories, clone the sibling next to this one (or reuse an exi
 
 ### Backend
 
-| Category    | Technology           |
-| ----------- | -------------------- |
-| Runtime     | Node.js              |
-| Language    | TypeScript           |
-| Environment | Docker containerized |
+| Category    | Technology                                                        |
+| ----------- | ----------------------------------------------------------------- |
+| Runtime     | Node.js                                                           |
+| Language    | TypeScript                                                        |
+| Framework   | [`@modular-rest/server`](https://github.com/modular-rest/modular-rest) (Koa + Mongoose) |
+| Database    | MongoDB / Firestore with MongoDB compatibility                    |
+| AI          | Gemini (`@google/genai`, Live API), OpenAI Realtime, Google Text-to-Speech |
+| Payments    | Stripe subscriptions                                              |
+| Testing     | Jest (server), Vitest and Playwright (frontend)                   |
+| Environment | Docker containerized, Google Cloud Run                            |
 
 ## 🛠️ Setup & Installation
 

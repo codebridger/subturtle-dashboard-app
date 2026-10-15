@@ -716,9 +716,10 @@
   resolved "https://registry.npmjs.org/@mixmark-io/domino/-/domino-2.2.0.tgz"
   integrity sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==
 
-"@modular-rest/server@file:./vendor/modular-rest-server-2.0.0-firestore.1.tgz":
-  version "2.0.0-firestore.1"
-  resolved "file:./vendor/modular-rest-server-2.0.0-firestore.1.tgz#45c89182144a1eaa0e5a6d0e36cca08e45961d3f"
+"@modular-rest/server@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@modular-rest/server/-/server-2.0.0.tgz#ad4e5bd3a38cbe1b2ea3e21dfa9b7d566a79cfc2"
+  integrity sha512-aiOzhkpBxk8/vSqsiab1jDQUpI7E9uPS7xuOy9lTNeTdGnDjF3hWNYafb6hoYpwfwubuEyzG1Pf19Zs28ub3mA==
   dependencies:
     "@koa/cors" "^3.1.0"
     colog "^1.0.4"

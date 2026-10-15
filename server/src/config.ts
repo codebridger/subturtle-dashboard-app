@@ -7,6 +7,9 @@ export const BUNDLE_COLLECTION = "phrase_bundle";
 export const LIVE_SESSION_COLLECTION = "live_session";
 export const LIVE_SESSION_TEXT_COLLECTION = "live_session_text";
 
+// Save assistant (mobile "Save a phrase" chat) conversations
+export const SAVE_ASSISTANT_SESSION_COLLECTION = "save_assistant_session";
+
 // Subscription collections
 export const SUBSCRIPTION_COLLECTION = "subscription";
 export const USAGE_COLLECTION = "usage";

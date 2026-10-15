@@ -97,7 +97,7 @@ subturtle-dashboard-app/
 
 **Frontend** — Nuxt 3 (SSR **off**, hash routing), Vue 3, Pinia, Tailwind CSS, **pilotui** (in-house Vue 3 + Tailwind component library), vee-validate + yup, `@modular-rest/client`, `@google/genai` (Gemini Live API), Mixpanel, `@nuxtjs/i18n`, Iconify (`solar:` + `clarity:`), ApexCharts, Vitest, Playwright.
 
-**Server** — Node + TypeScript, `@modular-rest/server` (the RPC/data framework; a vendored Mongoose 8 build, see [server/vendor/README.md](server/vendor/README.md)), MongoDB / Firestore with MongoDB compatibility, Stripe, `@google/genai`, `@google-cloud/text-to-speech`, Jest.
+**Server** — Node + TypeScript, `@modular-rest/server` 2 (the RPC/data framework, on Mongoose 8; its data provider enforces `read`, `write` and `onlyOwnData`), MongoDB / Firestore with MongoDB compatibility, Stripe, `@google/genai`, `@google-cloud/text-to-speech`, Jest.
 
 ## Architecture
 
@@ -254,6 +254,7 @@ local one take the identical path, and there is no second deployment definition 
 ## Gotchas
 
 - **Gemini, not OpenAI**, for new live-session work.
+- **The live coach is shared with mobile.** Its prompt, tools, hidden messages and practice rules live in [shared/live-practice/spec.json](shared/live-practice/spec.json), not in the web code. Change them there, then run `dart run tool/gen_live_practice.dart` in `mobile/packages/subturtle_api`; a Vitest test fails while the mobile copy is stale. See [shared/live-practice/README.md](shared/live-practice/README.md).
 - **SSR is off** — don't reach for server-only Nuxt features (`useFetch` server context, Nitro server routes, etc.).
 - **Two logical Mongo databases** (`user_content`, `cms`). With `MONGO_SINGLE_DATABASE=true` (Firestore) they share one physical database, so a collection name must be unique across both — check [server/src/config.ts](server/src/config.ts) before adding one.
 - **No in-process timers for jobs** (`node-schedule`, `setInterval`): Cloud Run scales to zero, so nothing runs between requests. Create jobs with `ScheduleService.createJob` and register their function with `ScheduleService.register`.

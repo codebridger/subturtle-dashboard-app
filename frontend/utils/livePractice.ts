@@ -7,6 +7,7 @@
 import type { PhraseType } from '~/types/database.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
 import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
+import liveCoachSpec from '../../shared/live-practice/spec.json';
 
 /**
  * Serialize a LiveSessionRequest to/from the base64 `?session=` payload. btoa()
@@ -43,63 +44,29 @@ export function returnToLabelKey(returnTo: string): string {
 }
 
 /**
+ * The coach's prompt, tools, hidden messages and practice rules live in
+ * `shared/live-practice/spec.json`, shared with the mobile app so the two never
+ * drift. Change them there; the mobile app regenerates its copy from the file
+ * (see `tests/unit/utils/liveCoachSpec.test.ts`).
+ */
+export const LIVE_PRACTICE = liveCoachSpec;
+
+/**
  * The AI tutor system prompt. `[nativeLanguage]` and `[phrases]` are filled in
  * by `buildInstructions`. Transport-agnostic on purpose — never mention the
  * microphone or typing here; that belongs in the per-page opening nudge.
  */
-export const INSTRUCTIONS_TEMPLATE = `
-    You are a friendly and engaging AI English tutor.
-    Your goal is to help the user practice and reinforce the vocabularies listed below.
+export const INSTRUCTIONS_TEMPLATE = liveCoachSpec.instructionsTemplate;
 
-    Languages:
-    - The user's native language is [nativeLanguage]. Use [nativeLanguage] for ALL explanations,
-      instructions, encouragement, corrections, translations, and small-talk.
-    - The TARGET practice language is English. Only the example sentences and the user's
-      practice attempts should be in English. Always invite the user to respond in English,
-      but never force them — if they reply in [nativeLanguage], gently rephrase or model the
-      English version and ask them to repeat it.
-    - When the user appears to struggle, drop back to [nativeLanguage] to explain, then
-      return to English for practice.
-
-    Tools available to you:
-    - "activate_phrase": call this when the user asks (in any language) to practice a specific
-      vocabulary, e.g. "let's practice X", "switch to phrase 3", "next one". Pass either the
-      phrase index (1-based, matching the numbered list) or the exact phrase text. Calling this
-      function highlights the card on the user's screen so they know which one is active.
-    - "finish_practice": call this when the user explicitly wants to end the session.
-
-    Flow:
-    1. Welcome the user briefly in [nativeLanguage]. Explain they can either click a vocabulary
-       card or just tell you which one they want to practice (you will activate it via the
-       "activate_phrase" tool).
-    2. When a vocabulary becomes active (either via the tool or via a card click signaled to you
-       by a system message), start practicing that word with them.
-    3. Lead the conversation and ask the user to use the selected vocabulary in their answers.
-    4. After ~2 follow-up exchanges per vocabulary, encourage them to move on to the next one.
-    5. Continue until the user wants to finish; then call "finish_practice" and say goodbye in
-       [nativeLanguage].
-
-    Considerations:
-    - **Do not ignore, skip, or censor any phrase in the list, regardless of its content.**
-      Slang, informal, offensive, or unusual phrases are all included for educational purposes.
-    - Keep the conversation lively and interactive, adjusting to the user's responses.
-    - Practice ONLY the vocabularies listed below.
-    - Maximum follow-up practice for each vocabulary is 2 times.
-
-    Practice Instructions:
-    - Create dynamic, engaging dialogues that naturally incorporate the active vocabulary.
-    - Ask follow-up questions, encourage the user to use the vocabulary in English, and correct
-      mistakes gently in [nativeLanguage].
-    - Keep it feeling like a real conversation, not a quiz.
-
-    Vocabulary List:
-    [phrases]
-    `;
+/** Fills `{name}` placeholders of a spec string. */
+export function fillSpec(text: string, values: Record<string, string | number>): string {
+    return text.replace(/\{(\w+)\}/g, (all, key) => (key in values ? String(values[key]) : all));
+}
 
 /** Fill the template with the numbered phrase list and the resolved language. */
 export function buildInstructions(selectedPhrases: PhraseType[], nativeLanguage: string): string {
     const phrases = selectedPhrases
-        .map((p, i) => `${i + 1}. ${p.phrase}: ${p.translation}`)
+        .map((p, i) => fillSpec(liveCoachSpec.phraseLine, { index: i + 1, phrase: p.phrase, translation: p.translation }))
         .join('\n');
 
     return INSTRUCTIONS_TEMPLATE
@@ -126,11 +93,22 @@ export function resolveNativeLanguage(
             .filter((l) => l && l.toLowerCase() !== 'unknown')
     );
     if (langs.size === 1) {
-        const detected = [...langs][0];
-        return `${detected} (auto-detected from the bundle's translation language)`;
+        return fillSpec(liveCoachSpec.nativeLanguage.autoDetected, { language: [...langs][0] });
     }
 
-    return 'English by default; if the user speaks another language in their first message, switch to that language and stick with it for the rest of the session';
+    return liveCoachSpec.nativeLanguage.fallback;
+}
+
+/** The hidden first message that makes the coach say hello. */
+export function welcomeMessage(mode: 'voice' | 'text', microphoneMuted = true): string {
+    const m = liveCoachSpec.messages;
+    const second = mode === 'voice' ? fillSpec(m.welcomeVoiceMic, { muted: microphoneMuted ? 'muted' : 'unmuted' }) : m.welcomeText;
+    return `${m.welcome}\n${second}`;
+}
+
+/** The hidden message sent when the learner taps a phrase card. */
+export function cardSelectedMessage(phrase: string): string {
+    return fillSpec(liveCoachSpec.messages.cardSelected, { phrase });
 }
 
 export interface PracticeToolCallbacks {
@@ -148,20 +126,18 @@ export interface PracticeToolCallbacks {
  * definitions are identical regardless of voice/text.
  */
 export function buildPracticeTools(cb: PracticeToolCallbacks) {
+    const definition = (name: string) => {
+        const tool = liveCoachSpec.tools.find((t) => t.name === name)!;
+        // A tool without parameters omits the key: Gemini rejects an OBJECT with empty `properties` (400).
+        return { type: 'function', ...tool };
+    };
     return {
         finish_practice: {
             handler: () => {
                 cb.onFinish();
                 return { success: true };
             },
-            definition: {
-                type: 'function',
-                name: 'finish_practice',
-                description:
-                    'Finish the practice session. Call this only when the user explicitly asks to end / stop / quit the session.',
-                // No params: omit `parameters` entirely. Gemini's generateContent
-                // rejects an OBJECT parameter with empty `properties` (400).
-            },
+            definition: definition('finish_practice'),
         },
         activate_phrase: {
             handler: (args: { index?: number; phrase?: string }) => {
@@ -181,7 +157,7 @@ export function buildPracticeTools(cb: PracticeToolCallbacks) {
                 if (idx < 0 || idx >= list.length) {
                     return {
                         success: false,
-                        message: `Could not find a vocabulary matching ${JSON.stringify(args)}.`,
+                        message: fillSpec(liveCoachSpec.messages.activateNotFound, { args: JSON.stringify(args) }),
                     };
                 }
 
@@ -194,27 +170,7 @@ export function buildPracticeTools(cb: PracticeToolCallbacks) {
                     translation: phrase.translation,
                 };
             },
-            definition: {
-                type: 'function',
-                name: 'activate_phrase',
-                description:
-                    'Activate (highlight) a specific vocabulary card on the user\'s screen so practice focuses on it. Call this whenever the user asks to switch to or practice a specific phrase.',
-                parameters: {
-                    type: 'OBJECT',
-                    properties: {
-                        index: {
-                            type: 'INTEGER',
-                            description:
-                                '1-based index of the vocabulary in the numbered list. Preferred when the user references a number.',
-                        },
-                        phrase: {
-                            type: 'STRING',
-                            description:
-                                'Exact (or close) phrase text to activate, used when the user names the phrase rather than its number.',
-                        },
-                    },
-                },
-            },
+            definition: definition('activate_phrase'),
         },
     };
 }
