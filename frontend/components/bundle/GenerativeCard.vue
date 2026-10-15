@@ -21,6 +21,8 @@
     import { COLLECTIONS, DATABASE, type PhraseBundleType, type PhraseType } from '~/types/database.type';
     import { StBundleCard } from 'subturtle-ui';
     import { shortCode } from '~/utils/languages';
+    import { useLanguageStore } from '~/stores/language';
+    const language = useLanguageStore();
 
     const props = defineProps<{
         bundle: PhraseBundleType;
@@ -63,7 +65,8 @@
         if (withLanguages) {
             langPair.value = {
                 source: shortCode(withLanguages.language_info?.source) || undefined,
-                target: shortCode(withLanguages.language_info?.target ?? withLanguages.translation_language) || undefined,
+                // D-10: the own language from the profile once it is known.
+                target: shortCode(language.ownLanguage ?? withLanguages.language_info?.target ?? withLanguages.translation_language) || undefined,
             };
         }
     }

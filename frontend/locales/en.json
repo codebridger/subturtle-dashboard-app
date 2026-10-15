@@ -971,7 +971,8 @@
                 "remove": "Remove {language}"
             },
             "removed-toast": "{language} was removed. It is kept for 30 days: add it again before {date} and everything comes back.",
-            "error": "Something went wrong. Please try again."
+            "error": "Something went wrong. Please try again.",
+            "retake": "Take the chat test again"
         },
         "add": {
             "overline": "Add a language",
@@ -1073,7 +1074,17 @@
             "practice-review-body": "Go through what is due in {language}.",
             "practice-coach-title": "Talk with the Coach",
             "practice-coach-body": "A short chat in {language} with your phrases.",
-            "practice-cta": "Open"
+            "practice-cta": "Open",
+            "pack-title-lang": "{language} starter pack",
+            "practice-live-title": "Live session",
+            "practice-live-body": "Say this week's phrases out loud with the Coach.",
+            "practice-live-cta": "Start",
+            "practice-text-title": "Text chat",
+            "practice-text-body": "Type with the Coach when you can't speak out loud.",
+            "practice-text-cta": "Start",
+            "new-sub": "{language} was just added. You start at {level}.",
+            "new-sub-test": "{language} was just added. You start at {level}, from your chat test.",
+            "new-bundles": "Browse bundles"
         },
         "studying": "{language}",
         "studying-label": "Studying {language}",
