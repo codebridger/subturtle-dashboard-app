@@ -14,7 +14,9 @@ export const phraseBundleTriggers = [
     // When a new phrase is created, route it into the Pool for a first-encounter
     // (encode) step instead of straight into Leitner L1 (if autoEntry is enabled).
     // The Pool session, or the 7-day age-out, later promotes it to L1.
-    if (doc && doc.phrase && doc.translation && doc.refId) {
+    // A kept (pending) phrase waits outside the Pool until its language is added (B-32);
+    // the language module adds it then.
+    if (doc && doc.phrase && doc.translation && doc.refId && doc.status !== "pending") {
       try {
         const settings = await LeitnerService.getSettings(doc.refId);
         if (settings && settings.autoEntry) {
@@ -34,7 +36,7 @@ export const phraseBundleTriggers = [
 
     for (const doc of docs) {
       const user_id = doc.refId; // Owner ID
-      if (user_id && doc.phrase && doc.translation) {
+      if (user_id && doc.phrase && doc.translation && doc.status !== "pending") {
         leitnerAdditions.push({ userId: user_id, docId: doc._id });
       }
     }

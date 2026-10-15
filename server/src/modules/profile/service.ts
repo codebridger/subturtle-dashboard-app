@@ -26,13 +26,19 @@ export const updateUserProfile = async (
 		return;
 	}
 
-	const existing = isExist as { timeZone?: string; gPicture?: string };
+	const existing = isExist as { timeZone?: string; gPicture?: string; name?: string };
 	const updates: Record<string, string> = {};
 
 	// Always refresh gPicture when Google sends a new/different URL — covers both
 	// the never-set backfill and the user-changed-their-Google-avatar case.
 	if (gPicture && gPicture !== existing.gPicture) {
 		updates.gPicture = gPicture;
+	}
+
+	// The sign-up trigger creates the profile first (to mark first run, see triggers.ts), so
+	// a new account's name arrives here as an update.
+	if (name && !existing.name) {
+		updates.name = name;
 	}
 
 	// Only set timezone if it's not already set (ignore browser timezone on subsequent logins)

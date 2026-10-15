@@ -77,6 +77,8 @@ describe("deleteUserAccount", () => {
       "user_content.leitner_system": { userId: USER_ID },
       "user_content.pool": { userId: USER_ID },
       "user_content.board_activity": { userId: USER_ID },
+      "user_content.language_profile": { userId: USER_ID },
+      "user_content.language_interest": { userId: USER_ID },
       "user_content.live_session": { refId: USER_ID },
       "user_content.live_session_text": { refId: USER_ID },
       "user_content.subscription": { user_id: USER_OID },
