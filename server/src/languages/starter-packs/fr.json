@@ -735,7 +735,7 @@
       "text": "Lequel ?",
       "translations": {
         "fa": "کدام یکی؟",
-        "ar": "أيّهما؟",
+        "ar": "أيّ واحد؟",
         "es": "¿Cuál?",
         "vi": "Cái nào?",
         "en": "Which one?",
@@ -998,7 +998,7 @@
         "fa": "دنبال گوشی‌ام می‌گردم.",
         "ar": "أبحث عن هاتفي.",
         "es": "Estoy buscando mi teléfono.",
-        "vi": "Tôi đang tìm điện thoại.",
+        "vi": "Tôi đang tìm điện thoại của mình.",
         "en": "I'm looking for my phone.",
         "tr": "Telefonumu arıyorum."
       },
@@ -1367,7 +1367,7 @@
       "lemma": "près",
       "form": "près",
       "translations": {
-        "fa": "نزدیک همین‌جاست.",
+        "fa": "همین نزدیکی است.",
         "ar": "إنه قريب من هنا.",
         "es": "Está cerca de aquí.",
         "vi": "Ở gần đây.",
