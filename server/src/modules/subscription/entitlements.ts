@@ -54,6 +54,7 @@ export const CREDITS_GRANTED_MAX = 100_000_000_000; // 100B credits ($1000)
 export const VOICE_MINUTES_GRANTED_MIN = 0;
 export const VOICE_MINUTES_GRANTED_MAX = 100_000; // 100k minutes / window
 export const CAP_MAX = 10_000_000; // sane ceiling for any per-window feature cap
+export const MAX_LEARNING_LANGUAGES_MAX = 50; // more than the register will ever hold
 
 /** How long a parsed product stays cached before we re-read it from Stripe. */
 export const ENTITLEMENT_CACHE_TTL_MS = 60_000;
@@ -74,6 +75,12 @@ export interface Entitlements {
   textChatCap: number | null;
   textChatMaxMessages: number | null;
   liveSessionsCap: number | null;
+  /**
+   * How many languages the learner studies at once (Council 008). Optional: products
+   * seeded before multilingual lack it, and subscription snapshots taken before then too;
+   * `modules/language/plan.ts` falls back to the tier's published number.
+   */
+  maxLearningLanguages?: number | null;
   weeklyInsights: boolean;
   sessionHistory: boolean;
   durationDays: number;
@@ -158,6 +165,8 @@ const entitlementMetadataSchema = z.object({
   // "unlimited" (null) until the next `yarn setup:stripe` run re-seeds them.
   text_chat_max_messages: zCap.optional(),
   live_sessions_cap: zCap,
+  // Optional for back-compat, like text_chat_max_messages (see Entitlements).
+  max_learning_languages: zIntInRange(1, MAX_LEARNING_LANGUAGES_MAX).optional(),
   weekly_insights: zBool,
   session_history: zBool,
   duration_days: zIntInRange(1, 366),
@@ -194,6 +203,7 @@ export function parseTierMetadata(
     textChatCap: d.text_chat_cap,
     textChatMaxMessages: d.text_chat_max_messages ?? null,
     liveSessionsCap: d.live_sessions_cap,
+    maxLearningLanguages: d.max_learning_languages ?? null,
     weeklyInsights: d.weekly_insights,
     sessionHistory: d.session_history,
     durationDays: d.duration_days,

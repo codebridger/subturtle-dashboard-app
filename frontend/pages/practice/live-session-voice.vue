@@ -505,7 +505,7 @@ const tools = buildPracticeTools({
 onMounted(async () => {
     // Dispatcher normally pre-resolves; re-resolve on a direct load / refresh.
     if (!setup.isResolved && !setup.errorKey) {
-        await setup.resolve(route.query.session as string | undefined);
+        await setup.resolve(route.query.session as string | undefined, route.query.language?.toString());
     }
 
     if (setup.errorKey || !selectedPhrases.value.length) {
