@@ -1,5 +1,6 @@
 import { defineFunction } from "@modular-rest/server";
 import { LeitnerService, toReviewResult } from "./service";
+import { ReviewLogService } from "../review_log/service";
 import { BoardService } from "../board/service";
 import { LangCode } from "../../languages/helper";
 import { resolveLanguage } from "../../languages/learner";
@@ -29,7 +30,7 @@ const submitReview = defineFunction({
 	name: "submit-review",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { phraseId, isCorrect, result, userId, language } = context;
+		const { phraseId, isCorrect, result, userId, language, cardType, eventKey } = context;
 		if (!userId) throw new Error("Unauthorized");
 
 		if (!phraseId) throw new Error("Phrase ID is required");
@@ -38,6 +39,17 @@ const submitReview = defineFunction({
 
 		// Submit review (also triggers init if needed)
 		const review = await LeitnerService.submitReview(userId, phraseId, outcome, language);
+		// Append-only history for the knowledge map (B-30); never fails the answer.
+		await ReviewLogService.recordReview({
+			userId,
+			language: review.language,
+			phraseId,
+			result: outcome,
+			fromBox: review.fromBox,
+			toBox: review.boxLevel,
+			cardType,
+			eventKey,
+		});
 
 		return { success: true, language: review.language, result: outcome };
 	},

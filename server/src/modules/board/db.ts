@@ -19,7 +19,7 @@ const boardActivitySchema = new Schema<BoardActivity>(
 	{
 		userId: { type: String, required: true, index: true },
 		// Part of the key (userId, type, language). The unique index is built by
-		// scripts/multilingual-indexes.mjs after the backfill, not at boot (ADR-006 point 11).
+		// scripts/multilingual-indexes.ts after the backfill, not at boot (ADR-006 point 11).
 		language: { type: String },
 		type: { type: String, required: true },
 		toastType: { type: String, required: true, enum: ["singleton", "unique"] },

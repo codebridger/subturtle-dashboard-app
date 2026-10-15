@@ -32,7 +32,7 @@ const poolSchema = new Schema<Pool>(
   {
     userId: { type: String, required: true, index: true },
     // One Pool per (userId, language). The unique index is built by
-    // scripts/multilingual-indexes.mjs after duplicates are merged (ADR-006 point 11).
+    // scripts/multilingual-indexes.ts after duplicates are merged (ADR-006 point 11).
     language: { type: String },
     items: {
       type: [

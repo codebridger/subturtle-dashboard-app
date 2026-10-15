@@ -60,7 +60,7 @@ beforeAll(async () => {
   Profiles = db.model(PROFILE_COLLECTION);
   LanguageProfiles = db.model(LANGUAGE_PROFILE);
   db.model(BUNDLE_COLLECTION);
-  // The unique indexes the index script builds (scripts/multilingual-indexes.mjs).
+  // The unique indexes the index script builds (scripts/multilingual-indexes.ts).
   await Leitner.collection.createIndex({ userId: 1, language: 1 }, { unique: true });
   await Pools.collection.createIndex({ userId: 1, language: 1 }, { unique: true });
   await Board.collection.createIndex({ userId: 1, type: 1, language: 1, refId: 1 }, { unique: true });

@@ -266,14 +266,15 @@ export class LeitnerService {
    * Records one answer. `result` is the three-way result (`true` / `false` still work for old
    * callers: right / wrong). Right moves the card up a box, wrong moves it down (twice wrong
    * at box 1 sends it back to the Pool), and close keeps its box and schedules it again at
-   * that box's interval (Q4). Returns the language and the card's box after the answer.
+   * that box's interval (Q4). Returns the language and the card's box before and after the
+   * answer (`boxLevel` null: the card went back to the Pool).
    */
   static async submitReview(
     userId: string,
     phraseId: string,
     result: ReviewResult | boolean,
     language?: LangCode
-  ): Promise<{ language: LangCode; boxLevel: number | null }> {
+  ): Promise<{ language: LangCode; boxLevel: number | null; fromBox: number | null }> {
     const outcome: ReviewResult = typeof result === "boolean" ? (result ? "right" : "wrong") : result;
     const isCorrect = outcome === "right";
     const lang = await resolvePhraseLanguage(userId, phraseId, language);
@@ -287,6 +288,7 @@ export class LeitnerService {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
     const itemIndex = system.items.findIndex((i: LeitnerItem) => i.phraseId.toString() === phraseId.toString());
     const item = itemIndex >= 0 ? system.items[itemIndex] : null;
+    const fromBox = item ? item.boxLevel : null;
 
     let newItem: LeitnerItem;
     const now = new Date();
@@ -361,7 +363,7 @@ export class LeitnerService {
 
     // Sync Board State after review (don't re-toast during session)
     await this.refreshBoard(userId, lang, false);
-    return { language: lang, boxLevel };
+    return { language: lang, boxLevel, fromBox };
   }
 
   private static calculateNextDate(boxLevel: number, intervals: number[]): Date {

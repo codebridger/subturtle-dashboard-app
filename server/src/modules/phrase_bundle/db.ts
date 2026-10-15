@@ -203,7 +203,7 @@ const phraseBundleSchema = new Schema<PhraseBundleSchema>(
 );
 
 // One title per learner and language: German and English can both have "Netflix" (B-09).
-// It replaces the old unique (refId, title). scripts/multilingual-indexes.mjs builds this
+// It replaces the old unique (refId, title). scripts/multilingual-indexes.ts builds this
 // one first and only then drops the old one (ADR-006 point 11); the old one is no longer
 // declared here, so Mongoose does not build it again at boot.
 phraseBundleSchema.index({ refId: 1, language: 1, title: 1 }, { unique: true });
