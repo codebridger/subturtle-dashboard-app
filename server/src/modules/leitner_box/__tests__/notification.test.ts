@@ -35,6 +35,9 @@ describe("Leitner Box Activity Toasting", () => {
 	beforeEach(() => {
 		// Reset mocks between tests to ensure a clean state
 		jest.clearAllMocks();
+		// An account from before multilingual: no profile language fields, English only.
+		const { getCollection } = require("@modular-rest/server");
+		(getCollection as jest.Mock).mockImplementation(async () => ({ findOne: jest.fn(async () => null) }));
 
 		/**
 		 * EXPLANATION:
@@ -98,7 +101,8 @@ describe("Leitner Box Activity Toasting", () => {
 			true, // shouldToast: true
 			"singleton",
 			undefined,
-			true // persistent
+			true, // persistent
+			"en" // the one language this learner studies
 		);
 	});
 

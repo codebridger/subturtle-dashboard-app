@@ -49,30 +49,30 @@ describe("PoolService", () => {
 	});
 
 	describe("add", () => {
-		it("creates a pool doc with a server-set pooled_at and encountered:false", async () => {
-			mockPoolCollection.findOne.mockResolvedValue(null);
-
-			await PoolService.add(userId, "p1");
-
-			expect(mockPoolCollection.create).toHaveBeenCalledTimes(1);
-			const arg = mockPoolCollection.create.mock.calls[0][0];
-			expect(arg.userId).toBe(userId);
-			expect(arg.items[0].phraseId).toBe("p1");
-			expect(arg.items[0].encountered).toBe(false);
-			expect(new Date(arg.items[0].pooled_at).toISOString()).toBe("2026-07-03T10:00:00.000Z");
-		});
-
-		it("is idempotent — a phrase already pooled is not pushed again", async () => {
-			mockPoolCollection.findOne.mockResolvedValue({
-				_id: "pool_1",
-				userId,
-				items: [{ phraseId: "p1", pooled_at: new Date("2026-07-01T00:00:00Z"), encountered: false }],
-			});
-
+		// The real idempotency (a second add pushes nothing) runs against MongoDB in
+		// language.test.ts; here we check the shape of the two writes.
+		it("gets-or-creates the language's pool, then pushes with a server-set pooled_at", async () => {
 			await PoolService.add(userId, "p1");
 
 			expect(mockPoolCollection.create).not.toHaveBeenCalled();
-			expect(mockPoolCollection.updateOne).not.toHaveBeenCalled();
+			const [upsert, push] = mockPoolCollection.updateOne.mock.calls;
+			expect(upsert).toEqual([
+				{ userId, language: { $in: ["en", null] } },
+				{ $setOnInsert: { language: "en", items: [] } },
+				{ upsert: true },
+			]);
+			expect(push[0]).toEqual({ userId, language: { $in: ["en", null] }, "items.phraseId": { $ne: "p1" } });
+			const item = push[1].$push.items;
+			expect(item.phraseId).toBe("p1");
+			expect(item.encountered).toBe(false);
+			expect(new Date(item.pooled_at).toISOString()).toBe("2026-07-03T10:00:00.000Z");
+		});
+
+		it("only pushes when the phrase is not in the pool yet (conditional push)", async () => {
+			await PoolService.add(userId, "p1", "de");
+
+			const push = mockPoolCollection.updateOne.mock.calls[1];
+			expect(push[0]).toEqual({ userId, language: "de", "items.phraseId": { $ne: "p1" } });
 		});
 	});
 
@@ -85,10 +85,11 @@ describe("PoolService", () => {
 			expect(LeitnerService.addPhraseToBox).toHaveBeenCalledWith(userId, "p1", 1, {
 				onlyIfAbsent: true,
 				encountered: true,
+				language: "en",
 			});
 			// remove -> $pull on the pool collection
 			expect(mockPoolCollection.updateOne).toHaveBeenCalledWith(
-				{ userId },
+				{ userId, language: { $in: ["en", null] } },
 				{ $pull: { items: { phraseId: "p1" } } }
 			);
 		});
@@ -115,6 +116,7 @@ describe("PoolService", () => {
 			expect(LeitnerService.addPhraseToBox).toHaveBeenCalledWith(userId, "old", 1, {
 				onlyIfAbsent: true,
 				encountered: false,
+				language: "en",
 			});
 		});
 	});
