@@ -1,3 +1,10 @@
+# [1.3.0-dev.8](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.7...v1.3.0-dev.8) (2026-10-15)
+
+
+### Features
+
+* **server:** translation and save assistant learn the learner's languages (B-14, B-15, B-16, B-17) ([53c61fd](https://github.com/codebridger/subturtle-dashboard-app/commit/53c61fde564bf3abb8fed922d47d3d77daccafaf))
+
 # [1.3.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.6...v1.3.0-dev.7) (2026-10-15)
 
 
