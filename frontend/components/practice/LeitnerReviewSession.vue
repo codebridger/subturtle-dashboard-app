@@ -63,6 +63,9 @@
 <script setup lang="ts">
 import { Button, Icon } from 'pilotui/elements';
 import { type PhraseType, type LeitnerItemType } from '~/types/database.type';
+import type { ReviewResult } from '~/types/language.type';
+import { trackLanguageEvent } from '~/stores/language';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 const props = defineProps<{
 	items: LeitnerItemType[];
@@ -71,7 +74,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	(e: 'submit-result', phraseId: string, isCorrect: boolean): void;
+	(e: 'submit-result', phraseId: string, isCorrect: boolean, result?: ReviewResult): void;
 	(e: 'end-session'): void;
 }>();
 
@@ -128,7 +131,13 @@ function handleKeyDown(event: KeyboardEvent) {
 function submitResult(isCorrect: boolean) {
 	if (!currentPhrase.value) return;
 
-	emit('submit-result', currentPhrase.value._id, isCorrect);
+	// A checked fill-the-gap card sends its three-way result (Q4). "Forgot" is always wrong;
+	// "Learned" after an "Almost" stays close, so the card keeps its box instead of moving up.
+	// @ts-ignore — the exposed ref is unwrapped on the component instance
+	const cloze = flashCardRef.value?.clozeResult as ReviewResult | null | undefined;
+	const result: ReviewResult | undefined = !isCorrect ? (cloze ? 'wrong' : undefined) : cloze === 'close' ? 'close' : cloze ? 'right' : undefined;
+	emit('submit-result', currentPhrase.value._id, isCorrect, result);
+	if (cloze) trackLanguageEvent(ANALYTICS_EVENTS.CLOZE_RESULT, { result: cloze });
 
 	if (currentIndex.value < totalItems.value - 1) {
 		currentIndex.value++;

@@ -125,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StButton, StIcon } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import LanguageChip from '~/components/language/LanguageChip.vue';
@@ -258,7 +259,7 @@
 
     function startTest() {
         if (!pick.value) return;
-        trackLanguageEvent('level_test_started', { language: pick.value, from: isFirstRun.value ? 'first_run' : 'add' });
+        trackLanguageEvent(ANALYTICS_EVENTS.LEVEL_TEST_STARTED, { language: pick.value, from: isFirstRun.value ? 'first_run' : 'add' });
         const query: Record<string, string> = { language: pick.value };
         if (fromExtension.value) query.from = 'extension';
         if (isFirstRun.value) query.first = '1';
@@ -282,7 +283,7 @@
         try {
             await language.addLanguage({ language: pick.value, startLevel: 'A1', startLevelSource: 'default' });
             keptJoined.value = keptBefore;
-            if (isFirstRun.value) trackLanguageEvent('first_run_done', { language: pick.value, start_level_source: 'default' });
+            if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: pick.value, start_level_source: 'default' });
             step.value = 3;
         } catch (e) {
             // The limit can be reached in another tab; the card then takes over step 1.

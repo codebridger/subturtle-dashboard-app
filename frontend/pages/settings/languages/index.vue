@@ -43,6 +43,10 @@
                     <StButton v-if="lang.paused" color="primary" size="sm" icon="solar:crown-bold" @click="router.push('/settings/subscription')">
                         {{ t('languages.page.upgrade-to-continue') }}
                     </StButton>
+                    <!-- Where you start: retake the chat test from here; the result returns here. -->
+                    <StButton v-if="lang.canRetake" variant="soft" color="neutral" size="sm" @click="router.push(`/settings/languages/test?language=${lang.code}&manage=1`)">
+                        {{ t('languages.page.retake') }}
+                    </StButton>
                     <StButton variant="ghost" color="danger" size="sm" :disabled="busy" @click="confirmCode = lang.code">
                         {{ t('languages.page.remove') }}
                     </StButton>
@@ -191,6 +195,7 @@
                 active,
                 paused,
                 canActivate: !active && !paused,
+                canRetake: !paused && !!features.levelTest,
                 meta: paused
                     ? l.phraseCount
                         ? t('languages.page.paused-meta', { n: l.phraseCount })

@@ -1,11 +1,31 @@
 <template>
     <div class="flex flex-col gap-[22px]">
-        <StPageHeader :title="t('board.title')" :overline="t('board.overline')" :subtitle="t('board.subtitle')" />
+        <StPageHeader :title="t('board.title')" :overline="overline" :subtitle="subtitle" />
 
-        <!-- Loading: two placeholder rows, matching the design's `.sk` blocks. -->
-        <div v-if="loading" class="flex flex-col gap-[14px]">
+        <!-- Loading, and while a language switch reloads the board: never two languages at once. -->
+        <div v-if="loading || language.switching" class="flex flex-col gap-[14px]">
             <StSkeleton v-for="n in 2" :key="n" class="h-[104px]" />
         </div>
+
+        <!-- New language, no phrases yet (D-11, Q5): ask for a first phrase and offer the starter
+             pack. Never an empty "all caught up" board. -->
+        <template v-else-if="isNewLanguage">
+            <section class="grid gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]" data-testid="board-new-language">
+                <StCard class="flex flex-col">
+                    <span class="mb-5 inline-flex h-[54px] w-[54px] items-center justify-center rounded-st-md bg-st-primary-soft text-st-rose-600">
+                        <StIcon name="solar:bookmark-bold-duotone" :size="29" />
+                    </span>
+                    <h3 class="mb-1.5 text-st-md font-extrabold text-st-strong">{{ t('languages.board.new-title', { language: activeName }) }}</h3>
+                    <p class="mb-[18px] text-st-sm font-semibold text-st-muted [text-wrap:pretty]">{{ t('languages.board.new-body', { language: activeName }) }}</p>
+                    <div class="mt-auto">
+                        <StButton variant="outline" color="primary" icon="solar:notebook-bold" block @click="router.push('/bundles')">
+                            {{ t('languages.board.new-bundles') }}
+                        </StButton>
+                    </div>
+                </StCard>
+                <StarterPackCard v-if="showPackCard" />
+            </section>
+        </template>
 
         <!-- Populated: "Due today" and "Optional practice" travel together — the design gates both
              on the same `listShow`, so neither appears beside the caught-up card. -->
@@ -64,6 +84,7 @@
                 </h2>
 
                 <div class="grid items-start gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+                    <StarterPackCard v-if="showPackCard" />
                     <StCard class="flex flex-col">
                         <span class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-st-md bg-st-info-soft text-st-sky-600">
                             <StIcon name="solar:card-2-bold-duotone" :size="26" />
@@ -78,6 +99,19 @@
                             <StButton variant="ghost" color="neutral" size="sm" @click="router.push('/practice/bundle-review')">
                                 {{ t('board.practice.flashcards.cta') }}
                             </StButton>
+                        </div>
+                    </StCard>
+
+                    <!-- The Coach cards (D-11) open Start a session; each hides when the active
+                         language has no Coach in that mode (contract section 5). -->
+                    <StCard v-for="card in coachCards" :key="card.key" class="flex flex-col">
+                        <span class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-st-md" :class="card.tint">
+                            <StIcon :name="card.icon" :size="26" />
+                        </span>
+                        <h3 class="mb-[5px] text-st-base font-extrabold text-st-strong">{{ card.title }}</h3>
+                        <p class="mb-4 text-st-sm font-semibold text-st-muted [text-wrap:pretty]">{{ card.body }}</p>
+                        <div class="mt-auto">
+                            <StButton variant="ghost" color="neutral" size="sm" @click="router.push(card.to)">{{ card.cta }}</StButton>
                         </div>
                     </StCard>
                 </div>
@@ -103,17 +137,75 @@
     import { storeToRefs } from 'pinia';
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StSkeleton } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
+    import StarterPackCard from '~/components/language/StarterPackCard.vue';
+    import { useLanguageStore } from '~/stores/language';
 
     const { t } = useI18n();
     const router = useRouter();
     const leitnerStore = useLeitnerStore();
     const poolStore = usePoolStore();
-    const { boardActivities } = storeToRefs(leitnerStore);
+    const { boardActivities, newLanguage } = storeToRefs(leitnerStore);
+    const language = useLanguageStore();
     const { poolCount } = storeToRefs(poolStore);
 
     const loading = ref(true);
 
     const activities = computed(() => boardActivities.value);
+
+    const activeName = computed(() => language.nameOf(language.activeLanguage));
+
+    /** The eyebrow names the language (D-11) once the learner can have more than one. */
+    const overline = computed(() => (language.enabled ? t('languages.board.overline', { language: activeName.value }) : t('board.overline')));
+
+    /** A language with no phrases yet: get-board says so, or the switcher's phrase count does. */
+    const isNewLanguage = computed(
+        () => language.enabled && !activities.value.length && !poolCount.value && (newLanguage.value || language.activeSummary?.phraseCount === 0)
+    );
+
+    const subtitle = computed(() => {
+        const summary = language.activeSummary;
+        if (isNewLanguage.value && summary) {
+            const key = summary.startLevelSource === 'test' ? 'languages.board.new-sub-test' : 'languages.board.new-sub';
+            return t(key, { language: activeName.value, level: summary.startLevel });
+        }
+        return t('board.subtitle');
+    });
+
+    /** The starter pack is an offer, never a gate (Q5): shown until it is done or skipped. */
+    const showPackCard = computed(() => {
+        if (!language.enabled || !language.features().starterPack) return false;
+        const state = language.activeSummary?.starterPack?.state ?? 'none';
+        return state !== 'done' && state !== 'skipped';
+    });
+
+    const coachCards = computed(() => {
+        if (!language.enabled) return [];
+        const f = language.features();
+        const cards = [];
+        if (f.coachVoice) {
+            cards.push({
+                key: 'live',
+                icon: 'solar:microphone-3-bold-duotone',
+                tint: 'bg-st-accent-soft text-st-jade-600',
+                title: t('languages.board.practice-live-title'),
+                body: t('languages.board.practice-live-body'),
+                cta: t('languages.board.practice-live-cta'),
+                to: '/sessions/new',
+            });
+        }
+        if (f.coachText) {
+            cards.push({
+                key: 'text',
+                icon: 'solar:chat-round-line-bold-duotone',
+                tint: 'bg-st-primary-soft text-st-rose-600',
+                title: t('languages.board.practice-text-title'),
+                body: t('languages.board.practice-text-body'),
+                cta: t('languages.board.practice-text-cta'),
+                to: '/sessions/new?mode=text',
+            });
+        }
+        return cards;
+    });
 
     /** The only type the server raises today; everything else renders as a generic card. */
     function isReview(activity: BoardActivityType) {

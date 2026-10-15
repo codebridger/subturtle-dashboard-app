@@ -919,6 +919,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
                     userId: authUser.value?.id,
                     session: liveSession.value,
                     metadata: metadata.value,
+                    // Multilingual sessions record who the Coach explained in (B-13).
+                    ...((metadata.value as any)?.explanationLanguage ? { explanationLanguage: (metadata.value as any).explanationLanguage } : {}),
                 }),
             })
             .then((res) => {
@@ -963,6 +965,8 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
 
     return {
         // State
+        /** The server record's id once it exists (the Coach explanation flag, D-16). */
+        recordId: id,
         liveSession,
         sessionStarted,
         conversationDialogs,

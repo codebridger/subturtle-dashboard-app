@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
     import { dataProvider } from '@modular-rest/client';
+    import { languageQuery } from '~/utils/languageScope';
     import type { PaginationType } from '@modular-rest/client/dist/types/types';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
     import { StButton, StCard, StEmptyState, StInput, StSkeleton } from 'subturtle-ui';
@@ -99,6 +100,8 @@
                 collection: COLLECTIONS.PHRASE_BUNDLE,
                 query: {
                     refId: authUser.value?.id,
+                    // Bundles of the active language only (D-12).
+                    ...languageQuery(),
                     title: {
                         $regex: filter.value,
                         $options: 'i',
