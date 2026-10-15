@@ -27,6 +27,18 @@ const profileCollection = defineCollection({
       reviewInterval: { type: Number, default: 1 }, // days between review sessions
       poolAgeCutoffDays: { type: Number, default: 7 }, // Pool age-out cut-off
       poolChunkSize: { type: Number, default: 10 }, // items per encode chunk
+      // Multilingual state (ADR-006 point 1). Server-owned: only server functions write
+      // these, and the data-provider guard refuses them from clients (SERVER_OWNED_FIELDS).
+      // `language_profile` is the source of truth for which languages a learner has; the
+      // copy here is a fast read and `get-language-state` repairs it. A profile from before
+      // multilingual has none of them and reads as English, onboarding done (see
+      // languages/helper.ts). Arrays have no default so "never set" stays visible.
+      translationLanguage: String, // the learner's own language (L1), ISO code
+      learningLanguage: String, // the active learning language
+      learningLanguages: { type: [String], default: undefined }, // active, up to the plan limit
+      pausedLanguages: { type: [String], default: undefined }, // kept after a downgrade
+      onboardingState: { type: String, enum: ["needs_language", "done"] },
+      knowledgeMapEnabled: { type: Boolean, default: false },
     },
     { timestamps: true }
   ),
