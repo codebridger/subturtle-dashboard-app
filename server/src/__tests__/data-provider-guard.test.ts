@@ -529,6 +529,7 @@ describe("collectionPolicy for the real collections", () => {
       "user_content.live_session": policy("refId", true),
       "user_content.live_session_text": policy("refId", true),
       "user_content.save_assistant_session": policy("refId", true),
+      "user_content.level_test": policy("userId", false), // clients read their own tests (B-31)
       "user_content.subscription": policy("user_id", false, true),
       "user_content.usage": policy("user_id", false, true),
       "user_content.free_credit": policy("user_id", false, true),

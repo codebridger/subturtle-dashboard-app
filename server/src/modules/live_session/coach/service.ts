@@ -87,13 +87,13 @@ export async function explanationSwitchedToEnglish(language: LangCode, explanati
   if (!explanationLanguage || explanationLanguage === DEFAULT_LANGUAGE) return false;
   const since = new Date(Date.now() - FLAG_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   try {
-    const users: string[] = await getCollection(DATABASE, COACH_EXPLANATION_FLAG_COLLECTION).distinct("userId", {
-      language,
-      explanationLanguage,
-      on: true,
-      updatedAt: { $gte: since },
-    } as any);
-    return users.length >= flagThreshold();
+    // A plain find, not `distinct`: the database is Firestore with MongoDB compatibility.
+    const threshold = flagThreshold();
+    const rows: any[] = await getCollection(DATABASE, COACH_EXPLANATION_FLAG_COLLECTION)
+      .find({ language, explanationLanguage, on: true, updatedAt: { $gte: since } } as any, { userId: 1 })
+      .limit(threshold * 50)
+      .lean();
+    return new Set(rows.map((row) => row.userId)).size >= threshold;
   } catch (error: any) {
     console.warn(`[coach] flag count failed for ${language}/${explanationLanguage}: ${error?.message || error}`);
     return false;

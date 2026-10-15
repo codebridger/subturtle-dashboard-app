@@ -14,6 +14,7 @@ jest.mock("@modular-rest/server", () => ({
 
 import {
   COACH_EXPLANATION_FLAG_COLLECTION,
+  LANGUAGE_PROFILE_COLLECTION,
   LIVE_SESSION_COLLECTION,
   LIVE_SESSION_TEXT_COLLECTION,
   PHRASE_COLLECTION,
@@ -39,14 +40,14 @@ beforeAll(async () => {
   connection = await mongoose.createConnection(mongo.getUri()).asPromise();
   Profiles = connection.model(PROFILE_COLLECTION, loose());
   Phrases = connection.model(PHRASE_COLLECTION, loose());
-  LanguageProfiles = connection.model("language_profile", loose());
+  LanguageProfiles = connection.model(LANGUAGE_PROFILE_COLLECTION, loose());
   Flags = connection.model(COACH_EXPLANATION_FLAG_COLLECTION, flagDefinition.schema);
   TextSessions = connection.model(LIVE_SESSION_TEXT_COLLECTION, loose());
   VoiceSessions = connection.model(LIVE_SESSION_COLLECTION, loose());
   Object.assign(mockModels, {
     [PROFILE_COLLECTION]: Profiles,
     [PHRASE_COLLECTION]: Phrases,
-    language_profile: LanguageProfiles,
+    [LANGUAGE_PROFILE_COLLECTION]: LanguageProfiles,
     [COACH_EXPLANATION_FLAG_COLLECTION]: Flags,
     [LIVE_SESSION_TEXT_COLLECTION]: TextSessions,
     [LIVE_SESSION_COLLECTION]: VoiceSessions,
