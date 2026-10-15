@@ -33,6 +33,9 @@ class FakeLanguageServer {
   final Map<String, int> dueCounts;
   final Map<String, int> phraseCounts;
   final interests = <String>{};
+
+  /// Languages that see the seeded board, pool and bundles. Others are empty.
+  Set<String> seededLanguages = {'en'};
   final kept = <Map<String, dynamic>>[];
 
   /// Chat tests by id: answers so far.
@@ -102,6 +105,22 @@ class FakeLanguageServer {
     }
 
     void on(String name, Object? Function(Map<String, dynamic>) f) => b.functions[name] = (a) => guard(name, f, a);
+
+    // The seeded board, pool and bundles belong to the languages in
+    // [seededLanguages]; every other language starts empty, as on the server.
+    bool seeded(Map<String, dynamic> a) => seededLanguages.contains(a['language'] ?? active ?? 'en');
+    final board = b.functions['get-board'];
+    final pool = b.functions['get-pool'];
+    b.functions['get-board'] = (a) => seeded(a) ? board?.call(a) : {'language': a['language'], 'newLanguage': true, 'activities': []};
+    b.functions['get-pool'] = (a) => seeded(a) ? pool?.call(a) : [];
+    final find = b.paths['/data-provider/find'];
+    b.paths['/data-provider/find'] = (body) {
+      final q = body['query'];
+      final lang = q is Map ? q['language'] : null;
+      final en = lang == null || lang == 'en' || (lang is Map && (lang[r'$in'] as List?)?.contains('en') == true);
+      if (!en && !seededLanguages.contains(lang)) return [];
+      return find?.call(body);
+    };
 
     on('get-language-capabilities', (_) => capabilities());
     on('get-language-state', (_) => state());

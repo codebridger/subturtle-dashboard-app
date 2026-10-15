@@ -11,13 +11,20 @@ import '../../shared/format.dart';
 import '../../shared/widgets.dart';
 import '../capture/capture_sheet.dart';
 import '../coach/start_session_sheet.dart';
+import '../languages/language_ui.dart';
 
 /// Everything Today needs, loaded together.
 class TodayData {
-  const TodayData({required this.board, required this.pool, required this.bundles});
+  const TodayData({required this.board, required this.pool, required this.bundles, this.language = 'en', this.newLanguage = false});
   final List<BoardActivity> board;
   final List<PoolItem> pool;
   final List<Bundle> bundles;
+
+  /// The language this board is for.
+  final String language;
+
+  /// The server says the language has no phrases yet (2.0).
+  final bool newLanguage;
 
   BoardActivity? get review => board.where((a) => a.type == BoardActivity.leitnerReview && a.dueCount > 0).firstOrNull;
   int get dueCount => review?.dueCount ?? 0;
@@ -25,9 +32,11 @@ class TodayData {
 }
 
 final todayProvider = FutureProvider<TodayData>((ref) async {
+  final lang = await ref.watch(activeLanguageProvider.future);
   final api = ref.read(apiProvider);
-  final results = await Future.wait([api.board.getBoard(), api.board.getPool(), api.bundles.listBundles()]);
-  return TodayData(board: results[0] as List<BoardActivity>, pool: results[1] as List<PoolItem>, bundles: results[2] as List<Bundle>);
+  final results = await Future.wait([api.board.getBoardSnapshot(language: lang), api.board.getPool(language: lang), api.bundles.listBundles(language: lang)]);
+  final board = results[0] as BoardSnapshot;
+  return TodayData(board: board.activities, pool: results[1] as List<PoolItem>, bundles: results[2] as List<Bundle>, language: lang, newLanguage: board.newLanguage);
 });
 
 /// The Today tab shows a dot when the board has a card the user has not seen.
@@ -63,6 +72,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Future<void> _refresh() async {
+    if (ref.read(languageStateProvider).hasError) ref.invalidate(languageStateProvider);
     ref.invalidate(todayProvider);
     ref.invalidate(subscriptionProvider);
     await ref.read(todayProvider.future).catchError((_) => const TodayData(board: [], pool: [], bundles: []));
@@ -75,6 +85,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final profile = ref.watch(profileProvider).value;
     final firstName = (profile?.name ?? '').trim().split(' ').first;
     final sub = ref.watch(subscriptionProvider).value;
+    final multilingual = ref.watch(multilingualProvider);
+    final langName = ref.watch(activeCapsProvider).name;
+    final avatar = Semantics(
+      button: true,
+      label: 'Open Me',
+      child: GestureDetector(
+        onTap: () => context.go('/me'),
+        child: Padding(padding: const EdgeInsets.all(6), child: StAvatar(name: profile?.name ?? 'Me', imageUrl: profile?.pictureUrl, size: StAvatarSize.sm)),
+      ),
+    );
 
     return RefreshIndicator(
       onRefresh: _refresh,
@@ -82,26 +102,24 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       child: ListView(
         padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top, bottom: 120),
         children: [
+          if (multilingual)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 10, 0),
+              child: Row(children: [const Flexible(child: ActiveLanguagePill(caption: 'Saves go here')), const Spacer(), avatar]),
+            ),
           StPageHeader(
-            eyebrow: 'Today',
+            eyebrow: multilingual ? 'Today · $langName' : 'Today',
             title: firstName.isEmpty ? Fmt.greeting() : '${Fmt.greeting()}, $firstName',
             subtitle: today.hasValue && today.requireValue.dueCount > 0
                 ? Text('${Fmt.plural(today.requireValue.dueCount, 'phrase')} ready for review', style: StType.bodyMedium.copyWith(color: c.textMuted))
                 : null,
-            trailing: Semantics(
-              button: true,
-              label: 'Open Me',
-              child: GestureDetector(
-                onTap: () => context.go('/me'),
-                child: Padding(padding: const EdgeInsets.all(6), child: StAvatar(name: profile?.name ?? 'Me', imageUrl: profile?.pictureUrl, size: StAvatarSize.sm)),
-              ),
-            ),
+            trailing: multilingual ? null : avatar,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: AsyncBody<TodayData>(
               value: today,
-              onRetry: () => ref.invalidate(todayProvider),
+              onRetry: () => retryScoped(ref, todayProvider),
               errorTitle: "We couldn't load your board.",
               loading: const _TodaySkeleton(),
               data: (d) => _Board(data: d, sub: sub),
@@ -126,24 +144,32 @@ class _Board extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(prefsProvider);
+    final multilingual = ref.watch(multilingualProvider);
+    final caps = capsOf(ref, data.language);
+    final pack = ref.watch(languageStateProvider).value?.summaryOf(data.language)?.starterPack;
     final cards = <Widget>[];
 
     // ---- hero: the one next step ----
+    // A new language never shows an empty board: it asks for a first phrase (L12).
+    final fresh = !data.hasAnyPhrase || (data.newLanguage && data.dueCount == 0 && data.pool.isEmpty);
     Widget hero;
     if (data.dueCount > 0) {
       hero = _ReviewHero(activity: data.review!);
     } else if (data.pool.isNotEmpty) {
       hero = _PoolHero(count: data.pool.length);
-    } else if (!data.hasAnyPhrase) {
-      hero = const _FirstPhraseHero();
+    } else if (fresh) {
+      hero = _FirstPhraseHero(languageName: multilingual ? caps.name : null);
     } else {
       hero = const _DoneHero();
     }
 
     // ---- optional cards, in priority order ----
+    // The starter pack is an offer, not a gate (L5, L12).
+    if (multilingual && caps.features.starterPack && pack != null && pack.isOpen) cards.add(_StarterCard(language: data.language, name: caps.name, pack: pack));
     if (data.dueCount > 0 && data.pool.isNotEmpty) cards.add(_PoolCard(count: data.pool.length));
     final practice = _practisePhrase(data);
-    if (data.hasAnyPhrase && sub != null) cards.add(_CoachCard(sub: sub!, phrase: practice?.$1, bundle: practice?.$2));
+    final hasCoach = caps.features.coachText || caps.features.coachVoice;
+    if (data.hasAnyPhrase && sub != null && hasCoach) cards.add(_CoachCard(sub: sub!, phrase: practice?.$1, bundle: practice?.$2, sharedMinutes: multilingual));
     final plan = _planCard(sub);
     if (plan != null) cards.add(plan);
     if (!(prefs.getBool(_hideExtensionKey) ?? false)) cards.add(const _ExtensionCard());
@@ -151,7 +177,7 @@ class _Board extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        StEyebrow.section(data.dueCount > 0 || data.pool.isNotEmpty ? 'Due today' : 'Next step'),
+        StEyebrow.section(data.dueCount > 0 || data.pool.isNotEmpty ? 'Due today' : (fresh && multilingual ? 'Start here' : 'Next step')),
         const SizedBox(height: 12),
         hero,
         if (cards.isNotEmpty) ...[
@@ -262,15 +288,19 @@ class _PoolHero extends StatelessWidget {
 }
 
 class _FirstPhraseHero extends ConsumerWidget {
-  const _FirstPhraseHero();
+  const _FirstPhraseHero({this.languageName});
+
+  /// The language's name on a 2.0 server ("Save your first German phrase").
+  final String? languageName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final name = languageName;
     return _HeroShell(
       icon: StIcons.bookmark,
       iconColor: StBadgeColor.primary,
-      title: 'Save your first phrase',
-      body: 'Heard a phrase you like? Share it to Subturtle, or paste it here.',
+      title: name == null ? 'Save your first phrase' : 'Save your first $name phrase',
+      body: name == null ? 'Heard a phrase you like? Share it to Subturtle, or paste it here.' : 'From a video, a message or anything you read. Your $name review starts with it.',
       action: StButton(label: 'Save a phrase', icon: StIcons.add, size: StSize.lg, block: true, onPressed: () => openCapture(context, ref)),
     );
   }
@@ -308,7 +338,7 @@ class _DoneHero extends StatelessWidget {
 // ---------------------------------------------------------------- optional cards
 
 class _RowCard extends StatelessWidget {
-  const _RowCard({required this.icon, required this.iconColor, required this.title, required this.subtitle, required this.action, this.subtitleColor, this.footer, this.onDismiss});
+  const _RowCard({required this.icon, required this.iconColor, required this.title, required this.subtitle, required this.action, this.subtitleColor, this.footer, this.onDismiss, this.note});
 
   final String icon;
   final StBadgeColor iconColor;
@@ -318,6 +348,9 @@ class _RowCard extends StatelessWidget {
   final Color? subtitleColor;
   final Widget? footer;
   final VoidCallback? onDismiss;
+
+  /// A small line under the footer.
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
@@ -347,6 +380,7 @@ class _RowCard extends StatelessWidget {
           ),
           if (onDismiss != null) Align(alignment: Alignment.centerRight, child: action),
           if (footer != null) ...[const SizedBox(height: 10), footer!],
+          if (note != null) ...[const SizedBox(height: 6), Align(alignment: Alignment.centerLeft, child: Text(note!, style: StType.bodySmall.copyWith(color: c.textMuted)))],
         ],
       ),
     );
@@ -367,11 +401,33 @@ class _PoolCard extends StatelessWidget {
       );
 }
 
+class _StarterCard extends StatelessWidget {
+  const _StarterCard({required this.language, required this.name, required this.pack});
+  final String language;
+  final String name;
+  final StarterPackSummary pack;
+
+  @override
+  Widget build(BuildContext context) {
+    final started = pack.heard > 0;
+    return _RowCard(
+      icon: StIcons.stars,
+      iconColor: StBadgeColor.accent,
+      title: '$name starter pack',
+      subtitle: started ? '${pack.heard} of ${pack.total} chunks heard' : 'Optional · ${pack.total > 0 ? '${pack.total} ' : ''}short phrases with sound',
+      action: StButton(label: started ? 'Continue' : 'Start', variant: StButtonVariant.soft, tone: StTone.accent, size: StSize.sm, onPressed: () => context.push('/starter?lang=$language')),
+    );
+  }
+}
+
 class _CoachCard extends ConsumerWidget {
-  const _CoachCard({required this.sub, this.phrase, this.bundle});
+  const _CoachCard({required this.sub, this.phrase, this.bundle, this.sharedMinutes = false});
   final SubscriptionDetails sub;
   final String? phrase;
   final Bundle? bundle;
+
+  /// Say that voice minutes are shared by every language (2.0).
+  final bool sharedMinutes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -402,6 +458,7 @@ class _CoachCard extends ConsumerWidget {
               semanticLabel: 'Voice minutes used',
             )
           : null,
+      note: sharedMinutes && sub.hasVoice ? 'Voice minutes are shared by all your languages.' : null,
     );
   }
 }
