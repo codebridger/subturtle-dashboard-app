@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { combineResults, gradeClozeAnswer } from '~/utils/clozeCheck';
+import { combineResults, gradeClozeAnswer, reasonFromServer } from '~/utils/clozeCheck';
 
 describe('gradeClozeAnswer (D-14, Q4)', () => {
     it('is right for the expected text, ignoring case, spaces and end punctuation', () => {
@@ -39,5 +39,15 @@ describe('combineResults', () => {
         expect(combineResults(['right', 'wrong', 'close'])).toBe('wrong');
         expect(combineResults(['right'])).toBe('right');
         expect(combineResults([])).toBeNull();
+    });
+});
+
+describe('reasonFromServer', () => {
+    it('maps check-cloze-answer reasons to the "Almost" line', () => {
+        expect(reasonFromServer('accent', 'close')).toBe('accent');
+        expect(reasonFromServer('typo', 'close')).toBe('typo');
+        expect(reasonFromServer('form', 'close')).toBe('ending');
+        expect(reasonFromServer('changes_word', 'wrong')).toBe('none');
+        expect(reasonFromServer('spelling', 'right')).toBe('exact');
     });
 });

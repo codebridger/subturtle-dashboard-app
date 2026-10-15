@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import type { Chunk } from '~/types/database.type';
 import type { ReviewResult } from '~/types/language.type';
-import { combineResults, gradeClozeAnswer, type ClozeReason } from '~/utils/clozeCheck';
+import { combineResults, gradeClozeAnswer, reasonFromServer, type ClozeReason } from '~/utils/clozeCheck';
 
 /**
  * A chunk with its cue (B-15): the base form (`lemma`), the form asked for (`form`, e.g.
@@ -13,7 +13,7 @@ export type ClozeChunk = Chunk & { lemma?: string; form?: string; acceptedAnswer
  * Optional server check (`check-cloze-answer`). Returns null when the server cannot judge
  * (function missing, several blanks), and the local rules decide.
  */
-export type ClozeServerCheck = (answer: string, blankIndex: number) => Promise<{ result: ReviewResult; expected: string } | null>;
+export type ClozeServerCheck = (answer: string, blankIndex: number) => Promise<{ result: ReviewResult; expected: string; reason?: string } | null>;
 
 export type ClozeSegment =
     | { type: 'text'; value: string }
@@ -124,7 +124,9 @@ export function useClozeBlanks(
                 .then((res) => {
                     if (!res || clozeAnswers[b.blankIndex] !== typed) return;
                     const local = gradeResults[b.blankIndex];
-                    const reason: ClozeReason = res.result === 'right' ? 'exact' : res.result === 'close' ? local?.reason === 'accent' ? 'accent' : 'ending' : 'none';
+                    // An older server sent no reason: keep the local one when both say "close".
+                    const reason: ClozeReason =
+                        res.reason || res.result !== 'close' ? reasonFromServer(res.reason, res.result) : local?.reason === 'accent' ? 'accent' : 'ending';
                     gradeResults[b.blankIndex] = { result: res.result, reason, expected: res.expected || b.answer };
                     checkResults[b.blankIndex] = res.result === 'right';
                 })

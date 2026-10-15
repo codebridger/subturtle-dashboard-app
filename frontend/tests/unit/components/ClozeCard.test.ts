@@ -89,4 +89,15 @@ describe('ClozeCard', () => {
         expect(p.attributes('dir')).toBe('ltr');
         expect(p.attributes('lang')).toBe('en');
     });
+
+    it('never shows a cue that is the answer itself', () => {
+        const w = mount(ClozeCard, {
+            props: {
+                context: 'Wir sind gestern gegangen.',
+                chunks: [{ text: 'gegangen', type: 'other', confidence: 0.9, lemma: 'gegangen', form: '' } as any],
+                isFlipped: false,
+            },
+        });
+        expect(w.find('[data-testid="cloze-cue"]').exists()).toBe(false);
+    });
 });
