@@ -1,3 +1,17 @@
+# [1.3.0-dev.13](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.12...v1.3.0-dev.13) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** read check-cloze-answer reason and the review item's cue (D-14) ([3561379](https://github.com/codebridger/subturtle-dashboard-app/commit/3561379cd98e5fba676dce92c52cffd3b07774dd))
+
+# [1.3.0-dev.12](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.11...v1.3.0-dev.12) (2026-10-15)
+
+
+### Features
+
+* **server:** keep Leitner, Pool and board per language (B-10, B-11, B-12) ([17b3fa5](https://github.com/codebridger/subturtle-dashboard-app/commit/17b3fa54c9c303426573264d1952df6058224372))
+
 # [1.3.0-dev.11](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.10...v1.3.0-dev.11) (2026-10-15)
 
 
