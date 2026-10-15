@@ -471,6 +471,7 @@ describe("collectionPolicy for the real collections", () => {
       "user_content.leitner_system": null,
       "user_content.board_activity": null,
       "user_content.pool": null,
+      "cms.legacy_usage": null, // server-only counters of old field names (B-17)
       "cms.scheduled_job": null,
     });
   });
