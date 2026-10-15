@@ -21,6 +21,8 @@ import { Types } from "mongoose";
 import {
   DATABASE,
   PROFILE_COLLECTION,
+  LANGUAGE_PROFILE_COLLECTION,
+  LANGUAGE_INTEREST_COLLECTION,
   PHRASE_COLLECTION,
   BUNDLE_COLLECTION,
   LIVE_SESSION_COLLECTION,
@@ -159,6 +161,8 @@ export async function deleteUserAccount(userId: string): Promise<AccountDeletion
   await deleteMany(deleted, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, { userId });
   await deleteMany(deleted, DATABASE_POOL, POOL_COLLECTION, { userId });
   await deleteMany(deleted, DATABASE_BOARD, BOARD_ACTIVITY_COLLECTION, { userId });
+  await deleteMany(deleted, DATABASE, LANGUAGE_PROFILE_COLLECTION, { userId });
+  await deleteMany(deleted, DATABASE, LANGUAGE_INTEREST_COLLECTION, { userId });
 
   // Practice sessions (voice and text).
   await deleteMany(deleted, DATABASE, LIVE_SESSION_COLLECTION, { refId: userId });

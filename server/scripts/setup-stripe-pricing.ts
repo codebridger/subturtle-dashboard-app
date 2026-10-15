@@ -100,6 +100,7 @@ interface TierSpec {
   textChatCap: string; // monthly text-chat cap ("unlimited" or an integer)
   textChatMaxMessages: string; // per-chat message cap ("unlimited" or an integer)
   liveSessionsCap: string;
+  maxLearningLanguages: string; // languages studied at once (Council 008)
   weeklyInsights: boolean;
   sessionHistory: boolean;
   durationDays: number;
@@ -136,6 +137,7 @@ const TIER_SPECS: TierSpec[] = [
     textChatCap: "60",
     textChatMaxMessages: "60",
     liveSessionsCap: "unlimited",
+    maxLearningLanguages: "3",
     weeklyInsights: false,
     sessionHistory: false,
     durationDays: 30,
@@ -163,6 +165,7 @@ const TIER_SPECS: TierSpec[] = [
     textChatCap: "unlimited",
     textChatMaxMessages: "unlimited",
     liveSessionsCap: "unlimited",
+    maxLearningLanguages: "10",
     weeklyInsights: true,
     sessionHistory: true,
     durationDays: 30,
@@ -191,6 +194,7 @@ const TIER_SPECS: TierSpec[] = [
     textChatCap: "unlimited",
     textChatMaxMessages: "unlimited",
     liveSessionsCap: "unlimited",
+    maxLearningLanguages: "10",
     weeklyInsights: true,
     sessionHistory: true,
     durationDays: 30,
@@ -242,6 +246,7 @@ function tierMetadata(spec: TierSpec): Stripe.MetadataParam {
     text_chat_cap: spec.textChatCap,
     text_chat_max_messages: spec.textChatMaxMessages,
     live_sessions_cap: spec.liveSessionsCap,
+    max_learning_languages: spec.maxLearningLanguages,
     weekly_insights: String(spec.weeklyInsights),
     session_history: String(spec.sessionHistory),
     duration_days: String(spec.durationDays),

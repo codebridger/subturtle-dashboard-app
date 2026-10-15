@@ -9,7 +9,9 @@ import '../../shared/widgets.dart';
 
 /// Bundle picker: search, "+ New bundle", the 5 newest, then all A–Z.
 /// One tap picks and closes. Returns the chosen (or new) bundle.
-Future<Bundle?> pickBundle(BuildContext context, {String? current, String? suggestedNew, String title = 'Choose a bundle'}) {
+/// [language] shows (and creates in) that language's bundles; the active
+/// language's by default.
+Future<Bundle?> pickBundle(BuildContext context, {String? current, String? suggestedNew, String title = 'Choose a bundle', String? language}) {
   return showModalBottomSheet<Bundle>(
     context: context,
     useRootNavigator: true,
@@ -17,15 +19,16 @@ Future<Bundle?> pickBundle(BuildContext context, {String? current, String? sugge
     useSafeArea: true,
     backgroundColor: context.st.surfaceCard,
     barrierColor: context.st.surfaceOverlay,
-    builder: (_) => FractionallySizedBox(heightFactor: 0.85, child: _BundlePicker(current: current, suggestedNew: suggestedNew, title: title)),
+    builder: (_) => FractionallySizedBox(heightFactor: 0.85, child: _BundlePicker(current: current, suggestedNew: suggestedNew, title: title, language: language)),
   );
 }
 
 class _BundlePicker extends ConsumerStatefulWidget {
-  const _BundlePicker({this.current, this.suggestedNew, required this.title});
+  const _BundlePicker({this.current, this.suggestedNew, required this.title, this.language});
   final String? current;
   final String? suggestedNew;
   final String title;
+  final String? language;
 
   @override
   ConsumerState<_BundlePicker> createState() => _BundlePickerState();
@@ -49,8 +52,9 @@ class _BundlePickerState extends ConsumerState<_BundlePicker> {
       _error = null;
     });
     try {
-      final b = await ref.read(apiProvider).bundles.createBundle(title);
+      final b = await ref.read(apiProvider).bundles.createBundle(title, language: widget.language);
       ref.invalidate(bundlesProvider);
+      ref.invalidate(bundlesOfLanguageProvider);
       if (mounted) Navigator.pop(context, b);
     } catch (e) {
       setState(() => _error = e is ApiException && (e.message.contains('duplicate') || e.message.contains('E11000')) ? 'You already have a bundle with this name.' : friendlyError(e));
@@ -62,7 +66,8 @@ class _BundlePickerState extends ConsumerState<_BundlePicker> {
   @override
   Widget build(BuildContext context) {
     final c = context.st;
-    final bundles = ref.watch(bundlesProvider);
+    final other = widget.language != null && widget.language != ref.watch(activeLanguageProvider).value;
+    final bundles = other ? ref.watch(bundlesOfLanguageProvider(widget.language!)) : ref.watch(bundlesProvider);
     final q = _search.text.trim().toLowerCase();
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -87,7 +92,7 @@ class _BundlePickerState extends ConsumerState<_BundlePicker> {
             Expanded(
               child: AsyncBody<List<Bundle>>(
                 value: bundles,
-                onRetry: () => ref.invalidate(bundlesProvider),
+                onRetry: () => other ? ref.invalidate(bundlesOfLanguageProvider(widget.language!)) : ref.invalidate(bundlesProvider),
                 loading: const SkeletonList(count: 5, height: 56, padding: EdgeInsets.zero),
                 data: (all) {
                   final filtered = all.where((b) => q.isEmpty || b.title.toLowerCase().contains(q)).toList();

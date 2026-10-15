@@ -98,9 +98,9 @@ mobile/
 | S14 Live text | Works (with fakes) | Same tool loop as the web, retry on a failed message, per-chat cap note, typing dots, phrase strip. |
 | S15 Transcript | Works | Read-only, voice or text. |
 | S16 Voice cap sheet | Works | Opens only when Start (voice) is tapped with 0 minutes. Minutes only, never "credit". |
-| S17 Me | Partial | Profile, 3 small stats, plan row, translation language, haptics, theme, web links, sign out. Daily reminder is not built. Delete account is "email us" (no API). The streak needs the Learner plan (it reuses the web's chart function). |
+| S17 Me | Partial | Profile, 3 small stats, plan row, settings grouped by scope (Languages, the active language only, All languages), web links, sign out. Daily reminder is not built. Delete account is "email us" (no API). The streak needs the Learner plan (it reuses the web's chart function). |
 | S18 Your plan | Works (read only) | Current plan, renew date, meters, all plans with monthly / yearly prices. "Manage on the web" opens the web dashboard. No in-app purchase. |
-| S2 Onboarding | Not built | Not in the design canvas for this round. The language step is in Me → Translate into. |
+| S2 Onboarding | Built (2.0) | The first run (L10): choose a language, then the chat test or Start at A1. |
 
 ## Decisions (and why)
 
@@ -152,6 +152,19 @@ Multilingual round 1, built to `docs/tech/multilingual-api.md` (docs repo) and t
   failing add offers Try again and Sign out.
 - **Plan limit** (Starter 1, Reader 3, Learner and Coach 10): the add row becomes
   a card; Upgrade opens Plans (read-only); Starter never offers a swap.
+- **Save a phrase** shows where the phrase saves: the detected language when
+  the learner has it ("You stay in English"), or, for a language they do not
+  have, "Save to English" or "Keep for German" (held on the server for 30 days,
+  Undo deletes it). Change picks a language for that phrase only. The bundle
+  list, the last bundle and the phone's save history are per language.
+- **Coach**: the prompt comes from `get-coach-instructions` (a server without it
+  gets the app's own prompt from the shared spec); "Coach explains in" per
+  language with "checked by a teacher / by AI"; voice previews in the learning
+  language; "This looks wrong" under Coach messages.
+- **Fill the gap** asks the server (`check-cloze-answer`) for right, close or
+  wrong and shows the cue chip; "close" is sent as its own result and keeps the
+  card in its box. Without the server function the app checks itself: accents
+  are "almost", English contractions count for English only.
 - **Hide, do not grey out.** A feature the capability register marks off for a
   language is hidden; only Languages lists "not yet".
 - **Tests:** `test/languages_test.dart` (widget flows against the stateful fake

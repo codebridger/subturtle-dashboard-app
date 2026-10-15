@@ -49,6 +49,61 @@ class SaveAssistant extends ChangeNotifier {
   ApiException? limit;
 
   final Map<String, DetailedTranslation> _cards = {};
+
+  /// The language the learner chose for a phrase ("Save to English", or the
+  /// "which language" list). It changes this phrase only, never the active one.
+  final Map<String, String> chosenLanguage = {};
+
+  /// Phrases kept for a language the learner has not added ("Keep for German"):
+  /// phrase → the language and the pending phrase on the server.
+  final Map<String, ({String language, String phraseId})> kept = {};
+
+  /// The language a phrase was detected in, when the server says.
+  String? detectedLanguageOf(String phrase) {
+    final card = cardFor(phrase);
+    return card?.detectedLanguage ?? card?.resolvedLanguage;
+  }
+
+  void chooseLanguage(String phrase, String? code) {
+    code == null ? chosenLanguage.remove(phrase) : chosenLanguage[phrase] = code;
+    _changed();
+  }
+
+  /// "Keep for German": holds the phrase on the server for 30 days; it joins
+  /// German when the learner adds it.
+  Future<void> keep(String phrase, String language) async {
+    final s = _session!;
+    final detail = cardFor(phrase);
+    var translation = detail?.translation ?? '';
+    if (translation.isEmpty) translation = await api.translation.translateSimple(phrase: phrase, context: s.sentence, targetLanguage: languageName);
+    final res = await api.languages.keepPending(language: language, phrase: {
+      'phrase': phrase,
+      'translation': translation,
+      'translation_language': languageName,
+      'context': s.sentence,
+      'type': detail == null ? 'normal' : 'linguistic',
+      if (detail != null) ...{
+        'direction': {'source': detail.sourceDirection, 'target': detail.targetDirection},
+        'language_info': {'source': language, 'target': detail.targetLanguage ?? languageName},
+        'linguistic_data': ?detail.linguistic?.toJson(),
+        'chunks': detail.chunks.map((c) => c.toJson()).toList(),
+      },
+    });
+    kept[phrase] = (language: language, phraseId: res.phraseId);
+    _changed();
+  }
+
+  /// Undo "Keep for German": the pending phrase is deleted.
+  Future<void> undoKeep(String phrase) async {
+    final k = kept[phrase];
+    if (k == null) return;
+    final uid = api.auth.user?.id;
+    if (k.phraseId.isNotEmpty && uid != null) {
+      await api.data.removeOne(database: Db.userContent, collection: Db.phrase, query: {'_id': k.phraseId, 'refId': uid});
+    }
+    kept.remove(phrase);
+    _changed();
+  }
   final Set<String> _loadingCards = {};
   final Set<String> _failedCards = {};
 
@@ -84,6 +139,8 @@ class SaveAssistant extends ChangeNotifier {
   void _reset() {
     _cards.clear();
     _failedCards.clear();
+    chosenLanguage.clear();
+    kept.clear();
     startError = null;
     limit = null;
     wrapUp = false;
@@ -184,7 +241,9 @@ class SaveAssistant extends ChangeNotifier {
 
   /// Saves the picked phrase to [bundle]. Throws [ApiException] (offline,
   /// save limit) for the sheet to show.
-  Future<Phrase> save(Bundle bundle) async {
+  /// Saves the current phrase into [bundle], in [language] (the phrase's
+  /// language; the active one when null).
+  Future<Phrase> save(Bundle bundle, {String? language}) async {
     final s = _session!;
     final phrase = current!;
     saving = true;
@@ -203,6 +262,7 @@ class SaveAssistant extends ChangeNotifier {
         translationLanguage: languageName,
         context: s.sentence,
         detail: detail,
+        language: language,
       );
       final ref = SavedPhraseRef(text: phrase, phraseId: saved.id, bundleId: bundle.id, bundleTitle: bundle.title);
       // The phrase is saved either way; linking it to the chat is a bonus.

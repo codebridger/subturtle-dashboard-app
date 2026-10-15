@@ -441,4 +441,24 @@ test.describe('Multilingual dashboard', () => {
         await expect(page.getByTestId('cloze-status')).toContainText('check the spelling');
         expect(fake.calls.find((c) => c.name === 'check-cloze-answer')?.args).toMatchObject({ phraseId: 'p2', answer: 'gegangne', language: 'de' });
     });
+
+    test('the extension’s Practice now link runs the session in the phrase’s language', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { explanationLanguage: 'tr', phraseCount: 1 })], active: 'en' });
+        await boot(page, fake);
+        // A phrase for the text page's findByIds.
+        await page.route('**/data-provider/findByIds', (route) =>
+            route.request().method() === 'OPTIONS'
+                ? route.fulfill({ status: 204, headers: corsHeaders(route) })
+                : respond(route, 200, { status: 'success', data: [{ _id: 'p1', phrase: 'Hallo', translation: 'Merhaba', language: 'de' }] })
+        );
+        // Exactly what subturtle-extension-apps' buildPracticeNowPath makes (E-08).
+        const request = { aiCharacter: 'Kore', mode: 'text', source: { kind: 'phrases', phraseIds: ['p1'] }, returnTo: '/board', language: 'de' };
+        const session = Buffer.from(JSON.stringify(request)).toString('base64');
+        await page.goto(`/#/practice/live-session-text?session=${encodeURIComponent(session)}&language=de`);
+
+        await expect.poll(() => fake.calls.find((c) => c.name === 'set-active-language')?.args.language).toBe('de');
+        await expect
+            .poll(() => fake.calls.find((c) => c.name === 'get-coach-instructions')?.args)
+            .toMatchObject({ language: 'de', explanationLanguage: 'tr', phraseIds: ['p1'], mode: 'text' });
+    });
 });

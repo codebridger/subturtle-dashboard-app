@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subturtle/features/languages/language_ui.dart';
+import 'package:subturtle/features/live_session/session_launch.dart';
+import 'package:subturtle/features/review/review_logic.dart';
 import 'package:subturtle/shared/languages.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
@@ -333,6 +335,202 @@ void main() {
       await tester.settle();
       expect(find.text('Translate into'), findsOneWidget);
       expect(eyebrow('All languages'), findsNothing);
+    });
+  });
+
+  group('save sheet language row (M-09)', () {
+    Future<FakeBackend> openWith(WidgetTester tester, FakeLanguageServer langs, String detected) async {
+      final b = await pumpApp(tester, languages: langs, seed: (b) {
+        b.functions['translateWithContext'] = (args) => {
+              'translation': {'phrase': 'باید'},
+              'direction': {'source': 'ltr', 'target': 'rtl'},
+              'chunks': [],
+              'detectedLanguage': detected,
+              'resolvedLanguage': detected,
+              'inProfile': langs.langs.containsKey(detected),
+            };
+        b.functions['createPhrase'] = (args) => {'_id': 'p9', 'phrase': args['phrase'], 'translation': args['translation'], 'language': args['language']};
+      });
+      await tester.tap(find.bySemanticsLabel('Save a phrase'));
+      await tester.settle();
+      await tester.enterText(find.byType(TextField).first, 'ich muss');
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Send'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      return b;
+    }
+
+    testWidgets('another of my languages: saves there, the active one stays', (tester) async {
+      final langs = FakeLanguageServer(startLevels: {'en': 'B1', 'de': 'A1'})..seededLanguages = {'en', 'de'};
+      final b = await openWith(tester, langs, 'de');
+      expect(find.text('German · detected'), findsOneWidget);
+      expect(find.text('Saves to your German profile. You stay in English.'), findsOneWidget);
+      expect(argsOf(b, 'translateWithContext').last['translationLanguage'], 'fa');
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'createPhrase').last['language'], 'de');
+      expect(langs.active, 'en', reason: 'saving to German does not switch');
+    });
+
+    testWidgets('a language I do not have: Keep for Spanish, then Undo', (tester) async {
+      final langs = FakeLanguageServer();
+      final b = await openWith(tester, langs, 'es');
+      expect(find.text('This looks like Spanish'), findsOneWidget);
+      expect(find.text('Spanish is not in your languages yet'), findsOneWidget);
+      expect(find.textContaining('Save to Stranger'), findsNothing, reason: 'it never saves to a language the learner did not choose');
+      b.paths['/data-provider/remove-one'] = (_) => {'deletedCount': 1};
+
+      await tester.tap(find.text('Keep for Spanish'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'keep-phrase-pending').single['language'], 'es');
+      expect((argsOf(b, 'keep-phrase-pending').single['phrase'] as Map)['phrase'], 'ich muss');
+      expect(find.text('Kept for Spanish'), findsOneWidget);
+      expect(langs.pending['es'], 1);
+
+      await tester.tap(find.text('Undo'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(b.calls.where((c) => c.$1 == '/data-provider/remove-one').single.$2['query']['_id'], 'kept1');
+      expect(find.text('This looks like Spanish'), findsOneWidget);
+    });
+
+    testWidgets('a language I do not have: Save to English', (tester) async {
+      final b = await openWith(tester, FakeLanguageServer(), 'es');
+      await tester.tap(find.text('Save to English'));
+      await tester.settle();
+      expect(find.text('Saves to English'), findsOneWidget);
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'createPhrase').last['language'], 'en');
+    });
+
+    testWidgets('Change: pick a language for this phrase only', (tester) async {
+      final langs = FakeLanguageServer(startLevels: {'en': 'B1', 'de': 'A1'})..seededLanguages = {'en', 'de'};
+      final b = await openWith(tester, langs, 'en');
+      expect(find.text('English · detected'), findsOneWidget);
+      await tester.tap(find.text('Change'));
+      await tester.settle();
+      expect(find.text('Save this phrase to which language?'), findsOneWidget);
+      await tester.tap(find.text('German · Deutsch'));
+      await tester.settle();
+      expect(find.text('Saves to your German profile. You stay in English.'), findsOneWidget);
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'createPhrase').last['language'], 'de');
+    });
+  });
+
+  group('Coach (M-10)', () {
+    testWidgets('the prompt comes from the server; the chat is in German; flag a wrong explanation', (tester) async {
+      final langs = FakeLanguageServer(active: 'de', startLevels: {'en': 'B1', 'de': 'A2'})..seededLanguages = {'en', 'de'};
+      final b = await pumpApp(tester, languages: langs, seed: (b) {
+        b.paths['/data-provider/findByIds'] = (body) => [
+              {'_id': 'p1', 'phrase': 'ich muss', 'translation': 'باید', 'language': 'de'},
+            ];
+        b.functions['get-coach-instructions'] = (a) => {'instructions': 'SERVER PROMPT for ${a['language']}', 'voiceName': 'Kore', 'explanationLanguage': 'fa'};
+        b.functions['create-text-session'] = (_) => {'sessionId': 's1'};
+        b.functions['text-turn'] = (_) => {'done': true, 'text': 'Hallo! "ich muss" heißt: man hat keine Wahl.'};
+        b.functions['flag-coach-explanation'] = (a) => {'on': a['on']};
+      });
+      await tester.tap(find.text('Coach'));
+      await tester.settle();
+      expect(eyebrow('AI coaching · German'), findsOneWidget);
+      expect(eyebrow('Recent German sessions'), findsOneWidget);
+      await tester.tap(find.text('Start a session'));
+      await tester.settle();
+      expect(find.text('Persian · checked by a teacher'), findsOneWidget, reason: 'Coach explains in, with who checked it');
+      await tester.tap(find.text('Text'));
+      await tester.settle();
+      await tester.tap(find.text('Start text chat'));
+      await tester.settle();
+
+      final ci = argsOf(b, 'get-coach-instructions').single;
+      expect(ci['language'], 'de');
+      expect(ci['explanationLanguage'], 'fa');
+      expect(ci['mode'], 'text');
+      final create = argsOf(b, 'create-text-session').single;
+      expect(create['instructions'], 'SERVER PROMPT for de');
+      expect(create['language'], 'de');
+      expect(create['explanationLanguage'], 'fa');
+      expect(find.text('Write in German…'), findsOneWidget);
+
+      await tester.tap(find.text('This looks wrong'));
+      await tester.settle();
+      expect(argsOf(b, 'flag-coach-explanation').single, containsPair('turnIndex', 0));
+      expect(find.text('Thanks, we will check this explanation.'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      await tester.settle();
+      expect(argsOf(b, 'flag-coach-explanation').last['on'], isFalse);
+    });
+
+    test('voice previews speak the learning language', () {
+      const de = LearningLanguageCaps(code: 'de', name: 'German', nativeName: 'Deutsch', ttsVoice: 'de-DE-Chirp3-HD-Kore');
+      expect(coachPreviewVoiceFor('Puck', de), 'de-DE-Chirp3-HD-Puck');
+      expect(coachPreviewVoiceFor('Puck', LearningLanguageCaps.english), 'en-US-Neural2-D');
+      expect(coachPreviewLine('de'), startsWith('Hallo'));
+      expect(coachPreviewLine('en'), startsWith('Hi'));
+    });
+  });
+
+  group('fill the gap (M-11)', () {
+    ReviewItem item({List<String> accepted = const ['bin'], String? lemma = 'sein', String? form = 'present perfect, ich'}) => ReviewItem.fromJson({
+          'phraseId': 'p1',
+          'boxLevel': 3,
+          'phrase': {'_id': 'p1', 'phrase': 'ich bin gekommen', 'translation': 'من آمدم', 'context': 'Gestern bin ich zu spät nach Hause gekommen.', 'language': 'de'},
+          'source_sentence': 'Gestern bin ich zu spät nach Hause gekommen.',
+          'cue': {'lemma': ?lemma, 'form': ?form},
+          'acceptedAnswers': accepted,
+        });
+
+    test('the blank and cue come from the server; a cue that is the answer is hidden', () {
+      final c = Cloze.fromItem(item())!;
+      expect(c.answer, 'bin');
+      expect(c.cueLemma, 'sein');
+      expect(c.cueForm, 'present perfect, ich');
+      expect(Cloze.fromItem(item(lemma: 'bin'))!.hasCue, isFalse, reason: 'old chunks: the server sets the lemma to the text');
+    });
+
+    test('accents are "almost"; contractions are English only; accepted answers count', () {
+      expect(checkAnswer('strasse', 'Straße', language: 'de'), ClozeResult.close);
+      expect(checkAnswer('ecole', 'école', language: 'fr'), ClozeResult.close);
+      expect(checkAnswer('école', 'école', language: 'fr'), ClozeResult.correct);
+      expect(checkAnswer("I'm", 'I am'), ClozeResult.correct);
+      expect(checkAnswer("c'est", 'ce est', language: 'fr'), isNot(ClozeResult.correct));
+      expect(checkAnswer('gemusst', 'musste', language: 'de', accepted: ['gemusst']), ClozeResult.correct);
+      expect(ClozeResult.close.reviewResult(learned: true), 'close');
+      expect(ClozeResult.correct.reviewResult(learned: true), 'right');
+      expect(ClozeResult.close.reviewResult(learned: false), 'wrong');
+    });
+
+    testWidgets('the server says close: "Almost" with the right form, and the grade is close', (tester) async {
+      final langs = FakeLanguageServer(active: 'de', startLevels: {'en': 'B1', 'de': 'A1'})..seededLanguages = {'en', 'de'};
+      final b = await pumpApp(tester, languages: langs, seed: (b) {
+        b.functions['get-review-session'] = (_) => [
+              {
+                'phraseId': 'p1',
+                'boxLevel': 3,
+                'phrase': {'_id': 'p1', 'phrase': 'ich bin gekommen', 'translation': 'من آمدم', 'context': 'Gestern bin ich zu spät nach Hause gekommen.', 'language': 'de'},
+                'source_sentence': 'Gestern bin ich zu spät nach Hause gekommen.',
+                'cue': {'lemma': 'sein', 'form': 'present perfect, ich'},
+                'acceptedAnswers': ['bin'],
+              },
+            ];
+        b.functions['check-cloze-answer'] = (a) => {'result': 'close', 'expected': 'bin', 'reason': 'form'};
+      });
+      await tester.tap(find.text('Start review'));
+      await tester.settle();
+      expect(find.text('Cue: sein'), findsOneWidget);
+      expect(find.text('present perfect, ich'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'bist');
+      await tester.tap(find.text('Check'));
+      await tester.settle();
+      expect(argsOf(b, 'check-cloze-answer').single, containsPair('answer', 'bist'));
+      expect(argsOf(b, 'check-cloze-answer').single, containsPair('language', 'de'));
+      expect(find.text('Close. Right word, check the ending. The answer is bin.'), findsOneWidget);
+      await tester.tap(find.widgetWithText(GestureDetector, 'Learned').last);
+      await tester.settle();
+      final submit = argsOf(b, 'submit-review').single;
+      expect(submit['result'], 'close', reason: 'close keeps the card in its box');
+      expect(submit['language'], 'de');
     });
   });
 

@@ -58,7 +58,7 @@ describe("ProfileService", () => {
 
 		it("should set timezone if user exists but has no timezone set (login flow)", async () => {
 			// simulate existing user with no timezone but same gPicture (so gPicture refresh doesn't fire)
-			mockCollection.findOne.mockResolvedValue({ refId, gPicture });
+			mockCollection.findOne.mockResolvedValue({ refId, name, gPicture });
 
 			await updateUserProfile({ refId, gPicture, name, timeZone: "New/Zone" }, false);
 
@@ -70,7 +70,7 @@ describe("ProfileService", () => {
 
 		it("should NOT update timezone if user already has one (login flow)", async () => {
 			// simulate valid existing timezone and matching gPicture
-			mockCollection.findOne.mockResolvedValue({ refId, gPicture, timeZone: "Existing/Zone" });
+			mockCollection.findOne.mockResolvedValue({ refId, name, gPicture, timeZone: "Existing/Zone" });
 
 			await updateUserProfile({ refId, gPicture, name, timeZone: "New/Zone" }, false);
 
@@ -83,7 +83,7 @@ describe("ProfileService", () => {
 		});
 
 		it("should not update timezone if none provided", async () => {
-			mockCollection.findOne.mockResolvedValue({ refId, gPicture, timeZone: "Existing/Zone" });
+			mockCollection.findOne.mockResolvedValue({ refId, name, gPicture, timeZone: "Existing/Zone" });
 
 			await updateUserProfile({ refId, gPicture, name }, false);
 
@@ -91,7 +91,7 @@ describe("ProfileService", () => {
 		});
 
 		it("should update gPicture on login when Google sends a different URL", async () => {
-			mockCollection.findOne.mockResolvedValue({ refId, gPicture: "old.jpg", timeZone: "Existing/Zone" });
+			mockCollection.findOne.mockResolvedValue({ refId, name, gPicture: "old.jpg", timeZone: "Existing/Zone" });
 
 			await updateUserProfile({ refId, gPicture: "new.jpg", name }, false);
 
@@ -102,7 +102,7 @@ describe("ProfileService", () => {
 		});
 
 		it("should backfill gPicture on login when user has none", async () => {
-			mockCollection.findOne.mockResolvedValue({ refId, timeZone: "Existing/Zone" });
+			mockCollection.findOne.mockResolvedValue({ refId, name, timeZone: "Existing/Zone" });
 
 			await updateUserProfile({ refId, gPicture, name }, false);
 
@@ -110,6 +110,23 @@ describe("ProfileService", () => {
 				{ refId },
 				{ $set: { gPicture } }
 			);
+		});
+
+		it("should fill in the name of a profile the sign-up trigger created first", async () => {
+			mockCollection.findOne.mockResolvedValue({ refId, onboardingState: "needs_language" });
+
+			await updateUserProfile({ refId, name }, false);
+
+			expect(mockCollection.insertMany).not.toHaveBeenCalled();
+			expect(mockCollection.updateOne).toHaveBeenCalledWith({ refId }, { $set: { name } });
+		});
+
+		it("should not overwrite a name the user already has", async () => {
+			mockCollection.findOne.mockResolvedValue({ refId, name: "Chosen", gPicture, timeZone: "Existing/Zone" });
+
+			await updateUserProfile({ refId, gPicture, name }, false);
+
+			expect(mockCollection.updateOne).not.toHaveBeenCalled();
 		});
 	});
 });

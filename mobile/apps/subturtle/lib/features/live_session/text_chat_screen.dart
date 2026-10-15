@@ -11,6 +11,7 @@ import '../../shared/widgets.dart';
 import '../coach/coach_home_screen.dart';
 import '../phrase/phrase_sheet.dart';
 import 'chat_bubbles.dart';
+import 'explanation_flag.dart';
 import 'session_launch.dart';
 import 'text_chat_controller.dart';
 
@@ -41,6 +42,8 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
       instructions: widget.launch.instructions,
       metadata: widget.launch.metadata('text'),
       messageCap: cap,
+      language: widget.launch.language,
+      explanationLanguage: widget.launch.explanationLanguage,
     )..addListener(_onChange);
     _chat.start();
   }
@@ -167,7 +170,7 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
       controller: _scroll,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       children: [
-        for (final m in items)
+        for (final (i, m) in items.indexed) ...[
           ChatBubble(
             text: m.text,
             fromUser: m.fromUser,
@@ -176,6 +179,9 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
             failed: m.failed,
             onRetry: () => _chat.retry(m),
           ),
+          if (!m.fromUser && ref.watch(multilingualProvider))
+            Align(alignment: Alignment.centerLeft, child: ExplanationFlag(language: widget.launch.language, explanationLanguage: widget.launch.explanationLanguage, sessionId: _chat.sessionId, turnIndex: items.take(i).where((x) => !x.fromUser).length)),
+        ],
         if (starting || _chat.status == TextChatStatus.waiting) const TypingBubble(),
         if (_chat.error != null && _chat.status == TextChatStatus.ready && !_chat.capReached)
           Padding(padding: const EdgeInsets.only(top: 4), child: Text(friendlyError(_chat.error!), style: StType.bodySmall.copyWith(color: context.st.red600))),
@@ -195,7 +201,7 @@ class _TextChatScreenState extends ConsumerState<TextChatScreen> {
           Expanded(
             child: StInput(
               controller: _input,
-              placeholder: 'Write in English…',
+              placeholder: 'Write in ${widget.launch.languageName}…',
               minLines: 1,
               maxLines: 4,
               enabled: !_chat.capReached,
