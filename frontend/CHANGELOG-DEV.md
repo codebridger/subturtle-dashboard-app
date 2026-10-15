@@ -1,3 +1,10 @@
+# [1.3.0-dev.10](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.9...v1.3.0-dev.10) (2026-10-15)
+
+
+### Features
+
+* **server:** the shared fill-in-the-gap checker and check-cloze-answer (B-18) ([e33feda](https://github.com/codebridger/subturtle-dashboard-app/commit/e33fedac26afb631dd826fe2e0533745e0ec4f26))
+
 # [1.3.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.8...v1.3.0-dev.9) (2026-10-15)
 
 
