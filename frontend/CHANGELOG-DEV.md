@@ -1,3 +1,10 @@
+# [1.3.0-dev.20](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.19...v1.3.0-dev.20) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** never let analytics stop a Coach session from starting ([3e1d899](https://github.com/codebridger/subturtle-dashboard-app/commit/3e1d899ea2a948e7530e6d43b4db122ba93b92d5))
+
 # [1.3.0-dev.19](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.18...v1.3.0-dev.19) (2026-10-15)
 
 
