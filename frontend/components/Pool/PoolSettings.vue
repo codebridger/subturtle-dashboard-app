@@ -83,6 +83,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { withLanguage } from '~/utils/languageScope';
 import { Button, Card, Icon } from 'pilotui/elements';
 import { toastSuccess, toastError } from 'pilotui/toast';
 import HourSelector from '~/components/material/HourSelector.vue';
@@ -128,7 +129,7 @@ async function save() {
 	try {
 		await functionProvider.run({
 			name: 'update-settings',
-			args: { userId: authUser.value?.id, settings: local.value },
+			args: withLanguage({ userId: authUser.value?.id, settings: local.value }),
 		});
 		dirty.value = false;
 		toastSuccess(t('pool.saved_ok'));

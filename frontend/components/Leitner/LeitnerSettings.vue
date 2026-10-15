@@ -295,6 +295,7 @@
 
 <script lang="ts" setup>
     import { ref, watch } from 'vue';
+    import { withLanguage } from '~/utils/languageScope';
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StInput, StModal, StStatTile, StSwitch } from 'subturtle-ui';
     import { toastSuccess, toastError } from 'pilotui/toast';
     import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
@@ -580,10 +581,10 @@
         try {
             await functionProvider.run({
                 name: 'update-settings',
-                args: {
+                args: withLanguage({
                     userId: authUser.value?.id,
                     settings: localSettings.value,
-                },
+                }),
             });
             saveFailed.value = false;
             settingsDirty.value = false;
@@ -603,9 +604,9 @@
         try {
             await functionProvider.run({
                 name: 'reset-system',
-                args: {
+                args: withLanguage({
                     userId: authUser.value?.id,
-                },
+                }),
             });
             resetOpen.value = false;
             openLevel.value = null;

@@ -7,6 +7,29 @@ const SUPER_PROPERTIES = { app: 'dashboard' };
 let initialized = false;
 
 /**
+ * The learner's active and own language (D-22), sent with every event as `learning_language`
+ * and `l1`. Kept here so they can be registered again after reset(), which clears them, and
+ * after a language switch. Null while multilingual is off: nothing is registered then.
+ */
+let languageProperties: { learning_language: string; l1: string | null } | null = null;
+
+/** Called by the language store whenever the active or own language changes. */
+export function registerLanguageAnalytics(props: { learning_language: string; l1: string | null } | null) {
+    const previous = languageProperties;
+    languageProperties = props;
+    if (!initialized) return;
+    try {
+        if (props) mixpanel.register(props);
+        else if (previous) {
+            mixpanel.unregister('learning_language');
+            mixpanel.unregister('l1');
+        }
+    } catch (error) {
+        console.error('Failed to register language properties:', error);
+    }
+}
+
+/**
  * Attach this browser's events to the signed-in user. Called from the profile
  * store's bootstrap, which runs on every boot with a stored session and after an
  * explicit login, so restored sessions are identified too — not just logins.
@@ -21,6 +44,7 @@ export function identifyAnalyticsUser(user: { id?: string; email?: string } | nu
     try {
         mixpanel.identify(user.id);
         if (user.email) mixpanel.people.set({ $email: user.email });
+        if (languageProperties) mixpanel.register(languageProperties);
     } catch (error) {
         console.error('Failed to identify analytics user:', error);
     }
@@ -32,6 +56,8 @@ export function resetAnalyticsUser() {
     try {
         mixpanel.reset();
         mixpanel.register(SUPER_PROPERTIES);
+        // The next account sets its own languages when its language state loads.
+        languageProperties = null;
     } catch (error) {
         console.error('Failed to reset analytics user:', error);
     }

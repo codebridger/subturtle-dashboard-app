@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { type PoolItemType } from '~/types/database.type';
 import { analytic } from '~/plugins/mixpanel';
+import { withLanguage } from '~/utils/languageScope';
+import { onLanguageSwitch } from '~/stores/language';
 
 /**
  * Pool RPC client — the first-encounter (encode) queue. New saves land here instead
@@ -23,7 +25,7 @@ export const usePoolStore = defineStore('pool', () => {
 		try {
 			const items = await functionProvider.run({
 				name: 'get-pool',
-				args: { userId: authUser.value?.id }
+				args: withLanguage({ userId: authUser.value?.id })
 			}) as PoolItemType[];
 
 			poolItems.value = items || [];
@@ -57,7 +59,7 @@ export const usePoolStore = defineStore('pool', () => {
 		try {
 			await functionProvider.run({
 				name: 'complete-pool-session',
-				args: { phraseIds, userId: authUser.value?.id }
+				args: withLanguage({ phraseIds, userId: authUser.value?.id })
 			});
 			analytic.track('pool_session_completed', { count: phraseIds.length });
 		} catch (error) {
@@ -66,6 +68,13 @@ export const usePoolStore = defineStore('pool', () => {
 			await fetchPool();
 		}
 	}
+
+	// The pool is per language (B-11): a switch empties it and loads the new language's pool.
+	onLanguageSwitch(async () => {
+		poolItems.value = [];
+		sessionItems.value = [];
+		await fetchPool();
+	});
 
 	return {
 		poolItems,

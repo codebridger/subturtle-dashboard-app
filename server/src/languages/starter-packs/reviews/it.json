@@ -1,0 +1,502 @@
+{
+  "language": "it",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "it-greetings-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Come ___?\" with cue stare and \"How are you?\" (en/ar do not mark register) accepts both stai and the polite sta, which the note itself gives; a learner typing sta would be marked wrong. Retarget to Come, which is unique.",
+          "fix": {
+            "lemma": "come",
+            "form": "Come"
+          }
+        },
+        {
+          "id": "it-questions-05",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Di dove ___?\" with cue essere accepts sei and the polite è (\"Where are you from?\" is register-neutral in en/ar). Retarget to dove, which is unique.",
+          "fix": {
+            "lemma": "dove",
+            "form": "dove"
+          }
+        },
+        {
+          "id": "it-questions-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Dove ___?\" with cue abitare accepts abiti and the polite abita (given in the note); en/ar translations do not mark register. Retarget to Dove.",
+          "fix": {
+            "lemma": "dove",
+            "form": "Dove"
+          }
+        },
+        {
+          "id": "it-needs-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"___ un attimo.\" with cue aspettare accepts Aspetta and the polite Aspetti (given in the note); \"Wait a moment.\" is register-neutral in en/vi/ar. Retarget to attimo; the cue then rules out momento.",
+          "fix": {
+            "lemma": "attimo",
+            "form": "attimo"
+          }
+        },
+        {
+          "id": "it-questions-13",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Sei ___?\" with cue sicuro accepts sicuro and sicura (\"Are you sure?\" is gender-neutral in en/tr/fa/vi); blanking Sei instead would accept the polite È. No unique target, so drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "it-needs-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Mi sono ___.\" with cue perdersi accepts perso and persa (\"I'm lost\" has no gender in en/tr/fa/vi/es); the note gives persa. Retarget to the auxiliary sono, which is unique.",
+          "fix": {
+            "lemma": "essere",
+            "form": "sono"
+          }
+        },
+        {
+          "id": "it-food-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"È ___!\" with cue buono accepts buonissimo, buonissima (note gives it for la pizza) and arguably plain buono for \"It's delicious\". Drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "it-food-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Sono ___.\" with cue vegetariano accepts vegetariano and vegetariana (\"I'm vegetarian\" is gender-neutral in most translations); the note gives vegetariana. Retarget to Sono.",
+          "fix": {
+            "lemma": "essere",
+            "form": "Sono"
+          }
+        },
+        {
+          "id": "it-food-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Sono ___.\" with cue pieno accepts pieno and piena (given in the note); the translations do not fix gender. Retarget to Sono.",
+          "fix": {
+            "lemma": "essere",
+            "form": "Sono"
+          }
+        },
+        {
+          "id": "it-work-03",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Sono ___.\" with cue impegnato accepts impegnato and impegnata (given in the note); \"I'm busy\" is gender-neutral. Retarget to Sono.",
+          "fix": {
+            "lemma": "essere",
+            "form": "Sono"
+          }
+        },
+        {
+          "id": "it-feelings-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Sono ___.\" with cue stanco accepts stanco and stanca (given in the note); \"I'm tired\" is gender-neutral. Retarget to Sono.",
+          "fix": {
+            "lemma": "essere",
+            "form": "Sono"
+          }
+        },
+        {
+          "id": "it-feelings-10",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"Sono ___.\" with cue malato accepts malato and malata (given in the note); \"I'm sick\" is gender-neutral. Retarget to Sono.",
+          "fix": {
+            "lemma": "essere",
+            "form": "Sono"
+          }
+        },
+        {
+          "id": "it-places-12",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"È ___?\" with cue aperto accepts aperto and aperta (the note gives È aperta? for la farmacia); \"Is it open?\" does not fix the gender of \"it\". Drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "it-places-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"È ___.\" with cue chiuso accepts chiuso and chiusa (the note gives È chiusa); \"It's closed\" does not fix the gender. Drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "it-places-07",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "\"È ___?\" with cue lontano: lontana is equally correct when the referent is feminine (\"La stazione è lontana?\"), and \"Is it far?\" does not fix the gender of \"it\"; same issue as aperto/chiuso. Drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "it-feelings-11",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "\"Mi ___.\" with cue mancare: English \"I miss you\" can be plural, so mancate is also defensible for en learners. The other translations are singular.",
+          "fix": {}
+        },
+        {
+          "id": "it-polite-08",
+          "severity": "doubt",
+          "field": "note",
+          "problem": "The note overstates a rule: \"Sì, per favore\" is also used in Italian. Sì, grazie is just the more usual reply.",
+          "fix": {
+            "note": "Italians usually accept an offer with grazie rather than per favore."
+          }
+        }
+      ],
+      "cloze": {
+        "checked": 121,
+        "defensible": 106
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "es": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "en": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "The Italian text, notes and all six translations are good: idiomatic A1 chunks, correct elisions and accents, registers and feminine variants noted properly, fa with ی/ک and ZWNJ, MSA with correct hamza. The weak spot is the cloze targets. 15 cards blank an inflected word whose tu/Lei or masculine/feminine alternative (often the very one the note gives) is equally valid for a translation that does not mark register or gender. Retargeting to a unique word fixes most of them. Clozes whose cue equals the answer (piano, dopo, favore) are not ambiguous under the cue rule."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "it-greetings-09",
+          "status": "clean"
+        },
+        {
+          "id": "it-questions-05",
+          "status": "clean"
+        },
+        {
+          "id": "it-questions-06",
+          "status": "clean"
+        },
+        {
+          "id": "it-needs-06",
+          "status": "clean"
+        },
+        {
+          "id": "it-questions-13",
+          "status": "clean"
+        },
+        {
+          "id": "it-needs-09",
+          "status": "clean"
+        },
+        {
+          "id": "it-food-06",
+          "status": "clean"
+        },
+        {
+          "id": "it-food-09",
+          "status": "clean"
+        },
+        {
+          "id": "it-food-15",
+          "status": "clean"
+        },
+        {
+          "id": "it-work-03",
+          "status": "clean"
+        },
+        {
+          "id": "it-feelings-02",
+          "status": "clean"
+        },
+        {
+          "id": "it-feelings-10",
+          "status": "clean"
+        },
+        {
+          "id": "it-places-12",
+          "status": "clean"
+        },
+        {
+          "id": "it-places-15",
+          "status": "clean"
+        },
+        {
+          "id": "it-places-07",
+          "status": "clean"
+        },
+        {
+          "id": "it-feelings-11",
+          "status": "clean"
+        },
+        {
+          "id": "it-polite-08",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "it-questions-08",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "Quello is \"that\" (es ese, en that), but \"من هذا؟\" means \"who is this?\". MSA distinguishes the two.",
+          "fix": {
+            "translations.ar": "من ذلك؟"
+          }
+        },
+        {
+          "id": "it-food-13",
+          "severity": "error",
+          "field": "translations.fa",
+          "problem": "\"برای بردن\" is a calque of \"to take away\". The everyday Persian takeaway word is بیرون‌بر.",
+          "fix": {
+            "translations.fa": "بیرون‌بر، لطفاً."
+          }
+        },
+        {
+          "id": "it-travel-11",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "\"Tôi đến đây để đi nghỉ\" is awkward (\"came here in order to go resting\"). Natural Vietnamese for being here on holiday is \"đến đây du lịch\".",
+          "fix": {
+            "translations.vi": "Tôi đến đây du lịch."
+          }
+        },
+        {
+          "id": "it-travel-14",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "\"Cho tôi dừng ở đây\" (\"let me stop here\") misframes the request. A passenger tells a taxi driver \"Cho tôi xuống ở đây\" (\"let me off here\").",
+          "fix": {
+            "translations.vi": "Cho tôi xuống ở đây."
+          }
+        },
+        {
+          "id": "it-places-06",
+          "severity": "error",
+          "field": "translations.tr",
+          "problem": "The bare fragment \"Dümdüz ileri.\" sounds like a marching command. Directions in Turkish use a verb: \"Dümdüz gidin.\"",
+          "fix": {
+            "translations.tr": "Dümdüz gidin."
+          }
+        },
+        {
+          "id": "it-greetings-08",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Hẹn gặp lại ngày mai!\" (no \"vào\") reads as a calque. The everyday informal phrase is \"Mai gặp lại nhé!\"",
+          "fix": {
+            "translations.vi": "Mai gặp lại nhé!"
+          }
+        },
+        {
+          "id": "it-feelings-04",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Tôi thích nó.\" is translationese: \"nó\" for an object is stilted. Natives say \"Tôi thích cái này.\" or just \"Thích lắm.\"",
+          "fix": {
+            "translations.vi": "Tôi thích cái này."
+          }
+        },
+        {
+          "id": "it-feelings-05",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Tôi không thích nó.\" has the same stilted \"nó\" as feelings-04.",
+          "fix": {
+            "translations.vi": "Tôi không thích cái này."
+          }
+        },
+        {
+          "id": "it-places-02",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Nó ở đây.\" is grammatical but stiff. \"Ở đây này.\" is the natural reply.",
+          "fix": {
+            "translations.vi": "Ở đây này."
+          }
+        },
+        {
+          "id": "it-feelings-12",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "\"مبروك\" is universal but colloquial-leaning. Strict MSA prefers \"تهانينا!\".",
+          "fix": {
+            "translations.ar": "تهانينا!"
+          }
+        },
+        {
+          "id": "it-polite-05",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "\"المعذرة\" leans towards an apology. To get attention or pass by, \"عذرًا\" (or \"لو سمحت\") fits Mi scusi better.",
+          "fix": {
+            "translations.ar": "عذرًا."
+          }
+        },
+        {
+          "id": "it-questions-14",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "\"أيّ واحد؟\" is grammatical but mirrors the colloquial. \"أيّها؟\" is the more idiomatic MSA.",
+          "fix": {
+            "translations.ar": "أيّها؟"
+          }
+        },
+        {
+          "id": "it-time-12",
+          "severity": "doubt",
+          "field": "note",
+          "problem": "\"For late at night: stanotte\" is unclear. Stanotte means the night just past (or tonight), not a time of day.",
+          "fix": {
+            "note": "For the night just past (after midnight): stanotte."
+          }
+        }
+      ],
+      "finalCleanItems": 136,
+      "doubtful": [
+        "it-feelings-11",
+        "it-greetings-08",
+        "it-feelings-04",
+        "it-feelings-05",
+        "it-places-02",
+        "it-feelings-12",
+        "it-polite-05",
+        "it-questions-14",
+        "it-time-12"
+      ]
+    },
+    {
+      "round": "round3-recheck",
+      "recheck": [
+        {
+          "id": "it-questions-08",
+          "status": "clean"
+        },
+        {
+          "id": "it-food-13",
+          "status": "clean"
+        },
+        {
+          "id": "it-travel-11",
+          "status": "clean"
+        },
+        {
+          "id": "it-travel-14",
+          "status": "clean"
+        },
+        {
+          "id": "it-places-06",
+          "status": "clean"
+        },
+        {
+          "id": "it-greetings-08",
+          "status": "clean"
+        },
+        {
+          "id": "it-feelings-04",
+          "status": "clean"
+        },
+        {
+          "id": "it-feelings-05",
+          "status": "clean"
+        },
+        {
+          "id": "it-places-02",
+          "status": "clean"
+        },
+        {
+          "id": "it-feelings-12",
+          "status": "clean"
+        },
+        {
+          "id": "it-polite-05",
+          "status": "clean"
+        },
+        {
+          "id": "it-questions-14",
+          "status": "clean"
+        },
+        {
+          "id": "it-time-12",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [],
+      "finalCleanItems": 149,
+      "doubtful": [
+        "it-feelings-11"
+      ]
+    }
+  ],
+  "leadFixes": [],
+  "crossPackFixes": [
+    {
+      "id": "it-work-10",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "it-needs-15",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Tôi đang tìm điện thoại."
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  }
+}

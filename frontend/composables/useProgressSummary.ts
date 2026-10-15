@@ -1,4 +1,5 @@
 import { functionProvider } from '@modular-rest/client';
+import { withLanguage } from '~/utils/languageScope';
 import { COLLECTIONS, DATABASE } from '~/types/database.type';
 import { FN, type UserStatisticType } from '~/types/function.type';
 
@@ -80,13 +81,13 @@ export function useProgressSummary() {
                 }),
                 functionProvider.run<Array<[string, number]>>({
                     name: 'generateChartDataForInsertionRatio',
-                    args: {
+                    args: withLanguage({
                         database: DATABASE.USER_CONTENT,
                         collection: COLLECTIONS.PHRASE,
                         userId: authUser.value?.id,
                         // The RPC returns days + 1 points (inclusive of both ends).
                         days: WINDOW - 1,
-                    },
+                    }),
                 }),
             ]);
 
