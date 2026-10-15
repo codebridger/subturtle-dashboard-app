@@ -28,6 +28,12 @@ import {
 } from "../../config";
 import { DEFAULT_LANGUAGE, LangCode, languageFilter, toCode, toTitle } from "../../languages/helper";
 import { getLearningLanguage, getOwnLanguage } from "../../languages/registry";
+import {
+  DEFAULT_NEW_PHRASES_PER_DAY,
+  DEFAULT_POOL_AGE_CUTOFF_DAYS,
+  DEFAULT_POOL_CHUNK_SIZE,
+  positive,
+} from "../../languages/language-settings";
 import { normaliseSourceUrl } from "../translation/url-normalise";
 import { isUserOnFreemium, updateFreemiumAllocation } from "../subscription/service";
 import { LeitnerService } from "../leitner_box/service";
@@ -89,6 +95,10 @@ export interface LanguageSummary {
   dueCount: number;
   phraseCount: number;
   explanationLanguage: LangCode;
+  newPhrasesPerDay: number;
+  poolChunkSize: number;
+  poolAgeCutoffDays: number;
+  goals: string[];
   starterPack: { state: StarterPackState; heard: number; total: number };
   purgeAt?: string;
 }
@@ -186,7 +196,7 @@ export class LanguageService {
 
     const visible = languages.filter((lp) => lp.status !== "purging");
     const own = toCode(profile.translationLanguage) ?? null;
-    const summaries = await Promise.all(visible.map((lp) => this.summarise(userId, lp, own)));
+    const summaries = await Promise.all(visible.map((lp) => this.summarise(userId, lp, own, profile)));
 
     return {
       translationLanguage: own,
@@ -199,7 +209,7 @@ export class LanguageService {
     };
   }
 
-  private static async summarise(userId: string, lp: LanguageProfile, own: LangCode | null): Promise<LanguageSummary> {
+  private static async summarise(userId: string, lp: LanguageProfile, own: LangCode | null, profile: any): Promise<LanguageSummary> {
     const [dueCount, phraseCount] = await Promise.all([this.dueCount(userId, lp.language), this.phraseCount(userId, lp.language)]);
     return {
       code: lp.language,
@@ -209,6 +219,12 @@ export class LanguageService {
       dueCount,
       phraseCount,
       explanationLanguage: toCode(lp.explanationLanguage) ?? own ?? DEFAULT_LANGUAGE,
+      // The values in effect: the language's own, else (Pool) the profile's from before
+      // they moved per language, else the defaults, as languages/language-settings.ts reads them.
+      newPhrasesPerDay: positive(lp.newPhrasesPerDay) ?? DEFAULT_NEW_PHRASES_PER_DAY,
+      poolChunkSize: positive(lp.poolChunkSize) ?? positive(profile?.poolChunkSize) ?? DEFAULT_POOL_CHUNK_SIZE,
+      poolAgeCutoffDays: positive(lp.poolAgeCutoffDays) ?? positive(profile?.poolAgeCutoffDays) ?? DEFAULT_POOL_AGE_CUTOFF_DAYS,
+      goals: Array.isArray(lp.goals) ? lp.goals : [],
       starterPack: {
         state: lp.starterPack?.state ?? "none",
         heard: lp.starterPack?.heard?.length ?? 0,

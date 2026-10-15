@@ -442,6 +442,18 @@ describe("settings, own language and interest (B-05, B-06)", () => {
     await expectError(LanguageService.updateLanguageSettings(userId, { language: "fr", poolChunkSize: 5 }), "not_found");
   });
 
+  it("reports each language's settings in the state, with defaults", async () => {
+    const userId = await newAccount();
+    await subscribe(userId, "reader");
+    await Profiles.updateOne({ refId: userId }, { $set: { poolChunkSize: 15 } }); // set before settings moved per language
+    await LanguageService.addLanguage(userId, { language: "de", goals: ["Travel"] });
+    await LanguageService.addLanguage(userId, { language: "fr" });
+    const { state } = await LanguageService.updateLanguageSettings(userId, { language: "fr", newPhrasesPerDay: 8, poolChunkSize: 6, poolAgeCutoffDays: 3 });
+
+    expect(state.languages.find((l) => l.code === "de")).toMatchObject({ newPhrasesPerDay: 20, poolChunkSize: 15, poolAgeCutoffDays: 7, goals: ["Travel"] });
+    expect(state.languages.find((l) => l.code === "fr")).toMatchObject({ newPhrasesPerDay: 8, poolChunkSize: 6, poolAgeCutoffDays: 3, goals: [] });
+  });
+
   it("sets the own language from any code or name in the own list", async () => {
     const userId = await newAccount();
     expect((await LanguageService.setTranslationLanguage(userId, "vi")).state.translationLanguage).toBe("vi");
