@@ -57,7 +57,7 @@ Write question ${index} of ${TOTAL_QUESTIONS}.
 - Start very easy and step up: question 1 to 2 at A1 (name, where they live, family), 3 at A2 (daily life, likes), 4 at A2 to B1 (the past: last weekend, a trip), 5 at B1 (plans and reasons), 6 at B2 (an opinion with reasons, or "what would you do if ...").
 - If the last answer was empty, very short, or not in ${learning}, do not step up: ask an easier question instead.
 - Keep it under 25 words. No lists, no emojis, no translations inside "ai".
-- "help": the question in ${own}, in plain words, plus at most one short tip in ${own} on how to answer. Under 30 words.`;
+- "help": written in ${own} only, never in ${learning}: the question in plain words, plus at most one short tip on how to answer in ${learning}. Under 30 words.`;
 }
 
 export function gradePrompt(language: string): string {
@@ -66,7 +66,7 @@ export function gradePrompt(language: string): string {
 - Judge only the learner's own answers in ${learning}: range of words, grammar (past and future forms, linking words, subordinate clauses), and how much they could say.
 - Empty answers, answers in another language, or answers that only copy the question are no evidence.
 - Be conservative: when unsure between two levels, choose the lower one. A1 if there is little or no evidence.
-- "reason": one plain English sentence of at most 20 words about what the answers showed. Kind, specific, no jargon, no level names.`;
+- "reason": one plain English sentence of at most 20 words, written to the learner as "you", about what your answers showed. Kind and specific. No grammar terms (say "you talked about the past", not "past tense"), no level names.`;
 }
 
 const QUESTION_SCHEMA = {
