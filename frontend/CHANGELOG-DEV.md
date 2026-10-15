@@ -1,3 +1,15 @@
+# [1.3.0-dev.24](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.23...v1.3.0-dev.24) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** write the Pool settings to the language's profile from update-settings (B-11) ([f5757f7](https://github.com/codebridger/subturtle-dashboard-app/commit/f5757f7362ea89710c7c8c35729ef6b95fe8c2bc))
+
+
+### Features
+
+* **server:** review log, and backfill and index scripts with dry run by default (B-27, B-30) ([9e08de2](https://github.com/codebridger/subturtle-dashboard-app/commit/9e08de2e15a1c64e9b5dad6cfecf957470b680ff))
+
 # [1.3.0-dev.23](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.22...v1.3.0-dev.23) (2026-10-15)
 
 
