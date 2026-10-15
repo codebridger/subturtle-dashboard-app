@@ -85,7 +85,7 @@ class _BundlesScreenState extends ConsumerState<BundlesScreen> {
           SliverToBoxAdapter(
             child: AsyncBody<List<Bundle>>(
               value: bundles,
-              onRetry: () => ref.invalidate(bundlesProvider),
+              onRetry: () => retryScoped(ref, bundlesProvider),
               errorTitle: "We couldn't load your bundles.",
               loading: const SkeletonList(),
               data: (list) {
@@ -238,17 +238,9 @@ class _BundleSearchScreenState extends ConsumerState<BundleSearchScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (t != _token) return;
     try {
-      final api = ref.read(apiProvider);
-      final docs = await api.data.find(
-        database: Db.userContent,
-        collection: Db.phrase,
-        query: {
-          'refId': api.auth.user!.id,
-          'phrase': {r'$regex': RegExp.escape(q.trim()), r'$options': 'i'},
-        },
-        options: {'limit': 30},
-      );
-      if (t == _token) setState(() => _phrases = docs.map(Phrase.fromJson).toList());
+      final lang = ref.read(activeLanguageProvider).value;
+      final found = await ref.read(apiProvider).bundles.searchPhrases(q, language: lang);
+      if (t == _token) setState(() => _phrases = found);
     } catch (_) {
       if (t == _token) setState(() => _phrases = []);
     } finally {

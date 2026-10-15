@@ -14,10 +14,16 @@ import '../coach/start_session_sheet.dart';
 
 /// Everything Today needs, loaded together.
 class TodayData {
-  const TodayData({required this.board, required this.pool, required this.bundles});
+  const TodayData({required this.board, required this.pool, required this.bundles, this.language = 'en', this.newLanguage = false});
   final List<BoardActivity> board;
   final List<PoolItem> pool;
   final List<Bundle> bundles;
+
+  /// The language this board is for.
+  final String language;
+
+  /// The server says the language has no phrases yet (2.0).
+  final bool newLanguage;
 
   BoardActivity? get review => board.where((a) => a.type == BoardActivity.leitnerReview && a.dueCount > 0).firstOrNull;
   int get dueCount => review?.dueCount ?? 0;
@@ -25,9 +31,11 @@ class TodayData {
 }
 
 final todayProvider = FutureProvider<TodayData>((ref) async {
+  final lang = await ref.watch(activeLanguageProvider.future);
   final api = ref.read(apiProvider);
-  final results = await Future.wait([api.board.getBoard(), api.board.getPool(), api.bundles.listBundles()]);
-  return TodayData(board: results[0] as List<BoardActivity>, pool: results[1] as List<PoolItem>, bundles: results[2] as List<Bundle>);
+  final results = await Future.wait([api.board.getBoardSnapshot(language: lang), api.board.getPool(language: lang), api.bundles.listBundles(language: lang)]);
+  final board = results[0] as BoardSnapshot;
+  return TodayData(board: board.activities, pool: results[1] as List<PoolItem>, bundles: results[2] as List<Bundle>, language: lang, newLanguage: board.newLanguage);
 });
 
 /// The Today tab shows a dot when the board has a card the user has not seen.
@@ -63,6 +71,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Future<void> _refresh() async {
+    if (ref.read(languageStateProvider).hasError) ref.invalidate(languageStateProvider);
     ref.invalidate(todayProvider);
     ref.invalidate(subscriptionProvider);
     await ref.read(todayProvider.future).catchError((_) => const TodayData(board: [], pool: [], bundles: []));
@@ -101,7 +110,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: AsyncBody<TodayData>(
               value: today,
-              onRetry: () => ref.invalidate(todayProvider),
+              onRetry: () => retryScoped(ref, todayProvider),
               errorTitle: "We couldn't load your board.",
               loading: const _TodaySkeleton(),
               data: (d) => _Board(data: d, sub: sub),
