@@ -29,6 +29,11 @@ export interface LearningLanguageCaps {
   nativeName: string;
   rtl: boolean;
   ttsVoice: string;
+  /**
+   * A non-HD Google Cloud TTS voice for `textToSpeechBase64`, which refuses HD voices
+   * (Chirp3-HD costs more per character). `ttsVoice` stays for the one-time starter pack audio.
+   */
+  speechVoice: string;
   enabled: boolean;
   features: LanguageFeatures;
 }
@@ -45,6 +50,11 @@ export interface OwnLanguage {
 interface LearningEntry {
   code: LangCode;
   ttsVoice: string;
+  /**
+   * A non-HD Google Cloud TTS voice for `textToSpeechBase64`, which refuses HD voices
+   * (Chirp3-HD costs more per character). `ttsVoice` stays for the one-time starter pack audio.
+   */
+  speechVoice: string;
   enabled: boolean;
   features: LanguageFeatures;
 }
@@ -57,42 +67,49 @@ const LEARNING: LearningEntry[] = [
   {
     code: "en",
     ttsVoice: "en-US-Chirp3-HD-Kore",
+    speechVoice: "en-US-Standard-A",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "es",
     ttsVoice: "es-ES-Chirp3-HD-Kore",
+    speechVoice: "es-ES-Neural2-A",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "de",
     ttsVoice: "de-DE-Chirp3-HD-Kore",
+    speechVoice: "de-DE-Neural2-G",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "fr",
     ttsVoice: "fr-FR-Chirp3-HD-Kore",
+    speechVoice: "fr-FR-Neural2-F",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "it",
     ttsVoice: "it-IT-Chirp3-HD-Kore",
+    speechVoice: "it-IT-Neural2-A",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "sv",
     ttsVoice: "sv-SE-Chirp3-HD-Kore",
+    speechVoice: "sv-SE-Wavenet-A",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "lt",
     ttsVoice: "lt-LT-Chirp3-HD-Kore",
+    speechVoice: "lt-LT-Standard-B",
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
@@ -122,6 +139,7 @@ export function getLearningLanguages(): LearningLanguageCaps[] {
     nativeName: toNativeName(entry.code),
     rtl: isRtl(entry.code),
     ttsVoice: entry.ttsVoice,
+    speechVoice: entry.speechVoice,
     enabled: override ? override.has(entry.code) : entry.enabled,
     features: { ...entry.features },
   }));
