@@ -82,7 +82,27 @@ const currentIndex = ref(0);
 const flashCardRef = ref(null);
 
 const currentItem = computed(() => props.items[currentIndex.value]);
-const currentPhrase = computed(() => currentItem.value?.phrase as PhraseType);
+/**
+ * The phrase, with the review item's cloze cue (contract section 3: items carry
+ * `cue: { lemma, form }` and `acceptedAnswers`) copied onto its primary chunk when the chunk
+ * itself has none, so the card shows the cue the server will check against.
+ */
+const currentPhrase = computed(() => {
+	const item = currentItem.value as any;
+	const phrase = item?.phrase as PhraseType | undefined;
+	const cue = item?.cue ?? item?._doc?.cue;
+	const accepted = item?.acceptedAnswers ?? item?._doc?.acceptedAnswers;
+	const chunks = (phrase as any)?.chunks as any[] | undefined;
+	if (!phrase || (!cue && !accepted) || !chunks?.length) return phrase as PhraseType;
+	// By index, not identity: a reactive array's reduce and map can hand back different wrappers.
+	const primary = chunks.reduce((best, c, i) => ((c?.confidence ?? 0) > (chunks[best]?.confidence ?? 0) ? i : best), 0);
+	const enriched = chunks.map((c, i) =>
+		i === primary
+			? { ...c, lemma: c.lemma ?? cue?.lemma, form: c.form ?? (cue?.form || undefined), acceptedAnswers: c.acceptedAnswers ?? accepted }
+			: c
+	);
+	return { ...phrase, chunks: enriched } as PhraseType;
+});
 const totalItems = computed(() => props.items.length);
 
 // Leitner level drives the L3+ cloze. get-review-session returns raw Mongoose docs, so schema fields
