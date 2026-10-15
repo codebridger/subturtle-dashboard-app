@@ -62,4 +62,31 @@ describe('ClozeCard', () => {
         expect(w.text()).toContain('the meaning');
         expect(w.findAll('input')).toHaveLength(0); // no inputs on the back
     });
+
+    it('shows the cue and calls the right word with a wrong ending "Almost" (D-14)', async () => {
+        const w = mount(ClozeCard, {
+            props: {
+                context: 'Wir sind gestern gegangen.',
+                chunks: [{ text: 'gegangen', type: 'other', confidence: 0.9, lemma: 'gehen', form: 'past participle' } as any],
+                direction: { source: 'ltr' as const, target: 'ltr' as const },
+                language: 'de',
+                isFlipped: false,
+            },
+        });
+        expect(w.find('[data-testid="cloze-cue"]').text()).toBe('gehen · past participle');
+
+        await w.find('input').setValue('gegangene');
+        await checkButton(w).trigger('click');
+
+        expect(w.find('input').classes()).toContain('border-amber-500');
+        expect(w.find('[data-testid="cloze-status"]').text()).toContain('Almost');
+        expect(w.emitted('result')?.at(-1)).toEqual(['close']);
+    });
+
+    it('keeps the sentence in its own left-to-right run', () => {
+        const w = mount(ClozeCard, { props: { ...props, language: 'en', isFlipped: false } });
+        const p = w.find('p');
+        expect(p.attributes('dir')).toBe('ltr');
+        expect(p.attributes('lang')).toBe('en');
+    });
 });

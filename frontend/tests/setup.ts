@@ -1,6 +1,10 @@
 import { vi } from 'vitest';
 import { config } from '@vue/test-utils';
 
+// Nuxt's auto-imported plugin helper: modules that are both a plugin and a helper library
+// (plugins/mixpanel.ts, reached through the language store) load in tests without Nuxt.
+(globalThis as any).defineNuxtPlugin ??= (setup: unknown) => setup;
+
 // Global test setup
 beforeEach(() => {
     // Reset all mocks before each test
