@@ -50,15 +50,15 @@ interface LearningEntry {
 }
 
 // The launch set (Council 008, Q15). The knowledge map is the next round, so `map` is off.
-// `starterPack` follows the authored packs (B-21: es, de, fr, it); a language without a
-// pack starts on "Save your first phrase". Voices are Google Cloud TTS Chirp 3 HD, the only
+// `starterPack` follows the authored packs: all seven launch languages have one (C-01,
+// AI-reviewed; teacher review later). LANGUAGES_ENABLED stays the production gate. Voices are Google Cloud TTS Chirp 3 HD, the only
 // high-quality family with a Lithuanian voice (B-20).
 const LEARNING: LearningEntry[] = [
   {
     code: "en",
     ttsVoice: "en-US-Chirp3-HD-Kore",
     enabled: true,
-    features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: false, map: false },
+    features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "es",
@@ -88,13 +88,13 @@ const LEARNING: LearningEntry[] = [
     code: "sv",
     ttsVoice: "sv-SE-Chirp3-HD-Kore",
     enabled: true,
-    features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: false, map: false },
+    features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
   {
     code: "lt",
     ttsVoice: "lt-LT-Chirp3-HD-Kore",
     enabled: true,
-    features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: false, map: false },
+    features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
 ];
 
