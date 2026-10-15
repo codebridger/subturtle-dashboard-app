@@ -101,6 +101,24 @@ void main() {
       expect(server.calls.first.url.queryParameters['access_token'], 'ya29.abc');
     });
 
+    test('apple sign in posts the identity token and the first-time name', () async {
+      final server = FakeServer();
+      server.onPath('/auth/apple/identity-token-login', (c) => FakeServer.json({'status': 'success', 'token': fakeJwt('a1')}));
+      server.onPath('/verify/token', (c) => FakeServer.json({'status': 'success', 'user': {'id': 'a1', 'type': 'user'}}));
+      final api = SubturtleApi(baseUrl: base, httpClient: server.client);
+      final user = await api.auth.signInWithAppleIdentityToken('eyJ.apple.jwt', fullName: ' Sara Ahmadi ');
+      expect(user.id, 'a1');
+      expect(server.calls.first.method, 'POST');
+      expect(server.calls.first.body, {'identityToken': 'eyJ.apple.jwt', 'fullName': 'Sara Ahmadi'});
+    });
+
+    test('delete account calls delete-account with the user id', () async {
+      final (api, server) = await signedIn(id: 'me');
+      server.onFunction('delete-account', {'deleted': true});
+      await api.profile.deleteAccount();
+      expect(server.last('delete-account').args, {'userId': 'me'});
+    });
+
     test('a rejected saved token signs out', () async {
       final server = FakeServer();
       server.onPath('/verify/token', (c) => FakeServer.json({'status': 'error', 'e': 'invalid'}, status: 412));

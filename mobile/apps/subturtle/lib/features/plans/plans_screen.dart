@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
@@ -34,7 +35,10 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
     final plans = ref.watch(plansProvider);
     final hasYearly = plans.value?.any((p) => p.annualGbp != null) ?? false;
     // Local prices, like the web (Stripe Adaptive Pricing); GBP until known or for paid users.
-    final local = ref.watch(localPricingProvider);
+    // Store builds show only the current plan: no prices, plan list or web links
+    // (and no price probe, which opens a Stripe checkout session).
+    final links = AppConfig.purchaseLinks;
+    final local = links ? ref.watch(localPricingProvider) : const AsyncValue<LocalPricing?>.data(null);
     return Scaffold(
       body: Column(
         children: [
@@ -67,6 +71,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                     loading: const StSkeleton(height: 180),
                     data: (s) => _CurrentPlan(sub: s, plan: plans.value?.where((p) => p.id == s.tier).firstOrNull, onManage: _manage),
                   ),
+                  if (links) ...[
                   const SizedBox(height: 20),
                   const StEyebrow.section('All plans'),
                   const SizedBox(height: 10),
@@ -101,10 +106,12 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                       ],
                     ),
                   ),
+                  ],
                 ],
               ),
             ),
           ),
+          if (links)
           Container(
             decoration: BoxDecoration(color: c.surfaceCard, border: Border(top: BorderSide(color: c.borderSubtle))),
             padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + MediaQuery.paddingOf(context).bottom),

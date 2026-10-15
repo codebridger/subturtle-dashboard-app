@@ -114,6 +114,16 @@ class AuthService {
     return signInWithToken(_tokenOf(body));
   }
 
+  /// Sign in with Apple: sends Apple's identity token (a JWT the server checks
+  /// against Apple's keys). [fullName] is only given by Apple the first time.
+  Future<AuthUser> signInWithAppleIdentityToken(String identityToken, {String? fullName}) async {
+    final body = await _client.post('/auth/apple/identity-token-login', {
+      'identityToken': identityToken,
+      if (fullName != null && fullName.trim().isNotEmpty) 'fullName': fullName.trim(),
+    });
+    return signInWithToken(_tokenOf(body));
+  }
+
   /// Step 1 of a new account: ask the server to create a code for [email].
   Future<void> registerEmail(String email) => _client.post('/user/register_id', {'idType': 'email', 'id': email.trim()});
 

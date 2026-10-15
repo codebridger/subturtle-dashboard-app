@@ -417,7 +417,7 @@ class _PlanCard extends StatelessWidget {
         iconColor: StBadgeColor.primary,
         title: '$used of $total saves used',
         subtitle: 'Starter saves up to $total phrases a month',
-        action: StButton(label: 'See plans', variant: StButtonVariant.soft, size: StSize.sm, onPressed: () => context.go('/me/plan')),
+        action: AppConfig.purchaseLinks ? StButton(label: 'See plans', variant: StButtonVariant.soft, size: StSize.sm, onPressed: () => context.go('/me/plan')) : const SizedBox.shrink(),
       );
 }
 

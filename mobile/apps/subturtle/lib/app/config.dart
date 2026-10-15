@@ -51,6 +51,13 @@ abstract final class AppConfig {
   /// on the dev server yet, so the app translates itself and keeps chats on the phone.
   static const saveAssistantBackend = bool.fromEnvironment('SAVE_ASSISTANT_BACKEND', defaultValue: false);
 
+  /// Links and buttons that lead to buying a plan or minutes (plan list,
+  /// "Manage on the web", "See plans", "Get more minutes"). Off for store
+  /// builds: App Store 3.1.1 and Google Play billing rules forbid steering
+  /// users to an outside purchase. Limit messages still say what happened.
+  /// Not const so tests can switch it on.
+  static bool purchaseLinks = const bool.fromEnvironment('PURCHASE_LINKS', defaultValue: false);
+
   static const termsUrl = 'https://subturtle.app/terms';
   static const privacyUrl = 'https://subturtle.app/privacy';
   static const contactEmail = 'mailto:info@codebridger.co.uk';

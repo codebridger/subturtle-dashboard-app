@@ -251,6 +251,10 @@ class ProfileRepository extends _Repo {
     return doc == null ? null : Profile.fromJson(doc);
   }
 
+  /// Deletes the account and everything in it (phrases, bundles, reviews,
+  /// sessions, profile), and cancels a paid plan. Cannot be undone.
+  Future<void> deleteAccount() => fn.run('delete-account', {'userId': uid});
+
   Future<void> updateName(String name) => data.updateOne(database: Db.userContent, collection: Db.profile, query: {'refId': uid}, update: {'name': name.trim()});
 }
 

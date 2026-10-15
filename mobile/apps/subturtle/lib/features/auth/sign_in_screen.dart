@@ -2,10 +2,12 @@ import 'dart:io' show Platform;
 import 'dart:math';
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 import 'package:subturtle_ui/subturtle_ui.dart';
 
@@ -18,8 +20,8 @@ enum _Step { start, email, signUpEmail, signUpCode, signUpPassword }
 /// S1 · Sign in, on the web dashboard login's pattern: a blurred, tilted
 /// preview of Today behind, and a bottom panel with the sign-in buttons.
 ///
-/// Sign in with Apple is shown, but the backend has no Apple route yet
-/// (README, "Needs backend work"), so the button says it is coming soon.
+/// Sign in with Apple is offered on iOS (App Store rule 4.8: an app with
+/// Google sign-in must offer it too). Android keeps Google and email.
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
 
@@ -63,6 +65,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         TextInput.finishAutofillContext();
         await ref.read(authProvider.notifier).signedIn(user);
       }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      debugPrint('Apple sign-in failed: ${e.code.name}: ${e.message}');
+      setState(() => _error = e.code == AuthorizationErrorCode.canceled
+          ? 'The sign-in window closed before you finished. Try once more.'
+          : "We couldn't sign you in with Apple. Please try again.");
     } on GoogleSignInException catch (e) {
       // The screen stays kind; the log says what really failed.
       debugPrint('Google sign-in failed: ${e.code.name}: ${e.description} ${e.details ?? ''}');
@@ -113,15 +120,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     return _api.auth.signInWithGoogleAccessToken(auth.accessToken);
   }
 
-  void _apple() {
-    ref.read(hapticsProvider).light();
-    showStToast(
-      context,
-      title: 'Sign in with Apple is coming soon',
-      description: 'For now, continue with Google or email.',
-      color: StToastColor.info,
-    );
+  /// Apple's sheet, then our server checks the identity token. Apple gives the
+  /// name only on the first sign-in, so it is passed along when present.
+  Future<AuthUser?> _apple() async {
+    final cred = await SignInWithApple.getAppleIDCredential(scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName]);
+    final token = cred.identityToken;
+    if (token == null || token.isEmpty) throw ApiException("Apple didn't send a sign-in token.");
+    final name = [cred.givenName, cred.familyName].whereType<String>().where((p) => p.trim().isNotEmpty).join(' ');
+    if (mounted) setState(() => _returning = true);
+    return _api.auth.signInWithAppleIdentityToken(token, fullName: name);
   }
+
+  /// Sign in with Apple is iOS only here (Android would need Apple's web flow).
+  bool get _offerApple => defaultTargetPlatform == TargetPlatform.iOS;
 
   bool _validEmail(String s) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s.trim());
 
@@ -232,14 +243,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 loading: _busy == 'google',
                 onPressed: disabled ? null : () => _run('google', _google),
               ),
-            const SizedBox(height: 10),
-            _BigButton(
-              label: 'Continue with Apple',
-              background: c.surfaceInverse,
-              foreground: c.paper,
-              leading: StIcon(StIcons.apple, size: 20, color: c.paper),
-              onPressed: disabled ? null : _apple,
-            ),
+            if (_offerApple) ...[
+              const SizedBox(height: 10),
+              _BigButton(
+                label: 'Continue with Apple',
+                background: c.surfaceInverse,
+                foreground: c.paper,
+                leading: StIcon(StIcons.apple, size: 20, color: c.paper),
+                loading: _busy == 'apple',
+                onPressed: disabled ? null : () => _run('apple', _apple),
+              ),
+            ],
             const SizedBox(height: 10),
             _BigButton(
               label: 'Continue with email',
