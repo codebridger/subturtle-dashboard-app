@@ -6,6 +6,7 @@ import {
 } from "./service";
 import { TranslateWithContextParams, TranslationAdviceParams } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
+import { synthesizeSpeech } from "./tts";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -115,44 +116,8 @@ const textToSpeech = defineFunction({
     }
 
     try {
-      const client = new TextToSpeechClient({
-        apiKey: process.env.GCP_API_KEY,
-      });
-
-      const request = {
-        input: { text },
-        voice: {
-          languageCode,
-          name: voiceName,
-        },
-        audioConfig: {
-          audioEncoding: "MP3",
-          speakingRate,
-        },
-      };
-
-      const [response] = await client.synthesizeSpeech(request as any);
-
-      if (!response.audioContent) {
-        throw new Error("No audio content returned from TTS");
-      }
-
-      // Convert the audio content to base64 from (Uint8Array|string|null)
-      let audioContentBase64: string;
-
-      if (response.audioContent instanceof Uint8Array) {
-        audioContentBase64 = Buffer.from(response.audioContent).toString(
-          "base64"
-        );
-      } else if (typeof response.audioContent === "string") {
-        audioContentBase64 = Buffer.from(
-          response.audioContent,
-          "binary"
-        ).toString("base64");
-      } else {
-        throw new Error("Invalid audio content format");
-      }
-
+      const audio = await synthesizeSpeech({ text, languageCode, voiceName, speakingRate });
+      const audioContentBase64 = audio.toString("base64");
       return `data:audio/mp3;base64,${audioContentBase64}`;
     } catch (error: unknown) {
       console.error("Text-to-speech error:", error);
