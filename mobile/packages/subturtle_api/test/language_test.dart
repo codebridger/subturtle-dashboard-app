@@ -9,7 +9,7 @@ Map<String, dynamic> stateJson({String? active = 'de', String plan = 'reader', i
       'learningLanguage': active,
       'languages': [
         {'code': 'en', 'status': 'active', 'startLevel': 'B1', 'startLevelSource': 'test', 'dueCount': 12, 'phraseCount': 142, 'explanationLanguage': 'fa', 'starterPack': {'state': 'none', 'heard': 0, 'total': 0}},
-        {'code': 'de', 'status': 'active', 'startLevel': 'A1', 'startLevelSource': 'default', 'dueCount': 7, 'phraseCount': 38, 'explanationLanguage': 'fa', 'starterPack': {'state': 'in_progress', 'heard': 12, 'total': 150}},
+        {'code': 'de', 'status': 'active', 'startLevel': 'A1', 'startLevelSource': 'default', 'dueCount': 7, 'phraseCount': 38, 'explanationLanguage': 'fa', 'starterPack': {'state': 'in_progress', 'heard': 12, 'total': 150}, 'newPhrasesPerDay': 20, 'poolChunkSize': 10, 'poolAgeCutoffDays': 14, 'goals': ['watch']},
         {'code': 'it', 'status': 'paused', 'startLevel': 'A1', 'startLevelSource': 'default', 'dueCount': 0, 'phraseCount': 3, 'explanationLanguage': 'fa', 'starterPack': {'state': 'none', 'heard': 0, 'total': 0}},
         {'code': 'fr', 'status': 'removed', 'startLevel': 'A1', 'startLevelSource': 'default', 'dueCount': 0, 'phraseCount': 5, 'explanationLanguage': 'fa', 'purgeAt': '2026-11-15T00:00:00.000Z', 'starterPack': {'state': 'none', 'heard': 0, 'total': 0}},
         {'code': 'sv', 'status': 'purging', 'startLevel': 'A1', 'startLevelSource': 'default', 'dueCount': 0, 'phraseCount': 0},
@@ -36,6 +36,9 @@ void main() {
       expect(s.paused.single.code, 'it');
       expect(s.removed.single.purgeAt, isNotNull);
       expect(s.summaryOf('de')!.starterPack.heard, 12);
+      final de = s.summaryOf('de')!;
+      expect([de.newPhrasesPerDay, de.poolChunkSize, de.poolAgeCutoffDays], [20, 10, 14]);
+      expect(de.goals, ['watch']);
       expect(s.summaryOf('en')!.fromTest, isTrue);
       expect(s.used, 2);
       expect(s.atLimit, isFalse);
