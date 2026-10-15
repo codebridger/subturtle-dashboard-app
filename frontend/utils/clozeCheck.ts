@@ -14,7 +14,19 @@ import type { ReviewResult } from '~/types/language.type';
  *   wrong — anything else.
  */
 
-export type ClozeReason = 'exact' | 'accent' | 'ending' | 'none';
+export type ClozeReason = 'exact' | 'accent' | 'ending' | 'typo' | 'none';
+
+/**
+ * The server's reason (`check-cloze-answer` → `reason`, server/src/languages/answer-check.ts)
+ * in the client's terms: what the "Almost" line says.
+ */
+export function reasonFromServer(reason: string | undefined, result: ReviewResult): ClozeReason {
+    if (result === 'right') return 'exact';
+    if (result === 'wrong') return 'none';
+    if (reason === 'accent') return 'accent';
+    if (reason === 'typo') return 'typo';
+    return 'ending';
+}
 
 export interface ClozeGrade {
     result: ReviewResult;
