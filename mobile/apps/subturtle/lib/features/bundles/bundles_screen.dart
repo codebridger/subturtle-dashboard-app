@@ -7,6 +7,7 @@ import 'package:subturtle_ui/subturtle_ui.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
+import '../languages/language_ui.dart';
 import '../capture/capture_sheet.dart';
 import '../coach/start_session_sheet.dart';
 import '../phrase/phrase_parts.dart';
@@ -50,15 +51,22 @@ class _BundlesScreenState extends ConsumerState<BundlesScreen> {
     final c = context.st;
     final bundles = ref.watch(bundlesProvider);
     final info = ref.watch(phraseInfoProvider).value;
+    final multilingual = ref.watch(multilingualProvider);
+    final top = MediaQuery.paddingOf(context).top;
     return RefreshIndicator(
       onRefresh: _refresh,
       color: c.primary,
       child: CustomScrollView(
         slivers: [
+          if (multilingual)
+            SliverToBoxAdapter(
+              child: Padding(padding: EdgeInsets.fromLTRB(16, top + 12, 16, 0), child: const Align(alignment: Alignment.centerLeft, child: ActiveLanguagePill())),
+            ),
           SliverToBoxAdapter(
             child: StPageHeader(
-              padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 12, 8, 8),
-              eyebrow: 'Study',
+              padding: EdgeInsets.fromLTRB(16, multilingual ? 12 : top + 12, 8, 8),
+              // The eyebrow names the language: only its bundles are listed.
+              eyebrow: multilingual ? 'Study · ${ref.watch(activeCapsProvider).name}' : 'Study',
               title: 'Phrase bundles',
               trailing: StIconButton(
                 icon: StIcons.search,

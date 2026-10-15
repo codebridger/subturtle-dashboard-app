@@ -11,6 +11,7 @@ import '../../shared/format.dart';
 import '../../shared/widgets.dart';
 import '../capture/capture_sheet.dart';
 import '../coach/start_session_sheet.dart';
+import '../languages/language_ui.dart';
 
 /// Everything Today needs, loaded together.
 class TodayData {
@@ -84,6 +85,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final profile = ref.watch(profileProvider).value;
     final firstName = (profile?.name ?? '').trim().split(' ').first;
     final sub = ref.watch(subscriptionProvider).value;
+    final multilingual = ref.watch(multilingualProvider);
+    final langName = ref.watch(activeCapsProvider).name;
+    final avatar = Semantics(
+      button: true,
+      label: 'Open Me',
+      child: GestureDetector(
+        onTap: () => context.go('/me'),
+        child: Padding(padding: const EdgeInsets.all(6), child: StAvatar(name: profile?.name ?? 'Me', imageUrl: profile?.pictureUrl, size: StAvatarSize.sm)),
+      ),
+    );
 
     return RefreshIndicator(
       onRefresh: _refresh,
@@ -91,20 +102,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       child: ListView(
         padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top, bottom: 120),
         children: [
+          if (multilingual)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 10, 0),
+              child: Row(children: [const Flexible(child: ActiveLanguagePill(caption: 'Saves go here')), const Spacer(), avatar]),
+            ),
           StPageHeader(
-            eyebrow: 'Today',
+            eyebrow: multilingual ? 'Today · $langName' : 'Today',
             title: firstName.isEmpty ? Fmt.greeting() : '${Fmt.greeting()}, $firstName',
             subtitle: today.hasValue && today.requireValue.dueCount > 0
                 ? Text('${Fmt.plural(today.requireValue.dueCount, 'phrase')} ready for review', style: StType.bodyMedium.copyWith(color: c.textMuted))
                 : null,
-            trailing: Semantics(
-              button: true,
-              label: 'Open Me',
-              child: GestureDetector(
-                onTap: () => context.go('/me'),
-                child: Padding(padding: const EdgeInsets.all(6), child: StAvatar(name: profile?.name ?? 'Me', imageUrl: profile?.pictureUrl, size: StAvatarSize.sm)),
-              ),
-            ),
+            trailing: multilingual ? null : avatar,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
