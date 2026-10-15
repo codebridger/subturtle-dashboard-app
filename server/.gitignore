@@ -55,8 +55,6 @@ typings/
 
 # Output of 'npm pack'
 *.tgz
-# ...except vendored package builds (see vendor/README.md)
-!vendor/*.tgz
 
 # Yarn Integrity file
 .yarn-integrity

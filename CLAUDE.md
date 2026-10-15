@@ -97,7 +97,7 @@ subturtle-dashboard-app/
 
 **Frontend** — Nuxt 3 (SSR **off**, hash routing), Vue 3, Pinia, Tailwind CSS, **pilotui** (in-house Vue 3 + Tailwind component library), vee-validate + yup, `@modular-rest/client`, `@google/genai` (Gemini Live API), Mixpanel, `@nuxtjs/i18n`, Iconify (`solar:` + `clarity:`), ApexCharts, Vitest, Playwright.
 
-**Server** — Node + TypeScript, `@modular-rest/server` (the RPC/data framework; a vendored Mongoose 8 build, see [server/vendor/README.md](server/vendor/README.md)), MongoDB / Firestore with MongoDB compatibility, Stripe, `@google/genai`, `@google-cloud/text-to-speech`, Jest.
+**Server** — Node + TypeScript, `@modular-rest/server` 2 (the RPC/data framework, on Mongoose 8; its data provider enforces `read`, `write` and `onlyOwnData`), MongoDB / Firestore with MongoDB compatibility, Stripe, `@google/genai`, `@google-cloud/text-to-speech`, Jest.
 
 ## Architecture
 
