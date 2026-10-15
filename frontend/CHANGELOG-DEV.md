@@ -1,3 +1,10 @@
+# [1.3.0-dev.26](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.25...v1.3.0-dev.26) (2026-10-15)
+
+
+### Features
+
+* **server:** return per-language settings in get-language-state (B-05) ([93fdedd](https://github.com/codebridger/subturtle-dashboard-app/commit/93fdedd33795a4bb8d1a5863958a331cc69947f5))
+
 # [1.3.0-dev.25](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.24...v1.3.0-dev.25) (2026-10-15)
 
 
