@@ -63,10 +63,20 @@ export interface PhraseSchema {
   chunks?: Chunk[];
   /** Normalised URL of the page the phrase was saved from. */
   sourceUrl?: string;
+  /** The learning language (ADR-006). Missing on phrases from before multilingual: English. */
+  language?: string;
+  /** How `language` was set: "user", "detected", "active", "backfill", ... (B-08). */
+  languageSource?: string;
+  /** "pending": kept for a language the learner has not added yet; no bundle (B-32). */
+  status?: "pending";
+  /** When a pending phrase is deleted unless its language is added (B-32). */
+  pendingExpiresAt?: Date;
 }
 
 interface PhraseBundleSchema {
   refId: string;
+  /** The learning language (ADR-006). Missing on bundles from before multilingual: English. */
+  language?: string;
   title: string;
   desc?: string;
   image?: any;
@@ -110,9 +120,16 @@ const phraseSchema = new Schema<PhraseSchema>(
       default: [],
     },
     sourceUrl: String,
+    language: String,
+    languageSource: String,
+    status: { type: String, enum: ["pending"] },
+    pendingExpiresAt: Date,
   },
   { timestamps: true }
 );
+
+// Kept phrases per user and language (B-32), and the purge job's sweep of expired ones.
+phraseSchema.index({ refId: 1, status: 1, language: 1 });
 
 const phraseCollection = defineCollection({
   database: DATABASE,
@@ -133,6 +150,7 @@ const phraseCollection = defineCollection({
 const phraseBundleSchema = new Schema<PhraseBundleSchema>(
   {
     refId: { type: String, required: true },
+    language: String,
     title: { type: String, required: true },
     desc: String,
     image: schemas.file,
