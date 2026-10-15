@@ -472,6 +472,9 @@ describe("collectionPolicy for the real collections", () => {
       "user_content.payment": policy("user_id", false),
       "user_content.payment_session": policy("user_id", false, true),
       "user_content.stripe_customer": policy("user_id", false),
+      // Written only by the language functions (ADR-006); clients read their own.
+      "user_content.language_profile": policy("userId", false),
+      "user_content.language_interest": policy("userId", false),
       // Their permission types belong to no client group: the router refuses clients.
       "user_content.leitner_system": null,
       "user_content.board_activity": null,
