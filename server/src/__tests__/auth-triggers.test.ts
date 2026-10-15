@@ -5,14 +5,10 @@ import { describe, it, expect, jest } from "@jest/globals";
 
 const mockUpdateOne = jest.fn<(...args: any[]) => Promise<any>>();
 const mockInsertMany = jest.fn<(...args: any[]) => Promise<any>>();
-const mockEnsureInitialized = jest.fn<(...args: any[]) => Promise<void>>();
 
 jest.mock("@modular-rest/server", () => ({
   ...(jest.requireActual("@modular-rest/server") as object),
   getCollection: jest.fn((_db: string, name: string) => ({ name, updateOne: mockUpdateOne, insertMany: mockInsertMany })),
-}));
-jest.mock("../modules/leitner_box/service", () => ({
-  LeitnerService: { ensureInitialized: (...args: any[]) => mockEnsureInitialized(...args) },
 }));
 
 import mongoose from "mongoose";
@@ -21,7 +17,6 @@ import { authTriggers } from "../triggers";
 describe("sign-up trigger", () => {
   it("marks the profile needs_language and seeds no bundles or phrases", async () => {
     mockUpdateOne.mockResolvedValue({});
-    mockEnsureInitialized.mockResolvedValue(undefined);
     const userId = new mongoose.Types.ObjectId();
 
     const trigger: any = authTriggers.find((t: any) => t.operation === "insert-one");
@@ -34,6 +29,5 @@ describe("sign-up trigger", () => {
       { upsert: true }
     );
     expect(mockInsertMany).not.toHaveBeenCalled();
-    expect(mockEnsureInitialized).toHaveBeenCalledWith(String(userId));
   });
 });

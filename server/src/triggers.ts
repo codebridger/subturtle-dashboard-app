@@ -1,5 +1,4 @@
 import { CmsTrigger, getCollection } from "@modular-rest/server";
-import { LeitnerService } from "./modules/leitner_box/service";
 import { DATABASE, PROFILE_COLLECTION } from "./config";
 
 export const authTriggers: CmsTrigger[] = [
@@ -14,8 +13,6 @@ export const authTriggers: CmsTrigger[] = [
       { $set: { onboardingState: "needs_language" }, $setOnInsert: { refId: userId } },
       { upsert: true }
     );
-
-    // Initialize Leitner System (for new users)
-    await LeitnerService.ensureInitialized(userId);
+    // No Leitner document yet: add-language creates the one for the language picked.
   }),
 ];

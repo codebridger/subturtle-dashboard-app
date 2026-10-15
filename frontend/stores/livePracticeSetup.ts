@@ -16,6 +16,8 @@ import { dataProvider } from '@modular-rest/client';
 import { COLLECTIONS, DATABASE, type PhraseType } from '~/types/database.type';
 import type { LiveSessionRequest } from '~/types/live-session-request';
 import { decodeSessionRequest } from '~/utils/livePractice';
+import { prepareRequestLanguage } from '~/utils/requestLanguage';
+import { useLanguageStore } from '~/stores/language';
 
 function parseSessionRequest(raw?: string): LiveSessionRequest | null {
     if (!raw) return null;
@@ -38,13 +40,24 @@ export const useLivePracticeSetupStore = defineStore('livePracticeSetup', () => 
      * Parse the encoded request and fetch its phrases. Idempotent: returns the
      * parsed request (or null) and leaves `errorKey` set on failure.
      */
-    async function resolve(raw?: string): Promise<LiveSessionRequest | null> {
+    async function resolve(raw?: string, queryLanguage?: string | null): Promise<LiveSessionRequest | null> {
         clear();
 
-        const parsed = parseSessionRequest(raw);
-        if (!parsed) {
+        const decoded = parseSessionRequest(raw);
+        if (!decoded) {
             errorKey.value = 'live-practice.toast.no-session-data';
             return null;
+        }
+
+        // Run in the request's language (the extension's Practice now carries it, D-16).
+        const language = useLanguageStore();
+        const { request: parsed, switchTo } = prepareRequestLanguage(decoded, language, queryLanguage);
+        if (switchTo) {
+            try {
+                await language.switchLanguage(switchTo);
+            } catch (error) {
+                console.error('Switching to the practice language failed:', error);
+            }
         }
         request.value = parsed;
 

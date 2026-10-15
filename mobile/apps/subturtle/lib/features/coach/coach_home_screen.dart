@@ -26,6 +26,8 @@ class CoachHomeScreen extends ConsumerWidget {
     final c = context.st;
     final sub = ref.watch(subscriptionProvider).value;
     final history = ref.watch(coachHistoryProvider);
+    final multilingual = ref.watch(multilingualProvider);
+    final lang = ref.watch(activeCapsProvider).name;
     return RefreshIndicator(
       color: c.primary,
       onRefresh: () async {
@@ -37,7 +39,7 @@ class CoachHomeScreen extends ConsumerWidget {
         padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top, bottom: 40),
         children: [
           StPageHeader(
-            eyebrow: 'AI coaching',
+            eyebrow: multilingual ? 'AI coaching · $lang' : 'AI coaching',
             title: 'Coach',
             subtitle: Text('Talk about your saved phrases, by voice or by text.', style: StType.bodyMedium.copyWith(color: c.textMuted)),
           ),
@@ -62,14 +64,14 @@ class CoachHomeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  if (sub != null) ...[const SizedBox(height: 12), _Meter(sub: sub)],
+                  if (sub != null) ...[const SizedBox(height: 12), _Meter(sub: sub, shared: multilingual)],
                   const SizedBox(height: 14),
                   StButton(label: 'Start a session', icon: StIcons.play, size: StSize.lg, block: true, onPressed: () => openStartSession(context, ref)),
                 ],
               ),
             ),
           ),
-          const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 10), child: StEyebrow.section('Recent sessions')),
+          Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 10), child: StEyebrow.section(multilingual ? 'Recent $lang sessions' : 'Recent sessions')),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _history(context, ref, history, sub),
@@ -135,8 +137,11 @@ class CoachHomeScreen extends ConsumerWidget {
 }
 
 class _Meter extends StatelessWidget {
-  const _Meter({required this.sub});
+  const _Meter({required this.sub, this.shared = false});
   final SubscriptionDetails sub;
+
+  /// Voice minutes are shared by every language (2.0).
+  final bool shared;
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +160,7 @@ class _Meter extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('Voice minutes', style: StType.base(size: 12, weight: FontWeight.w800).copyWith(color: c.textStrong)),
+            Text(shared ? 'Voice minutes · all languages' : 'Voice minutes', style: StType.base(size: 12, weight: FontWeight.w800).copyWith(color: c.textStrong)),
             const Spacer(),
             Text('$left of $total left this month', style: StType.base(size: 12, weight: FontWeight.w800).copyWith(color: left == 0 ? c.red600 : (low ? c.amber600 : c.textMuted))),
           ],

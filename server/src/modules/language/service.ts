@@ -21,10 +21,8 @@ import { getCollection } from "@modular-rest/server";
 import {
   BUNDLE_COLLECTION,
   DATABASE,
-  DATABASE_LEITNER,
   LANGUAGE_INTEREST_COLLECTION,
   LANGUAGE_PROFILE_COLLECTION,
-  LEITNER_SYSTEM_COLLECTION,
   PHRASE_COLLECTION,
   PROFILE_COLLECTION,
 } from "../../config";
@@ -133,7 +131,6 @@ const languageProfiles = () => getCollection<any>(DATABASE, LANGUAGE_PROFILE_COL
 const interests = () => getCollection<any>(DATABASE, LANGUAGE_INTEREST_COLLECTION);
 const phrases = () => getCollection<any>(DATABASE, PHRASE_COLLECTION);
 const bundles = () => getCollection<any>(DATABASE, BUNDLE_COLLECTION);
-const leitner = () => getCollection<any>(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
 
 function isDuplicateKeyError(error: any): boolean {
   return !!error && (error.code === 11000 || error.code === 11001 || error.codeName === "DuplicateKey");
@@ -221,17 +218,9 @@ export class LanguageService {
     };
   }
 
-  /**
-   * Cards due now in one language. Reads the Leitner document for `(userId, language)`;
-   * until the backfill, English also reads the one document with no language (B-10 splits
-   * them).
-   */
+  /** Cards due today in one language, as the review reminder and the board count them. */
   static async dueCount(userId: string, language: LangCode): Promise<number> {
-    const system: any = await leitner()
-      .findOne({ userId, ...languageFilter(language) }, { items: 1 })
-      .lean();
-    const now = Date.now();
-    return (system?.items || []).filter((item: any) => new Date(item.nextReviewDate).getTime() <= now).length;
+    return LeitnerService.getDueCount(userId, language);
   }
 
   /** Saved phrases in one language, kept phrases not included. */
@@ -438,6 +427,13 @@ export class LanguageService {
     }
 
     await profiles().updateOne({ refId: userId }, { $set: { learningLanguage: language, onboardingState: "done" } });
+    // The language's Leitner document and the review reminder (B-10); before the kept
+    // phrases move in, so their Pool entries see its settings.
+    try {
+      await LeitnerService.ensureInitialized(userId, language);
+    } catch (error) {
+      console.error(`[language] Could not set up review for ${userId}/${language}`, error);
+    }
     await this.movePendingIn(userId, language);
 
     if (existing?.status !== "active") {
@@ -730,9 +726,9 @@ export class LanguageService {
       if (count > 0 && (await isUserOnFreemium(userId))) {
         await updateFreemiumAllocation({ userId, increment: { allowed_save_words_used: count } });
       }
-      const settings = await LeitnerService.getSettings(userId);
+      const settings = await LeitnerService.getSettings(userId, language);
       if (settings?.autoEntry) {
-        for (const id of ids) await PoolService.add(userId, String(id));
+        for (const id of ids) await PoolService.add(userId, String(id), language);
       }
     } catch (error) {
       console.error(`[language] Moved ${count} kept phrases for ${userId}/${language}, but the follow-up failed`, error);
