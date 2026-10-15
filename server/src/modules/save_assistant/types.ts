@@ -55,7 +55,14 @@ export interface SaveSessionRecordType {
   title: string;
   source?: SaveSessionSource;
   sourceLanguage?: string;
+  /** @deprecated Old name of `translationLanguage`, still written for old readers (B-17). */
   targetLanguage: string;
+  /** The learner's own language, an ISO code when we know it (B-16). */
+  translationLanguage?: string;
+  /** The learning language the session's phrases belong to (B-16). Missing on old sessions: English. */
+  language?: string;
+  /** The language the model detected in the first message; "unknown" when unsure. */
+  detectedLanguage?: string;
   messages: SaveSessionMessage[];
   candidates: SaveSessionCandidate[];
   savedPhraseIds: string[];
