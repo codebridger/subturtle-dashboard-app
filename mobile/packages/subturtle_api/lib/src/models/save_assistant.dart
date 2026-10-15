@@ -18,6 +18,17 @@ class SaveCandidate {
   }
 }
 
+/// The translation of a save-assistant answer, with the 2.0 detection fields
+/// (`detectedLanguage`, `resolvedLanguage`, `inProfile`) that the server may
+/// send next to it rather than inside it.
+Json withDetection(Json j) {
+  final t = asJson(j['translation']);
+  for (final k in const ['detectedLanguage', 'resolvedLanguage', 'inProfile']) {
+    if (!t.containsKey(k) && j.containsKey(k)) t[k] = j[k];
+  }
+  return t;
+}
+
 /// `createSaveSession`: the new session, its candidates and the translation of
 /// the whole message.
 class SaveSessionStart {
@@ -33,7 +44,7 @@ class SaveSessionStart {
     return SaveSessionStart(
       sessionId: str(j['sessionId']),
       candidates: listOf(j['candidates'], SaveCandidate.fromJson),
-      translation: DetailedTranslation.fromJson(j['translation']),
+      translation: DetailedTranslation.fromJson(withDetection(j)),
       messageId: str(j['messageId']),
     );
   }
@@ -54,7 +65,7 @@ class SavePickResult {
   factory SavePickResult.fromJson(dynamic v) {
     final j = asJson(v);
     return SavePickResult(
-      translation: DetailedTranslation.fromJson(j['translation']),
+      translation: DetailedTranslation.fromJson(withDetection(j)),
       messageId: str(j['messageId']),
       cached: boolean(j['cached']),
       wrapUp: boolean(j['wrapUp']),
