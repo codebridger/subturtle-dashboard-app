@@ -1,3 +1,10 @@
+# [1.3.0-dev.17](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.16...v1.3.0-dev.17) (2026-10-15)
+
+
+### Features
+
+* **server:** sessions and progress per language, and the missing-language warning (B-13, B-23, B-26) ([50b372b](https://github.com/codebridger/subturtle-dashboard-app/commit/50b372b5c2ff0e7529f401f2fcdf1440f9adbc58))
+
 # [1.3.0-dev.16](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.15...v1.3.0-dev.16) (2026-10-15)
 
 
