@@ -1,3 +1,17 @@
+# [1.3.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.3...v1.3.0-dev.4) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** rename the account test so module discovery skips it ([1287448](https://github.com/codebridger/subturtle-dashboard-app/commit/1287448273eff5566c4ace95b9936330b9de5171))
+
+
+### Features
+
+* **mobile:** pass App Review: Sign in with Apple, account deletion, no purchase links, iPhone only ([d439f65](https://github.com/codebridger/subturtle-dashboard-app/commit/d439f65ad4176ddb2699d71448a77985f92f308b))
+* **mobile:** show plan prices in the learner's currency, as Stripe charges them ([5990e0f](https://github.com/codebridger/subturtle-dashboard-app/commit/5990e0fc467936f1efeb96e2c0e1db9516152147))
+* **server:** add Sign in with Apple and in-app account deletion ([c33c6f9](https://github.com/codebridger/subturtle-dashboard-app/commit/c33c6f940a613a306af36341748402e0c4d8fe97))
+
 # [1.3.0-dev.3](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.2...v1.3.0-dev.3) (2026-10-15)
 
 
