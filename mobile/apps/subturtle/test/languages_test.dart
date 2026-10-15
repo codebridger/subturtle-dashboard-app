@@ -514,7 +514,7 @@ void main() {
                 'acceptedAnswers': ['bin'],
               },
             ];
-        b.functions['check-cloze-answer'] = (a) => {'result': 'close', 'expected': 'bin'};
+        b.functions['check-cloze-answer'] = (a) => {'result': 'close', 'expected': 'bin', 'reason': 'form'};
       });
       await tester.tap(find.text('Start review'));
       await tester.settle();

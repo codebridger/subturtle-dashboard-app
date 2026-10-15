@@ -46,6 +46,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
 
   /// The answer the server expected (it may differ from the blank's text).
   String? _expected;
+
+  /// Why the server said close: `accent`, `form` or `typo`.
+  String? _reason;
   bool _checking = false;
   bool _keyboardOpen = false;
 
@@ -121,13 +124,17 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
     final language = item.phrase.languageCode;
     var res = checkAnswer(_typed.text, cloze.answer, language: language, accepted: cloze.accepted);
     String? expected;
-    if (ref.read(multilingualProvider) && _typed.text.trim().isNotEmpty) {
+    String? reason;
+    // Ask the server only when the blank is its own gap (it sent the answers
+    // it accepts); otherwise it would check a different chunk.
+    if (cloze.accepted.isNotEmpty && _typed.text.trim().isNotEmpty) {
       setState(() => _checking = true);
       try {
         final server = await ref.read(apiProvider).review.checkCloze(phraseId: item.phraseId, answer: _typed.text, language: language);
         if (server != null) {
           res = ClozeResult.fromServer(server.result);
           if (server.expected.isNotEmpty) expected = server.expected;
+          reason = server.reason;
         }
       } catch (e) {
         // The phone's own check stands in when the server cannot answer.
@@ -140,6 +147,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
       _checking = false;
       _clozeResult = res;
       _expected = expected;
+      _reason = reason;
       _revealed = true;
     });
   }
@@ -171,6 +179,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
         _revealed = false;
         _clozeResult = null;
         _expected = null;
+        _reason = null;
         _typed.clear();
       });
     }
@@ -316,6 +325,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
           revealed: _revealed,
           clozeResult: _clozeResult,
           expected: _expected,
+          reason: _reason,
           typed: _typed.text,
           showTapHint: cloze == null && !_revealed && _hintUses < 3,
         ),
@@ -436,13 +446,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> with WidgetsBinding
 
 /// The card: front, or front + answer once revealed.
 class _CardFace extends ConsumerWidget {
-  const _CardFace({super.key, required this.item, required this.cloze, required this.revealed, required this.clozeResult, required this.typed, required this.showTapHint, this.expected});
+  const _CardFace({super.key, required this.item, required this.cloze, required this.revealed, required this.clozeResult, required this.typed, required this.showTapHint, this.expected, this.reason});
 
   final ReviewItem item;
   final Cloze? cloze;
   final bool revealed;
   final ClozeResult? clozeResult;
   final String? expected;
+  final String? reason;
   final String typed;
   final bool showTapHint;
 
@@ -477,7 +488,7 @@ class _CardFace extends ConsumerWidget {
             HighlightedSentence(sentence: p.context!, highlight: p.phrase, style: StType.bodyLarge.copyWith(color: c.textMuted)),
           ],
         ] else
-          _ClozeSentence(cloze: cloze!, result: clozeResult, typed: typed, rtl: l1IsRtl(ref, p), expected: expected),
+          _ClozeSentence(cloze: cloze!, result: clozeResult, typed: typed, rtl: l1IsRtl(ref, p), expected: expected, reason: reason),
         if (showTapHint) ...[
           const SizedBox(height: 28),
           Center(child: Text('Tap card to see answer', style: StType.bodySmall.copyWith(color: c.textFaint))),
@@ -520,7 +531,7 @@ class _CardFace extends ConsumerWidget {
 }
 
 class _ClozeSentence extends StatelessWidget {
-  const _ClozeSentence({required this.cloze, required this.result, required this.typed, required this.rtl, this.expected});
+  const _ClozeSentence({required this.cloze, required this.result, required this.typed, required this.rtl, this.expected, this.reason});
   final Cloze cloze;
   final ClozeResult? result;
   final String typed;
@@ -528,6 +539,7 @@ class _ClozeSentence extends StatelessWidget {
 
   /// The server's expected answer, when it checked.
   final String? expected;
+  final String? reason;
 
   @override
   Widget build(BuildContext context) {
@@ -594,7 +606,12 @@ class _ClozeSentence extends StatelessWidget {
                   child: Text(
                     switch (result!) {
                       ClozeResult.correct => 'Right!',
-                      ClozeResult.close => cloze.hasCue ? 'Close. Right word, check the ending. The answer is $answer.' : 'Almost! The answer is $answer.',
+                      ClozeResult.close => switch (reason) {
+                          'accent' => 'Almost. Check the accent. The answer is $answer.',
+                          'typo' => 'Almost. Check the spelling. The answer is $answer.',
+                          'form' => 'Close. Right word, check the ending. The answer is $answer.',
+                          _ => cloze.hasCue ? 'Close. Right word, check the ending. The answer is $answer.' : 'Almost! The answer is $answer.',
+                        },
                       ClozeResult.wrong => 'The answer is $answer.',
                     },
                     style: StType.bodyMedium.copyWith(color: c.textBody, fontWeight: FontWeight.w700),
