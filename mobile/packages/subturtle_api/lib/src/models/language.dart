@@ -271,6 +271,9 @@ class LanguageSummary {
     this.starterPack = const StarterPackSummary(),
     this.purgeAt,
     this.newPhrasesPerDay,
+    this.poolChunkSize,
+    this.poolAgeCutoffDays,
+    this.goals = const [],
   });
 
   final String code;
@@ -293,8 +296,16 @@ class LanguageSummary {
   /// When a removed language is deleted for good.
   final DateTime? purgeAt;
 
-  /// New phrases a day from the Pool, when the server sends it.
+  /// New phrases a day from the Pool (server default 20). Null on servers
+  /// that do not send it.
   final int? newPhrasesPerDay;
+
+  /// Pool settings of this language.
+  final int? poolChunkSize;
+  final int? poolAgeCutoffDays;
+
+  /// Why the learner studies it (`watch`, `work`, `travel`, `curious`).
+  final List<String> goals;
 
   bool get isActive => status == 'active';
   bool get isPaused => status == 'paused';
@@ -314,6 +325,9 @@ class LanguageSummary {
       starterPack: StarterPackSummary.fromJson(j['starterPack']),
       purgeAt: date(j['purgeAt']),
       newPhrasesPerDay: intOrNull(j['newPhrasesPerDay'] ?? asJson(j['settings'])['newPhrasesPerDay']),
+      poolChunkSize: intOrNull(j['poolChunkSize'] ?? asJson(j['settings'])['poolChunkSize']),
+      poolAgeCutoffDays: intOrNull(j['poolAgeCutoffDays'] ?? asJson(j['settings'])['poolAgeCutoffDays']),
+      goals: listOf(j['goals'], (e) => str(e)),
     );
   }
 }

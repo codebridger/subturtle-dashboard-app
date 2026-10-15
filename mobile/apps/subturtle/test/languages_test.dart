@@ -370,6 +370,16 @@ void main() {
       expect(upd['explanationLanguage'], 'tr');
 
       await tester.scrollUntilVisible(find.text('New phrases a day'), 100);
+      // The current value from get-language-state (server default 20).
+      expect(find.descendant(of: find.ancestor(of: find.text('New phrases a day'), matching: find.byType(Row)).first, matching: find.text('20')), findsOneWidget);
+      await tester.tap(find.text('New phrases a day'));
+      await tester.settle();
+      expect(find.bySemanticsLabel(RegExp('^20 phrases.*active')), findsOneWidget, reason: 'the current value is ticked');
+      await tester.tap(find.text('5 phrases'));
+      await tester.settle();
+      expect(langs.langs['en']!.newPerDay, 5);
+      expect(find.descendant(of: find.ancestor(of: find.text('New phrases a day'), matching: find.byType(Row)).first, matching: find.text('5')), findsOneWidget);
+      // Again, to keep the original assertions below working.
       await tester.tap(find.text('New phrases a day'));
       await tester.settle();
       await tester.tap(find.text('5 phrases'));

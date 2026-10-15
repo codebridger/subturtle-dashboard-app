@@ -473,7 +473,7 @@ class _LanguagePickerState extends State<_LanguagePicker> {
 class _LanguageGroups extends ConsumerWidget {
   const _LanguageGroups();
 
-  static const _perDay = [3, 5, 8, 10, 15];
+  static const _perDay = [3, 5, 8, 10, 15, 20, 30];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -567,7 +567,8 @@ class _LanguageGroups extends ConsumerWidget {
             children: [
               Text('How many new $name phrases come from the Pool each day. This setting is for $name only.', style: StType.bodyMedium.copyWith(color: ctx.st.textMuted)),
               const SizedBox(height: 12),
-              for (final n in _perDay) ...[
+              // The current value is always a choice, even one set on the web.
+              for (final n in {..._perDay, ?current}.toList()..sort()) ...[
                 StLanguageOption(code: '$n', title: Fmt.plural(n, 'phrase'), selected: n == current, onTap: () => Navigator.pop(ctx, n)),
                 const SizedBox(height: 8),
               ],

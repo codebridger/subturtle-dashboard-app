@@ -146,7 +146,8 @@ class FakeLanguageServer {
       } else {
         final level = (a['startLevel'] as String?) ?? 'A1';
         langs[code] = _Lang(code, level, (a['startLevelSource'] as String?) ?? 'default')
-          ..pack = _hasPack(code) ? 'offered' : 'none';
+          ..pack = _hasPack(code) ? 'offered' : 'none'
+          ..goals = [...?(a['goals'] as List?)?.cast<String>()];
       }
       pending = {...pending}..remove(code);
       active = code;
@@ -175,6 +176,7 @@ class FakeLanguageServer {
       final l = langs[a['language']]!;
       if (a['explanationLanguage'] != null) l.explanationLanguage = a['explanationLanguage'] as String;
       if (a['newPhrasesPerDay'] != null) l.newPerDay = a['newPhrasesPerDay'] as int;
+      if (a['goals'] != null) l.goals = (a['goals'] as List).cast<String>();
       return _wrapped();
     });
     on('set-translation-language', (a) {
@@ -284,7 +286,8 @@ class _Lang {
   String status = 'active';
   String pack = 'none';
   String? explanationLanguage;
-  int newPerDay = 10;
+  int newPerDay = 20;
+  List<String> goals = const [];
   final heard = <String>{};
   int heardToday = 0;
 
@@ -297,6 +300,11 @@ class _Lang {
         'phraseCount': phrases,
         'explanationLanguage': explanationLanguage ?? l1,
         'starterPack': {'state': pack, 'heard': heard.length, 'total': pack == 'none' ? 0 : 4},
+        // Per-language settings, as get-language-state returns them (#134).
+        'newPhrasesPerDay': newPerDay,
+        'poolChunkSize': 10,
+        'poolAgeCutoffDays': 14,
+        'goals': goals,
         if (status == 'removed') 'purgeAt': '2026-11-15T00:00:00.000Z',
       };
 }

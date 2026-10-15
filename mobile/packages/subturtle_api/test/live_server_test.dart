@@ -62,6 +62,11 @@ void main() {
 
     s = await api.languages.updateSettings('de', explanationLanguage: 'fa');
     expect(s.summaryOf('de')!.explanationLanguage, 'fa');
+    // Per-language settings come back with the state (server #134).
+    expect(s.summaryOf('de')!.newPhrasesPerDay, isNotNull);
+    s = await api.languages.updateSettings('de', newPhrasesPerDay: 8);
+    expect(s.summaryOf('de')!.newPhrasesPerDay, 8);
+    expect(s.summaryOf('de')!.goals, ['watch']);
 
     expect(await api.languages.setInterest('pt', on: true), isTrue);
 
