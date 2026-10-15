@@ -1,6 +1,7 @@
 import { DatabaseTrigger } from "@modular-rest/server";
 import { LeitnerService } from "../leitner_box/service";
 import { PoolService } from "../pool/service";
+import { langOf } from "../../languages/helper";
 
 // The free-tier saved-words counter (`allowed_save_words_used`) is NOT kept here.
 // These triggers are Mongoose post-hooks, so they also fire for the inserts and
@@ -18,9 +19,10 @@ export const phraseBundleTriggers = [
     // the language module adds it then.
     if (doc && doc.phrase && doc.translation && doc.refId && doc.status !== "pending") {
       try {
-        const settings = await LeitnerService.getSettings(doc.refId);
+        const settings = await LeitnerService.getSettings(doc.refId, langOf(doc));
         if (settings && settings.autoEntry) {
-          await PoolService.add(doc.refId, doc._id);
+          // The phrase's own language's Pool (a phrase without one is English).
+          await PoolService.add(doc.refId, doc._id, langOf(doc));
         }
       } catch (e) {
         console.error("Failed to add phrase to Pool", e);
@@ -32,12 +34,12 @@ export const phraseBundleTriggers = [
     const { docs } = context;
     if (!docs || docs.length === 0) return;
 
-    const leitnerAdditions: { userId: string; docId: string }[] = [];
+    const leitnerAdditions: { userId: string; docId: string; language: string }[] = [];
 
     for (const doc of docs) {
       const user_id = doc.refId; // Owner ID
       if (user_id && doc.phrase && doc.translation && doc.status !== "pending") {
-        leitnerAdditions.push({ userId: user_id, docId: doc._id });
+        leitnerAdditions.push({ userId: user_id, docId: doc._id, language: langOf(doc) });
       }
     }
 
@@ -46,13 +48,14 @@ export const phraseBundleTriggers = [
 
     for (const item of leitnerAdditions) {
       try {
-        if (!userSettingsCache[item.userId]) {
-          userSettingsCache[item.userId] = await LeitnerService.getSettings(item.userId);
+        const key = `${item.userId}:${item.language}`;
+        if (!userSettingsCache[key]) {
+          userSettingsCache[key] = await LeitnerService.getSettings(item.userId, item.language);
         }
-        const settings = userSettingsCache[item.userId];
+        const settings = userSettingsCache[key];
 
         if (settings && settings.autoEntry) {
-          await PoolService.add(item.userId, item.docId);
+          await PoolService.add(item.userId, item.docId, item.language);
         }
       } catch (e) {
         console.error("Failed to add phrase to Pool", e);

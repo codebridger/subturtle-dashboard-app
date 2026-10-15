@@ -53,8 +53,8 @@ describe("phraseBundleTriggers", () => {
 
 			await insertOneTrigger!.callback({ doc, queryResult: {} });
 
-			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u1");
-			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1");
+			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u1", "en"); // no language: English
+			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1", "en");
 		});
 
 		it("should NOT add phrase to the Pool if autoEntry is false", async () => {
@@ -84,14 +84,14 @@ describe("phraseBundleTriggers", () => {
 
 			// Should call getSettings once for u1 and once for u2 (caching works)
 			expect(LeitnerService.getSettings).toHaveBeenCalledTimes(2);
-			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u1");
-			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u2");
+			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u1", "en"); // no language: English
+			expect(LeitnerService.getSettings).toHaveBeenCalledWith("u2", "en"); // no language: English
 
 			// Should pool p1, p2 (u1) but NOT p3, p4 (u2)
 			expect(PoolService.add).toHaveBeenCalledTimes(2);
-			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1");
-			expect(PoolService.add).toHaveBeenCalledWith("u1", "p2");
-			expect(PoolService.add).not.toHaveBeenCalledWith("u2", expect.any(String));
+			expect(PoolService.add).toHaveBeenCalledWith("u1", "p1", "en");
+			expect(PoolService.add).toHaveBeenCalledWith("u1", "p2", "en");
+			expect(PoolService.add).not.toHaveBeenCalledWith("u2", expect.any(String), expect.anything());
 		});
 	});
 

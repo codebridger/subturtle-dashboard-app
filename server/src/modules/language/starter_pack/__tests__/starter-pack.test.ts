@@ -182,7 +182,8 @@ describe("complete-starter-pack-items", () => {
     await Bundles.create({ refId: USER, title: "German starter pack", language: "en", phrases: [] });
     await complete({ userId: USER, language: "de", itemIds: ["de-greetings-01"] });
     const titles = (await Bundles.find({ refId: USER, language: "de" }).lean<any[]>()).map((b) => b.title);
-    expect(titles).toEqual(["German starter pack (2)"]);
+    // The bundle title is unique per language (B-09), so German keeps the plain title.
+    expect(titles).toEqual(["German starter pack"]);
   });
 
   it("needs an active language and a list", async () => {
