@@ -336,6 +336,87 @@ void main() {
     });
   });
 
+  group('save sheet language row (M-09)', () {
+    Future<FakeBackend> openWith(WidgetTester tester, FakeLanguageServer langs, String detected) async {
+      final b = await pumpApp(tester, languages: langs, seed: (b) {
+        b.functions['translateWithContext'] = (args) => {
+              'translation': {'phrase': 'باید'},
+              'direction': {'source': 'ltr', 'target': 'rtl'},
+              'chunks': [],
+              'detectedLanguage': detected,
+              'resolvedLanguage': detected,
+              'inProfile': langs.langs.containsKey(detected),
+            };
+        b.functions['createPhrase'] = (args) => {'_id': 'p9', 'phrase': args['phrase'], 'translation': args['translation'], 'language': args['language']};
+      });
+      await tester.tap(find.bySemanticsLabel('Save a phrase'));
+      await tester.settle();
+      await tester.enterText(find.byType(TextField).first, 'ich muss');
+      await tester.settle();
+      await tester.tap(find.bySemanticsLabel('Send'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      return b;
+    }
+
+    testWidgets('another of my languages: saves there, the active one stays', (tester) async {
+      final langs = FakeLanguageServer(startLevels: {'en': 'B1', 'de': 'A1'})..seededLanguages = {'en', 'de'};
+      final b = await openWith(tester, langs, 'de');
+      expect(find.text('German · detected'), findsOneWidget);
+      expect(find.text('Saves to your German profile. You stay in English.'), findsOneWidget);
+      expect(argsOf(b, 'translateWithContext').last['translationLanguage'], 'fa');
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'createPhrase').last['language'], 'de');
+      expect(langs.active, 'en', reason: 'saving to German does not switch');
+    });
+
+    testWidgets('a language I do not have: Keep for Spanish, then Undo', (tester) async {
+      final langs = FakeLanguageServer();
+      final b = await openWith(tester, langs, 'es');
+      expect(find.text('This looks like Spanish'), findsOneWidget);
+      expect(find.text('Spanish is not in your languages yet'), findsOneWidget);
+      expect(find.textContaining('Save to Stranger'), findsNothing, reason: 'it never saves to a language the learner did not choose');
+      b.paths['/data-provider/remove-one'] = (_) => {'deletedCount': 1};
+
+      await tester.tap(find.text('Keep for Spanish'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'keep-phrase-pending').single['language'], 'es');
+      expect((argsOf(b, 'keep-phrase-pending').single['phrase'] as Map)['phrase'], 'ich muss');
+      expect(find.text('Kept for Spanish'), findsOneWidget);
+      expect(langs.pending['es'], 1);
+
+      await tester.tap(find.text('Undo'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(b.calls.where((c) => c.$1 == '/data-provider/remove-one').single.$2['query']['_id'], 'kept1');
+      expect(find.text('This looks like Spanish'), findsOneWidget);
+    });
+
+    testWidgets('a language I do not have: Save to English', (tester) async {
+      final b = await openWith(tester, FakeLanguageServer(), 'es');
+      await tester.tap(find.text('Save to English'));
+      await tester.settle();
+      expect(find.text('Saves to English'), findsOneWidget);
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'createPhrase').last['language'], 'en');
+    });
+
+    testWidgets('Change: pick a language for this phrase only', (tester) async {
+      final langs = FakeLanguageServer(startLevels: {'en': 'B1', 'de': 'A1'})..seededLanguages = {'en', 'de'};
+      final b = await openWith(tester, langs, 'en');
+      expect(find.text('English · detected'), findsOneWidget);
+      await tester.tap(find.text('Change'));
+      await tester.settle();
+      expect(find.text('Save this phrase to which language?'), findsOneWidget);
+      await tester.tap(find.text('German · Deutsch'));
+      await tester.settle();
+      expect(find.text('Saves to your German profile. You stay in English.'), findsOneWidget);
+      await tester.tap(find.text('Save to Stranger Things S2'));
+      await tester.settle(const Duration(milliseconds: 100), 15);
+      expect(argsOf(b, 'createPhrase').last['language'], 'de');
+    });
+  });
+
   group('helpers', () {
     test('plan limits by plan (M-15)', () {
       LanguageState s(String plan, int used, int max) => LanguageState(
