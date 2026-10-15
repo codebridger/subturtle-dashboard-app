@@ -109,10 +109,12 @@ mobile/
    the phone and sends it when the learner grades the next card, ends the
    session, or leaves the app. Undo (↶ or the toast) just drops it. One step, as
    the spec asks. Code: `GradeQueue` in `features/review/review_logic.dart`.
-2. **Translation language lives on the phone.** The profile has no language
-   field. The app guesses it from the newest saved phrase, then the phone's
-   language, and the learner can change it in Me. It is sent as the English
-   name ("Persian"), like the extension does.
+2. **Languages come from the server (2.0).** `get-language-state` gives the
+   own language and the learner's learning languages; the app never guesses
+   from saved phrases. A 1.x server has no language module: the app is then the
+   English-only app it was, with the own language kept on the phone, and that
+   phone value moves to the server once when the server has languages. See
+   [Languages](#languages-20).
 3. **Email sign-in uses a password.** See below.
 4. **Session phrases** = the 10 newest phrases of the bundle (the web has a
    range picker; the mobile spec asks for few choices).
@@ -129,6 +131,34 @@ mobile/
 10. **Android id** is `app.subturtle.subturtle` (Flutter's default from the
     org + name). Change it before the first store upload if you want another one.
 
+## Languages (2.0)
+
+Multilingual round 1, built to `docs/tech/multilingual-api.md` (docs repo) and the
+"Languages" and "First run" rows of the mobile design.
+
+- **One active language.** `languageStateProvider` holds the server's state;
+  `activeLanguageProvider` is watched by every language-scoped provider (Today,
+  bundles, review counts, stats, Coach history), so a switch reloads them and
+  `AsyncBody` shows the skeleton while they do (never two languages on screen).
+  `SubturtleApi.activeLanguage` sends `language` on every scoped call.
+- **Screens** (`lib/features/languages/`): the pill and switcher (L1), Add a
+  language and the first run (L2, L3, L10, routes `/add-language` and
+  `/welcome`), the chat test (L11, `/level-test`), the starter pack (L4,
+  `/starter`), Languages and Manage (L6, L7, `/me/languages`). Today shows
+  "Save your first German phrase" for a new language and the starter pack as an
+  offer (L5, L12).
+- **First run.** When the server says `needs_language`, the router sends the
+  learner to `/welcome` (no close). A failing state never redirects, and a
+  failing add offers Try again and Sign out.
+- **Plan limit** (Starter 1, Reader 3, Learner and Coach 10): the add row becomes
+  a card; Upgrade opens Plans (read-only); Starter never offers a swap.
+- **Hide, do not grey out.** A feature the capability register marks off for a
+  language is hidden; only Languages lists "not yet".
+- **Tests:** `test/languages_test.dart` (widget flows against the stateful fake
+  in `test/fake_languages.dart`) and `integration_test/languages_flow_test.dart`
+  (the add-language and switch flows on a device:
+  `flutter test integration_test/languages_flow_test.dart -d DEVICE_ID`).
+
 ## Needs backend work
 
 | What | Why it is needed |
@@ -141,7 +171,6 @@ mobile/
 | **Offline grade sync** | Review needs cached cards and a way to send late grades (and rules when the web also graded). Today an offline grade is kept for the session and retried, but not stored across app restarts. |
 | **Offline save queue** | Same idea for Capture. |
 | **Voice ↔ text in one session** | A voice and a text session are different records. The ⌨ button ends voice and starts a new text chat with the same bundle. |
-| **Translation language on the profile** | So the phone and the web agree on the L1. |
 | **Board "next step" order and more card types** | `get-board` only returns `leitner_review`. The app builds the other cards itself. |
 | **Streak and "minutes talked" for every plan** | The streak reuses `generateChartDataForInsertionRatio`, which is locked below Learner. |
 | **Email the Chrome extension link** | No "send me the link" function; the app copies the link instead. |

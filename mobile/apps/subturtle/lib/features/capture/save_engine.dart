@@ -65,12 +65,20 @@ List<String> phrasesIn(String sentence, Iterable<String> chunks) {
 /// Calls `translateWithContext` and `translationAdvice` directly and keeps
 /// chats in [history] on the phone.
 class LocalSaveEngine implements SaveEngine {
-  LocalSaveEngine({required this.api, required this.history, required this.languageName});
+  LocalSaveEngine({required this.api, required this.history, required this.languageName, this.languageCode, this.learningName = 'English'});
 
   final SubturtleApi api;
   @override
   final SaveSessionRepository history;
+
+  /// The own language's English name ("Persian"), as 1.x servers want it.
   final String languageName;
+
+  /// The own language's code ("fa"), for 2.0 servers.
+  final String? languageCode;
+
+  /// The active learning language's name, for the tutor ("German").
+  final String learningName;
 
   @override
   Future<(SaveSession, Map<String, DetailedTranslation>)> start(String sentence, {required DateTime now, String source = 'typed'}) async {
@@ -79,7 +87,7 @@ class LocalSaveEngine implements SaveEngine {
     // A word or a short phrase is the phrase itself; only split real sentences.
     if (_wordCount(sentence) > 3) {
       try {
-        final whole = await api.translation.translateDetailed(phrase: sentence, context: sentence, targetLanguage: languageName);
+        final whole = await api.translation.translateDetailed(phrase: sentence, context: sentence, targetLanguage: languageName, translationLanguage: languageCode);
         parts = phrasesIn(sentence, whole.chunks.map((c) => c.text));
         if (parts.isEmpty) parts = [sentence];
         if (parts.length == 1 && parts.single == sentence) cards[sentence] = whole;
@@ -96,7 +104,7 @@ class LocalSaveEngine implements SaveEngine {
 
   @override
   Future<SaveTranslation> translate(SaveSession session, String phrase) async =>
-      (translation: await api.translation.translateDetailed(phrase: phrase, context: session.sentence, targetLanguage: languageName), wrapUp: false);
+      (translation: await api.translation.translateDetailed(phrase: phrase, context: session.sentence, targetLanguage: languageName, translationLanguage: languageCode), wrapUp: false);
 
   @override
   Future<SaveAnswer> ask(SaveSession session, String phrase, String message) async {
@@ -107,6 +115,7 @@ class LocalSaveEngine implements SaveEngine {
       message: message,
       history: [for (final l in history) (l.role, l.text)],
       targetLanguage: languageName,
+      sourceLanguage: learningName,
     );
     return (reply: reply, candidates: null, wrapUp: false);
   }
@@ -123,18 +132,21 @@ class LocalSaveEngine implements SaveEngine {
 /// Uses the `save_assistant` backend: the server translates, answers and
 /// keeps the history.
 class ServerSaveEngine implements SaveEngine {
-  ServerSaveEngine({required this.api, required this.languageName}) : history = ServerSaveSessionRepository(api.saveAssistant);
+  ServerSaveEngine({required this.api, required this.languageName, this.languageCode}) : history = ServerSaveSessionRepository(api.saveAssistant);
 
   final SubturtleApi api;
   @override
   final ServerSaveSessionRepository history;
   final String languageName;
 
+  /// The own language's code ("fa"), for 2.0 servers.
+  final String? languageCode;
+
   SaveAssistantRepository get _repo => api.saveAssistant;
 
   @override
   Future<(SaveSession, Map<String, DetailedTranslation>)> start(String sentence, {required DateTime now, String source = 'typed'}) async {
-    final res = await _repo.createSession(message: sentence, targetLanguage: languageName, source: source);
+    final res = await _repo.createSession(message: sentence, targetLanguage: languageName, translationLanguage: languageCode, source: source);
     final full = res.candidates.where((c) => c.isFull).firstOrNull?.text ?? sentence;
     final session = SaveSession(id: res.sessionId, sentence: sentence, createdAt: now, updatedAt: now, candidates: shownCandidates(sentence, res.candidates));
     return (session, {full: res.translation});

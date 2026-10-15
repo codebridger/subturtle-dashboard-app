@@ -120,13 +120,19 @@ class ChunkNote extends StatelessWidget {
   }
 }
 
-/// Plays the phrase with the backend's text-to-speech.
+/// Plays the phrase with the backend's text-to-speech, in the voice of the
+/// phrase's language (M-12). [audioUrl], when the server has one (starter
+/// packs), is played instead.
 class SpeakButton extends ConsumerStatefulWidget {
-  const SpeakButton({super.key, required this.text, this.voiceName = 'en-US-Standard-A', this.semanticLabel = 'Play pronunciation', this.icon = StIcons.speaker});
+  const SpeakButton({super.key, required this.text, this.voiceName, this.language, this.audioUrl, this.semanticLabel = 'Play pronunciation', this.icon = StIcons.speaker});
   final String text;
 
-  /// A Google Cloud TTS voice name.
-  final String voiceName;
+  /// A Google Cloud TTS voice name. Null: the voice of [language].
+  final String? voiceName;
+
+  /// The learning language of [text]. Null: the active language.
+  final String? language;
+  final String? audioUrl;
   final String semanticLabel;
   final String icon;
 
@@ -146,10 +152,17 @@ class _SpeakButtonState extends ConsumerState<SpeakButton> {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      final key = '${widget.voiceName}|${widget.text}';
+      if (widget.audioUrl != null) {
+        await _player.setUrl(widget.audioUrl!);
+        await _player.seek(Duration.zero);
+        _player.play();
+        return;
+      }
+      final voice = widget.voiceName ?? _voiceOf(widget.language ?? ref.read(activeLanguageProvider).value);
+      final key = '$voice|${widget.text}';
       var bytes = _cache[key];
       if (bytes == null) {
-        final uri = await ref.read(apiProvider).translation.speak(widget.text, voiceName: widget.voiceName);
+        final uri = await ref.read(apiProvider).translation.speak(widget.text, voiceName: voice);
         final b64 = uri.contains(',') ? uri.substring(uri.indexOf(',') + 1) : uri;
         bytes = base64Decode(b64);
         _cache[key] = bytes;
@@ -162,6 +175,15 @@ class _SpeakButtonState extends ConsumerState<SpeakButton> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _voiceOf(String? code) {
+    final caps = ref.read(languageCapsProvider).value?.learningByCode(code ?? 'en');
+    if (caps != null && caps.ttsVoice.isNotEmpty) return caps.ttsVoice;
+    return switch (code) {
+      null || 'en' => 'en-US-Standard-A',
+      _ => '${LearningLanguageCaps(code: code, name: code, nativeName: '').ttsLanguageCode}-Standard-A',
+    };
   }
 
   @override

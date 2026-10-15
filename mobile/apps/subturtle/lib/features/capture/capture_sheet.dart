@@ -24,10 +24,20 @@ import 'save_session.dart';
 /// per signed-in user). Tests override it.
 final saveEngineProvider = Provider<SaveEngine>((ref) {
   final api = ref.read(apiProvider);
-  final language = (ref.watch(languageProvider).value ?? AppLanguage.all.first).name;
-  if (AppConfig.saveAssistantBackend) return ServerSaveEngine(api: api, languageName: language);
+  final own = ref.watch(languageProvider).value ?? AppLanguage.all.first;
+  final multilingual = ref.watch(multilingualProvider);
+  if (AppConfig.saveAssistantBackend) return ServerSaveEngine(api: api, languageName: own.name, languageCode: multilingual ? own.code : null);
   final userId = ref.watch(authProvider.select((a) => a.user?.id)) ?? 'anonymous';
-  return LocalSaveEngine(api: api, history: LocalSaveSessionRepository(ref.read(prefsProvider), userId: userId), languageName: language);
+  final active = ref.watch(activeLanguageProvider).value ?? 'en';
+  // Save history is per language; English keeps the 1.x key so old chats stay.
+  final key = active == 'en' ? userId : '$userId.$active';
+  return LocalSaveEngine(
+    api: api,
+    history: LocalSaveSessionRepository(ref.read(prefsProvider), userId: key),
+    languageName: own.name,
+    languageCode: multilingual ? own.code : null,
+    learningName: ref.watch(activeCapsProvider).name,
+  );
 });
 
 /// The chats for Recent and Save history.
