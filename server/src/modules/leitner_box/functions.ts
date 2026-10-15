@@ -1,38 +1,45 @@
 import { defineFunction } from "@modular-rest/server";
-import { LeitnerService } from "./service";
+import { LeitnerService, toReviewResult } from "./service";
 import { BoardService } from "../board/service";
+import { LangCode } from "../../languages/helper";
+import { resolveLanguage } from "../../languages/learner";
+
+// Every function here takes an optional `language` (contract section 3). Without one it
+// works on the learner's active language, or for a single card on that card's language.
 
 // Frontend API: Get items to review
 const getReviewSession = defineFunction({
 	name: "get-review-session",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { limit, userId } = context;
+		const { limit, userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
 
 		// Ensure initialized (lazy init)
-		await LeitnerService.ensureInitialized(userId);
+		const lang = await LeitnerService.ensureInitialized(userId, language);
 
-		const items = await LeitnerService.getDueItems(userId, limit ? parseInt(limit) : 20);
+		const items = await LeitnerService.getDueItems(userId, limit ? parseInt(limit) : 20, lang);
 		return items;
 	},
 });
 
-// Frontend API: Submit a review result
+// Frontend API: Submit a review result. `result` is right / close / wrong; old clients send
+// `isCorrect` (true = right, false = wrong). Close keeps the card in its box (Q4).
 const submitReview = defineFunction({
 	name: "submit-review",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { phraseId, isCorrect, userId } = context;
+		const { phraseId, isCorrect, result, userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
 
 		if (!phraseId) throw new Error("Phrase ID is required");
-		if (typeof isCorrect !== "boolean") throw new Error("isCorrect boolean is required");
+		const outcome = toReviewResult(result, isCorrect);
+		if (!outcome) throw new Error("result (right, close or wrong) or isCorrect boolean is required");
 
 		// Submit review (also triggers init if needed)
-		await LeitnerService.submitReview(userId, phraseId, isCorrect);
+		const review = await LeitnerService.submitReview(userId, phraseId, outcome, language);
 
-		return { success: true };
+		return { success: true, language: review.language, result: outcome };
 	},
 });
 
@@ -41,18 +48,18 @@ const refreshBoardStatus = defineFunction({
 	name: "refresh-board-status",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { userId } = context;
+		const { userId, language } = context;
 		if (!userId) {
 			throw new Error("UserId required for refresh-board-status");
 		}
 
-		await _syncUser(userId);
+		await _syncUser(userId, await resolveLanguage(userId, language));
 		return { success: true };
 	},
 });
 
-async function _syncUser(userId: string) {
-	const dueCount = await LeitnerService.getDueCount(userId);
+async function _syncUser(userId: string, language: LangCode) {
+	const dueCount = await LeitnerService.getDueCount(userId, language);
 	await BoardService.refreshActivity(
 		userId,
 		"leitner_review",
@@ -60,7 +67,8 @@ async function _syncUser(userId: string) {
 		dueCount > 0,
 		"singleton",
 		undefined,
-		true // persistent
+		true, // persistent
+		language
 	);
 }
 
@@ -68,9 +76,9 @@ const getStats = defineFunction({
 	name: "get-stats",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { userId } = context;
+		const { userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
-		return LeitnerService.getStats(userId);
+		return LeitnerService.getStats(userId, language);
 	}
 });
 
@@ -78,9 +86,9 @@ const updateSettings = defineFunction({
 	name: "update-settings",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { settings, userId } = context;
+		const { settings, userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
-		await LeitnerService.updateSettings(userId, settings);
+		await LeitnerService.updateSettings(userId, settings, language);
 		return { success: true };
 	}
 });
@@ -89,9 +97,9 @@ const resetSystem = defineFunction({
 	name: "reset-system",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { userId } = context;
+		const { userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
-		await LeitnerService.resetSystem(userId);
+		await LeitnerService.resetSystem(userId, language);
 		return { success: true };
 	},
 });
@@ -100,10 +108,10 @@ const addPhraseToBox = defineFunction({
 	name: "add-phrase-to-box",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { phraseId, boxLevel, userId } = context;
+		const { phraseId, boxLevel, userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
 		if (!phraseId) throw new Error("phraseId is required");
-		await LeitnerService.addPhraseToBox(userId, phraseId, boxLevel ? parseInt(boxLevel) : 1);
+		await LeitnerService.addPhraseToBox(userId, phraseId, boxLevel ? parseInt(boxLevel) : 1, { language });
 		return { success: true };
 	},
 });
@@ -112,10 +120,10 @@ const removePhraseFromBox = defineFunction({
 	name: "remove-phrase-from-box",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { phraseId, userId } = context;
+		const { phraseId, userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
 		if (!phraseId) throw new Error("phraseId is required");
-		await LeitnerService.removePhraseFromBox(userId, phraseId);
+		await LeitnerService.removePhraseFromBox(userId, phraseId, language);
 		return { success: true };
 	},
 });
@@ -126,7 +134,7 @@ const getPhraseManagementInfo = defineFunction({
 	callback: async (context) => {
 		const userId = context.userId || context.args?.userId;
 		if (!userId) throw new Error("Unauthorized");
-		return LeitnerService.getPhraseManagementInfo(userId);
+		return LeitnerService.getPhraseManagementInfo(userId, context.language ?? context.args?.language);
 	},
 });
 
@@ -134,13 +142,13 @@ const getCustomReviewSession = defineFunction({
 	name: "get-custom-review-session",
 	permissionTypes: ["user_access"],
 	callback: async (context) => {
-		const { phraseIds, userId } = context;
+		const { phraseIds, userId, language } = context;
 		if (!userId) throw new Error("Unauthorized");
 		if (!Array.isArray(phraseIds)) throw new Error("phraseIds must be an array");
 
-		await LeitnerService.ensureInitialized(userId);
+		const lang = await LeitnerService.ensureInitialized(userId, language);
 
-		return LeitnerService.getCustomReviewItems(userId, phraseIds as string[]);
+		return LeitnerService.getCustomReviewItems(userId, phraseIds as string[], lang);
 	},
 });
 

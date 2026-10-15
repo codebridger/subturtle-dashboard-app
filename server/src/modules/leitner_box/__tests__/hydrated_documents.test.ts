@@ -29,6 +29,8 @@ describe("LeitnerService on hydrated Mongoose documents", () => {
     });
 
     (getCollection as any).mockImplementation((_db: string, collection: string) => {
+      // No profile and no language profile: an old account, English only.
+      if (collection === "language_profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
       if (collection === "leitner_system") return Promise.resolve({ findOne: jest.fn(async () => system), updateOne: jest.fn() });
       if (collection === "phrase") return Promise.resolve({ find: jest.fn(async () => [{ _id: phraseId, phrase: "hit the sack", chunks: [] }]) });
       if (collection === "profile") return Promise.resolve({ findOne: jest.fn(async () => null) });

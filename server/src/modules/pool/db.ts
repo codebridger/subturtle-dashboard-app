@@ -16,19 +16,24 @@ export interface PoolItem {
 }
 
 /**
- * The Pool is one document per user holding a list of pending phrase IDs. This
+ * The Pool is one document per user and language holding a list of pending phrase IDs. This
  * array shape is right for the current scale; the only known ceiling is Mongo's
  * 16 MB per-document limit (thousands of pooled items) — the future fix, if ever
  * needed, is one document per item.
  */
 export interface Pool {
   userId: string;
+  /** The learning language (ADR-006). Missing on Pools from before multilingual: English. */
+  language?: string;
   items: PoolItem[];
 }
 
 const poolSchema = new Schema<Pool>(
   {
     userId: { type: String, required: true, index: true },
+    // One Pool per (userId, language). The unique index is built by
+    // scripts/multilingual-indexes.mjs after duplicates are merged (ADR-006 point 11).
+    language: { type: String },
     items: {
       type: [
         {
