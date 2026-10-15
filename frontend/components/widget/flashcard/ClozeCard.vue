@@ -114,7 +114,9 @@ const { clozeData, clozeAnswers, clozeChecked, checkResults, gradeResults, cardR
             serverCheck: async (answer) => {
                 if (!props.serverCheck || !props.phraseId || (clozeData.value?.blanks.length ?? 0) !== 1) return null;
                 try {
-                    return await languageApi.checkClozeAnswer({ phraseId: props.phraseId, answer, language: props.language ?? undefined });
+                    const res = await languageApi.checkClozeAnswer({ phraseId: props.phraseId, answer, language: props.language ?? undefined });
+                    // Only a real verdict replaces the local one.
+                    return res && ['right', 'close', 'wrong'].includes(res.result) ? res : null;
                 } catch {
                     return null;
                 }

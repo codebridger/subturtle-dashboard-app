@@ -58,8 +58,15 @@ const phraseType = computed(() => props.phrase?.type ?? 'normal');
 const front = computed(() => props.phrase?.phrase ?? '');
 const back = computed(() => props.phrase?.translation || props.phrase?.phrase || '');
 const context = computed(() => props.phrase?.context ?? '');
-const translationLanguage = computed(() => props.phrase?.translation_language);
-const direction = computed(() => props.phrase?.direction);
+const translationLanguage = computed(() => (languageForCard.ownLanguage ? languageForCard.nameOf(languageForCard.ownLanguage) : props.phrase?.translation_language));
+// D-10: once the profile knows the own language, the translation side follows it (an RTL own
+// language reads right to left) instead of whatever each phrase recorded when it was saved.
+const languageForCard = useLanguageStore();
+const direction = computed(() => {
+    const own = languageForCard.ownLanguage;
+    if (!own) return props.phrase?.direction;
+    return { source: props.phrase?.direction?.source ?? 'ltr', target: languageForCard.rtlOf(own) ? 'rtl' : 'ltr' } as const;
+});
 const languageInfo = computed(() => props.phrase?.language_info);
 const linguisticData = computed(() => props.phrase?.linguistic_data);
 const chunks = computed(() => props.phrase?.chunks ?? []);
@@ -73,7 +80,7 @@ const isClozeMode = computed(() => (props.leitnerLevel ?? 0) >= 3 && !!buildCloz
 
 // Fill the gap with three results (D-14). The review session reads `clozeResult` when the
 // learner moves on, so "Almost" reaches submit-review and keeps the card in its box (Q4).
-const language = useLanguageStore();
+const language = languageForCard;
 const phraseId = computed(() => props.phrase?._id);
 const phraseLanguage = computed(() => props.phrase?.language ?? (language.enabled ? language.activeLanguage : null));
 const serverCheck = computed(() => language.enabled && language.features(phraseLanguage.value).cloze);

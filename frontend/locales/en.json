@@ -971,7 +971,8 @@
                 "remove": "Remove {language}"
             },
             "removed-toast": "{language} was removed. It is kept for 30 days: add it again before {date} and everything comes back.",
-            "error": "Something went wrong. Please try again."
+            "error": "Something went wrong. Please try again.",
+            "retake": "Take the chat test again"
         },
         "add": {
             "overline": "Add a language",

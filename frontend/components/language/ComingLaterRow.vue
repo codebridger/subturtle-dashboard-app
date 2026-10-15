@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StButton } from 'subturtle-ui';
     import LanguageChip from '~/components/language/LanguageChip.vue';
     import { useLanguageStore, trackLanguageEvent } from '~/stores/language';
@@ -37,7 +38,7 @@
         try {
             const res = await languageApi.setLanguageInterest(code, on);
             if (typeof res?.on === 'boolean') told[code] = res.on;
-            trackLanguageEvent('language_interest', { language: code, on });
+            trackLanguageEvent(ANALYTICS_EVENTS.LANGUAGE_INTEREST, { language: code, on });
         } catch (error) {
             console.error('Tell me failed:', error);
             told[code] = !on;

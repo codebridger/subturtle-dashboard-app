@@ -55,6 +55,8 @@ interface FakeOptions {
     onboarding?: 'done' | 'needs_language';
     /** Answer the language functions at all (false = today's server). */
     multilingual?: boolean;
+    /** get-review-session items. */
+    review?: unknown[];
 }
 
 /** A tiny language module that follows the contract. `calls` records every function call. */
@@ -69,6 +71,7 @@ function createFakeServer(opts: FakeOptions = {}) {
         pending: opts.pending ?? [],
     };
     const calls: { name: string; args: any }[] = [];
+    const packHeard: string[] = [];
     let testTurn = 0;
 
     function handle(name: string, args: any): { status: number; data?: any; message?: string } {
@@ -125,6 +128,27 @@ function createFakeServer(opts: FakeOptions = {}) {
                 return { status: 200, data: { state } };
             case 'get-board':
                 return { status: 200, data: { language: state.learningLanguage, newLanguage: !active.find((l: Summary) => l.code === state.learningLanguage)?.phraseCount, activities: [] } };
+            case 'get-starter-pack':
+                return {
+                    status: 200,
+                    data: {
+                        items: [
+                            { id: 'de-greetings-01', text: 'Hallo!', translation: 'سلام!', band: 1, group: 'greetings' },
+                            { id: 'de-greetings-02', text: 'Guten Morgen!', translation: 'صبح بخیر!', band: 1, group: 'greetings' },
+                        ],
+                        heard: (opts as any).heard ?? [],
+                    },
+                };
+            case 'complete-starter-pack-items': {
+                packHeard.push(...args.itemIds);
+                return { status: 200, data: { heard: packHeard.length, total: 2, done: packHeard.length >= 2 } };
+            }
+            case 'skip-starter-pack':
+                return { status: 200, data: { state } };
+            case 'get-review-session':
+                return { status: 200, data: (opts as any).review ?? [] };
+            case 'get-stats':
+                return { status: 200, data: { totalItems: 0, settings: { dailyLimit: 20, reviewHour: 9, reviewInterval: 1, boxIntervals: [1, 2, 4, 8, 16] } } };
             case 'getSubscriptionDetails':
                 return { status: 200, data: { is_freemium: state.plan === 'starter', tier: state.plan, label: state.plan, usage_percentage: 0 } };
             default:
@@ -328,5 +352,68 @@ test.describe('Multilingual dashboard', () => {
         // Gate lifted: Today opens.
         await page.goto('/#/board');
         await expect(page).toHaveURL(/#\/board/);
+    });
+
+    test('a new language has a first-phrase board with the starter pack offer', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en', { phraseCount: 142 }), summary('de', { phraseCount: 0 })], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/board');
+
+        await expect(page.getByText('Today · German')).toBeVisible();
+        await expect(page.getByTestId('board-new-language')).toContainText('Save your first German phrase');
+        await expect(page.getByTestId('starter-pack-card')).toContainText('German starter pack');
+        await expect(page.getByText("You're all caught up")).toHaveCount(0);
+    });
+
+    test('the starter pack marks chunks heard and ends on its finish state', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de')], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/practice/starter-pack');
+
+        await expect(page.getByTestId('pack-progress')).toHaveText('0 of 2 heard');
+        // The own-language translation is a right-to-left run.
+        await expect(page.getByText('صبح بخیر!')).toHaveAttribute('dir', 'rtl');
+        await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Mark as heard' }).click();
+        await expect(page.getByTestId('pack-progress')).toHaveText('1 of 2 heard');
+        await page.getByTestId('pack-item-de-greetings-02').getByRole('button', { name: 'Mark as heard' }).click();
+
+        await expect(page.getByTestId('pack-done')).toContainText('Starter pack done');
+        expect(fake.calls.filter((c) => c.name === 'complete-starter-pack-items').map((c) => c.args)).toEqual([
+            expect.objectContaining({ language: 'de', itemIds: ['de-greetings-01'] }),
+            expect.objectContaining({ language: 'de', itemIds: ['de-greetings-02'] }),
+        ]);
+    });
+
+    test('fill the gap shows the cue, says "Almost", and sends close to submit-review', async ({ page }) => {
+        const phrase = {
+            _id: 'p1',
+            type: 'linguistic',
+            phrase: 'gegangen',
+            translation: 'رفته',
+            context: 'Wir sind gestern gegangen.',
+            language: 'de',
+            chunks: [{ text: 'gegangen', type: 'other', confidence: 0.9, lemma: 'gehen', form: 'past participle' }],
+        };
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { phraseCount: 1 })], active: 'de', review: [{ phrase, boxLevel: 3 }] });
+        await boot(page, fake);
+        await page.goto('/#/practice/review');
+
+        await expect(page.getByText('Review · German')).toBeVisible();
+        await expect(page.getByTestId('cloze-cue')).toHaveText('gehen · past participle');
+        await page.locator('input[type="text"]').fill('gegangene');
+        await page.getByRole('button', { name: 'Check' }).click();
+        await expect(page.getByTestId('cloze-status')).toContainText('Almost');
+
+        await page.getByRole('button', { name: /Learned/ }).click();
+        await expect.poll(() => fake.calls.find((c) => c.name === 'submit-review')?.args).toMatchObject({ phraseId: 'p1', result: 'close', language: 'de' });
+    });
+
+    test('review settings say which ones are per language', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de')], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/settings/preferences');
+
+        await expect(page.getByTestId('scope-language').first()).toHaveText('German only');
+        await expect(page.getByTestId('scope-all').first()).toHaveText('All languages');
     });
 });

@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StBadge, StButton, StCard, StIcon, StIconButton, StProgressBar, StSkeleton } from 'subturtle-ui';
     import { toastSuccess } from 'pilotui/toast';
     import StPageHeader from '~/components/common/StPageHeader.vue';
@@ -151,7 +152,7 @@
             const res = await languageApi.completeStarterPackItems(language.activeLanguage, [item.id]);
             if (res?.done) {
                 done.value = true;
-                trackLanguageEvent('starter_pack_done', { language: language.activeLanguage });
+                trackLanguageEvent(ANALYTICS_EVENTS.STARTER_PACK_DONE, { language: language.activeLanguage });
                 language.refreshState();
             }
         } catch (e) {
@@ -167,7 +168,7 @@
         busy.value = true;
         try {
             language.setState(await languageApi.skipStarterPack(language.activeLanguage));
-            trackLanguageEvent('starter_pack_skipped', { language: language.activeLanguage, heard: heard.value.size });
+            trackLanguageEvent(ANALYTICS_EVENTS.STARTER_PACK_SKIPPED, { language: language.activeLanguage, heard: heard.value.size });
             toastSuccess(t('languages.starter.skipped'), { position: 'top-end' });
             router.push('/board');
         } catch (e) {

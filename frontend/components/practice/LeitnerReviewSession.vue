@@ -64,6 +64,8 @@
 import { Button, Icon } from 'pilotui/elements';
 import { type PhraseType, type LeitnerItemType } from '~/types/database.type';
 import type { ReviewResult } from '~/types/language.type';
+import { trackLanguageEvent } from '~/stores/language';
+import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 const props = defineProps<{
 	items: LeitnerItemType[];
@@ -135,6 +137,7 @@ function submitResult(isCorrect: boolean) {
 	const cloze = flashCardRef.value?.clozeResult as ReviewResult | null | undefined;
 	const result: ReviewResult | undefined = !isCorrect ? (cloze ? 'wrong' : undefined) : cloze === 'close' ? 'close' : cloze ? 'right' : undefined;
 	emit('submit-result', currentPhrase.value._id, isCorrect, result);
+	if (cloze) trackLanguageEvent(ANALYTICS_EVENTS.CLOZE_RESULT, { result: cloze });
 
 	if (currentIndex.value < totalItems.value - 1) {
 		currentIndex.value++;
