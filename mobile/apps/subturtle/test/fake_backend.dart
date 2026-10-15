@@ -110,8 +110,9 @@ Future<FakeBackend> pumpApp(
 }) async {
   final backend = FakeBackend()..signedIn = signedIn;
   backend.seedDefaults();
-  languages?.install(backend);
   seed?.call(backend);
+  // After the seed: it scopes the seeded (English) board and bundles by language.
+  languages?.install(backend);
   SharedPreferences.setMockInitialValues({'language': 'Persian', 'haptics': false, 'theme': ?theme?.name});
   final prefs = await SharedPreferences.getInstance();
   final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: backend.client, tokenStore: MemoryTokenStore(signedIn ? 'header.eyJpZCI6InUxIn0.sig' : null));
