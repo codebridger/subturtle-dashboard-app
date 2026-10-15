@@ -167,7 +167,7 @@
 <script setup lang="ts">
     // Standalone "start a new session" entry point bound to the Gemini practice page.
     import { StButton, StCard, StEmptyState, StIcon, StInput, StProgressBar, StSkeleton } from 'subturtle-ui';
-    import { withLanguage } from '~/utils/languageScope';
+    import { languageQuery, withLanguage } from '~/utils/languageScope';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import type { LiveSessionRequest } from '~/types/live-session-request';
     import { pickPhraseIds, encodeSessionRequest } from '~/utils/livePractice';
@@ -216,6 +216,7 @@
             collection: COLLECTIONS.PHRASE_BUNDLE,
             query: {
                 refId: authUser.value?.id,
+                ...languageQuery(),
                 title: { $regex: filter.value, $options: 'i' },
             },
             options: { sort: { _id: -1 } },

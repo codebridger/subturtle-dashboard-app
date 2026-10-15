@@ -5,16 +5,23 @@
         <!-- Content (grows, scrolls, vertically centered) -->
         <div class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-2 text-center">
             <div class="mb-4 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Fill in the blanks</div>
-            <p v-if="clozeData" class="w-full max-w-2xl text-lg font-medium leading-loose md:text-xl"
-                :dir="direction?.source || 'ltr'">
+            <!-- The sentence is its own isolated run with the learning language's direction, so a
+                 blank keeps its place even inside a right-to-left screen (D-21). -->
+            <p v-if="clozeData" class="w-full max-w-2xl text-lg font-medium leading-loose md:text-xl [unicode-bidi:isolate]"
+                :dir="direction?.source || 'ltr'" :lang="language || undefined">
                 <template v-for="(seg, i) in clozeData.segments" :key="i">
                     <span v-if="seg.type === 'text'">{{ seg.value }}</span>
-                    <input v-else v-model="clozeAnswers[seg.blankIndex]" type="text" @click.stop
-                        @keyup.enter="checkCloze" :style="{ width: Math.max(seg.answer.length, 5) + 'ch' }"
-                        class="mx-1 border-b-2 bg-transparent text-center align-bottom outline-none"
-                        :class="clozeChecked && checkResults[seg.blankIndex] !== undefined
-                            ? (checkResults[seg.blankIndex] ? 'border-green-500 text-green-600' : 'border-red-500 text-red-500')
-                            : 'border-blue-500 text-gray-800'" />
+                    <span v-else class="inline-flex flex-col items-center align-bottom">
+                        <!-- The cue (D-14): the base form and the form asked for. -->
+                        <span v-if="cueFor(seg.chunk)" class="mb-0.5 rounded-full bg-sky-50 px-2 text-[11px] font-bold leading-5 text-sky-700" data-testid="cloze-cue">
+                            {{ cueFor(seg.chunk) }}
+                        </span>
+                        <input v-model="clozeAnswers[seg.blankIndex]" type="text" @click.stop
+                            @keyup.enter="checkCloze" :style="{ width: Math.max(seg.answer.length, 5) + 'ch' }"
+                            :aria-label="cueFor(seg.chunk) || undefined"
+                            class="mx-1 border-b-2 bg-transparent text-center outline-none"
+                            :class="blankClass(seg.blankIndex)" />
+                    </span>
                 </template>
             </p>
         </div>
@@ -31,11 +38,8 @@
                     Clear wrong
                 </button>
             </div>
-            <div class="h-5 overflow-hidden whitespace-nowrap text-sm font-medium"
-                :class="allBlanksCorrect ? 'text-green-600' : 'text-gray-500'">
-                <template v-if="clozeChecked">
-                    {{ allBlanksCorrect ? 'All correct!' : wrongCount + ' to fix — edit and check again' }}
-                </template>
+            <div class="h-5 overflow-hidden whitespace-nowrap text-sm font-medium" :class="statusClass" data-testid="cloze-status">
+                <template v-if="clozeChecked">{{ statusText }}</template>
             </div>
         </div>
     </div>
@@ -72,9 +76,11 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue';
+import { computed, toRef, watch } from 'vue';
 import type { Chunk } from '~/types/database.type';
-import { useClozeBlanks } from '~/composables/useClozeBlanks';
+import type { ReviewResult } from '~/types/language.type';
+import { useClozeBlanks, type ClozeChunk } from '~/composables/useClozeBlanks';
+import { languageApi } from '~/utils/languageApi';
 
 const props = defineProps<{
     sourceSentence?: string | null;
@@ -83,15 +89,71 @@ const props = defineProps<{
     direction?: { source: 'ltr' | 'rtl'; target: 'ltr' | 'rtl' };
     back?: string;
     isFlipped?: boolean;
+    /** The phrase, for the server's `check-cloze-answer`. Without it the local rules decide. */
+    phraseId?: string;
+    /** The learning language of the phrase (accent and spelling rules, `lang` of the sentence). */
+    language?: string | null;
+    /** Ask the server to judge (multilingual on and the language has `cloze`). */
+    serverCheck?: boolean;
 }>();
+
+/** The three-way result once Check is pressed (Q4); null again on a new card. */
+const emit = defineEmits<{ result: [result: ReviewResult | null] }>();
 
 const direction = toRef(props, 'direction');
 const back = toRef(props, 'back');
 const isFlipped = toRef(props, 'isFlipped');
 
-const { clozeData, clozeAnswers, clozeChecked, checkResults, checkCloze, clearWrong, allBlanksCorrect, wrongCount } =
+const { clozeData, clozeAnswers, clozeChecked, checkResults, gradeResults, cardResult, checkCloze, clearWrong, allBlanksCorrect, wrongCount } =
     useClozeBlanks(
         () => props.sourceSentence || props.context || '',
-        () => props.chunks || []
+        () => props.chunks || [],
+        {
+            language: () => props.language,
+            // `check-cloze-answer` takes one answer per phrase, so it judges single-blank cards.
+            serverCheck: async (answer) => {
+                if (!props.serverCheck || !props.phraseId || (clozeData.value?.blanks.length ?? 0) !== 1) return null;
+                try {
+                    return await languageApi.checkClozeAnswer({ phraseId: props.phraseId, answer, language: props.language ?? undefined });
+                } catch {
+                    return null;
+                }
+            },
+        }
     );
+
+watch(cardResult, (result) => emit('result', result));
+
+/** "gehen · past participle" — shown only when the chunk carries a cue (B-15). */
+function cueFor(chunk: Chunk) {
+    const c = chunk as ClozeChunk;
+    if (!c.lemma && !c.form) return '';
+    return [c.lemma, c.form].filter(Boolean).join(' · ');
+}
+
+function blankClass(blankIndex: number) {
+    if (!clozeChecked.value || !gradeResults[blankIndex]) return 'border-blue-500 text-gray-800';
+    const result = gradeResults[blankIndex].result;
+    if (result === 'right') return 'border-green-500 text-green-600';
+    if (result === 'close') return 'border-amber-500 text-amber-600';
+    return 'border-red-500 text-red-500';
+}
+
+const closeBlank = computed(() => clozeData.value?.blanks.find((b) => gradeResults[b.blankIndex]?.result === 'close'));
+
+const statusText = computed(() => {
+    if (allBlanksCorrect.value) return 'Right!';
+    if (cardResult.value === 'close' && closeBlank.value) {
+        const g = gradeResults[closeBlank.value.blankIndex];
+        // Q4: "Almost" with the right form.
+        return g.reason === 'accent' ? `Almost: mind the accent: ${g.expected}` : `Almost: right word, check the ending: ${g.expected}`;
+    }
+    return wrongCount.value + ' to fix — edit and check again';
+});
+
+const statusClass = computed(() => {
+    if (allBlanksCorrect.value) return 'text-green-600';
+    if (cardResult.value === 'close') return 'text-amber-600';
+    return 'text-gray-500';
+});
 </script>
