@@ -1,3 +1,10 @@
+# [1.3.0-dev.27](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.26...v1.3.0-dev.27) (2026-10-15)
+
+
+### Features
+
+* **mobile:** read the per-language settings from get-language-state; Me shows and ticks New phrases a day (M-08) ([d6d1cdf](https://github.com/codebridger/subturtle-dashboard-app/commit/d6d1cdf3d0c90cf03b1503d20ea55a767e0b86f9))
+
 # [1.3.0-dev.26](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.25...v1.3.0-dev.26) (2026-10-15)
 
 
