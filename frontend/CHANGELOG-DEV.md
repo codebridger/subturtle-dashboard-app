@@ -1,3 +1,10 @@
+# [1.3.0-dev.23](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.22...v1.3.0-dev.23) (2026-10-15)
+
+
+### Features
+
+* **server:** a non-HD speech voice per learning language for textToSpeechBase64 (B-20, B-22) ([e9e8c49](https://github.com/codebridger/subturtle-dashboard-app/commit/e9e8c49258acb63430637e7c0ca44fbc9123aff9))
+
 # [1.3.0-dev.22](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.21...v1.3.0-dev.22) (2026-10-15)
 
 
