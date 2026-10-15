@@ -7,6 +7,7 @@ import {
 import { TranslateWithContextParams, TranslationAdviceParams } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { synthesizeSpeech } from "./tts";
+import { getLearningLanguage } from "../../languages/registry";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
@@ -94,6 +95,36 @@ interface TextToSpeechParams {
   languageCode?: string;
   voiceName?: string;
   speakingRate?: number;
+  /** A learning language ("de"): with no voiceName, its register `speechVoice` is used. */
+  language?: string;
+}
+
+/** The BCP-47 code a Google voice name starts with: "de-DE-Neural2-G" → "de-DE". */
+function voiceLanguageCode(voiceName: string): string | undefined {
+  return /^([a-z]{2,3}-[A-Z]{2})-/.exec(voiceName)?.[1];
+}
+
+/**
+ * The voice and language code to speak with. Rules:
+ * - a non-HD voice the caller names is used as before;
+ * - no voice, but a learning `language`: that language's register `speechVoice`;
+ * - an HD voice (refused: it costs more per character): the `speechVoice` of the caller's
+ *   `language`, or of the voice's own language ("de-DE-Chirp3-HD-Kore" → German);
+ * - nothing: today's English default.
+ */
+export function resolveSpeechVoice(params: Pick<TextToSpeechParams, "languageCode" | "voiceName" | "language">): { languageCode: string; voiceName: string } {
+  const requested = typeof params.voiceName === "string" ? params.voiceName.trim() : "";
+  if (requested && !requested.includes("HD")) {
+    return { languageCode: params.languageCode || voiceLanguageCode(requested) || "en-US", voiceName: requested };
+  }
+
+  const fromLanguage = getLearningLanguage(params.language)?.speechVoice;
+  const fromVoice = requested ? getLearningLanguage(voiceLanguageCode(requested))?.speechVoice : undefined;
+  const voice = fromLanguage || fromVoice;
+  if (voice) return { languageCode: voiceLanguageCode(voice) || "en-US", voiceName: voice };
+
+  if (requested) throw new Error("HD voices are not supported");
+  return { languageCode: params.languageCode || "en-US", voiceName: "en-US-Standard-A" };
 }
 
 /**
@@ -104,16 +135,8 @@ const textToSpeech = defineFunction({
   name: "textToSpeechBase64",
   permissionTypes: ["anonymous_access"],
   callback: async (params: TextToSpeechParams) => {
-    const {
-      text,
-      languageCode = "en-US",
-      voiceName = "en-US-Standard-A",
-      speakingRate = 1.0,
-    } = params;
-
-    if (voiceName.includes("HD")) {
-      throw new Error("HD voices are not supported");
-    }
+    const { text, speakingRate = 1.0 } = params;
+    const { languageCode, voiceName } = resolveSpeechVoice(params);
 
     try {
       const audio = await synthesizeSpeech({ text, languageCode, voiceName, speakingRate });
