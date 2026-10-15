@@ -1,5 +1,5 @@
 import { LeitnerItem, ReviewItem } from "./db";
-import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION } from "../../config";
+import { DATABASE, PHRASE_COLLECTION, DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION, BUNDLE_COLLECTION, PROFILE_COLLECTION, LANGUAGE_PROFILE_COLLECTION } from "../../config";
 import { getCollection } from "@modular-rest/server";
 import { Document } from "mongoose";
 import { BoardService } from "../board/service";
@@ -7,7 +7,7 @@ import { ScheduleService } from "../schedule/service";
 import { pickPrimaryChunkText } from "../../utils/chunk";
 import { LangCode, langOf, languageFilter, toCode } from "../../languages/helper";
 import { getLearnerLanguages, resolveLanguage, resolvePhraseLanguage } from "../../languages/learner";
-import { poolSettings } from "../../languages/language-settings";
+import { findLanguageProfile, poolSettings } from "../../languages/language-settings";
 import { getOrCreate } from "../../utils/get-or-create";
 import { clozeFields } from "./cloze-cue";
 
@@ -441,6 +441,19 @@ export class LeitnerService {
     }
     if (Object.keys(profilePayload).length > 0) {
       await profileCol.updateOne({ refId: userId }, { $set: profilePayload }, { upsert: true });
+    }
+
+    // The Pool settings are per language (ADR-006 point 2): when this language has a
+    // language profile, write them there too, or its value would hide the one just set.
+    const languagePool: any = {};
+    if (profilePayload.poolAgeCutoffDays !== undefined) languagePool.poolAgeCutoffDays = profilePayload.poolAgeCutoffDays;
+    if (profilePayload.poolChunkSize !== undefined) languagePool.poolChunkSize = profilePayload.poolChunkSize;
+    if (Object.keys(languagePool).length > 0) {
+      const languageProfile = await findLanguageProfile(userId, lang);
+      if (languageProfile?._id) {
+        const languageProfiles = await getCollection(DATABASE, LANGUAGE_PROFILE_COLLECTION);
+        await languageProfiles.updateOne({ _id: languageProfile._id }, { $set: languagePool });
+      }
     }
 
     // Sync schedule if interval or hour changed

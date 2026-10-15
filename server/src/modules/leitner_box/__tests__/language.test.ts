@@ -151,6 +151,15 @@ describe("Leitner per language", () => {
     expect((await call(leitnerFns, "get-stats", { userId: ALICE, language: "en" })).totalItems).toBe(1);
   });
 
+  it("update-settings writes Pool settings to that language's profile when it has one", async () => {
+    await LanguageProfiles.create({ userId: ALICE, language: "de", poolAgeCutoffDays: 30 });
+    await call(leitnerFns, "update-settings", { userId: ALICE, language: "de", settings: { poolAgeCutoffDays: 3 } });
+    expect((await call(leitnerFns, "get-stats", { userId: ALICE, language: "de" })).settings.poolAgeCutoffDays).toBe(3);
+    expect(((await LanguageProfiles.findOne({ userId: ALICE, language: "de" }).lean()) as any).poolAgeCutoffDays).toBe(3);
+    // English has no language profile: the profile value applies.
+    expect((await LeitnerService.getSettings(ALICE, "en")).poolAgeCutoffDays).toBe(3);
+  });
+
   it("get-or-create is one upsert: parallel calls leave one document per language", async () => {
     await Promise.all([
       ...Array.from({ length: 5 }, () => LeitnerService.ensureInitialized(ALICE, "de")),
