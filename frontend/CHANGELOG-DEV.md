@@ -1,3 +1,15 @@
+# [1.3.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.6...v1.3.0-dev.7) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** apply AI review fixes to the starter packs (C-01, C-03, C-04) ([c05fe44](https://github.com/codebridger/subturtle-dashboard-app/commit/c05fe44c6a330e93c91a6066d3f2d8665f30a4b5))
+
+
+### Features
+
+* **server:** add A1 starter packs for seven learning languages (C-01) ([d25ad9f](https://github.com/codebridger/subturtle-dashboard-app/commit/d25ad9fc601b60066fa17a0e7cae2258cb4cb5b9))
+
 # [1.3.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.5...v1.3.0-dev.6) (2026-10-15)
 
 
