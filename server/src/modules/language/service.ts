@@ -175,7 +175,7 @@ export class LanguageService {
   // --- reads -----------------------------------------------------------------------------
 
   static async getLanguageProfile(userId: string, language: LangCode): Promise<LanguageProfile | null> {
-    return languageProfiles().findOne({ userId, language }).lean();
+    return (await languageProfiles().findOne({ userId, language }).lean()) as LanguageProfile | null;
   }
 
   /** The full state for the switcher, the Languages page and first run (B-05). */
@@ -324,7 +324,7 @@ export class LanguageService {
   ): Promise<{ profile: any; languages: LanguageProfile[] }> {
     let profile: any = await profiles().findOne({ refId: userId }).lean();
     profile = await this.adoptLegacyAccount(userId, profile);
-    let languages: LanguageProfile[] = await languageProfiles().find({ userId }).lean();
+    let languages = (await languageProfiles().find({ userId }).lean()) as unknown as LanguageProfile[];
 
     const studied = languages.filter((lp) => lp.status === "active" || lp.status === "paused");
     const current = toCode(profile?.learningLanguage);
@@ -357,7 +357,7 @@ export class LanguageService {
         changed = true;
       }
     }
-    if (changed) languages = await languageProfiles().find({ userId }).lean();
+    if (changed) languages = (await languageProfiles().find({ userId }).lean()) as unknown as LanguageProfile[];
 
     const activeCodes = [...active.filter((lp) => lp.status === "active").map((lp) => lp.language), ...inFlight];
     const pausedCodes = paused.filter((lp) => lp.status === "paused").map((lp) => lp.language);

@@ -125,6 +125,13 @@ const app = createRest({
     catchUp: true,
   }).catch((err: any) => console.error("[Schedule] Failed to create pool-age-out job", err));
 
+  // Daily purge of removed languages after 30 days (ADR-006 point 6). Off unless
+  // LANGUAGE_PURGE_MODE is dry-run or on; see modules/language/purge.ts.
+  const { setupLanguagePurgeJob } = require("./modules/language/purge");
+  setupLanguagePurgeJob(ScheduleService).catch((err: any) =>
+    console.error("[Schedule] Failed to set up the language-purge job", err)
+  );
+
   // Log whether the Stripe catalog + portal config are in place, so you can tell
   // from the server logs whether `yarn setup:stripe` still needs to be run.
   // Fire-and-forget; verifyStripeSetup never throws (the catch is belt-and-braces).
