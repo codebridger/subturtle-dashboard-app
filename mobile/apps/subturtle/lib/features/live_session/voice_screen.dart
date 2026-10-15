@@ -9,6 +9,7 @@ import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../coach/coach_home_screen.dart';
 import 'chat_bubbles.dart';
+import 'explanation_flag.dart';
 import 'session_launch.dart';
 import 'voice_controller.dart';
 
@@ -224,6 +225,9 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                           child: Text(l.fromUser ? 'You' : 'Coach', style: StType.labelMedium.copyWith(color: c.textFaint)),
                         ),
                         ChatBubble(text: l.text, fromUser: l.fromUser, phrases: l.fromUser ? const [] : widget.launch.phrases),
+                        // Under the Coach's explanation: "This looks wrong" (S13).
+                        if (!l.fromUser && ref.watch(multilingualProvider))
+                          ExplanationFlag(sessionId: v.sessionId, turnIndex: lines.take(lines.length - 1 - i).where((x) => !x.fromUser).length),
                       ],
                     );
                   },

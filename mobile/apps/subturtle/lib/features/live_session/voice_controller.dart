@@ -119,6 +119,9 @@ class VoiceController extends ChangeNotifier {
   StreamSubscription<LiveEvent>? _events;
   StreamSubscription<Uint8List>? _mic;
   String? _sessionId;
+
+  /// The session record, once created (for the explanation flag).
+  String? get sessionId => _sessionId;
   String? _resumeHandle;
   DateTime? _liveSince;
   Timer? _ticker;
@@ -144,7 +147,7 @@ class VoiceController extends ChangeNotifier {
       final token = await repo.requestGeminiToken(instructions: launch.instructions, voice: launch.voice, tools: CoachPractice.tools);
       maxSeconds = token.maxSeconds;
       if (maxSeconds == 0) throw ApiException('TIER_LIMIT_REACHED: "voice_minutes" limit reached (0)');
-      _sessionId = await repo.createRecord(token: token, metadata: launch.metadata('voice'));
+      _sessionId = await repo.createRecord(token: token, metadata: launch.metadata('voice'), language: launch.language, explanationLanguage: launch.explanationLanguage);
       await _audio.startSpeaker();
       await _connect(token);
       WakelockPlus.enable().ignore();
