@@ -1,3 +1,10 @@
+# [1.3.0-dev.11](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.10...v1.3.0-dev.11) (2026-10-15)
+
+
+### Features
+
+* **server:** build the Coach prompt on the server, per learning language (B-19, B-20) ([b0ec32c](https://github.com/codebridger/subturtle-dashboard-app/commit/b0ec32cf4d3d078df7a7aaf2a8467d31a182aa41))
+
 # [1.3.0-dev.10](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.9...v1.3.0-dev.10) (2026-10-15)
 
 
