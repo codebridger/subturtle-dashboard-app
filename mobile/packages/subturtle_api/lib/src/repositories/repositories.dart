@@ -394,6 +394,7 @@ class LiveSessionRepository extends _Repo {
     required List<String> phraseIds,
     required String mode,
     String? language,
+    String? voice,
   }) async {
     try {
       final res = await fn.run('get-coach-instructions', {
@@ -402,6 +403,7 @@ class LiveSessionRepository extends _Repo {
         'explanationLanguage': explanationLanguage,
         'phraseIds': phraseIds,
         'mode': mode,
+        'voice': ?voice,
       });
       final out = CoachInstructions.fromJson(res);
       return out.instructions.isEmpty ? null : out;
@@ -413,9 +415,16 @@ class LiveSessionRepository extends _Repo {
 
   /// "This looks wrong" under a Coach explanation ([on] false is Undo).
   /// Returns false when the server cannot take flags yet.
-  Future<bool> flagExplanation({required String sessionId, required int turnIndex, required bool on}) async {
+  Future<bool> flagExplanation({required String sessionId, required int turnIndex, required bool on, String? language, String? explanationLanguage}) async {
     try {
-      await fn.run('flag-coach-explanation', {'userId': uid, 'sessionId': sessionId, 'turnIndex': turnIndex, 'on': on});
+      await fn.run('flag-coach-explanation', {
+        'userId': uid,
+        'sessionId': sessionId,
+        'turnIndex': turnIndex,
+        'on': on,
+        ...scope(language),
+        'explanationLanguage': ?explanationLanguage,
+      });
       return true;
     } on ApiException catch (e) {
       if (e.isMissingFunction) return false;

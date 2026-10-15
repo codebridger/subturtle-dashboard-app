@@ -161,10 +161,15 @@ class SettingsController extends Notifier<AppSettings> {
     state = state.copyWith(language: l);
   }
 
-  void setLastBundle(String id) {
-    _p.setString('lastBundle', id);
-    state = state.copyWith(lastBundleId: id);
+  /// The last bundle saved into, per learning language. English keeps the 1.x key.
+  void setLastBundle(String id, {String language = 'en'}) {
+    _p.setString(_lastBundleKey(language), id);
+    if (language == 'en') state = state.copyWith(lastBundleId: id);
   }
+
+  String? lastBundleFor(String language) => _p.getString(_lastBundleKey(language));
+
+  static String _lastBundleKey(String language) => language == 'en' ? 'lastBundle' : 'lastBundle.$language';
 
   void setLastVoice(String v) {
     _p.setString('lastVoice', v);
@@ -360,6 +365,13 @@ final bundlesProvider = FutureProvider<List<Bundle>>((ref) async {
   return ref.read(apiProvider).bundles.listBundles(language: lang);
 });
 
+/// The bundles of any learning language (the save sheet saves a phrase to
+/// another language without switching).
+final bundlesOfLanguageProvider = FutureProvider.family<List<Bundle>, String>((ref, lang) {
+  ref.watch(authProvider.select((s) => s.user?.id));
+  return ref.read(apiProvider).bundles.listBundles(language: lang);
+});
+
 /// Phrase → level and due ids, for "N due" counts and level dots (active language).
 final phraseInfoProvider = FutureProvider<PhraseManagementInfo>((ref) async {
   final lang = await ref.watch(activeLanguageProvider.future);
@@ -392,6 +404,7 @@ final bundleDetailProvider = FutureProvider.family<(Bundle, List<Phrase>), Strin
 /// Reloads everything that depends on phrases (after a save, a delete or a review).
 void refreshLearningData(WidgetRef ref) {
   ref.invalidate(bundlesProvider);
+  ref.invalidate(bundlesOfLanguageProvider);
   ref.invalidate(phraseInfoProvider);
   ref.invalidate(statsProvider);
   ref.invalidate(subscriptionProvider);

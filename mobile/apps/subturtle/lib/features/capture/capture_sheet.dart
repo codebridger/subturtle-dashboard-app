@@ -11,6 +11,7 @@ import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/languages.dart';
+import '../languages/language_ui.dart';
 import '../phrase/phrase_parts.dart';
 import '../today/today_screen.dart';
 import 'bundle_picker.dart';
@@ -78,6 +79,10 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
   _View _view = _View.start;
   _View _beforeHistory = _View.start;
   Bundle? _bundle;
+
+  /// The language [_bundle] belongs to: a phrase may save to another of the
+  /// learner's languages without switching (M-09).
+  String? _bundleLang;
   String? _saveError;
 
   @override
@@ -88,7 +93,7 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
       engine: ref.read(saveEngineProvider),
       languageName: (ref.read(languageProvider).value ?? AppLanguage.all.first).name,
     )..addListener(_onChange);
-    _pickDefaultBundle();
+    _loadBundleFor(ref.read(activeLanguageProvider).value ?? 'en');
     final text = widget.initialText?.trim() ?? '';
     if (text.isNotEmpty) _start(text, source: 'share');
   }
@@ -105,11 +110,90 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _pickDefaultBundle() async {
-    final bundles = await ref.read(bundlesProvider.future).catchError((_) => <Bundle>[]);
-    final wanted = widget.bundleId ?? ref.read(settingsProvider).lastBundleId;
-    if (!mounted) return;
+  /// The default bundle of [lang]: the one asked for, else the last one saved
+  /// into in that language, else its newest.
+  Future<void> _loadBundleFor(String lang) async {
+    _bundleLang = lang;
+    final active = ref.read(activeLanguageProvider).value ?? 'en';
+    final bundles = lang == active
+        ? await ref.read(bundlesProvider.future).catchError((_) => <Bundle>[])
+        : await ref.read(bundlesOfLanguageProvider(lang).future).catchError((_) => <Bundle>[]);
+    final wanted = (lang == active ? widget.bundleId : null) ?? ref.read(settingsProvider.notifier).lastBundleFor(lang);
+    if (!mounted || _bundleLang != lang) return;
     setState(() => _bundle = bundles.where((b) => b.id == wanted).firstOrNull ?? bundles.firstOrNull);
+  }
+
+  /// Where [phrase] saves and what the language row shows (Part-LanguageRow).
+  /// `saveTo` is null while the learner must choose (missing) or has kept it.
+  ({StSaveLanguageState? row, String? saveTo, String code}) _where(String? phrase, {bool watch = false}) {
+    final s = watch ? ref.watch(languageStateProvider).value : ref.read(languageStateProvider).value;
+    final active = s?.active ?? 'en';
+    if (s == null || !s.fromServer || phrase == null) return (row: null, saveTo: active, code: active);
+    final mine = {for (final l in s.studying) l.code};
+    final kept = _assistant.kept[phrase];
+    if (kept != null) return (row: StSaveLanguageState.kept, saveTo: null, code: kept.language);
+    final detected = _assistant.detectedLanguageOf(phrase);
+    final known = detected != null && detected.isNotEmpty && detected != 'unknown' && detected != 'auto';
+    final chosen = _assistant.chosenLanguage[phrase];
+    if (chosen != null) {
+      if (known && !mine.contains(detected) && chosen == active) return (row: StSaveLanguageState.savedToActive, saveTo: active, code: detected);
+      return (row: chosen == active ? StSaveLanguageState.active : StSaveLanguageState.other, saveTo: chosen, code: chosen);
+    }
+    if (!known || detected == active) return (row: StSaveLanguageState.active, saveTo: active, code: active);
+    if (mine.contains(detected)) return (row: StSaveLanguageState.other, saveTo: detected, code: detected);
+    return (row: StSaveLanguageState.missing, saveTo: null, code: detected);
+  }
+
+  /// L9 · this phrase only: which of the learner's languages it saves to.
+  Future<void> _pickLanguageFor(String phrase, String? current) async {
+    final s = ref.read(languageStateProvider).value;
+    final caps = ref.read(languageCapsProvider).value ?? LanguageCapabilities.fallback;
+    if (s == null) return;
+    final code = await showStBottomSheet<String>(
+      context: context,
+      builder: (ctx) => StSheet(
+        title: 'Save this phrase to which language?',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('For this phrase only. ${caps.learningByCode(s.active)?.name ?? 'Your active language'} stays your active language.', style: StType.bodyMedium.copyWith(color: ctx.st.textMuted)),
+            const SizedBox(height: 12),
+            LanguagePicker(state: s, caps: caps, selected: current, onPick: (c) => Navigator.pop(ctx, c)),
+            SizedBox(height: MediaQuery.paddingOf(ctx).bottom),
+          ],
+        ),
+      ),
+    );
+    if (code != null) _assistant.chooseLanguage(phrase, code);
+  }
+
+  Future<void> _keep(String phrase, String code) async {
+    try {
+      await _assistant.keep(phrase, code);
+      ref.read(hapticsProvider).medium();
+      ref.invalidate(languageStateProvider);
+    } catch (e) {
+      if (mounted) showStToast(context, title: friendlyError(e), color: StToastColor.danger);
+    }
+  }
+
+  Future<void> _undoLanguage(String phrase) async {
+    if (_assistant.kept.containsKey(phrase)) {
+      try {
+        await _assistant.undoKeep(phrase);
+        ref.invalidate(languageStateProvider);
+      } catch (e) {
+        if (mounted) showStToast(context, title: friendlyError(e), color: StToastColor.danger);
+      }
+      return;
+    }
+    _assistant.chooseLanguage(phrase, null);
+  }
+
+  void _addNow(String code) {
+    final router = GoRouter.of(context);
+    Navigator.of(context).maybePop();
+    router.push('/add-language?lang=$code');
   }
 
   void _start(String text, {String source = 'typed'}) {
@@ -147,13 +231,20 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
   }
 
   Future<void> _save() async {
-    final bundle = _bundle;
-    if (bundle == null) return;
-    setState(() => _saveError = null);
+    final lang = _where(_assistant.current).saveTo ?? _bundleLang ?? 'en';
+    var bundle = _bundleLang == lang ? _bundle : null;
+    // A language with no bundle yet: make one first.
+    bundle ??= await pickBundle(context, language: lang, suggestedNew: 'My ${capsOf(ref, lang).name} phrases');
+    if (bundle == null || !mounted) return;
+    setState(() {
+      _bundle = bundle;
+      _bundleLang = lang;
+      _saveError = null;
+    });
     try {
-      await _assistant.save(bundle);
+      await _assistant.save(bundle, language: lang);
       ref.read(hapticsProvider).medium();
-      ref.read(settingsProvider.notifier).setLastBundle(bundle.id);
+      ref.read(settingsProvider.notifier).setLastBundle(bundle.id, language: lang);
       refreshLearningData(ref);
       ref.invalidate(todayProvider);
     } on ApiException catch (e) {
@@ -175,8 +266,14 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
   }
 
   Future<void> _chooseBundle() async {
-    final picked = await pickBundle(context, current: _bundle?.id, suggestedNew: null);
-    if (picked != null && mounted) setState(() => _bundle = picked);
+    final lang = _where(_assistant.current).saveTo ?? _bundleLang;
+    final picked = await pickBundle(context, current: _bundle?.id, suggestedNew: null, language: lang);
+    if (picked != null && mounted) {
+      setState(() {
+        _bundle = picked;
+        _bundleLang = lang;
+      });
+    }
   }
 
   void _showHistory() {
@@ -197,6 +294,28 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
     }
     final c = context.st;
     final chat = _view == _View.chat;
+    final phrase = _assistant.current;
+    final where = _where(phrase, watch: true);
+    if (where.saveTo != null && where.saveTo != _bundleLang) {
+      final lang = where.saveTo!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _bundleLang != lang) _loadBundleFor(lang);
+      });
+    }
+    Widget? languageRow;
+    if (where.row != null && phrase != null) {
+      languageRow = StSaveLanguageRow(
+        state: where.row!,
+        code: where.code,
+        name: capsOf(ref, where.code).name,
+        activeName: ref.watch(activeCapsProvider).name,
+        onChange: () => _pickLanguageFor(phrase, where.saveTo),
+        onSaveToActive: () => _assistant.chooseLanguage(phrase, ref.read(activeLanguageProvider).value ?? 'en'),
+        onKeep: () => _keep(phrase, where.code),
+        onUndo: () => _undoLanguage(phrase),
+        onAddLanguage: capsOf(ref, where.code).enabled ? () => _addNow(where.code) : null,
+      );
+    }
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
@@ -216,8 +335,11 @@ class _CaptureSheetState extends ConsumerState<CaptureSheet> {
             child: chat
                 ? _ChatView(
                     assistant: _assistant,
-                    bundle: _bundle,
+                    bundle: _bundleLang == where.saveTo ? _bundle : null,
                     saveError: _saveError,
+                    languageRow: languageRow,
+                    canSave: where.saveTo != null,
+                    speakLanguage: where.code,
                     onSave: _save,
                     onUndo: _undo,
                     onChangeBundle: _chooseBundle,
@@ -557,9 +679,19 @@ class _ChatView extends StatefulWidget {
     required this.onUndo,
     required this.onChangeBundle,
     required this.onNewChat,
+    this.languageRow,
+    this.canSave = true,
+    this.speakLanguage,
   });
   final SaveAssistant assistant;
   final Bundle? bundle;
+
+  /// Where the phrase saves (2.0); null on a 1.x server.
+  final Widget? languageRow;
+
+  /// false while the learner must choose a language, or kept the phrase.
+  final bool canSave;
+  final String? speakLanguage;
   final String? saveError;
   final VoidCallback onSave;
   final ValueChanged<String> onUndo;
@@ -583,7 +715,17 @@ class _ChatViewState extends State<_ChatView> {
       if (a.startError != null)
         _ProblemCard(error: a.startError!, onRetry: a.retryStart, onNewChat: widget.onNewChat)
       else
-        _PhraseCard(assistant: a, bundle: widget.bundle, saveError: widget.saveError, onSave: widget.onSave, onUndo: widget.onUndo, onChangeBundle: widget.onChangeBundle),
+        _PhraseCard(
+          assistant: a,
+          bundle: widget.bundle,
+          saveError: widget.saveError,
+          onSave: widget.onSave,
+          onUndo: widget.onUndo,
+          onChangeBundle: widget.onChangeBundle,
+          languageRow: widget.languageRow,
+          canSave: widget.canSave,
+          speakLanguage: widget.speakLanguage,
+        ),
       for (final l in s.log) _Bubble(fromUser: l.fromUser, text: l.text),
       if (a.thinking) const _Typing(),
       if (a.limit != null) _ProblemCard(error: a.limit!, onNewChat: widget.onNewChat),
@@ -725,9 +867,22 @@ class _Typing extends StatelessWidget {
 
 /// The assistant's main bubble: phrase chips, the translation card, and Save.
 class _PhraseCard extends ConsumerWidget {
-  const _PhraseCard({required this.assistant, required this.bundle, required this.saveError, required this.onSave, required this.onUndo, required this.onChangeBundle});
+  const _PhraseCard({
+    required this.assistant,
+    required this.bundle,
+    required this.saveError,
+    required this.onSave,
+    required this.onUndo,
+    required this.onChangeBundle,
+    this.languageRow,
+    this.canSave = true,
+    this.speakLanguage,
+  });
   final SaveAssistant assistant;
   final Bundle? bundle;
+  final Widget? languageRow;
+  final bool canSave;
+  final String? speakLanguage;
   final String? saveError;
   final VoidCallback onSave;
   final ValueChanged<String> onUndo;
@@ -796,7 +951,8 @@ class _PhraseCard extends ConsumerWidget {
             ),
             if (phrase != null) ...[
               Divider(height: 1, thickness: 1, color: c.borderSubtle),
-              Padding(padding: const EdgeInsets.fromLTRB(14, 10, 8, 12), child: _Translation(assistant: a, phrase: phrase, language: lang)),
+              Padding(padding: const EdgeInsets.fromLTRB(14, 10, 8, 12), child: _Translation(assistant: a, phrase: phrase, language: lang, speakLanguage: speakLanguage)),
+              if (languageRow != null && saved == null) Padding(padding: const EdgeInsets.fromLTRB(10, 0, 10, 10), child: languageRow!),
               if (saved != null)
                 _SavedFooter(
                   bundleTitle: saved.bundleTitle.isNotEmpty
@@ -805,7 +961,7 @@ class _PhraseCard extends ConsumerWidget {
                   // Undo needs the bundle; a chat from the server may not say which one.
                   onUndo: saved.bundleId.isEmpty ? null : () => onUndo(phrase),
                 )
-              else
+              else if (canSave)
                 Container(
                   decoration: BoxDecoration(border: Border(top: BorderSide(color: c.borderSubtle))),
                   padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
@@ -822,7 +978,8 @@ class _PhraseCard extends ConsumerWidget {
                         icon: StIcons.bookmark,
                         block: true,
                         loading: a.saving,
-                        onPressed: limitReached || bundle == null || a.saving ? null : onSave,
+                        // With no bundle yet, Save asks for one first.
+                        onPressed: limitReached || a.saving ? null : onSave,
                       ),
                       if (limitReached)
                         if (AppConfig.purchaseLinks)
@@ -860,10 +1017,13 @@ class _PhraseCard extends ConsumerWidget {
 }
 
 class _Translation extends StatelessWidget {
-  const _Translation({required this.assistant, required this.phrase, required this.language});
+  const _Translation({required this.assistant, required this.phrase, required this.language, this.speakLanguage});
   final SaveAssistant assistant;
   final String phrase;
   final AppLanguage? language;
+
+  /// The phrase's learning language, for the voice.
+  final String? speakLanguage;
 
   @override
   Widget build(BuildContext context) {
@@ -880,7 +1040,7 @@ class _Translation extends StatelessWidget {
         Row(
           children: [
             Expanded(child: Text(phrase, style: StType.base(size: 22, weight: FontWeight.w900, height: 1.25).copyWith(color: c.textStrong))),
-            SpeakButton(text: phrase),
+            SpeakButton(text: phrase, language: speakLanguage),
           ],
         ),
         if (d == null && assistant.cardFailed(phrase))

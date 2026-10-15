@@ -9,6 +9,7 @@ import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../../shared/widgets.dart';
 import '../capture/bundle_picker.dart';
+import '../languages/own_language_picker.dart';
 import '../live_session/session_launch.dart';
 import '../phrase/phrase_parts.dart';
 import 'voice_cap_sheet.dart';
@@ -51,11 +52,40 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
     _pickDefaultBundle();
   }
 
+  /// The own language the Coach explains in, for the active language.
+  String? _explanationLanguage() {
+    final s = ref.read(languageStateProvider).value;
+    if (s == null || !s.fromServer) return null;
+    return s.summaryOf(s.active)?.explanationLanguage ?? s.translationLanguage;
+  }
+
+  Future<void> _pickExplanation() async {
+    final s = ref.read(languageStateProvider).value;
+    if (s == null) return;
+    final current = _explanationLanguage();
+    final name = ref.read(activeCapsProvider).name;
+    final code = await pickOwnLanguage(
+      context,
+      ref,
+      title: 'Coach explains in',
+      subtitle: 'The Coach speaks $name and explains in this language. This setting is for $name only.',
+      current: current,
+      showReview: true,
+    );
+    if (code == null || code == current || !mounted) return;
+    try {
+      await ref.read(languageStateProvider.notifier).updateSettings(s.active, explanationLanguage: code);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    }
+  }
+
   Future<void> _pickDefaultBundle() async {
     final bundles = await ref.read(bundlesProvider.future).catchError((_) => <Bundle>[]);
     final info = await ref.read(phraseInfoProvider.future).catchError((_) => const PhraseManagementInfo());
     final withPhrases = bundles.where((b) => b.phraseCount > 0).toList();
-    Bundle? pick = bundles.where((b) => b.id == (widget.bundleId ?? ref.read(settingsProvider).lastBundleId)).firstOrNull;
+    final lastBundle = ref.read(settingsProvider.notifier).lastBundleFor(ref.read(activeLanguageProvider).value ?? 'en');
+    Bundle? pick = bundles.where((b) => b.id == (widget.bundleId ?? lastBundle)).firstOrNull;
     if (pick == null && withPhrases.isNotEmpty) {
       withPhrases.sort((a, b) => info.dueIn(b).compareTo(info.dueIn(a)));
       pick = withPhrases.first;
@@ -63,7 +93,10 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
     if (mounted) setState(() => _bundle = pick);
   }
 
-  CoachMode _effectiveMode(SubscriptionDetails? sub) => _mode ?? (sub != null && sub.hasVoice && sub.voiceRemaining > 0 ? CoachMode.voice : CoachMode.text);
+  CoachMode _effectiveMode(SubscriptionDetails? sub) {
+    if (!ref.read(activeCapsProvider).features.coachVoice) return CoachMode.text;
+    return _mode ?? (sub != null && sub.hasVoice && sub.voiceRemaining > 0 ? CoachMode.voice : CoachMode.text);
+  }
 
   Future<void> _start() async {
     final sub = ref.read(subscriptionProvider).value;
@@ -113,9 +146,32 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
       if (phrases.isEmpty) throw ApiException('This bundle has no phrases yet.');
       final lang = ref.read(languageProvider).value;
       final voice = _voice ?? 'Kore';
-      ref.read(settingsProvider.notifier).setLastBundle(bundle.id);
+      final learning = ref.read(activeCapsProvider);
+      final explain = _explanationLanguage();
+      ref.read(settingsProvider.notifier).setLastBundle(bundle.id, language: learning.code);
       ref.read(settingsProvider.notifier).setLastVoice(voice);
-      final launch = SessionLaunch(bundle: bundle, phrases: phrases, voice: voice, nativeLanguage: lang?.name ?? 'auto');
+      // The Coach prompt is built on the server for this language (Q3). A
+      // server without it gets the prompt the app builds from the shared spec.
+      CoachInstructions? ci;
+      if (ref.read(multilingualProvider)) {
+        ci = await api.liveSessions.getCoachInstructions(
+          language: learning.code,
+          explanationLanguage: explain ?? lang?.code ?? 'en',
+          phraseIds: [for (final p in phrases) p.id],
+          mode: mode == CoachMode.voice ? 'voice' : 'text',
+          voice: voice,
+        );
+      }
+      final launch = SessionLaunch(
+        bundle: bundle,
+        phrases: phrases,
+        voice: ci?.voiceName ?? voice,
+        nativeLanguage: lang?.name ?? 'auto',
+        language: learning.code,
+        languageName: learning.name,
+        explanationLanguage: ci?.explanationLanguage ?? explain,
+        serverInstructions: ci?.instructions,
+      );
       if (!mounted) return;
       final router = GoRouter.of(context);
       Navigator.pop(context);
@@ -136,9 +192,18 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
     final mode = _effectiveMode(sub);
     final voice = voices.firstWhere((v) => v.name == _voice, orElse: () => voices.first);
     final due = _bundle == null ? 0 : info?.dueIn(_bundle!) ?? 0;
+    final multilingual = ref.watch(multilingualProvider);
+    final learning = ref.watch(activeCapsProvider);
+    final langState = ref.watch(languageStateProvider).value;
+    final caps = ref.watch(languageCapsProvider).value;
+    final explainCode = langState?.summaryOf(langState.active)?.explanationLanguage ?? langState?.translationLanguage;
+    final explain = caps?.ownByCode(explainCode);
+    // Voice is hidden for a language whose register says it has none.
+    final voiceReady = learning.features.coachVoice;
+    final modeShown = voiceReady ? mode : CoachMode.text;
 
     return StSheet(
-      eyebrow: 'AI coaching',
+      eyebrow: multilingual ? 'AI coaching · ${learning.name}' : 'AI coaching',
       title: 'Start a session',
       footer: Column(
         mainAxisSize: MainAxisSize.min,
@@ -146,7 +211,7 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
         children: [
           if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Semantics(liveRegion: true, child: Text(_error!, style: StType.bodyMedium.copyWith(color: c.red600)))),
           StButton(
-            label: mode == CoachMode.voice ? 'Start voice chat' : 'Start text chat',
+            label: modeShown == CoachMode.voice ? 'Start voice chat' : 'Start text chat',
             icon: StIcons.play,
             size: StSize.lg,
             block: true,
@@ -168,19 +233,31 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
               if (b != null) setState(() => _bundle = b);
             },
           ),
+          if (multilingual && explain != null) ...[
+            const SizedBox(height: 18),
+            _label(context, 'Coach explains in'),
+            StPickerRow(
+              value: '${explain.name} · ${explain.teacherChecked ? 'checked by a teacher' : 'checked by AI'}',
+              leading: StIcon(StIcons.translation, size: 20, color: c.rose600),
+              semanticLabel: 'Coach explains in ${explain.name}. Change',
+              onTap: _pickExplanation,
+            ),
+          ],
+          if (voiceReady) ...[
+            const SizedBox(height: 18),
+            _label(context, 'Mode'),
+            StSegmentedControl<CoachMode>(
+              block: true,
+              segments: const [StSegment(CoachMode.voice, 'Voice', icon: StIcons.mic), StSegment(CoachMode.text, 'Text', icon: StIcons.keyboard)],
+              value: mode,
+              onChanged: (m) => setState(() {
+                _mode = m;
+                _micDenied = false;
+              }),
+            ),
+          ],
           const SizedBox(height: 18),
-          _label(context, 'Mode'),
-          StSegmentedControl<CoachMode>(
-            block: true,
-            segments: const [StSegment(CoachMode.voice, 'Voice', icon: StIcons.mic), StSegment(CoachMode.text, 'Text', icon: StIcons.keyboard)],
-            value: mode,
-            onChanged: (m) => setState(() {
-              _mode = m;
-              _micDenied = false;
-            }),
-          ),
-          const SizedBox(height: 18),
-          if (mode == CoachMode.voice) ...[
+          if (modeShown == CoachMode.voice) ...[
             _label(context, 'Coach voice'),
             StPickerRow(
               value: voice.label,
@@ -191,6 +268,8 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
             ),
             const SizedBox(height: 14),
             if (sub != null && sub.hasVoice) _VoiceMeter(sub: sub),
+            if (multilingual && sub != null && sub.hasVoice)
+              Padding(padding: const EdgeInsets.only(top: 6), child: Text('Voice minutes are shared by all your languages.', style: StType.bodySmall.copyWith(color: c.textMuted))),
             const SizedBox(height: 10),
             Text(
               _micDenied ? 'Mic is off. Turn on the microphone for Subturtle in your phone settings, or use text.' : 'Subturtle needs the mic so you can talk to your coach. Use headphones for the best result.',
@@ -237,8 +316,8 @@ class _StartSessionSheetState extends ConsumerState<StartSessionSheet> {
                   title: Text(v.label, style: StType.titleSmall.copyWith(color: ctx.st.textStrong)),
                   subtitle: Text(v.description, style: StType.bodySmall.copyWith(color: ctx.st.textMuted)),
                   trailing: SpeakButton(
-                    text: "Hi, I'm your coach. Ready when you are.",
-                    voiceName: coachPreviewVoice[v.name] ?? 'en-US-Standard-A',
+                    text: coachPreviewLine(ref.read(activeCapsProvider).code),
+                    voiceName: coachPreviewVoiceFor(v.name, ref.read(activeCapsProvider)),
                     semanticLabel: 'Hear ${v.label}',
                     icon: StIcons.playCircle,
                   ),
