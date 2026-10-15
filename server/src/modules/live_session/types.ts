@@ -33,6 +33,10 @@ export interface LiveSessionRecordType {
   cost: CostCalculationResult;
   dialogs: ConversationDialogType[];
   metadata: LiveSessionMetadataType;
+  /** The learning language (B-13). Missing on sessions from before multilingual: English. */
+  language?: string;
+  /** The language the Coach explained in. */
+  explanationLanguage?: string;
 }
 
 export interface ConversationDialogType {

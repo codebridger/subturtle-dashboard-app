@@ -27,6 +27,8 @@ const listLiveSessions = functions.find(
 
 function mockCollections(voiceDocs: any[], textDocs: any[]) {
   (getCollection as any).mockImplementation((_db: string, coll: string) => ({
+    // The profile: an account from before multilingual (no languages, so English).
+    findOne: async () => null,
     find: () => ({
       sort: () => ({
         limit: async () =>

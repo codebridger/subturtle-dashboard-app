@@ -16,7 +16,8 @@ jest.mock("@google/genai", () => ({
 const mockCreate = jest.fn<(...args: any[]) => Promise<any>>(async () => ({ _id: "s1" }));
 jest.mock("@modular-rest/server", () => ({
   defineFunction: (config: any) => config,
-  getCollection: () => ({ create: mockCreate }),
+  // findOne: the profile and language profile reads (an account with no languages).
+  getCollection: () => ({ create: mockCreate, findOne: async () => null }),
 }));
 jest.mock("../../../subscription/service", () => ({
   checkCreditAllocation: async () => ({ allowedToProceed: true }),
@@ -72,11 +73,14 @@ describe("text session", () => {
     await createTextSession({ userId: "u1", language: "es", phraseIds: ["a"] });
     expect(mockBuild).toHaveBeenCalledWith("u1", expect.objectContaining({ mode: "text" }));
     expect((mockCreate.mock.calls[0][0] as any).instructions).toBe("SERVER PROMPT");
+    // The record keeps its learning language for the per-language history (B-13).
+    expect((mockCreate.mock.calls[0][0] as any).language).toBe("es");
   });
 
   it("uses raw instructions from old clients", async () => {
     await createTextSession({ userId: "u1", instructions: "OLD" });
     expect(mockBuild).not.toHaveBeenCalled();
     expect((mockCreate.mock.calls[0][0] as any).instructions).toBe("OLD");
+    expect((mockCreate.mock.calls[0][0] as any).language).toBe("en");
   });
 });
