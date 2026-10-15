@@ -1,4 +1,5 @@
 import { functionProvider } from '@modular-rest/client';
+import { scopedLanguage, withLanguage } from '~/utils/languageScope';
 import { COLLECTIONS, DATABASE } from '~/types/database.type';
 import { FN, type UserStatisticType } from '~/types/function.type';
 
@@ -73,21 +74,23 @@ export function useProgressSummary() {
     async function load() {
         loading.value = true;
         try {
-            const [stats, raw] = await Promise.all([
+            const chartArgs = {
+                database: DATABASE.USER_CONTENT,
+                collection: COLLECTIONS.PHRASE,
+                userId: authUser.value?.id,
+                // The RPC returns days + 1 points (inclusive of both ends).
+                days: WINDOW - 1,
+            };
+            const chart = (args: typeof chartArgs) => functionProvider.run<Array<[string, number]>>({ name: 'generateChartDataForInsertionRatio', args });
+            // Counts and the chart are the active language's (D-18); the streak stays global, so
+            // with more than one language it is computed from every language's saves.
+            const [stats, raw, rawAll] = await Promise.all([
                 functionProvider.run<UserStatisticType>({
                     name: FN.getUserStatistic,
-                    args: { userId: authUser.value?.id },
+                    args: withLanguage({ userId: authUser.value?.id }),
                 }),
-                functionProvider.run<Array<[string, number]>>({
-                    name: 'generateChartDataForInsertionRatio',
-                    args: {
-                        database: DATABASE.USER_CONTENT,
-                        collection: COLLECTIONS.PHRASE,
-                        userId: authUser.value?.id,
-                        // The RPC returns days + 1 points (inclusive of both ends).
-                        days: WINDOW - 1,
-                    },
-                }),
+                chart(withLanguage(chartArgs)),
+                scopedLanguage() ? chart(chartArgs) : Promise.resolve(null),
             ]);
 
             totals.value = stats;
@@ -106,7 +109,7 @@ export function useProgressSummary() {
             const previous = prev7.reduce((sum, [, n]) => sum + n, 0);
             weekDelta.value = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
 
-            streak.value = streakFrom(series);
+            streak.value = streakFrom(rawAll ? densify(rawAll, WINDOW) : series);
         } catch {
             locked.value = true;
         } finally {

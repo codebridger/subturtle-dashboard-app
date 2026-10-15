@@ -47,11 +47,13 @@
     import { Modal } from 'pilotui/complex';
     import { useProfileStore } from '~/stores/profile';
     import { useVoiceBalance } from '~/composables/useVoiceBalance';
+    import { useLanguageStore } from '~/stores/language';
 
     const { t } = useI18n();
     const router = useRouter();
     const route = useRoute();
     const profileStore = useProfileStore();
+    const language = useLanguageStore();
     const { isFreemium, baseRemaining } = useVoiceBalance();
 
     const open = ref(false);
@@ -92,8 +94,18 @@
         return t('subscription.voice-meter.left-voice', { n: baseRemaining.value });
     });
 
+    /** "German, English" — the learner's languages, active first (D-05). */
+    const languagesMeta = computed(() => {
+        const codes = language.languages.map((l) => l.code).sort((a, b) => (a === language.activeLanguage ? -1 : b === language.activeLanguage ? 1 : 0));
+        return codes.map((code) => language.nameOf(code)).join(', ') || undefined;
+    });
+
     const items = computed<StProfileMenuItem[]>(() => [
         { label: t('profile.profile'), icon: 'solar:user-linear', onClick: () => router.push('/settings/profile') },
+        // Languages (D-05) only once multilingual is on; until then the page does not exist.
+        ...(language.enabled
+            ? [{ label: t('account.languages'), icon: 'solar:notebook-bold', meta: languagesMeta.value, onClick: () => router.push('/settings/languages') }]
+            : []),
         { label: t('account.study-settings'), icon: 'solar:settings-linear', onClick: () => router.push('/settings/preferences') },
         {
             label: t('account.subscription'),

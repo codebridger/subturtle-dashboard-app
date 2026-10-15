@@ -1,0 +1,2474 @@
+{
+  "$schema": "./starter-pack.schema.json",
+  "language": "fr",
+  "version": 1,
+  "groups": [
+    {
+      "id": "greetings",
+      "name": "Greetings"
+    },
+    {
+      "id": "polite",
+      "name": "Polite words"
+    },
+    {
+      "id": "questions",
+      "name": "Questions"
+    },
+    {
+      "id": "needs",
+      "name": "Needs and help"
+    },
+    {
+      "id": "time",
+      "name": "Time"
+    },
+    {
+      "id": "places",
+      "name": "Places and directions"
+    },
+    {
+      "id": "food",
+      "name": "Food and drink"
+    },
+    {
+      "id": "travel",
+      "name": "Travel"
+    },
+    {
+      "id": "work",
+      "name": "Work and study"
+    },
+    {
+      "id": "feelings",
+      "name": "Feelings"
+    }
+  ],
+  "items": [
+    {
+      "id": "fr-greetings-01",
+      "text": "Bonjour.",
+      "translations": {
+        "fa": "سلام.",
+        "ar": "مرحبًا.",
+        "es": "Hola.",
+        "vi": "Xin chào.",
+        "en": "Hello.",
+        "tr": "Merhaba."
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Used all day until the evening; also how you greet in shops."
+    },
+    {
+      "id": "fr-greetings-02",
+      "text": "Salut !",
+      "translations": {
+        "fa": "سلام!",
+        "ar": "أهلًا!",
+        "es": "¡Hola!",
+        "vi": "Chào!",
+        "en": "Hi!",
+        "tr": "Selam!"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Casual, with friends. Also means 'Bye!'."
+    },
+    {
+      "id": "fr-greetings-03",
+      "text": "Bonjour, monsieur.",
+      "lemma": "monsieur",
+      "form": "monsieur",
+      "translations": {
+        "fa": "صبح بخیر، آقا.",
+        "ar": "صباح الخير يا سيدي.",
+        "es": "Buenos días, señor.",
+        "vi": "Chào ông ạ.",
+        "en": "Good morning, sir.",
+        "tr": "Günaydın efendim."
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "French has no separate 'good morning': bonjour covers it. To a woman: Bonjour, madame."
+    },
+    {
+      "id": "fr-greetings-04",
+      "text": "Bonsoir.",
+      "translations": {
+        "fa": "عصر بخیر.",
+        "ar": "مساء الخير.",
+        "es": "Buenas noches.",
+        "vi": "Chào buổi tối.",
+        "en": "Good evening.",
+        "tr": "İyi akşamlar."
+      },
+      "band": 2,
+      "group": "greetings",
+      "note": "From about 6 pm, when arriving or leaving."
+    },
+    {
+      "id": "fr-greetings-05",
+      "text": "Bonne nuit.",
+      "lemma": "nuit",
+      "form": "nuit",
+      "translations": {
+        "fa": "شب بخیر.",
+        "ar": "تصبح على خير.",
+        "es": "Buenas noches.",
+        "vi": "Chúc ngủ ngon.",
+        "en": "Good night.",
+        "tr": "İyi geceler."
+      },
+      "band": 2,
+      "group": "greetings",
+      "note": "Said when someone is going to bed or when parting late at night; never a greeting (use Bonsoir)."
+    },
+    {
+      "id": "fr-greetings-06",
+      "text": "Au revoir.",
+      "lemma": "revoir",
+      "form": "revoir",
+      "translations": {
+        "fa": "خداحافظ.",
+        "ar": "مع السلامة.",
+        "es": "Adiós.",
+        "vi": "Tạm biệt.",
+        "en": "Goodbye.",
+        "tr": "Hoşça kalın."
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "fr-greetings-07",
+      "text": "À plus tard !",
+      "lemma": "tard",
+      "form": "tard",
+      "translations": {
+        "fa": "بعداً می‌بینمت!",
+        "ar": "أراك لاحقًا!",
+        "es": "¡Hasta luego!",
+        "vi": "Hẹn gặp lại sau nhé!",
+        "en": "See you later!",
+        "tr": "Sonra görüşürüz!"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Casual short form: À plus ! Later the same day: À tout à l'heure !"
+    },
+    {
+      "id": "fr-greetings-08",
+      "text": "À demain !",
+      "lemma": "demain",
+      "form": "demain",
+      "translations": {
+        "fa": "تا فردا!",
+        "ar": "أراك غدًا!",
+        "es": "¡Hasta mañana!",
+        "vi": "Mai gặp lại nhé!",
+        "en": "See you tomorrow!",
+        "tr": "Yarın görüşürüz!"
+      },
+      "band": 2,
+      "group": "greetings"
+    },
+    {
+      "id": "fr-greetings-09",
+      "text": "Ça va ?",
+      "lemma": "aller",
+      "form": "va",
+      "translations": {
+        "fa": "حالت چطور است؟",
+        "ar": "كيف حالك؟",
+        "es": "¿Qué tal?",
+        "vi": "Bạn khỏe không?",
+        "en": "How are you?",
+        "tr": "Nasılsın?"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "The answer can be the same words: Ça va. (I'm fine.)"
+    },
+    {
+      "id": "fr-greetings-10",
+      "text": "Ça va bien, merci.",
+      "lemma": "bien",
+      "form": "bien",
+      "translations": {
+        "fa": "خوبم، ممنون.",
+        "ar": "بخير، شكرًا.",
+        "es": "Bien, gracias.",
+        "vi": "Tôi khỏe, cảm ơn.",
+        "en": "I'm fine, thanks.",
+        "tr": "İyiyim, teşekkürler."
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "fr-greetings-11",
+      "text": "Et toi ?",
+      "translations": {
+        "fa": "تو چطور؟",
+        "ar": "وأنت؟",
+        "es": "¿Y tú?",
+        "vi": "Còn bạn?",
+        "en": "And you?",
+        "tr": "Ya sen?"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Polite: Et vous ?"
+    },
+    {
+      "id": "fr-greetings-12",
+      "text": "Tu t'appelles comment ?",
+      "lemma": "s'appeler",
+      "form": "appelles",
+      "translations": {
+        "fa": "اسمت چیست؟",
+        "ar": "ما اسمك؟",
+        "es": "¿Cómo te llamas?",
+        "vi": "Bạn tên là gì?",
+        "en": "What's your name?",
+        "tr": "Adın ne?"
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "Polite: Comment vous appelez-vous ?"
+    },
+    {
+      "id": "fr-greetings-13",
+      "text": "Je m'appelle Marie.",
+      "lemma": "s'appeler",
+      "form": "appelle",
+      "translations": {
+        "fa": "اسم من ماری است.",
+        "ar": "اسمي ماري.",
+        "es": "Me llamo Marie.",
+        "vi": "Tôi tên là Marie.",
+        "en": "My name is Marie.",
+        "tr": "Benim adım Marie."
+      },
+      "band": 1,
+      "group": "greetings"
+    },
+    {
+      "id": "fr-greetings-14",
+      "text": "Enchanté.",
+      "translations": {
+        "fa": "خوشبختم.",
+        "ar": "تشرفنا.",
+        "es": "Mucho gusto.",
+        "vi": "Rất vui được gặp bạn.",
+        "en": "Nice to meet you.",
+        "tr": "Memnun oldum."
+      },
+      "band": 1,
+      "group": "greetings",
+      "note": "A woman says: Enchantée."
+    },
+    {
+      "id": "fr-greetings-15",
+      "text": "Bienvenue !",
+      "translations": {
+        "fa": "خوش آمدید!",
+        "ar": "أهلًا وسهلًا!",
+        "es": "¡Bienvenido!",
+        "vi": "Chào mừng bạn!",
+        "en": "Welcome!",
+        "tr": "Hoş geldiniz!"
+      },
+      "band": 2,
+      "group": "greetings"
+    },
+    {
+      "id": "fr-polite-01",
+      "text": "S'il vous plaît.",
+      "lemma": "plaire",
+      "form": "plaît",
+      "translations": {
+        "fa": "لطفاً.",
+        "ar": "من فضلك.",
+        "es": "Por favor.",
+        "vi": "Làm ơn.",
+        "en": "Please.",
+        "tr": "Lütfen."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "Informal: S'il te plaît."
+    },
+    {
+      "id": "fr-polite-02",
+      "text": "Merci.",
+      "translations": {
+        "fa": "ممنون.",
+        "ar": "شكرًا.",
+        "es": "Gracias.",
+        "vi": "Cảm ơn.",
+        "en": "Thank you.",
+        "tr": "Teşekkürler."
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "fr-polite-03",
+      "text": "Merci beaucoup.",
+      "lemma": "beaucoup",
+      "form": "beaucoup",
+      "translations": {
+        "fa": "خیلی ممنون.",
+        "ar": "شكرًا جزيلًا.",
+        "es": "Muchas gracias.",
+        "vi": "Cảm ơn rất nhiều.",
+        "en": "Thank you very much.",
+        "tr": "Çok teşekkür ederim."
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "fr-polite-04",
+      "text": "De rien.",
+      "translations": {
+        "fa": "خواهش می‌کنم.",
+        "ar": "عفوًا.",
+        "es": "De nada.",
+        "vi": "Không có gì.",
+        "en": "You're welcome.",
+        "tr": "Rica ederim."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "More formal: Je vous en prie."
+    },
+    {
+      "id": "fr-polite-05",
+      "text": "Excusez-moi.",
+      "translations": {
+        "fa": "ببخشید.",
+        "ar": "عذرًا.",
+        "es": "Disculpe.",
+        "vi": "Xin lỗi.",
+        "en": "Excuse me.",
+        "tr": "Affedersiniz."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "To get past someone you can also say Pardon. Informal: Excuse-moi."
+    },
+    {
+      "id": "fr-polite-06",
+      "text": "Je suis désolé.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "متأسفم.",
+        "ar": "أنا آسف.",
+        "es": "Lo siento.",
+        "vi": "Tôi xin lỗi.",
+        "en": "I'm sorry.",
+        "tr": "Özür dilerim."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "A woman says: Je suis désolée."
+    },
+    {
+      "id": "fr-polite-07",
+      "text": "Pas de problème.",
+      "lemma": "problème",
+      "form": "problème",
+      "translations": {
+        "fa": "مشکلی نیست.",
+        "ar": "لا مشكلة.",
+        "es": "No hay problema.",
+        "vi": "Không sao đâu.",
+        "en": "No problem.",
+        "tr": "Sorun değil."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "Very common too: Pas de souci."
+    },
+    {
+      "id": "fr-polite-08",
+      "text": "Oui, je veux bien.",
+      "lemma": "bien",
+      "form": "bien",
+      "translations": {
+        "fa": "بله، ممنون می‌شوم.",
+        "ar": "نعم، من فضلك.",
+        "es": "Sí, por favor.",
+        "vi": "Vâng, cảm ơn.",
+        "en": "Yes, please.",
+        "tr": "Evet, lütfen."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "The natural way to accept an offer. Also: Oui, s'il vous plaît."
+    },
+    {
+      "id": "fr-polite-09",
+      "text": "Non, merci.",
+      "lemma": "merci",
+      "form": "merci",
+      "translations": {
+        "fa": "نه، ممنون.",
+        "ar": "لا، شكرًا.",
+        "es": "No, gracias.",
+        "vi": "Không, cảm ơn.",
+        "en": "No, thank you.",
+        "tr": "Hayır, teşekkürler."
+      },
+      "band": 1,
+      "group": "polite"
+    },
+    {
+      "id": "fr-polite-10",
+      "text": "Bien sûr.",
+      "lemma": "sûr",
+      "form": "sûr",
+      "translations": {
+        "fa": "البته.",
+        "ar": "بالطبع.",
+        "es": "Claro.",
+        "vi": "Tất nhiên rồi.",
+        "en": "Of course.",
+        "tr": "Tabii ki."
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "fr-polite-11",
+      "text": "Pourriez-vous m'aider ?",
+      "lemma": "aider",
+      "form": "aider",
+      "translations": {
+        "fa": "می‌توانید به من کمک کنید؟",
+        "ar": "هل يمكنك مساعدتي؟",
+        "es": "¿Podría ayudarme?",
+        "vi": "Bạn có thể giúp tôi được không?",
+        "en": "Could you help me?",
+        "tr": "Bana yardım edebilir misiniz?"
+      },
+      "band": 2,
+      "group": "polite",
+      "note": "Everyday spoken form: Vous pouvez m'aider ?"
+    },
+    {
+      "id": "fr-polite-12",
+      "text": "Vous pouvez répéter, s'il vous plaît ?",
+      "lemma": "répéter",
+      "form": "répéter",
+      "translations": {
+        "fa": "می‌شود لطفاً تکرار کنید؟",
+        "ar": "هل يمكنك أن تكرر ذلك من فضلك؟",
+        "es": "¿Puede repetir, por favor?",
+        "vi": "Bạn có thể nhắc lại được không?",
+        "en": "Can you repeat that, please?",
+        "tr": "Tekrar eder misiniz, lütfen?"
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "fr-polite-13",
+      "text": "Plus lentement, s'il vous plaît.",
+      "lemma": "lentement",
+      "form": "lentement",
+      "translations": {
+        "fa": "لطفاً آهسته‌تر.",
+        "ar": "ببطء أكثر من فضلك.",
+        "es": "Más despacio, por favor.",
+        "vi": "Làm ơn nói chậm hơn.",
+        "en": "More slowly, please.",
+        "tr": "Daha yavaş, lütfen."
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "fr-polite-14",
+      "text": "Je ne comprends pas.",
+      "lemma": "comprendre",
+      "form": "comprends",
+      "translations": {
+        "fa": "نمی‌فهمم.",
+        "ar": "لا أفهم.",
+        "es": "No entiendo.",
+        "vi": "Tôi không hiểu.",
+        "en": "I don't understand.",
+        "tr": "Anlamıyorum."
+      },
+      "band": 1,
+      "group": "polite",
+      "note": "In fast speech the ne often drops: Je comprends pas."
+    },
+    {
+      "id": "fr-polite-15",
+      "text": "Je parle un peu français.",
+      "lemma": "parler",
+      "form": "parle",
+      "translations": {
+        "fa": "کمی فرانسوی صحبت می‌کنم.",
+        "ar": "أتكلم الفرنسية قليلًا.",
+        "es": "Hablo un poco de francés.",
+        "vi": "Tôi nói được một chút tiếng Pháp.",
+        "en": "I speak a little French.",
+        "tr": "Biraz Fransızca konuşuyorum."
+      },
+      "band": 2,
+      "group": "polite"
+    },
+    {
+      "id": "fr-questions-01",
+      "text": "Qu'est-ce que c'est ?",
+      "translations": {
+        "fa": "این چیست؟",
+        "ar": "ما هذا؟",
+        "es": "¿Qué es esto?",
+        "vi": "Cái này là gì?",
+        "en": "What is this?",
+        "tr": "Bu ne?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-02",
+      "text": "C'est combien ?",
+      "lemma": "combien",
+      "form": "combien",
+      "translations": {
+        "fa": "قیمتش چند است؟",
+        "ar": "بكم هذا؟",
+        "es": "¿Cuánto cuesta?",
+        "vi": "Cái này bao nhiêu tiền?",
+        "en": "How much is it?",
+        "tr": "Bu ne kadar?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-03",
+      "text": "Ça veut dire quoi ?",
+      "lemma": "dire",
+      "form": "dire",
+      "translations": {
+        "fa": "یعنی چه؟",
+        "ar": "ماذا يعني ذلك؟",
+        "es": "¿Qué significa eso?",
+        "vi": "Cái đó nghĩa là gì?",
+        "en": "What does that mean?",
+        "tr": "Bu ne demek?"
+      },
+      "band": 1,
+      "group": "questions",
+      "note": "More careful: Qu'est-ce que ça veut dire ?"
+    },
+    {
+      "id": "fr-questions-04",
+      "text": "Comment on dit ça en français ?",
+      "lemma": "dire",
+      "form": "dit",
+      "translations": {
+        "fa": "این را به فرانسوی چطور می‌گویند؟",
+        "ar": "كيف نقول هذا بالفرنسية؟",
+        "es": "¿Cómo se dice eso en francés?",
+        "vi": "Cái này tiếng Pháp nói thế nào?",
+        "en": "How do you say that in French?",
+        "tr": "Bu Fransızca nasıl denir?"
+      },
+      "band": 2,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-05",
+      "text": "Tu viens d'où ?",
+      "lemma": "venir",
+      "form": "viens",
+      "translations": {
+        "fa": "اهل کجایی؟",
+        "ar": "من أين أنت؟",
+        "es": "¿De dónde eres?",
+        "vi": "Bạn đến từ đâu?",
+        "en": "Where are you from?",
+        "tr": "Nerelisin?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Polite: Vous venez d'où ?"
+    },
+    {
+      "id": "fr-questions-06",
+      "text": "Tu habites où ?",
+      "lemma": "habiter",
+      "form": "habites",
+      "translations": {
+        "fa": "کجا زندگی می‌کنی؟",
+        "ar": "أين تسكن؟",
+        "es": "¿Dónde vives?",
+        "vi": "Bạn sống ở đâu?",
+        "en": "Where do you live?",
+        "tr": "Nerede yaşıyorsun?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Polite: Vous habitez où ?"
+    },
+    {
+      "id": "fr-questions-07",
+      "text": "Tu as quel âge ?",
+      "lemma": "âge",
+      "form": "âge",
+      "translations": {
+        "fa": "چند سالت است؟",
+        "ar": "كم عمرك؟",
+        "es": "¿Cuántos años tienes?",
+        "vi": "Bạn bao nhiêu tuổi?",
+        "en": "How old are you?",
+        "tr": "Kaç yaşındasın?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "Polite: Vous avez quel âge ?"
+    },
+    {
+      "id": "fr-questions-08",
+      "text": "C'est qui ?",
+      "translations": {
+        "fa": "او کیست؟",
+        "ar": "من ذلك؟",
+        "es": "¿Quién es?",
+        "vi": "Đó là ai vậy?",
+        "en": "Who is that?",
+        "tr": "O kim?"
+      },
+      "band": 2,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-09",
+      "text": "Pourquoi ?",
+      "translations": {
+        "fa": "چرا؟",
+        "ar": "لماذا؟",
+        "es": "¿Por qué?",
+        "vi": "Tại sao?",
+        "en": "Why?",
+        "tr": "Neden?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-10",
+      "text": "Quand ?",
+      "translations": {
+        "fa": "کی؟",
+        "ar": "متى؟",
+        "es": "¿Cuándo?",
+        "vi": "Khi nào?",
+        "en": "When?",
+        "tr": "Ne zaman?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-11",
+      "text": "C'est vrai ?",
+      "lemma": "vrai",
+      "form": "vrai",
+      "translations": {
+        "fa": "واقعاً؟",
+        "ar": "حقًا؟",
+        "es": "¿En serio?",
+        "vi": "Thật à?",
+        "en": "Really?",
+        "tr": "Gerçekten mi?"
+      },
+      "band": 1,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-12",
+      "text": "Qu'est-ce qui s'est passé ?",
+      "lemma": "se passer",
+      "form": "passé",
+      "translations": {
+        "fa": "چه اتفاقی افتاد؟",
+        "ar": "ماذا حدث؟",
+        "es": "¿Qué pasó?",
+        "vi": "Chuyện gì đã xảy ra?",
+        "en": "What happened?",
+        "tr": "Ne oldu?"
+      },
+      "band": 2,
+      "group": "questions"
+    },
+    {
+      "id": "fr-questions-13",
+      "text": "Tu es sûr ?",
+      "lemma": "être",
+      "form": "es",
+      "translations": {
+        "fa": "مطمئنی؟",
+        "ar": "هل أنت متأكد؟",
+        "es": "¿Estás seguro?",
+        "vi": "Bạn có chắc không?",
+        "en": "Are you sure?",
+        "tr": "Emin misin?"
+      },
+      "band": 3,
+      "group": "questions",
+      "note": "To a woman: Tu es sûre ? Polite: Vous êtes sûr ?"
+    },
+    {
+      "id": "fr-questions-14",
+      "text": "Lequel ?",
+      "translations": {
+        "fa": "کدام یکی؟",
+        "ar": "أيّ واحد؟",
+        "es": "¿Cuál?",
+        "vi": "Cái nào?",
+        "en": "Which one?",
+        "tr": "Hangisi?"
+      },
+      "band": 2,
+      "group": "questions",
+      "note": "For a feminine noun: Laquelle ?"
+    },
+    {
+      "id": "fr-questions-15",
+      "text": "Qu'est-ce qui ne va pas ?",
+      "lemma": "aller",
+      "form": "va",
+      "translations": {
+        "fa": "چه شده؟",
+        "ar": "ما الخطب؟",
+        "es": "¿Qué te pasa?",
+        "vi": "Có chuyện gì vậy?",
+        "en": "What's wrong?",
+        "tr": "Neyin var?"
+      },
+      "band": 3,
+      "group": "questions"
+    },
+    {
+      "id": "fr-needs-01",
+      "text": "Au secours !",
+      "lemma": "secours",
+      "form": "secours",
+      "translations": {
+        "fa": "کمک!",
+        "ar": "النجدة!",
+        "es": "¡Socorro!",
+        "vi": "Cứu tôi với!",
+        "en": "Help!",
+        "tr": "İmdat!"
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-02",
+      "text": "J'ai besoin d'aide.",
+      "lemma": "aide",
+      "form": "aide",
+      "translations": {
+        "fa": "به کمک نیاز دارم.",
+        "ar": "أحتاج إلى مساعدة.",
+        "es": "Necesito ayuda.",
+        "vi": "Tôi cần giúp đỡ.",
+        "en": "I need help.",
+        "tr": "Yardıma ihtiyacım var."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-03",
+      "text": "J'ai faim.",
+      "lemma": "faim",
+      "form": "faim",
+      "translations": {
+        "fa": "گرسنه‌ام.",
+        "ar": "أنا جائع.",
+        "es": "Tengo hambre.",
+        "vi": "Tôi đói.",
+        "en": "I'm hungry.",
+        "tr": "Acıktım."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-04",
+      "text": "J'ai soif.",
+      "lemma": "soif",
+      "form": "soif",
+      "translations": {
+        "fa": "تشنه‌ام.",
+        "ar": "أنا عطشان.",
+        "es": "Tengo sed.",
+        "vi": "Tôi khát.",
+        "en": "I'm thirsty.",
+        "tr": "Susadım."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-05",
+      "text": "Je ne sais pas.",
+      "lemma": "savoir",
+      "form": "sais",
+      "translations": {
+        "fa": "نمی‌دانم.",
+        "ar": "لا أعرف.",
+        "es": "No sé.",
+        "vi": "Tôi không biết.",
+        "en": "I don't know.",
+        "tr": "Bilmiyorum."
+      },
+      "band": 1,
+      "group": "needs",
+      "note": "In fast speech: Je sais pas, or even Chais pas."
+    },
+    {
+      "id": "fr-needs-06",
+      "text": "Attends une seconde.",
+      "lemma": "seconde",
+      "form": "seconde",
+      "translations": {
+        "fa": "یک لحظه صبر کن.",
+        "ar": "انتظر لحظة.",
+        "es": "Espera un momento.",
+        "vi": "Đợi một chút.",
+        "en": "Wait a second.",
+        "tr": "Bir saniye bekle."
+      },
+      "band": 1,
+      "group": "needs",
+      "note": "Polite: Attendez un instant."
+    },
+    {
+      "id": "fr-needs-07",
+      "text": "Je dois y aller.",
+      "lemma": "devoir",
+      "form": "dois",
+      "translations": {
+        "fa": "باید بروم.",
+        "ar": "يجب أن أذهب.",
+        "es": "Me tengo que ir.",
+        "vi": "Tôi phải đi rồi.",
+        "en": "I have to go.",
+        "tr": "Gitmem lazım."
+      },
+      "band": 1,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-08",
+      "text": "J'ai une question.",
+      "lemma": "question",
+      "form": "question",
+      "translations": {
+        "fa": "یک سؤال دارم.",
+        "ar": "لديّ سؤال.",
+        "es": "Tengo una pregunta.",
+        "vi": "Tôi có một câu hỏi.",
+        "en": "I have a question.",
+        "tr": "Bir sorum var."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-09",
+      "text": "Je suis perdu.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "گم شده‌ام.",
+        "ar": "لقد ضللت الطريق.",
+        "es": "Estoy perdido.",
+        "vi": "Tôi bị lạc.",
+        "en": "I'm lost.",
+        "tr": "Kayboldum."
+      },
+      "band": 2,
+      "group": "needs",
+      "note": "A woman says: Je suis perdue."
+    },
+    {
+      "id": "fr-needs-10",
+      "text": "J'ai besoin d'un médecin.",
+      "lemma": "médecin",
+      "form": "médecin",
+      "translations": {
+        "fa": "به دکتر نیاز دارم.",
+        "ar": "أحتاج إلى طبيب.",
+        "es": "Necesito un médico.",
+        "vi": "Tôi cần bác sĩ.",
+        "en": "I need a doctor.",
+        "tr": "Doktora ihtiyacım var."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-11",
+      "text": "J'ai froid.",
+      "lemma": "froid",
+      "form": "froid",
+      "translations": {
+        "fa": "سردم است.",
+        "ar": "أشعر بالبرد.",
+        "es": "Tengo frío.",
+        "vi": "Tôi lạnh.",
+        "en": "I'm cold.",
+        "tr": "Üşüyorum."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-12",
+      "text": "Je veux rentrer chez moi.",
+      "lemma": "rentrer",
+      "form": "rentrer",
+      "translations": {
+        "fa": "می‌خواهم به خانه برگردم.",
+        "ar": "أريد العودة إلى البيت.",
+        "es": "Quiero irme a casa.",
+        "vi": "Tôi muốn về nhà.",
+        "en": "I want to go home.",
+        "tr": "Eve gitmek istiyorum."
+      },
+      "band": 2,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-13",
+      "text": "J'ai mal ici.",
+      "lemma": "mal",
+      "form": "mal",
+      "translations": {
+        "fa": "اینجا درد می‌کند.",
+        "ar": "يؤلمني هنا.",
+        "es": "Me duele aquí.",
+        "vi": "Tôi đau ở đây.",
+        "en": "It hurts here.",
+        "tr": "Burası acıyor."
+      },
+      "band": 3,
+      "group": "needs"
+    },
+    {
+      "id": "fr-needs-14",
+      "text": "Appelez la police !",
+      "lemma": "police",
+      "form": "police",
+      "translations": {
+        "fa": "به پلیس زنگ بزنید!",
+        "ar": "اتصلوا بالشرطة!",
+        "es": "¡Llamen a la policía!",
+        "vi": "Gọi cảnh sát đi!",
+        "en": "Call the police!",
+        "tr": "Polisi arayın!"
+      },
+      "band": 3,
+      "group": "needs",
+      "note": "To one friend: Appelle la police !"
+    },
+    {
+      "id": "fr-needs-15",
+      "text": "Je cherche mon portable.",
+      "lemma": "chercher",
+      "form": "cherche",
+      "translations": {
+        "fa": "دنبال گوشی‌ام می‌گردم.",
+        "ar": "أبحث عن هاتفي.",
+        "es": "Estoy buscando mi teléfono.",
+        "vi": "Tôi đang tìm điện thoại của mình.",
+        "en": "I'm looking for my phone.",
+        "tr": "Telefonumu arıyorum."
+      },
+      "band": 3,
+      "group": "needs",
+      "note": "In France a mobile phone is usually called un portable."
+    },
+    {
+      "id": "fr-time-01",
+      "text": "Quelle heure est-il ?",
+      "lemma": "heure",
+      "form": "heure",
+      "translations": {
+        "fa": "ساعت چند است؟",
+        "ar": "كم الساعة؟",
+        "es": "¿Qué hora es?",
+        "vi": "Mấy giờ rồi?",
+        "en": "What time is it?",
+        "tr": "Saat kaç?"
+      },
+      "band": 1,
+      "group": "time",
+      "note": "Spoken: Il est quelle heure ?"
+    },
+    {
+      "id": "fr-time-02",
+      "text": "Il est trois heures.",
+      "lemma": "heure",
+      "form": "heures",
+      "translations": {
+        "fa": "ساعت سه است.",
+        "ar": "الساعة الثالثة.",
+        "es": "Son las tres.",
+        "vi": "Bây giờ là ba giờ.",
+        "en": "It's three o'clock.",
+        "tr": "Saat üç."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-03",
+      "text": "Tout de suite.",
+      "lemma": "suite",
+      "form": "suite",
+      "translations": {
+        "fa": "همین الان.",
+        "ar": "فورًا.",
+        "es": "Ahora mismo.",
+        "vi": "Ngay bây giờ.",
+        "en": "Right now.",
+        "tr": "Hemen."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-04",
+      "text": "Pas encore.",
+      "lemma": "encore",
+      "form": "encore",
+      "translations": {
+        "fa": "هنوز نه.",
+        "ar": "ليس بعد.",
+        "es": "Todavía no.",
+        "vi": "Chưa.",
+        "en": "Not yet.",
+        "tr": "Henüz değil."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-05",
+      "text": "Plus tard.",
+      "lemma": "tard",
+      "form": "tard",
+      "translations": {
+        "fa": "بعداً.",
+        "ar": "لاحقًا.",
+        "es": "Más tarde.",
+        "vi": "Để sau.",
+        "en": "Later.",
+        "tr": "Sonra."
+      },
+      "band": 1,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-06",
+      "text": "Aujourd'hui, c'est lundi.",
+      "lemma": "lundi",
+      "form": "lundi",
+      "translations": {
+        "fa": "امروز دوشنبه است.",
+        "ar": "اليوم هو الاثنين.",
+        "es": "Hoy es lunes.",
+        "vi": "Hôm nay là thứ Hai.",
+        "en": "Today is Monday.",
+        "tr": "Bugün pazartesi."
+      },
+      "band": 2,
+      "group": "time",
+      "note": "Also very common: On est lundi."
+    },
+    {
+      "id": "fr-time-07",
+      "text": "Demain matin.",
+      "lemma": "matin",
+      "form": "matin",
+      "translations": {
+        "fa": "فردا صبح.",
+        "ar": "صباح الغد.",
+        "es": "Mañana por la mañana.",
+        "vi": "Sáng mai.",
+        "en": "Tomorrow morning.",
+        "tr": "Yarın sabah."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-08",
+      "text": "À quelle heure ?",
+      "lemma": "heure",
+      "form": "heure",
+      "translations": {
+        "fa": "ساعت چند؟",
+        "ar": "في أي ساعة؟",
+        "es": "¿A qué hora?",
+        "vi": "Lúc mấy giờ?",
+        "en": "At what time?",
+        "tr": "Saat kaçta?"
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-09",
+      "text": "Tous les jours.",
+      "lemma": "jour",
+      "form": "jours",
+      "translations": {
+        "fa": "هر روز.",
+        "ar": "كل يوم.",
+        "es": "Todos los días.",
+        "vi": "Mỗi ngày.",
+        "en": "Every day.",
+        "tr": "Her gün."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-10",
+      "text": "La semaine prochaine.",
+      "lemma": "prochain",
+      "form": "prochaine",
+      "translations": {
+        "fa": "هفته‌ی آینده.",
+        "ar": "الأسبوع القادم.",
+        "es": "La próxima semana.",
+        "vi": "Tuần sau.",
+        "en": "Next week.",
+        "tr": "Gelecek hafta."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-11",
+      "text": "Je suis en retard.",
+      "lemma": "retard",
+      "form": "retard",
+      "translations": {
+        "fa": "دیرم شده است.",
+        "ar": "أنا متأخر.",
+        "es": "Llego tarde.",
+        "vi": "Tôi bị trễ rồi.",
+        "en": "I'm late.",
+        "tr": "Geç kaldım."
+      },
+      "band": 2,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-12",
+      "text": "Hier soir.",
+      "lemma": "soir",
+      "form": "soir",
+      "translations": {
+        "fa": "دیشب.",
+        "ar": "مساء أمس.",
+        "es": "Anoche.",
+        "vi": "Tối qua.",
+        "en": "Last night.",
+        "tr": "Dün akşam."
+      },
+      "band": 3,
+      "group": "time",
+      "note": "For the night itself, while asleep: cette nuit."
+    },
+    {
+      "id": "fr-time-13",
+      "text": "Le week-end.",
+      "lemma": "week-end",
+      "form": "week-end",
+      "translations": {
+        "fa": "آخر هفته.",
+        "ar": "في عطلة نهاية الأسبوع.",
+        "es": "El fin de semana.",
+        "vi": "Vào cuối tuần.",
+        "en": "On the weekend.",
+        "tr": "Hafta sonu."
+      },
+      "band": 3,
+      "group": "time",
+      "note": "This coming weekend: ce week-end."
+    },
+    {
+      "id": "fr-time-14",
+      "text": "Parfois.",
+      "translations": {
+        "fa": "گاهی.",
+        "ar": "أحيانًا.",
+        "es": "A veces.",
+        "vi": "Thỉnh thoảng.",
+        "en": "Sometimes.",
+        "tr": "Bazen."
+      },
+      "band": 3,
+      "group": "time"
+    },
+    {
+      "id": "fr-time-15",
+      "text": "On a le temps.",
+      "lemma": "temps",
+      "form": "temps",
+      "translations": {
+        "fa": "وقت داریم.",
+        "ar": "لدينا وقت.",
+        "es": "Tenemos tiempo.",
+        "vi": "Chúng ta còn thời gian.",
+        "en": "We have time.",
+        "tr": "Vaktimiz var."
+      },
+      "band": 3,
+      "group": "time",
+      "note": "In speech, on usually means 'we'."
+    },
+    {
+      "id": "fr-places-01",
+      "text": "Où sont les toilettes ?",
+      "lemma": "toilettes",
+      "form": "toilettes",
+      "translations": {
+        "fa": "دستشویی کجاست؟",
+        "ar": "أين الحمّام؟",
+        "es": "¿Dónde está el baño?",
+        "vi": "Nhà vệ sinh ở đâu?",
+        "en": "Where's the toilet?",
+        "tr": "Tuvalet nerede?"
+      },
+      "band": 1,
+      "group": "places",
+      "note": "Toilettes is always plural."
+    },
+    {
+      "id": "fr-places-02",
+      "text": "C'est ici.",
+      "lemma": "ici",
+      "form": "ici",
+      "translations": {
+        "fa": "اینجاست.",
+        "ar": "إنه هنا.",
+        "es": "Está aquí.",
+        "vi": "Ở đây.",
+        "en": "It's here.",
+        "tr": "Burada."
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-03",
+      "text": "Là-bas.",
+      "translations": {
+        "fa": "آنجا.",
+        "ar": "هناك.",
+        "es": "Allí.",
+        "vi": "Ở đằng kia.",
+        "en": "Over there.",
+        "tr": "Orada."
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-04",
+      "text": "À gauche.",
+      "lemma": "gauche",
+      "form": "gauche",
+      "translations": {
+        "fa": "سمت چپ.",
+        "ar": "على اليسار.",
+        "es": "A la izquierda.",
+        "vi": "Bên trái.",
+        "en": "On the left.",
+        "tr": "Solda."
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-05",
+      "text": "À droite.",
+      "lemma": "droite",
+      "form": "droite",
+      "translations": {
+        "fa": "سمت راست.",
+        "ar": "على اليمين.",
+        "es": "A la derecha.",
+        "vi": "Bên phải.",
+        "en": "On the right.",
+        "tr": "Sağda."
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-06",
+      "text": "Tout droit.",
+      "lemma": "droit",
+      "form": "droit",
+      "translations": {
+        "fa": "مستقیم.",
+        "ar": "إلى الأمام مباشرة.",
+        "es": "Todo recto.",
+        "vi": "Đi thẳng.",
+        "en": "Straight ahead.",
+        "tr": "Dümdüz."
+      },
+      "band": 2,
+      "group": "places",
+      "note": "Don't mix it up with à droite (on the right)."
+    },
+    {
+      "id": "fr-places-07",
+      "text": "C'est loin ?",
+      "lemma": "loin",
+      "form": "loin",
+      "translations": {
+        "fa": "دور است؟",
+        "ar": "هل هو بعيد؟",
+        "es": "¿Está lejos?",
+        "vi": "Có xa không?",
+        "en": "Is it far?",
+        "tr": "Uzak mı?"
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-08",
+      "text": "C'est près d'ici.",
+      "lemma": "près",
+      "form": "près",
+      "translations": {
+        "fa": "همین نزدیکی است.",
+        "ar": "إنه قريب من هنا.",
+        "es": "Está cerca de aquí.",
+        "vi": "Ở gần đây.",
+        "en": "It's near here.",
+        "tr": "Buraya yakın."
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-09",
+      "text": "On y va !",
+      "lemma": "aller",
+      "form": "va",
+      "translations": {
+        "fa": "برویم!",
+        "ar": "هيا بنا!",
+        "es": "¡Vamos!",
+        "vi": "Đi thôi!",
+        "en": "Let's go!",
+        "tr": "Hadi gidelim!"
+      },
+      "band": 1,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-10",
+      "text": "Je suis à la maison.",
+      "lemma": "maison",
+      "form": "maison",
+      "translations": {
+        "fa": "خانه هستم.",
+        "ar": "أنا في البيت.",
+        "es": "Estoy en casa.",
+        "vi": "Tôi đang ở nhà.",
+        "en": "I'm at home.",
+        "tr": "Evdeyim."
+      },
+      "band": 2,
+      "group": "places",
+      "note": "Also: Je suis chez moi."
+    },
+    {
+      "id": "fr-places-11",
+      "text": "Où est le supermarché ?",
+      "lemma": "supermarché",
+      "form": "supermarché",
+      "translations": {
+        "fa": "سوپرمارکت کجاست؟",
+        "ar": "أين السوبرماركت؟",
+        "es": "¿Dónde está el supermercado?",
+        "vi": "Siêu thị ở đâu?",
+        "en": "Where's the supermarket?",
+        "tr": "Süpermarket nerede?"
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-12",
+      "text": "C'est ouvert ?",
+      "lemma": "ouvert",
+      "form": "ouvert",
+      "translations": {
+        "fa": "باز است؟",
+        "ar": "هل هو مفتوح؟",
+        "es": "¿Está abierto?",
+        "vi": "Có mở cửa không?",
+        "en": "Is it open?",
+        "tr": "Açık mı?"
+      },
+      "band": 2,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-13",
+      "text": "Il y a une pharmacie près d'ici ?",
+      "lemma": "pharmacie",
+      "form": "pharmacie",
+      "translations": {
+        "fa": "این نزدیکی داروخانه هست؟",
+        "ar": "هل توجد صيدلية قريبة من هنا؟",
+        "es": "¿Hay una farmacia cerca de aquí?",
+        "vi": "Gần đây có hiệu thuốc không?",
+        "en": "Is there a pharmacy near here?",
+        "tr": "Yakınlarda eczane var mı?"
+      },
+      "band": 3,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-14",
+      "text": "Où est l'hôpital ?",
+      "lemma": "hôpital",
+      "form": "hôpital",
+      "translations": {
+        "fa": "بیمارستان کجاست؟",
+        "ar": "أين المستشفى؟",
+        "es": "¿Dónde está el hospital?",
+        "vi": "Bệnh viện ở đâu?",
+        "en": "Where's the hospital?",
+        "tr": "Hastane nerede?"
+      },
+      "band": 3,
+      "group": "places"
+    },
+    {
+      "id": "fr-places-15",
+      "text": "C'est fermé.",
+      "lemma": "fermé",
+      "form": "fermé",
+      "translations": {
+        "fa": "بسته است.",
+        "ar": "إنه مغلق.",
+        "es": "Está cerrado.",
+        "vi": "Đóng cửa rồi.",
+        "en": "It's closed.",
+        "tr": "Kapalı."
+      },
+      "band": 3,
+      "group": "places"
+    },
+    {
+      "id": "fr-food-01",
+      "text": "Un café, s'il vous plaît.",
+      "lemma": "café",
+      "form": "café",
+      "translations": {
+        "fa": "یک قهوه، لطفاً.",
+        "ar": "قهوة من فضلك.",
+        "es": "Un café, por favor.",
+        "vi": "Cho tôi một ly cà phê.",
+        "en": "A coffee, please.",
+        "tr": "Bir kahve, lütfen."
+      },
+      "band": 1,
+      "group": "food",
+      "note": "In France un café is a small espresso."
+    },
+    {
+      "id": "fr-food-02",
+      "text": "De l'eau, s'il vous plaît.",
+      "lemma": "eau",
+      "form": "eau",
+      "translations": {
+        "fa": "آب، لطفاً.",
+        "ar": "ماء من فضلك.",
+        "es": "Agua, por favor.",
+        "vi": "Cho tôi xin nước.",
+        "en": "Water, please.",
+        "tr": "Su, lütfen."
+      },
+      "band": 1,
+      "group": "food",
+      "note": "Free tap water in a restaurant: Une carafe d'eau, s'il vous plaît."
+    },
+    {
+      "id": "fr-food-03",
+      "text": "La carte, s'il vous plaît.",
+      "lemma": "carte",
+      "form": "carte",
+      "translations": {
+        "fa": "منو، لطفاً.",
+        "ar": "قائمة الطعام من فضلك.",
+        "es": "La carta, por favor.",
+        "vi": "Cho tôi xem thực đơn.",
+        "en": "The menu, please.",
+        "tr": "Menü, lütfen."
+      },
+      "band": 2,
+      "group": "food",
+      "note": "In a French restaurant le menu usually means the set meal."
+    },
+    {
+      "id": "fr-food-04",
+      "text": "L'addition, s'il vous plaît.",
+      "lemma": "addition",
+      "form": "addition",
+      "translations": {
+        "fa": "صورت‌حساب، لطفاً.",
+        "ar": "الحساب من فضلك.",
+        "es": "La cuenta, por favor.",
+        "vi": "Tính tiền giúp tôi.",
+        "en": "The bill, please.",
+        "tr": "Hesap, lütfen."
+      },
+      "band": 1,
+      "group": "food"
+    },
+    {
+      "id": "fr-food-05",
+      "text": "Je vais prendre ça.",
+      "lemma": "prendre",
+      "form": "prendre",
+      "translations": {
+        "fa": "من این را می‌گیرم.",
+        "ar": "سآخذ هذا.",
+        "es": "Voy a pedir esto.",
+        "vi": "Tôi lấy món này.",
+        "en": "I'll have this.",
+        "tr": "Bunu alayım."
+      },
+      "band": 1,
+      "group": "food"
+    },
+    {
+      "id": "fr-food-06",
+      "text": "C'est délicieux !",
+      "lemma": "délicieux",
+      "form": "délicieux",
+      "translations": {
+        "fa": "خیلی خوشمزه است!",
+        "ar": "إنه لذيذ!",
+        "es": "¡Está delicioso!",
+        "vi": "Ngon quá!",
+        "en": "It's delicious!",
+        "tr": "Çok lezzetli!"
+      },
+      "band": 1,
+      "group": "food",
+      "note": "Everyday alternative: C'est trop bon !"
+    },
+    {
+      "id": "fr-food-07",
+      "text": "Bon appétit !",
+      "lemma": "appétit",
+      "form": "appétit",
+      "translations": {
+        "fa": "نوش جان!",
+        "ar": "بالهناء والشفاء!",
+        "es": "¡Buen provecho!",
+        "vi": "Chúc ngon miệng!",
+        "en": "Enjoy your meal!",
+        "tr": "Afiyet olsun!"
+      },
+      "band": 2,
+      "group": "food",
+      "note": "Said before eating, not after."
+    },
+    {
+      "id": "fr-food-08",
+      "text": "Santé !",
+      "translations": {
+        "fa": "به سلامتی!",
+        "ar": "في صحتك!",
+        "es": "¡Salud!",
+        "vi": "Cạn ly!",
+        "en": "Cheers!",
+        "tr": "Şerefe!"
+      },
+      "band": 2,
+      "group": "food",
+      "note": "Also: À la tienne ! (tu) or À la vôtre ! (vous)."
+    },
+    {
+      "id": "fr-food-09",
+      "text": "Je suis végétarien.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "گیاه‌خوارم.",
+        "ar": "أنا نباتي.",
+        "es": "Soy vegetariano.",
+        "vi": "Tôi ăn chay.",
+        "en": "I'm vegetarian.",
+        "tr": "Vejetaryenim."
+      },
+      "band": 3,
+      "group": "food",
+      "note": "A woman says: Je suis végétarienne."
+    },
+    {
+      "id": "fr-food-10",
+      "text": "Sans sucre, s'il vous plaît.",
+      "lemma": "sucre",
+      "form": "sucre",
+      "translations": {
+        "fa": "بدون شکر، لطفاً.",
+        "ar": "بدون سكر من فضلك.",
+        "es": "Sin azúcar, por favor.",
+        "vi": "Không đường nhé.",
+        "en": "No sugar, please.",
+        "tr": "Şekersiz, lütfen."
+      },
+      "band": 3,
+      "group": "food"
+    },
+    {
+      "id": "fr-food-11",
+      "text": "Je peux payer par carte ?",
+      "lemma": "payer",
+      "form": "payer",
+      "translations": {
+        "fa": "می‌توانم با کارت پرداخت کنم؟",
+        "ar": "هل يمكنني الدفع بالبطاقة؟",
+        "es": "¿Puedo pagar con tarjeta?",
+        "vi": "Tôi trả bằng thẻ được không?",
+        "en": "Can I pay by card?",
+        "tr": "Kartla ödeyebilir miyim?"
+      },
+      "band": 2,
+      "group": "food"
+    },
+    {
+      "id": "fr-food-12",
+      "text": "Une table pour deux, s'il vous plaît.",
+      "lemma": "table",
+      "form": "table",
+      "translations": {
+        "fa": "یک میز برای دو نفر، لطفاً.",
+        "ar": "طاولة لشخصين من فضلك.",
+        "es": "Una mesa para dos, por favor.",
+        "vi": "Cho tôi một bàn hai người.",
+        "en": "A table for two, please.",
+        "tr": "İki kişilik bir masa, lütfen."
+      },
+      "band": 2,
+      "group": "food"
+    },
+    {
+      "id": "fr-food-13",
+      "text": "À emporter, s'il vous plaît.",
+      "lemma": "emporter",
+      "form": "emporter",
+      "translations": {
+        "fa": "بیرون‌بر، لطفاً.",
+        "ar": "سآخذه معي، من فضلك.",
+        "es": "Para llevar, por favor.",
+        "vi": "Cho tôi mang đi.",
+        "en": "To take away, please.",
+        "tr": "Paket olsun, lütfen."
+      },
+      "band": 3,
+      "group": "food",
+      "note": "To eat in: Sur place."
+    },
+    {
+      "id": "fr-food-14",
+      "text": "C'est épicé ?",
+      "lemma": "épicé",
+      "form": "épicé",
+      "translations": {
+        "fa": "تند است؟",
+        "ar": "هل هو حار؟",
+        "es": "¿Pica?",
+        "vi": "Có cay không?",
+        "en": "Is it spicy?",
+        "tr": "Acı mı?"
+      },
+      "band": 3,
+      "group": "food"
+    },
+    {
+      "id": "fr-food-15",
+      "text": "Je n'ai plus faim.",
+      "lemma": "faim",
+      "form": "faim",
+      "translations": {
+        "fa": "سیر شدم.",
+        "ar": "لقد شبعت.",
+        "es": "Estoy lleno.",
+        "vi": "Tôi no rồi.",
+        "en": "I'm full.",
+        "tr": "Doydum."
+      },
+      "band": 3,
+      "group": "food",
+      "note": "Literally 'I'm not hungry any more'. Also: J'ai bien mangé. Je suis plein is heard but sounds sloppy in France."
+    },
+    {
+      "id": "fr-travel-01",
+      "text": "Où est la gare ?",
+      "lemma": "gare",
+      "form": "gare",
+      "translations": {
+        "fa": "ایستگاه قطار کجاست؟",
+        "ar": "أين محطة القطار؟",
+        "es": "¿Dónde está la estación de tren?",
+        "vi": "Ga tàu ở đâu?",
+        "en": "Where's the train station?",
+        "tr": "Tren istasyonu nerede?"
+      },
+      "band": 1,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-02",
+      "text": "Un billet, s'il vous plaît.",
+      "lemma": "billet",
+      "form": "billet",
+      "translations": {
+        "fa": "یک بلیت، لطفاً.",
+        "ar": "تذكرة واحدة من فضلك.",
+        "es": "Un boleto, por favor.",
+        "vi": "Cho tôi một vé.",
+        "en": "One ticket, please.",
+        "tr": "Bir bilet, lütfen."
+      },
+      "band": 1,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-03",
+      "text": "Où est l'hôtel ?",
+      "lemma": "hôtel",
+      "form": "hôtel",
+      "translations": {
+        "fa": "هتل کجاست؟",
+        "ar": "أين الفندق؟",
+        "es": "¿Dónde está el hotel?",
+        "vi": "Khách sạn ở đâu?",
+        "en": "Where's the hotel?",
+        "tr": "Otel nerede?"
+      },
+      "band": 1,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-04",
+      "text": "Comment aller à l'aéroport ?",
+      "lemma": "aller",
+      "form": "aller",
+      "translations": {
+        "fa": "چطور به فرودگاه بروم؟",
+        "ar": "كيف أذهب إلى المطار؟",
+        "es": "¿Cómo llego al aeropuerto?",
+        "vi": "Làm sao để đến sân bay?",
+        "en": "How do I get to the airport?",
+        "tr": "Havalimanına nasıl gidebilirim?"
+      },
+      "band": 2,
+      "group": "travel",
+      "note": "To a stranger, start with Excusez-moi."
+    },
+    {
+      "id": "fr-travel-05",
+      "text": "Le train part à quelle heure ?",
+      "lemma": "partir",
+      "form": "part",
+      "translations": {
+        "fa": "قطار ساعت چند حرکت می‌کند؟",
+        "ar": "في أي ساعة يغادر القطار؟",
+        "es": "¿A qué hora sale el tren?",
+        "vi": "Tàu chạy lúc mấy giờ?",
+        "en": "What time does the train leave?",
+        "tr": "Tren saat kaçta kalkıyor?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-06",
+      "text": "Cette place est libre ?",
+      "lemma": "libre",
+      "form": "libre",
+      "translations": {
+        "fa": "این صندلی خالی است؟",
+        "ar": "هل هذا المقعد شاغر؟",
+        "es": "¿Está libre este asiento?",
+        "vi": "Chỗ này còn trống không?",
+        "en": "Is this seat free?",
+        "tr": "Bu koltuk boş mu?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-07",
+      "text": "J'ai une réservation.",
+      "lemma": "réservation",
+      "form": "réservation",
+      "translations": {
+        "fa": "رزرو دارم.",
+        "ar": "لديّ حجز.",
+        "es": "Tengo una reserva.",
+        "vi": "Tôi đã đặt chỗ trước.",
+        "en": "I have a reservation.",
+        "tr": "Rezervasyonum var."
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-08",
+      "text": "Où est l'arrêt de bus ?",
+      "lemma": "arrêt",
+      "form": "arrêt",
+      "translations": {
+        "fa": "ایستگاه اتوبوس کجاست؟",
+        "ar": "أين موقف الحافلات؟",
+        "es": "¿Dónde está la parada de autobús?",
+        "vi": "Trạm xe buýt ở đâu?",
+        "en": "Where's the bus stop?",
+        "tr": "Otobüs durağı nerede?"
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-09",
+      "text": "À l'aéroport, s'il vous plaît.",
+      "lemma": "aéroport",
+      "form": "aéroport",
+      "translations": {
+        "fa": "به فرودگاه، لطفاً.",
+        "ar": "إلى المطار من فضلك.",
+        "es": "Al aeropuerto, por favor.",
+        "vi": "Cho tôi ra sân bay.",
+        "en": "To the airport, please.",
+        "tr": "Havalimanına, lütfen."
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-10",
+      "text": "Voici mon passeport.",
+      "lemma": "passeport",
+      "form": "passeport",
+      "translations": {
+        "fa": "بفرمایید، این گذرنامه‌ی من است.",
+        "ar": "تفضل، هذا جواز سفري.",
+        "es": "Aquí tiene mi pasaporte.",
+        "vi": "Đây là hộ chiếu của tôi.",
+        "en": "Here's my passport.",
+        "tr": "Buyurun, pasaportum."
+      },
+      "band": 2,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-11",
+      "text": "Je suis ici en vacances.",
+      "lemma": "vacances",
+      "form": "vacances",
+      "translations": {
+        "fa": "برای تعطیلات به اینجا آمده‌ام.",
+        "ar": "أنا هنا في عطلة.",
+        "es": "Estoy aquí de vacaciones.",
+        "vi": "Tôi đang đi nghỉ ở đây.",
+        "en": "I'm here on holiday.",
+        "tr": "Buraya tatile geldim."
+      },
+      "band": 3,
+      "group": "travel",
+      "note": "Vacances is always plural."
+    },
+    {
+      "id": "fr-travel-12",
+      "text": "C'est quel quai ?",
+      "lemma": "quai",
+      "form": "quai",
+      "translations": {
+        "fa": "کدام سکو؟",
+        "ar": "أي رصيف؟",
+        "es": "¿Cuál es el andén?",
+        "vi": "Sân ga số mấy?",
+        "en": "Which platform is it?",
+        "tr": "Hangi peron?"
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-13",
+      "text": "Un aller-retour, s'il vous plaît.",
+      "lemma": "aller-retour",
+      "form": "aller-retour",
+      "translations": {
+        "fa": "یک بلیت رفت و برگشت، لطفاً.",
+        "ar": "تذكرة ذهاب وعودة من فضلك.",
+        "es": "Un boleto de ida y vuelta, por favor.",
+        "vi": "Cho tôi một vé khứ hồi.",
+        "en": "A return ticket, please.",
+        "tr": "Gidiş-dönüş bir bilet, lütfen."
+      },
+      "band": 3,
+      "group": "travel",
+      "note": "One way: un aller simple."
+    },
+    {
+      "id": "fr-travel-14",
+      "text": "Arrêtez-vous ici, s'il vous plaît.",
+      "lemma": "s'arrêter",
+      "form": "Arrêtez",
+      "translations": {
+        "fa": "لطفاً همین‌جا نگه دارید.",
+        "ar": "توقف هنا من فضلك.",
+        "es": "Pare aquí, por favor.",
+        "vi": "Cho tôi xuống ở đây.",
+        "en": "Stop here, please.",
+        "tr": "Burada durun, lütfen."
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "fr-travel-15",
+      "text": "Ça prend combien de temps ?",
+      "lemma": "prendre",
+      "form": "prend",
+      "translations": {
+        "fa": "چقدر طول می‌کشد؟",
+        "ar": "كم يستغرق ذلك؟",
+        "es": "¿Cuánto tiempo tarda?",
+        "vi": "Mất bao lâu?",
+        "en": "How long does it take?",
+        "tr": "Ne kadar sürer?"
+      },
+      "band": 3,
+      "group": "travel"
+    },
+    {
+      "id": "fr-work-01",
+      "text": "Tu fais quoi dans la vie ?",
+      "lemma": "faire",
+      "form": "fais",
+      "translations": {
+        "fa": "شغلت چیست؟",
+        "ar": "ماذا تعمل؟",
+        "es": "¿A qué te dedicas?",
+        "vi": "Bạn làm nghề gì?",
+        "en": "What do you do?",
+        "tr": "Ne iş yapıyorsun?"
+      },
+      "band": 1,
+      "group": "work",
+      "note": "Polite: Vous faites quoi dans la vie ?"
+    },
+    {
+      "id": "fr-work-02",
+      "text": "Je suis étudiant.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "دانشجو هستم.",
+        "ar": "أنا طالب.",
+        "es": "Soy estudiante.",
+        "vi": "Tôi là sinh viên.",
+        "en": "I'm a student.",
+        "tr": "Öğrenciyim."
+      },
+      "band": 1,
+      "group": "work",
+      "note": "A woman says: Je suis étudiante."
+    },
+    {
+      "id": "fr-work-03",
+      "text": "Je suis occupé.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "سرم شلوغ است.",
+        "ar": "أنا مشغول.",
+        "es": "Estoy ocupado.",
+        "vi": "Tôi đang bận.",
+        "en": "I'm busy.",
+        "tr": "Meşgulüm."
+      },
+      "band": 1,
+      "group": "work",
+      "note": "A woman says: Je suis occupée."
+    },
+    {
+      "id": "fr-work-04",
+      "text": "Bien joué !",
+      "lemma": "jouer",
+      "form": "joué",
+      "translations": {
+        "fa": "آفرین!",
+        "ar": "أحسنت!",
+        "es": "¡Buen trabajo!",
+        "vi": "Làm tốt lắm!",
+        "en": "Well done!",
+        "tr": "İyi iş çıkardın!"
+      },
+      "band": 1,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-05",
+      "text": "Je travaille dans un bureau.",
+      "lemma": "bureau",
+      "form": "bureau",
+      "translations": {
+        "fa": "در یک دفتر کار می‌کنم.",
+        "ar": "أعمل في مكتب.",
+        "es": "Trabajo en una oficina.",
+        "vi": "Tôi làm việc ở văn phòng.",
+        "en": "I work in an office.",
+        "tr": "Bir ofiste çalışıyorum."
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-06",
+      "text": "J'ai une réunion.",
+      "lemma": "réunion",
+      "form": "réunion",
+      "translations": {
+        "fa": "یک جلسه دارم.",
+        "ar": "لديّ اجتماع.",
+        "es": "Tengo una reunión.",
+        "vi": "Tôi có một cuộc họp.",
+        "en": "I have a meeting.",
+        "tr": "Toplantım var."
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-07",
+      "text": "Tu as un moment ?",
+      "lemma": "moment",
+      "form": "moment",
+      "translations": {
+        "fa": "یک لحظه وقت داری؟",
+        "ar": "هل لديك لحظة؟",
+        "es": "¿Tienes un momento?",
+        "vi": "Bạn có rảnh một chút không?",
+        "en": "Do you have a moment?",
+        "tr": "Bir dakikan var mı?"
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Polite: Vous avez un moment ?"
+    },
+    {
+      "id": "fr-work-08",
+      "text": "Allez, on commence !",
+      "lemma": "commencer",
+      "form": "commence",
+      "translations": {
+        "fa": "خب، شروع کنیم!",
+        "ar": "هيا نبدأ!",
+        "es": "¡Empecemos!",
+        "vi": "Nào, bắt đầu thôi!",
+        "en": "OK, let's start!",
+        "tr": "Hadi başlayalım!"
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-09",
+      "text": "J'ai fini.",
+      "lemma": "finir",
+      "form": "fini",
+      "translations": {
+        "fa": "کارم تمام شد.",
+        "ar": "انتهيت.",
+        "es": "Ya terminé.",
+        "vi": "Tôi xong rồi.",
+        "en": "I'm done.",
+        "tr": "Bitirdim."
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-10",
+      "text": "Quel est ton numéro ?",
+      "lemma": "numéro",
+      "form": "numéro",
+      "translations": {
+        "fa": "شماره‌ات چند است؟",
+        "ar": "ما رقم هاتفك؟",
+        "es": "¿Cuál es tu número?",
+        "vi": "Số điện thoại của bạn là bao nhiêu?",
+        "en": "What's your number?",
+        "tr": "Numaran ne?"
+      },
+      "band": 2,
+      "group": "work",
+      "note": "Polite: Quel est votre numéro ?"
+    },
+    {
+      "id": "fr-work-11",
+      "text": "C'est une bonne idée.",
+      "lemma": "idée",
+      "form": "idée",
+      "translations": {
+        "fa": "فکر خوبی است.",
+        "ar": "هذه فكرة جيدة.",
+        "es": "Es una buena idea.",
+        "vi": "Ý hay đấy.",
+        "en": "That's a good idea.",
+        "tr": "İyi fikir."
+      },
+      "band": 2,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-12",
+      "text": "Je suis d'accord.",
+      "lemma": "accord",
+      "form": "accord",
+      "translations": {
+        "fa": "موافقم.",
+        "ar": "أنا موافق.",
+        "es": "Estoy de acuerdo.",
+        "vi": "Tôi đồng ý.",
+        "en": "I agree.",
+        "tr": "Katılıyorum."
+      },
+      "band": 3,
+      "group": "work"
+    },
+    {
+      "id": "fr-work-13",
+      "text": "Laisse-moi réfléchir.",
+      "lemma": "réfléchir",
+      "form": "réfléchir",
+      "translations": {
+        "fa": "بگذار فکر کنم.",
+        "ar": "دعني أفكر.",
+        "es": "Déjame pensar.",
+        "vi": "Để tôi suy nghĩ đã.",
+        "en": "Let me think.",
+        "tr": "Bir düşüneyim."
+      },
+      "band": 3,
+      "group": "work",
+      "note": "Polite: Laissez-moi réfléchir."
+    },
+    {
+      "id": "fr-work-14",
+      "text": "Tu peux m'envoyer un mail ?",
+      "lemma": "envoyer",
+      "form": "envoyer",
+      "translations": {
+        "fa": "می‌توانی برایم ایمیل بفرستی؟",
+        "ar": "هل يمكنك أن ترسل لي بريدًا إلكترونيًا؟",
+        "es": "¿Me puedes mandar un correo?",
+        "vi": "Bạn gửi email cho tôi được không?",
+        "en": "Can you send me an email?",
+        "tr": "Bana e-posta gönderebilir misin?"
+      },
+      "band": 3,
+      "group": "work",
+      "note": "Polite: Vous pouvez m'envoyer un mail ?"
+    },
+    {
+      "id": "fr-work-15",
+      "text": "Je travaille de chez moi.",
+      "lemma": "travailler",
+      "form": "travaille",
+      "translations": {
+        "fa": "از خانه کار می‌کنم.",
+        "ar": "أعمل من المنزل.",
+        "es": "Trabajo desde casa.",
+        "vi": "Tôi làm việc ở nhà.",
+        "en": "I work from home.",
+        "tr": "Evden çalışıyorum."
+      },
+      "band": 3,
+      "group": "work",
+      "note": "Also: Je suis en télétravail."
+    },
+    {
+      "id": "fr-feelings-01",
+      "text": "Je suis content.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "خوشحالم.",
+        "ar": "أنا سعيد.",
+        "es": "Estoy contento.",
+        "vi": "Tôi vui lắm.",
+        "en": "I'm happy.",
+        "tr": "Mutluyum."
+      },
+      "band": 1,
+      "group": "feelings",
+      "note": "A woman says: Je suis contente."
+    },
+    {
+      "id": "fr-feelings-02",
+      "text": "Je suis fatigué.",
+      "lemma": "être",
+      "form": "suis",
+      "translations": {
+        "fa": "خسته‌ام.",
+        "ar": "أنا متعب.",
+        "es": "Estoy cansado.",
+        "vi": "Tôi mệt.",
+        "en": "I'm tired.",
+        "tr": "Yorgunum."
+      },
+      "band": 1,
+      "group": "feelings",
+      "note": "A woman says: Je suis fatiguée."
+    },
+    {
+      "id": "fr-feelings-03",
+      "text": "Je t'aime.",
+      "lemma": "aimer",
+      "form": "aime",
+      "translations": {
+        "fa": "دوستت دارم.",
+        "ar": "أحبك.",
+        "es": "Te quiero.",
+        "vi": "Anh yêu em.",
+        "en": "I love you.",
+        "tr": "Seni seviyorum."
+      },
+      "band": 1,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-04",
+      "text": "Ça me plaît.",
+      "lemma": "plaire",
+      "form": "plaît",
+      "translations": {
+        "fa": "خوشم می‌آید.",
+        "ar": "يعجبني.",
+        "es": "Me gusta.",
+        "vi": "Tôi thích cái này.",
+        "en": "I like it.",
+        "tr": "Hoşuma gidiyor."
+      },
+      "band": 1,
+      "group": "feelings",
+      "note": "Also common: J'aime bien."
+    },
+    {
+      "id": "fr-feelings-05",
+      "text": "Je n'aime pas ça.",
+      "lemma": "aimer",
+      "form": "aime",
+      "translations": {
+        "fa": "از این خوشم نمی‌آید.",
+        "ar": "لا يعجبني هذا.",
+        "es": "No me gusta.",
+        "vi": "Tôi không thích cái này.",
+        "en": "I don't like it.",
+        "tr": "Bunu sevmiyorum."
+      },
+      "band": 1,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-06",
+      "text": "Génial !",
+      "translations": {
+        "fa": "عالی است!",
+        "ar": "رائع!",
+        "es": "¡Genial!",
+        "vi": "Tuyệt vời!",
+        "en": "Great!",
+        "tr": "Harika!"
+      },
+      "band": 1,
+      "group": "feelings",
+      "note": "Also: Super !"
+    },
+    {
+      "id": "fr-feelings-07",
+      "text": "Ne t'inquiète pas.",
+      "lemma": "s'inquiéter",
+      "form": "inquiète",
+      "translations": {
+        "fa": "نگران نباش.",
+        "ar": "لا تقلق.",
+        "es": "No te preocupes.",
+        "vi": "Đừng lo.",
+        "en": "Don't worry.",
+        "tr": "Merak etme."
+      },
+      "band": 2,
+      "group": "feelings",
+      "note": "Polite: Ne vous inquiétez pas. Very casual: T'inquiète !"
+    },
+    {
+      "id": "fr-feelings-08",
+      "text": "C'est dommage.",
+      "lemma": "dommage",
+      "form": "dommage",
+      "translations": {
+        "fa": "حیف شد.",
+        "ar": "هذا مؤسف.",
+        "es": "Qué pena.",
+        "vi": "Tiếc quá.",
+        "en": "That's too bad.",
+        "tr": "Ne yazık."
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-09",
+      "text": "Je suis triste.",
+      "lemma": "triste",
+      "form": "triste",
+      "translations": {
+        "fa": "ناراحتم.",
+        "ar": "أنا حزين.",
+        "es": "Estoy triste.",
+        "vi": "Tôi buồn.",
+        "en": "I'm sad.",
+        "tr": "Üzgünüm."
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-10",
+      "text": "Je suis malade.",
+      "lemma": "malade",
+      "form": "malade",
+      "translations": {
+        "fa": "مریضم.",
+        "ar": "أنا مريض.",
+        "es": "Estoy enfermo.",
+        "vi": "Tôi bị ốm.",
+        "en": "I'm sick.",
+        "tr": "Hastayım."
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-11",
+      "text": "Tu me manques.",
+      "lemma": "manquer",
+      "form": "manques",
+      "translations": {
+        "fa": "دلم برایت تنگ شده است.",
+        "ar": "اشتقت إليك.",
+        "es": "Te extraño.",
+        "vi": "Tôi nhớ bạn.",
+        "en": "I miss you.",
+        "tr": "Seni özledim."
+      },
+      "band": 2,
+      "group": "feelings",
+      "note": "Word order is reversed: literally 'you are missing to me'."
+    },
+    {
+      "id": "fr-feelings-12",
+      "text": "Félicitations !",
+      "translations": {
+        "fa": "تبریک می‌گویم!",
+        "ar": "تهانينا!",
+        "es": "¡Felicidades!",
+        "vi": "Chúc mừng!",
+        "en": "Congratulations!",
+        "tr": "Tebrikler!"
+      },
+      "band": 2,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-13",
+      "text": "Je m'ennuie.",
+      "lemma": "s'ennuyer",
+      "form": "ennuie",
+      "translations": {
+        "fa": "حوصله‌ام سر رفته است.",
+        "ar": "أشعر بالملل.",
+        "es": "Estoy aburrido.",
+        "vi": "Tôi chán quá.",
+        "en": "I'm bored.",
+        "tr": "Sıkıldım."
+      },
+      "band": 3,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-14",
+      "text": "J'ai peur.",
+      "lemma": "peur",
+      "form": "peur",
+      "translations": {
+        "fa": "می‌ترسم.",
+        "ar": "أنا خائف.",
+        "es": "Tengo miedo.",
+        "vi": "Tôi sợ.",
+        "en": "I'm scared.",
+        "tr": "Korkuyorum."
+      },
+      "band": 3,
+      "group": "feelings"
+    },
+    {
+      "id": "fr-feelings-15",
+      "text": "C'est drôle !",
+      "lemma": "drôle",
+      "form": "drôle",
+      "translations": {
+        "fa": "خنده‌دار است!",
+        "ar": "هذا مضحك!",
+        "es": "¡Qué gracioso!",
+        "vi": "Buồn cười quá!",
+        "en": "That's funny!",
+        "tr": "Çok komik!"
+      },
+      "band": 3,
+      "group": "feelings"
+    }
+  ]
+}

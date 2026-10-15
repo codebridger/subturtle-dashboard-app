@@ -2,6 +2,9 @@ import { defineStore } from 'pinia';
 import { functionProvider } from '@modular-rest/client';
 import { type BoardActivityType, type LeitnerItemType } from '~/types/database.type';
 import { analytic } from '~/plugins/mixpanel';
+import { scopedLanguage, withLanguage } from '~/utils/languageScope';
+import { onLanguageSwitch } from '~/stores/language';
+import type { ReviewResult } from '~/types/language.type';
 
 export const useLeitnerStore = defineStore('leitner', () => {
 	// State
@@ -11,6 +14,9 @@ export const useLeitnerStore = defineStore('leitner', () => {
 	const customReviewSessionItems = ref<LeitnerItemType[]>([]);
 	const pendingBundleReviewIds = ref<string[]>([]);
 	const stats = ref<any>(null);
+	/** get-board's `newLanguage`: the active language has no phrases yet (D-11). */
+	const newLanguage = ref(false);
+	const boardLanguage = ref<string | null>(null);
 
 	// Actions
 
@@ -18,14 +24,24 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			// functionProvider.run calls the server-side function 'get-board'
 			// Using kebab-case as defined in functions.ts permissions/name
-			const activities = await functionProvider.run({
+			const res = await functionProvider.run({
 				name: 'get-board',
-				args: {
+				args: withLanguage({
 					userId: authUser.value?.id
-				}
-			}) as BoardActivityType[];
+				})
+			}) as BoardActivityType[] | { language?: string; newLanguage?: boolean; activities?: BoardActivityType[] };
 
-			boardActivities.value = activities || [];
+			// Today's server answers the activity list; the multilingual one wraps it with the
+			// board's language and `newLanguage` (contract section 3). Read both.
+			if (Array.isArray(res)) {
+				boardActivities.value = res;
+				newLanguage.value = false;
+				boardLanguage.value = null;
+			} else {
+				boardActivities.value = res?.activities ?? [];
+				newLanguage.value = !!res?.newLanguage;
+				boardLanguage.value = res?.language ?? null;
+			}
 		} catch (error) {
 			console.error('Failed to fetch board:', error);
 			boardActivities.value = [];
@@ -36,7 +52,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			await functionProvider.run({
 				name: 'consume-activity',
-				args: { type, refId, userId: authUser.value?.id }
+				args: withLanguage({ type, refId, userId: authUser.value?.id })
 			});
 			// Optimistic update
 			boardActivities.value = boardActivities.value
@@ -59,7 +75,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			const items = await functionProvider.run({
 				name: 'get-review-session',
-				args: { limit, userId: authUser.value?.id }
+				args: withLanguage({ limit, userId: authUser.value?.id })
 			}) as LeitnerItemType[];
 
 			reviewSessionItems.value = items || [];
@@ -74,7 +90,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			const items = await functionProvider.run({
 				name: 'get-custom-review-session',
-				args: { phraseIds, userId: authUser.value?.id }
+				args: withLanguage({ phraseIds, userId: authUser.value?.id })
 			}) as LeitnerItemType[];
 
 			customReviewSessionItems.value = items || [];
@@ -85,17 +101,23 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		}
 	}
 
-	async function submitReview(phraseId: string, isCorrect: boolean) {
+	/**
+	 * `result` is the three-way answer (Q4). `isCorrect` stays for servers that predate it:
+	 * "close" keeps the card in its box on the new server and counts as right on the old one,
+	 * which is the kinder of the two readings for a learner who had the right word.
+	 */
+	async function submitReview(phraseId: string, isCorrect: boolean, result?: ReviewResult) {
 		try {
 			await functionProvider.run({
 				name: 'submit-review',
-				args: { phraseId, isCorrect, userId: authUser.value?.id }
+				// `result` only to a multilingual server; today's server reads `isCorrect` alone.
+				args: withLanguage({ phraseId, isCorrect, ...(result && scopedLanguage() ? { result } : {}), userId: authUser.value?.id })
 			});
 
 			// Remove from local session to show progress (if needed)
 			// Or just keep it. Typically we move to next card.
 
-			analytic.track('leitner_review_submitted', { isCorrect });
+			analytic.track('leitner_review_submitted', { isCorrect, ...(result ? { result } : {}) });
 		} catch (error) {
 			console.error('Failed to submit review:', error);
 		}
@@ -109,7 +131,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		try {
 			const res = await functionProvider.run({
 				name: 'get-stats',
-				args: { userId: authUser.value?.id }
+				args: withLanguage({ userId: authUser.value?.id })
 			});
 			stats.value = res;
 		} catch (error) {
@@ -117,8 +139,27 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		}
 	}
 
+	/** Everything here belongs to one language; a switch empties it and reloads the board. */
+	function reset() {
+		boardActivities.value = [];
+		reviewSessionItems.value = [];
+		customReviewSessionItems.value = [];
+		pendingBundleReviewIds.value = [];
+		stats.value = null;
+		newLanguage.value = false;
+		boardLanguage.value = null;
+	}
+
+	onLanguageSwitch(async () => {
+		reset();
+		await fetchBoard();
+	});
+
 	return {
 		boardActivities,
+		newLanguage,
+		boardLanguage,
+		reset,
 		reviewSessionItems,
 		customReviewSessionItems,
 		pendingBundleReviewIds,

@@ -62,6 +62,13 @@
                         <TimezonePicker v-model="timeZone" :disabled="isSubmitting" />
                         <p class="mt-1.5 text-st-xs font-semibold text-st-muted">{{ t('profile.timezone_desc') }}</p>
                     </div>
+
+                    <!-- The learner's own language (D-08): the one place it is set on the web. -->
+                    <div v-if="language.enabled">
+                        <span class="mb-1.5 block text-st-sm font-extrabold text-st-body">{{ t('languages.profile.own-language') }}</span>
+                        <OwnLanguagePicker :key="pickerKey" :model-value="ownLanguage" :disabled="isSubmitting" @update:model-value="askOwnLanguage" />
+                        <p class="mt-1.5 text-st-xs font-semibold text-st-muted">{{ t('languages.profile.own-language-help') }}</p>
+                    </div>
                 </form>
 
                 <div class="mb-4 mt-[18px] h-px bg-st-line" />
@@ -83,18 +90,31 @@
                 </div>
             </StCard>
         </div>
+
+        <StModal v-if="confirmOwn" :title="t('languages.profile.own-language')" size="sm" @close="cancelOwnLanguage">
+            <p class="text-st-base font-semibold leading-normal text-st-body">
+                {{ t('languages.profile.own-language-confirm', { language: language.nameOf(confirmOwn) }) }}
+            </p>
+            <template #actions>
+                <StButton variant="ghost" color="neutral" @click="cancelOwnLanguage">{{ t('cancel') }}</StButton>
+                <StButton color="primary" data-testid="own-language-confirm" @click="confirmOwnLanguage">{{ t('languages.profile.own-language-confirm-yes') }}</StButton>
+            </template>
+        </StModal>
     </div>
 </template>
 
 <script lang="ts" setup>
     import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
     import { useProfileStore } from '~/stores/profile';
-    import { StAvatar, StButton, StCard, StIcon, StInput, StSkeleton } from 'subturtle-ui';
+    import { StAvatar, StButton, StCard, StIcon, StInput, StModal, StSkeleton } from 'subturtle-ui';
+    import OwnLanguagePicker from '~/components/language/OwnLanguagePicker.vue';
+    import { useLanguageStore } from '~/stores/language';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import TimezonePicker from '~/components/common/TimezonePicker.vue';
     import { toastSuccess, toastError } from 'pilotui/toast';
 
     const profileStore = useProfileStore();
+    const language = useLanguageStore();
     const { t } = useI18n();
 
     definePageMeta({
@@ -127,12 +147,42 @@
     const initialTimeZone = ref('');
     const initialSelectedValues = ref<Record<string, boolean>>({});
 
+    // Own language (D-08). Picking one asks to confirm (it changes every language's translations
+    // and explanations); the confirmed choice then waits for Save changes like the other fields.
+    const ownLanguage = ref<string | null>(language.ownLanguage);
+    const initialOwnLanguage = ref<string | null>(language.ownLanguage);
+    const confirmOwn = ref<string | null>(null);
+    watch(
+        () => language.ownLanguage,
+        (code) => {
+            if (ownLanguage.value === initialOwnLanguage.value) ownLanguage.value = code;
+            initialOwnLanguage.value = code;
+        }
+    );
+
+    function askOwnLanguage(code: string | null) {
+        if (code && code !== ownLanguage.value) confirmOwn.value = code;
+    }
+
+    // Re-mounts the native select on cancel, so it shows the kept value again.
+    const pickerKey = ref(0);
+    function cancelOwnLanguage() {
+        confirmOwn.value = null;
+        pickerKey.value++;
+    }
+
+    function confirmOwnLanguage() {
+        ownLanguage.value = confirmOwn.value;
+        confirmOwn.value = null;
+    }
+
     const hasChanges = computed(() => {
         const nameChanged = name.value !== initialName.value;
         const timezoneChanged = timeZone.value !== initialTimeZone.value;
         const preferencesChanged = JSON.stringify(selectedValues.value) !== JSON.stringify(initialSelectedValues.value);
+        const ownChanged = language.enabled && ownLanguage.value !== initialOwnLanguage.value;
 
-        return nameChanged || timezoneChanged || preferencesChanged;
+        return nameChanged || timezoneChanged || preferencesChanged || ownChanged;
     });
 
     watch(hasChanges, (dirty) => {
@@ -195,6 +245,13 @@
 
             // Call the store function
             await profileStore.updateProfile(profileData);
+
+            // The own language is server-owned: it goes through set-translation-language, never
+            // through the profile document (the data-provider guard refuses it there).
+            if (language.enabled && ownLanguage.value && ownLanguage.value !== initialOwnLanguage.value) {
+                await language.setOwnLanguage(ownLanguage.value);
+                initialOwnLanguage.value = ownLanguage.value;
+            }
 
             // Baseline off what was just submitted, not off the store. The store only mirrors the
             // new values into `userDetail` when it already holds a profile document, so reading it

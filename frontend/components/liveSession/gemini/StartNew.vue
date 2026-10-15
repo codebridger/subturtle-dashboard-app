@@ -167,9 +167,12 @@
 <script setup lang="ts">
     // Standalone "start a new session" entry point bound to the Gemini practice page.
     import { StButton, StCard, StEmptyState, StIcon, StInput, StProgressBar, StSkeleton } from 'subturtle-ui';
+    import { languageQuery, withLanguage } from '~/utils/languageScope';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import type { LiveSessionRequest } from '~/types/live-session-request';
     import { pickPhraseIds, encodeSessionRequest } from '~/utils/livePractice';
+    import { shortCode } from '~/utils/languages';
+    import { useLanguageStore } from '~/stores/language';
     import { bundlePhraseIds, dueCountFor, isNeverPractised } from '~/utils/bundleReviewState';
     import { dataProvider, functionProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
@@ -214,6 +217,7 @@
             collection: COLLECTIONS.PHRASE_BUNDLE,
             query: {
                 refId: authUser.value?.id,
+                ...languageQuery(),
                 title: { $regex: filter.value, $options: 'i' },
             },
             options: { sort: { _id: -1 } },
@@ -247,7 +251,7 @@
         try {
             const info = await functionProvider.run<{ duePhraseIds?: string[]; phraseToBoxMap?: Record<string, number> }>({
                 name: 'get-phrase-management-info',
-                args: { userId: authUser.value?.id },
+                args: withLanguage({ userId: authUser.value?.id }),
             });
             duePhraseIds.value = new Set(info?.duePhraseIds ?? []);
             practisedPhraseIds.value = new Set(Object.keys(info?.phraseToBoxMap ?? {}));
@@ -267,7 +271,26 @@
         totalPhrases: '10',
         nativeLanguage: 'auto',
         mode: 'voice' as 'voice' | 'text',
+        /** Multilingual (D-16): the own language the Coach explains in, per learning language. */
+        explanationLanguage: undefined as string | undefined,
     });
+
+    // Default "Coach explains in" from this language's profile, else the own language. The
+    // English name also fills `nativeLanguage`, which the client-side prompt still reads.
+    const language = useLanguageStore();
+    watch(
+        () => [language.enabled, language.activeSummary?.explanationLanguage, language.ownLanguage] as const,
+        ([on, saved, own]) => {
+            if (on && !formData.explanationLanguage) formData.explanationLanguage = saved || own || undefined;
+        },
+        { immediate: true }
+    );
+    watch(
+        () => formData.explanationLanguage,
+        (code) => {
+            if (code) formData.nativeLanguage = language.nameOf(code);
+        }
+    );
 
     // Default the mode to what the user can actually start: with no voice minutes at
     // all (e.g. "Voice minutes 0 of 0 left" on Reader), Text. Follows the balance as
@@ -365,13 +388,8 @@
         }
     );
 
-    /** "Spanish" → "ES"; an already-short code is passed through. */
-    function short(language: string) {
-        const trimmed = String(language || '').trim();
-        if (!trimmed) return '';
-        if (trimmed.length <= 3) return trimmed.toUpperCase();
-        return trimmed.slice(0, 2).toUpperCase();
-    }
+    /** "Persian" → "FA" through the language list, never by cutting the title. */
+    const short = (language: string) => shortCode(language) || String(language || '').trim().slice(0, 3).toUpperCase();
 
     const summaryBundleMeta = computed(() => {
         const phrases = t('live-session.pick-bundle.phrase-count', selectedBundle.value?.phrases?.length ?? 0);
@@ -381,10 +399,16 @@
     const summaryRows = computed(() => [
         { label: t('live-session.summary.mode'), value: formData.mode === 'text' ? t('live-practice.mode.text') : t('live-practice.mode.voice') },
         ...(formData.mode === 'text' ? [] : [{ label: t('live-session.summary.coach-voice'), value: formData.aiCharacter }]),
-        {
-            label: t('live-session.summary.fallback'),
-            value: formData.nativeLanguage === 'auto' ? t('live-session.summary.fallback-auto') : formData.nativeLanguage,
-        },
+        language.enabled && formData.explanationLanguage
+            ? {
+                  // "German, explained in Persian" (D-16).
+                  label: t('languages.coach.explains-in'),
+                  value: t('languages.coach.summary', { language: language.nameOf(language.activeLanguage), own: language.nameOf(formData.explanationLanguage) }),
+              }
+            : {
+                  label: t('live-session.summary.fallback'),
+                  value: formData.nativeLanguage === 'auto' ? t('live-session.summary.fallback-auto') : formData.nativeLanguage,
+              },
         {
             label: t('live-session.summary.phrases'),
             value:
@@ -476,6 +500,12 @@
 
         const request = buildSessionRequest(sessionData);
 
+        // Remember "Coach explains in" for this language (it lives in the language profile).
+        const saved = language.activeSummary?.explanationLanguage;
+        if (language.enabled && formData.explanationLanguage && formData.explanationLanguage !== saved) {
+            language.updateSettings({ language: language.activeLanguage, explanationLanguage: formData.explanationLanguage }).catch((e) => console.error('Saving the explanation language failed:', e));
+        }
+
         // Council 004: a paid user out of voice minutes gets the dedicated voice-cap
         // modal (top-up / use text chat) — voice mode only, never for a text session.
         // It gets the request so "Use text chat instead" keeps the same phrases.
@@ -502,6 +532,10 @@
             title: bundle?.title,
             source: { phraseIds: pickPhraseIds(bundle?.phrases ?? [], sessionData) },
             returnTo: '/sessions/new',
+            // The server builds the Coach prompt from these (D-16, Q3).
+            ...(language.enabled && formData.explanationLanguage
+                ? { language: language.activeLanguage, explanationLanguage: formData.explanationLanguage }
+                : {}),
         };
     }
 
