@@ -81,7 +81,7 @@ class FakeBackend {
             'phrase': {'_id': 'p2', 'phrase': 'get out of', 'translation': 'بیرون رفتن', 'context': 'I had to get out of there.'},
           },
         ];
-    functions['submit-review'] = (_) => {'success': true};
+    functions['submit-review'] = (a) => {'success': true, 'language': a['language'] ?? 'en', 'result': a['result'] ?? (a['isCorrect'] == true ? 'right' : 'wrong')};
     functions['generateChartDataForInsertionRatio'] = (_) => throw ApiException('TIER_LIMIT_REACHED: "weekly_insights" is not included in your plan');
     paths['/data-provider/find'] = (body) => body['collection'] == 'phrase_bundle'
         ? [

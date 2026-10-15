@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:subturtle/app/router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subturtle/features/languages/language_ui.dart';
 import 'package:subturtle/features/live_session/session_launch.dart';
@@ -238,6 +240,28 @@ void main() {
       await tester.tap(find.text('Go to Today'));
       await tester.settle();
       expect(eyebrow('Today · German'), findsOneWidget);
+    });
+  });
+
+  group('starter pack shapes (contract update)', () {
+    testWidgets('group names come from the server; over the daily cap the rest waits for tomorrow', (tester) async {
+      final langs = FakeLanguageServer(startLevels: {'en': 'B1', 'de': 'A1'})..starterDailyCap = 1;
+      langs.langs['de']!.pack = 'offered';
+      final b = await pumpApp(tester, languages: langs);
+      final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+      container.read(routerProvider).push('/starter?lang=de');
+      await tester.settle();
+      expect(find.text('Greetings and polite words'), findsOneWidget);
+      expect(find.text('Small talk'), findsOneWidget);
+      await tester.tap(find.text('Next chunk'));
+      await tester.settle();
+      expect(find.text('1 of 4 chunks heard'), findsOneWidget);
+      await tester.tap(find.text('Next chunk'));
+      await tester.settle();
+      expect(argsOf(b, 'complete-starter-pack-items').last['itemIds'], ['c1']);
+      expect(textContaining('The next chunks come tomorrow'), findsOneWidget);
+      expect(find.text('Next chunk'), findsNothing);
+      expect(find.text('Go to Today'), findsOneWidget);
     });
   });
 
@@ -488,7 +512,8 @@ void main() {
 
     test('voice previews speak the learning language', () {
       const de = LearningLanguageCaps(code: 'de', name: 'German', nativeName: 'Deutsch', ttsVoice: 'de-DE-Chirp3-HD-Kore');
-      expect(coachPreviewVoiceFor('Puck', de), 'de-DE-Chirp3-HD-Puck');
+      expect(coachPreviewVoiceFor('Puck', de), 'de-DE-Neural2-G', reason: 'the TTS function refuses HD voices');
+      expect(de.speechVoice, isNot(contains('HD')));
       expect(coachPreviewVoiceFor('Puck', LearningLanguageCaps.english), 'en-US-Neural2-D');
       expect(coachPreviewLine('de'), startsWith('Hallo'));
       expect(coachPreviewLine('en'), startsWith('Hi'));

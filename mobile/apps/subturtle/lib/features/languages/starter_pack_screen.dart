@@ -36,6 +36,9 @@ class _StarterPackScreenState extends ConsumerState<StarterPackScreen> {
   final _heardNow = <String>{};
   bool _saving = false;
   bool _done = false;
+
+  /// Today's intake cap is reached: the rest comes tomorrow.
+  bool _cappedToday = false;
   int? _serverHeard;
 
   void _back() {
@@ -55,11 +58,14 @@ class _StarterPackScreenState extends ConsumerState<StarterPackScreen> {
       final p = await ref.read(apiProvider).starterPacks.complete(widget.language, [item.id]);
       ref.read(hapticsProvider).light();
       if (!mounted) return;
+      final deferred = p.deferred.contains(item.id);
       setState(() {
-        _heardNow.add(item.id);
+        // A deferred chunk did not join review: it is offered again tomorrow.
+        if (!deferred) _heardNow.add(item.id);
         _serverHeard = p.heard;
         _saving = false;
         _done = p.done;
+        _cappedToday = deferred;
       });
       if (p.done) ref.read(hapticsProvider).success();
     } catch (e) {
@@ -202,6 +208,16 @@ class _StarterPackScreenState extends ConsumerState<StarterPackScreen> {
                         ],
                       ),
                     )
+                  else if (_cappedToday)
+                    StCard(
+                      child: Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          "That's all the new ${caps.name} for today. The next chunks come tomorrow.",
+                          style: StType.bodyLarge.copyWith(color: c.textBody),
+                        ),
+                      ),
+                    )
                   else
                     _ChunkCard(item: next, language: widget.language, l1Rtl: l1Rtl),
                   if (!done && groups.length > 1) ...[
@@ -220,7 +236,7 @@ class _StarterPackScreenState extends ConsumerState<StarterPackScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(groupName(e.key), style: StType.bodyMedium.copyWith(color: c.textStrong)),
+                              child: Text(p.groups[e.key] ?? groupName(e.key), style: StType.bodyMedium.copyWith(color: c.textStrong)),
                             ),
                             Text('${e.value.$1} of ${e.value.$2}', style: StType.bodySmall.copyWith(color: c.textMuted)),
                           ],
@@ -237,7 +253,10 @@ class _StarterPackScreenState extends ConsumerState<StarterPackScreen> {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        StButton(label: 'Next chunk', size: StSize.lg, block: true, loading: _saving, onPressed: _saving ? null : () => _next(next, total)),
+                        if (_cappedToday)
+                          StButton(label: 'Go to Today', size: StSize.lg, block: true, onPressed: _back)
+                        else
+                          StButton(label: 'Next chunk', size: StSize.lg, block: true, loading: _saving, onPressed: _saving ? null : () => _next(next, total)),
                         const SizedBox(height: 4),
                         Center(
                           child: StButton(

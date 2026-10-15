@@ -319,12 +319,14 @@ class TranslationRepository extends _Repo {
   }
 
   /// MP3 for [text] as a `data:audio/mp3;base64,…` URI (use it as is).
-  /// Pass the phrase language's voice ([LearningLanguageCaps.ttsVoice]); the
-  /// English default is only for callers that do not know the language.
+  /// Pass the phrase language's voice ([LearningLanguageCaps.speechVoice]); the
+  /// English default is only for callers that do not know the language. The
+  /// server refuses HD voices, so an HD name becomes that locale's standard voice.
   Future<String> speak(String text, {String? languageCode, String? voiceName}) async {
-    final voice = voiceName == null || voiceName.isEmpty ? 'en-US-Standard-A' : voiceName;
+    var voice = voiceName == null || voiceName.isEmpty ? 'en-US-Standard-A' : voiceName;
     final parts = voice.split('-');
     final code = languageCode ?? (parts.length >= 2 ? '${parts[0]}-${parts[1]}' : 'en-US');
+    if (voice.contains('HD')) voice = LearningLanguageCaps.speechVoices[code] ?? '$code-Standard-A';
     final res = await fn.run('textToSpeechBase64', {'text': text, 'languageCode': code, 'voiceName': voice});
     return str(res);
   }
@@ -693,9 +695,11 @@ class LanguageRepository extends _Repo {
   /// Sends one answer. After the last one, the step is `done` with a result.
   Future<LevelTestStep> answerLevelTest(String testId, String text) async => LevelTestStep.fromJson(await fn.run('answer-level-test', {'userId': uid, 'testId': testId, 'text': text}));
 
-  /// [accept] true saves the test's start level (source `test`).
-  Future<LanguageState> finishLevelTest(String testId, {required bool accept}) async =>
-      _state(await fn.run('finish-level-test', {'userId': uid, 'testId': testId, 'accept': accept}));
+  /// [accept] true saves the test's start level (source `test`) on a language
+  /// the learner has; for a new one [LevelTestFinish.applied] is false and the
+  /// client sends the result to [add].
+  Future<LevelTestFinish> finishLevelTest(String testId, {required bool accept}) async =>
+      LevelTestFinish.fromJson(await fn.run('finish-level-test', {'userId': uid, 'testId': testId, 'accept': accept}));
 
   static LanguageState _state(dynamic res) {
     final j = asJson(res);

@@ -36,6 +36,9 @@ class FakeLanguageServer {
 
   /// Languages that see the seeded board, pool and bundles. Others are empty.
   Set<String> seededLanguages = {'en'};
+
+  /// Starter-pack chunks that join review per day; the rest is deferred.
+  int? starterDailyCap;
   final kept = <Map<String, dynamic>>[];
 
   /// Chat tests by id: answers so far.
@@ -111,7 +114,13 @@ class FakeLanguageServer {
     bool seeded(Map<String, dynamic> a) => seededLanguages.contains(a['language'] ?? active ?? 'en');
     final board = b.functions['get-board'];
     final pool = b.functions['get-pool'];
-    b.functions['get-board'] = (a) => seeded(a) ? board?.call(a) : {'language': a['language'], 'newLanguage': true, 'activities': []};
+    // Like the server: the object only when `language` is sent, else the 1.x list.
+    b.functions['get-board'] = (a) {
+      final lang = a['language'] as String?;
+      if (lang == null) return board?.call(a);
+      final activities = seeded(a) ? board?.call(a) : const [];
+      return {'language': lang, 'newLanguage': !seeded(a), 'activities': activities};
+    };
     b.functions['get-pool'] = (a) => seeded(a) ? pool?.call(a) : [];
     final find = b.paths['/data-provider/find'];
     b.paths['/data-provider/find'] = (body) {
@@ -198,26 +207,56 @@ class FakeLanguageServer {
     });
     on('finish-level-test', (a) {
       final l = langs[_testLanguage];
-      if (a['accept'] == true && l != null) {
+      final accept = a['accept'] == true;
+      // Saved on the language when the learner has it; a new one gets it through add-language.
+      final applied = accept && l != null && l.status != 'removed';
+      if (applied) {
         l.startLevel = 'A2';
         l.source = 'test';
       }
-      return _wrapped();
+      return {
+        'state': state(),
+        'result': accept ? {'startLevel': 'A2', 'reason': 'You answered in short sentences and used the past once.'} : {'startLevel': 'A1', 'reason': 'You stopped the test.'},
+        'applied': applied,
+        'language': _testLanguage,
+      };
     });
     on('get-starter-pack', (a) {
       final l = langs[a['language']];
+      // No audioUrl until the server generates the audio: the app speaks it with TTS.
       return {
         'items': [
-          for (var i = 0; i < 4; i++) {'id': 'c$i', 'text': const ['Guten Morgen', 'Danke schön', 'Wie geht es dir?', 'Bis später'][i], 'translation': const ['صبح بخیر', 'خیلی ممنون', 'حالت چطوره؟', 'بعداً می‌بینمت'][i], 'band': 1, 'group': 'Greetings'},
+          for (var i = 0; i < 4; i++)
+            {
+              'id': 'c$i',
+              'text': const ['Guten Morgen', 'Danke schön', 'Wie geht es dir?', 'Bis später'][i],
+              'translation': const ['صبح بخیر', 'خیلی ممنون', 'حالت چطوره؟', 'بعداً می‌بینمت'][i],
+              'translationLanguage': translationLanguage,
+              'band': 1,
+              'group': i < 2 ? 'greetings' : 'small_talk',
+            },
         ],
         'heard': [...?l?.heard],
+        'state': l?.pack ?? 'none',
+        'total': 4,
+        'groups': [
+          {'id': 'greetings', 'name': 'Greetings and polite words'},
+          {'id': 'small_talk', 'name': 'Small talk'},
+        ],
+        'version': 1,
       };
     });
     on('complete-starter-pack-items', (a) {
       final l = langs[a['language']]!;
-      l.heard.addAll((a['itemIds'] as List).cast<String>());
+      final ids = (a['itemIds'] as List).cast<String>();
+      final cap = starterDailyCap;
+      final room = cap == null ? ids.length : (cap - l.heardToday).clamp(0, ids.length);
+      final added = ids.take(room).toList();
+      final deferred = ids.skip(room).toList();
+      l.heard.addAll(added);
+      l.heardToday += added.length;
       l.pack = l.heard.length >= 4 ? 'done' : 'in_progress';
-      return {'heard': l.heard.length, 'total': 4, 'done': l.pack == 'done'};
+      return {'heard': l.heard.length, 'total': 4, 'done': l.pack == 'done', 'added': added, 'deferred': deferred};
     });
     on('skip-starter-pack', (a) {
       langs[a['language']]!.pack = 'skipped';
@@ -247,6 +286,7 @@ class _Lang {
   String? explanationLanguage;
   int newPerDay = 10;
   final heard = <String>{};
+  int heardToday = 0;
 
   Map<String, dynamic> toJson(int due, int phrases, String? l1) => {
         'code': code,
