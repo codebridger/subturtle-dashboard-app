@@ -144,24 +144,32 @@ class _Board extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(prefsProvider);
+    final multilingual = ref.watch(multilingualProvider);
+    final caps = capsOf(ref, data.language);
+    final pack = ref.watch(languageStateProvider).value?.summaryOf(data.language)?.starterPack;
     final cards = <Widget>[];
 
     // ---- hero: the one next step ----
+    // A new language never shows an empty board: it asks for a first phrase (L12).
+    final fresh = !data.hasAnyPhrase || (data.newLanguage && data.dueCount == 0 && data.pool.isEmpty);
     Widget hero;
     if (data.dueCount > 0) {
       hero = _ReviewHero(activity: data.review!);
     } else if (data.pool.isNotEmpty) {
       hero = _PoolHero(count: data.pool.length);
-    } else if (!data.hasAnyPhrase) {
-      hero = const _FirstPhraseHero();
+    } else if (fresh) {
+      hero = _FirstPhraseHero(languageName: multilingual ? caps.name : null);
     } else {
       hero = const _DoneHero();
     }
 
     // ---- optional cards, in priority order ----
+    // The starter pack is an offer, not a gate (L5, L12).
+    if (multilingual && caps.features.starterPack && pack != null && pack.isOpen) cards.add(_StarterCard(language: data.language, name: caps.name, pack: pack));
     if (data.dueCount > 0 && data.pool.isNotEmpty) cards.add(_PoolCard(count: data.pool.length));
     final practice = _practisePhrase(data);
-    if (data.hasAnyPhrase && sub != null) cards.add(_CoachCard(sub: sub!, phrase: practice?.$1, bundle: practice?.$2));
+    final hasCoach = caps.features.coachText || caps.features.coachVoice;
+    if (data.hasAnyPhrase && sub != null && hasCoach) cards.add(_CoachCard(sub: sub!, phrase: practice?.$1, bundle: practice?.$2, sharedMinutes: multilingual));
     final plan = _planCard(sub);
     if (plan != null) cards.add(plan);
     if (!(prefs.getBool(_hideExtensionKey) ?? false)) cards.add(const _ExtensionCard());
@@ -169,7 +177,7 @@ class _Board extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        StEyebrow.section(data.dueCount > 0 || data.pool.isNotEmpty ? 'Due today' : 'Next step'),
+        StEyebrow.section(data.dueCount > 0 || data.pool.isNotEmpty ? 'Due today' : (fresh && multilingual ? 'Start here' : 'Next step')),
         const SizedBox(height: 12),
         hero,
         if (cards.isNotEmpty) ...[
@@ -280,15 +288,19 @@ class _PoolHero extends StatelessWidget {
 }
 
 class _FirstPhraseHero extends ConsumerWidget {
-  const _FirstPhraseHero();
+  const _FirstPhraseHero({this.languageName});
+
+  /// The language's name on a 2.0 server ("Save your first German phrase").
+  final String? languageName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final name = languageName;
     return _HeroShell(
       icon: StIcons.bookmark,
       iconColor: StBadgeColor.primary,
-      title: 'Save your first phrase',
-      body: 'Heard a phrase you like? Share it to Subturtle, or paste it here.',
+      title: name == null ? 'Save your first phrase' : 'Save your first $name phrase',
+      body: name == null ? 'Heard a phrase you like? Share it to Subturtle, or paste it here.' : 'From a video, a message or anything you read. Your $name review starts with it.',
       action: StButton(label: 'Save a phrase', icon: StIcons.add, size: StSize.lg, block: true, onPressed: () => openCapture(context, ref)),
     );
   }
@@ -326,7 +338,7 @@ class _DoneHero extends StatelessWidget {
 // ---------------------------------------------------------------- optional cards
 
 class _RowCard extends StatelessWidget {
-  const _RowCard({required this.icon, required this.iconColor, required this.title, required this.subtitle, required this.action, this.subtitleColor, this.footer, this.onDismiss});
+  const _RowCard({required this.icon, required this.iconColor, required this.title, required this.subtitle, required this.action, this.subtitleColor, this.footer, this.onDismiss, this.note});
 
   final String icon;
   final StBadgeColor iconColor;
@@ -336,6 +348,9 @@ class _RowCard extends StatelessWidget {
   final Color? subtitleColor;
   final Widget? footer;
   final VoidCallback? onDismiss;
+
+  /// A small line under the footer.
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
@@ -365,6 +380,7 @@ class _RowCard extends StatelessWidget {
           ),
           if (onDismiss != null) Align(alignment: Alignment.centerRight, child: action),
           if (footer != null) ...[const SizedBox(height: 10), footer!],
+          if (note != null) ...[const SizedBox(height: 6), Align(alignment: Alignment.centerLeft, child: Text(note!, style: StType.bodySmall.copyWith(color: c.textMuted)))],
         ],
       ),
     );
@@ -385,11 +401,33 @@ class _PoolCard extends StatelessWidget {
       );
 }
 
+class _StarterCard extends StatelessWidget {
+  const _StarterCard({required this.language, required this.name, required this.pack});
+  final String language;
+  final String name;
+  final StarterPackSummary pack;
+
+  @override
+  Widget build(BuildContext context) {
+    final started = pack.heard > 0;
+    return _RowCard(
+      icon: StIcons.stars,
+      iconColor: StBadgeColor.accent,
+      title: '$name starter pack',
+      subtitle: started ? '${pack.heard} of ${pack.total} chunks heard' : 'Optional · ${pack.total > 0 ? '${pack.total} ' : ''}short phrases with sound',
+      action: StButton(label: started ? 'Continue' : 'Start', variant: StButtonVariant.soft, tone: StTone.accent, size: StSize.sm, onPressed: () => context.push('/starter?lang=$language')),
+    );
+  }
+}
+
 class _CoachCard extends ConsumerWidget {
-  const _CoachCard({required this.sub, this.phrase, this.bundle});
+  const _CoachCard({required this.sub, this.phrase, this.bundle, this.sharedMinutes = false});
   final SubscriptionDetails sub;
   final String? phrase;
   final Bundle? bundle;
+
+  /// Say that voice minutes are shared by every language (2.0).
+  final bool sharedMinutes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -420,6 +458,7 @@ class _CoachCard extends ConsumerWidget {
               semanticLabel: 'Voice minutes used',
             )
           : null,
+      note: sharedMinutes && sub.hasVoice ? 'Voice minutes are shared by all your languages.' : null,
     );
   }
 }

@@ -179,9 +179,9 @@ class _LanguageSwitcherSheetState extends ConsumerState<LanguageSwitcherSheet> {
           ),
           const SizedBox(height: 10),
           if (limit == null)
-            StLanguageAddRow(note: addNote(caps, s), usedText: usedText(s), onTap: () => _goTo('/languages/add'))
+            StLanguageAddRow(note: addNote(caps, s), usedText: usedText(s), onTap: () => _goTo('/add-language'))
           else
-            PlanLimitCard(limit: limit, onManage: () => _goTo('/languages'), onUpgrade: () => _goTo('/me/plan')),
+            PlanLimitCard(limit: limit, onManage: () => _goTo('/me/languages'), onUpgrade: () => _goTo('/me/plan')),
           const SizedBox(height: 18),
           const StEyebrow('Your own language'),
           const SizedBox(height: 8),
@@ -192,7 +192,7 @@ class _LanguageSwitcherSheetState extends ConsumerState<LanguageSwitcherSheet> {
               }),
           const SizedBox(height: 12),
           Center(
-            child: StButton(label: 'Manage languages', size: StSize.sm, variant: StButtonVariant.ghost, tone: StTone.neutral, onPressed: () => _goTo('/languages')),
+            child: StButton(label: 'Manage languages', size: StSize.sm, variant: StButtonVariant.ghost, tone: StTone.neutral, onPressed: () => _goTo('/me/languages')),
           ),
           SizedBox(height: MediaQuery.paddingOf(context).bottom),
         ],
