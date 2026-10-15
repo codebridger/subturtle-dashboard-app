@@ -504,7 +504,8 @@ describe("kept phrases (B-32)", () => {
     expect(state.pending).toEqual([expect.objectContaining({ language: "fr", count: 1 })]);
     expect(state.languages.find((l) => l.code === "de")!.phraseCount).toBe(2);
     const bundle = await Bundles.findOne({ refId: userId, language: "de" }).lean<any>();
-    expect(bundle.title).toBe("German phrases (2)");
+    // The bundle title is unique per language (B-09), so German keeps the plain title.
+    expect(bundle.title).toBe("German phrases");
     expect(bundle.phrases.map(String).sort()).toEqual([a.phraseId, b.phraseId].sort());
     const moved = await Phrases.findById(a.phraseId).lean<any>();
     expect(moved.status).toBeUndefined();

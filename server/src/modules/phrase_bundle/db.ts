@@ -8,6 +8,7 @@ import {
 import { phraseBundleTriggers } from "./triggers";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
+import { resolveLanguage } from "../../languages/learner";
 
 /** A reusable language pattern the user confirmed inside their selection. */
 export type Chunk = {
@@ -77,6 +78,8 @@ export interface PhraseSchema {
   status?: "pending";
   /** When a pending phrase is deleted unless its language is added (B-32). */
   pendingExpiresAt?: Date;
+  /** A detected language the phrase was not saved under, kept for review (ADR-006). */
+  languageDetected?: string;
 }
 
 interface PhraseBundleSchema {
@@ -134,9 +137,34 @@ const phraseSchema = new Schema<PhraseSchema>(
     languageSource: String,
     status: { type: String, enum: ["pending"] },
     pendingExpiresAt: Date,
+    languageDetected: String,
   },
   { timestamps: true }
 );
+
+// One learner's phrases of one language: the bundle lists, the counts and the duplicate
+// check of createPhrase (B-08).
+phraseSchema.index({ refId: 1, language: 1 });
+
+/**
+ * A client that inserts a document through the data provider without a `language` (an old
+ * dashboard or extension build) writes into the learner's active language, as every request
+ * with no language does (ADR-006 point 4). Server code always sets `language` itself. A
+ * failed profile read leaves the field empty, which reads as English.
+ */
+async function defaultToActiveLanguage(doc: any, sourceField?: string) {
+  if (!doc.isNew || doc.language || !doc.refId) return;
+  try {
+    doc.language = await resolveLanguage(String(doc.refId));
+    if (sourceField && !doc[sourceField]) doc[sourceField] = "active";
+  } catch (error) {
+    console.warn("[phrase_bundle] could not read the active language for a new document", error);
+  }
+}
+
+phraseSchema.pre("save", async function () {
+  await defaultToActiveLanguage(this, "languageSource");
+});
 
 // Kept phrases per user and language (B-32), and the purge job's sweep of expired ones.
 phraseSchema.index({ refId: 1, status: 1, language: 1 });
@@ -174,7 +202,15 @@ const phraseBundleSchema = new Schema<PhraseBundleSchema>(
   { timestamps: true }
 );
 
-phraseBundleSchema.index({ refId: 1, title: 1 }, { unique: true });
+// One title per learner and language: German and English can both have "Netflix" (B-09).
+// It replaces the old unique (refId, title). scripts/multilingual-indexes.mjs builds this
+// one first and only then drops the old one (ADR-006 point 11); the old one is no longer
+// declared here, so Mongoose does not build it again at boot.
+phraseBundleSchema.index({ refId: 1, language: 1, title: 1 }, { unique: true });
+
+phraseBundleSchema.pre("save", async function () {
+  await defaultToActiveLanguage(this);
+});
 
 const phraseBundleCollection = defineCollection({
   database: DATABASE,
