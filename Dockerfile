@@ -32,8 +32,6 @@ WORKDIR /app
 
 COPY /server/package.json ./
 COPY /server/yarn.lock ./
-# @modular-rest/server is a vendored tarball (see server/vendor/README.md).
-COPY /server/vendor ./vendor
 COPY /server/.env ./
 
 RUN yarn install
