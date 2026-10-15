@@ -1,8 +1,8 @@
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
 import { Schema, Types } from "mongoose";
-import { CollectionInfo, collectionPolicy, createDataProviderGuard } from "../data-provider-guard";
+import { CollectionInfo, collectionPolicy, createDataProviderGuard, MISSING_LANGUAGE_TAG } from "../data-provider-guard";
 
 // An unsigned token is enough: the guard only decodes, the router verifies afterwards.
 function token(claims: Record<string, unknown>) {
@@ -76,7 +76,9 @@ const COLLECTIONS: Record<string, CollectionInfo> = {
   },
 };
 
-const guard = createDataProviderGuard((database, collection) => COLLECTIONS[`${database}.${collection}`]);
+const lookupCollection = (database: string, collection: string) => COLLECTIONS[`${database}.${collection}`];
+// The missing-language warning (B-26) has its own tests below; keep the others quiet.
+const guard = createDataProviderGuard(lookupCollection, { logMissingLanguage: () => undefined });
 
 interface CallOptions {
   authorization?: string;
@@ -86,7 +88,7 @@ interface CallOptions {
   routerBody?: unknown;
 }
 
-async function call(op: string, body: any, options: CallOptions = {}) {
+async function call(op: string, body: any, options: CallOptions = {}, run = guard) {
   const { path, method = "POST", routerBody } = options;
   // An explicit `authorization: undefined` means no token at all.
   const authorization = "authorization" in options ? options.authorization : USER;
@@ -101,7 +103,7 @@ async function call(op: string, body: any, options: CallOptions = {}) {
   const next = jest.fn(async () => {
     if (routerBody !== undefined) ctx.body = routerBody;
   });
-  await guard(ctx, next);
+  await run(ctx, next);
   return { passed: next.mock.calls.length === 1, status: ctx.status, body: ctx.request.body, response: ctx.body };
 }
 
@@ -424,6 +426,69 @@ describe("dataProviderGuard paths", () => {
   });
 });
 
+describe("dataProviderGuard missing-language warning (B-26)", () => {
+  const logged: any[] = [];
+  const warned = createDataProviderGuard(lookupCollection, { logMissingLanguage: (entry) => logged.push(entry) });
+  const read = (op: string, body: any, options: CallOptions = {}) => call(op, body, options, warned);
+
+  beforeEach(() => {
+    logged.length = 0;
+  });
+
+  it("logs a read of a language collection with no language, and lets it through", async () => {
+    const { passed, body } = await read("find", at("phrase", { query: { phrase: "Kind" } }));
+    expect(passed).toBe(true);
+    expect(body.query).toEqual({ phrase: "Kind", refId: U1 });
+    expect(logged).toEqual([
+      { tag: MISSING_LANGUAGE_TAG, userId: U1, collection: "user_content.phrase", op: "find", query: JSON.stringify({ phrase: "Kind", refId: U1 }) },
+    ]);
+  });
+
+  it("logs count and a query-less find on bundles", async () => {
+    await read("count", at("phrase_bundle"));
+    await read("find", at("phrase_bundle", { query: {} }));
+    expect(logged.map((e) => `${e.op} ${e.collection}`)).toEqual(["count user_content.phrase_bundle", "find user_content.phrase_bundle"]);
+  });
+
+  it("stays quiet when the read names a language", async () => {
+    await read("find", at("phrase", { query: { language: "de" } }));
+    await read("find", at("phrase", { query: { language: { $in: ["en", null] } } }));
+    await read("find-one", at("phrase_bundle", { query: { $and: [{ title: "Netflix" }, { language: "de" }] } }));
+    await read("aggregate", at("phrase", { pipelines: [{ $match: { language: "de" } }, { $count: "n" }] }));
+    expect(logged).toEqual([]);
+  });
+
+  it("skips by-id reads", async () => {
+    await read("find-one", at("phrase", { query: { _id: "p1" } }));
+    await read("findByIds", at("phrase", { ids: ["p1"], accessQuery: { refId: U1 } }), { routerBody: { data: [] } });
+    expect(logged).toEqual([]);
+  });
+
+  it("logs an aggregate whose $match names no language", async () => {
+    await read("aggregate", at("phrase", { pipelines: [{ $group: { _id: "$type" } }] }));
+    expect(logged.map((e) => e.op)).toEqual(["aggregate"]);
+  });
+
+  it("ignores collections without languages, writes, admins and refused reads", async () => {
+    await read("find", at("profile", { query: {} }));
+    await read("insert-one", at("phrase", { doc: { phrase: "x" } }));
+    await read("find", at("phrase", { query: {} }), { authorization: ADMIN });
+    const refused = await read("find", at("phrase", { query: {}, options: { setQuery: {} } }));
+    expect(refused.passed).toBe(false);
+    expect(logged).toEqual([]);
+  });
+
+  it("never blocks, even when the logger throws", async () => {
+    const throwing = createDataProviderGuard(lookupCollection, {
+      logMissingLanguage: () => {
+        throw new Error("log sink down");
+      },
+    });
+    const { passed } = await call("find", at("phrase", { query: {} }), {}, throwing);
+    expect(passed).toBe(true);
+  });
+});
+
 describe("collectionPolicy for the real collections", () => {
   // Loads every db.ts under modules/ (modular-rest loads nested ones too, e.g.
   // live_session/coach/db.ts) so a new collection can't skip the guard unnoticed.
@@ -464,6 +529,7 @@ describe("collectionPolicy for the real collections", () => {
       "user_content.live_session": policy("refId", true),
       "user_content.live_session_text": policy("refId", true),
       "user_content.save_assistant_session": policy("refId", true),
+      "user_content.level_test": policy("userId", false), // clients read their own tests (B-31)
       "user_content.subscription": policy("user_id", false, true),
       "user_content.usage": policy("user_id", false, true),
       "user_content.free_credit": policy("user_id", false, true),

@@ -1,3 +1,29 @@
+# [1.3.0-dev.17](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.16...v1.3.0-dev.17) (2026-10-15)
+
+
+### Features
+
+* **server:** sessions and progress per language, and the missing-language warning (B-13, B-23, B-26) ([50b372b](https://github.com/codebridger/subturtle-dashboard-app/commit/50b372b5c2ff0e7529f401f2fcdf1440f9adbc58))
+
+# [1.3.0-dev.16](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.15...v1.3.0-dev.16) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** avoid distinct and array-index queries on Firestore (B-19, B-31) ([4d3950a](https://github.com/codebridger/subturtle-dashboard-app/commit/4d3950a416e55b2b7bf487a58e26d0d87c0494aa))
+
+
+### Features
+
+* **server:** starter packs on for every launch language (B-21) ([6c7a58a](https://github.com/codebridger/subturtle-dashboard-app/commit/6c7a58a48fad91f31eb3631fc06e4f696e86d295))
+
+# [1.3.0-dev.15](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.14...v1.3.0-dev.15) (2026-10-15)
+
+
+### Features
+
+* **frontend:** run the extension's Practice now session in the phrase's language (D-16) ([825b192](https://github.com/codebridger/subturtle-dashboard-app/commit/825b1926d713fe854c47e99bef1ddfa300e6552d))
+
 # [1.3.0-dev.14](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.13...v1.3.0-dev.14) (2026-10-15)
 
 
