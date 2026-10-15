@@ -167,9 +167,11 @@
 <script setup lang="ts">
     // Standalone "start a new session" entry point bound to the Gemini practice page.
     import { StButton, StCard, StEmptyState, StIcon, StInput, StProgressBar, StSkeleton } from 'subturtle-ui';
+    import { withLanguage } from '~/utils/languageScope';
     import type { LivePracticeSessionSetupType } from '~/types/live-session.type';
     import type { LiveSessionRequest } from '~/types/live-session-request';
     import { pickPhraseIds, encodeSessionRequest } from '~/utils/livePractice';
+    import { shortCode } from '~/utils/languages';
     import { bundlePhraseIds, dueCountFor, isNeverPractised } from '~/utils/bundleReviewState';
     import { dataProvider, functionProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
@@ -247,7 +249,7 @@
         try {
             const info = await functionProvider.run<{ duePhraseIds?: string[]; phraseToBoxMap?: Record<string, number> }>({
                 name: 'get-phrase-management-info',
-                args: { userId: authUser.value?.id },
+                args: withLanguage({ userId: authUser.value?.id }),
             });
             duePhraseIds.value = new Set(info?.duePhraseIds ?? []);
             practisedPhraseIds.value = new Set(Object.keys(info?.phraseToBoxMap ?? {}));
@@ -365,13 +367,8 @@
         }
     );
 
-    /** "Spanish" → "ES"; an already-short code is passed through. */
-    function short(language: string) {
-        const trimmed = String(language || '').trim();
-        if (!trimmed) return '';
-        if (trimmed.length <= 3) return trimmed.toUpperCase();
-        return trimmed.slice(0, 2).toUpperCase();
-    }
+    /** "Persian" → "FA" through the language list, never by cutting the title. */
+    const short = (language: string) => shortCode(language) || String(language || '').trim().slice(0, 3).toUpperCase();
 
     const summaryBundleMeta = computed(() => {
         const phrases = t('live-session.pick-bundle.phrase-count', selectedBundle.value?.phrases?.length ?? 0);

@@ -23,6 +23,7 @@
  * keep pricing correctly, but no frontend code reaches it anymore.
  */
 import { defineStore } from 'pinia';
+import { withLanguage } from '~/utils/languageScope';
 import { functionProvider } from '@modular-rest/client';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { useProfileStore } from '~/stores/profile';
@@ -912,13 +913,13 @@ export const useLiveSessionGeminiStore = defineStore('liveSessionGemini', () => 
         return functionProvider
             .run<LiveSessionRecordType>({
                 name: 'create-live-session-record',
-                args: {
+                args: withLanguage({
                     type: 'bundle-practice',
                     provider: 'gemini',
                     userId: authUser.value?.id,
                     session: liveSession.value,
                     metadata: metadata.value,
-                },
+                }),
             })
             .then((res) => {
                 id.value = res._id;

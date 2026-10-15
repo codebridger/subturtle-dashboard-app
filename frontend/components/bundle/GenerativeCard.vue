@@ -20,7 +20,7 @@
     import { dataProvider } from '@modular-rest/client';
     import { COLLECTIONS, DATABASE, type PhraseBundleType, type PhraseType } from '~/types/database.type';
     import { StBundleCard } from 'subturtle-ui';
-    import { toLanguageCode } from '~/utils/language';
+    import { shortCode } from '~/utils/languages';
 
     const props = defineProps<{
         bundle: PhraseBundleType;
@@ -62,8 +62,8 @@
         const withLanguages = phrases.find((p) => p.language_info?.source || p.translation_language);
         if (withLanguages) {
             langPair.value = {
-                source: toLanguageCode(withLanguages.language_info?.source),
-                target: toLanguageCode(withLanguages.language_info?.target ?? withLanguages.translation_language),
+                source: shortCode(withLanguages.language_info?.source) || undefined,
+                target: shortCode(withLanguages.language_info?.target ?? withLanguages.translation_language) || undefined,
             };
         }
     }

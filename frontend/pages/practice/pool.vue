@@ -9,8 +9,8 @@ import { storeToRefs } from 'pinia';
 import PoolReviewSession from '~/components/practice/PoolReviewSession.vue';
 
 definePageMeta({
-	// @ts-ignore
-	layout: 'empty',
+	// The app shell, so the language menu is on every screen (D-04).
+	layout: 'default',
 	middleware: ['auth'],
 });
 

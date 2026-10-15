@@ -146,6 +146,7 @@
 
 <script setup lang="ts">
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StInput, StSegmentedControl, StSkeleton } from 'subturtle-ui';
+    import { withLanguage } from '~/utils/languageScope';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import StPagination from '~/components/common/StPagination.vue';
     import InlineNotice from '~/components/common/InlineNotice.vue';
@@ -253,7 +254,7 @@
         try {
             const res = await functionProvider.run<{ items: any[]; pages: number; total: number }>({
                 name: 'list-live-sessions',
-                args: { userId: authUser.value?.id, page: page - 1, limit: perPage.value },
+                args: withLanguage({ userId: authUser.value?.id, page: page - 1, limit: perPage.value }),
             });
             sessionList.value = res.items || [];
             currentPage.value = page;
