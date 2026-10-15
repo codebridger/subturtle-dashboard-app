@@ -136,6 +136,7 @@ export async function startTest(userId: string, args: { language?: unknown }) {
     explanationLanguage,
     status: "in_progress",
     turns: [first.turn],
+    answered: 0,
     usage: first.usage ? addUsage({}, first.usage) : {},
   });
   return { testId: String(testId), turn: view(first.turn), index: 1, total: TOTAL_QUESTIONS };
@@ -157,7 +158,8 @@ export async function answerTest(userId: string, args: { testId?: unknown; text?
   const budget = await hasBudget(userId);
 
   // Only one answer per question wins, even when the client sends twice.
-  const claim = { ...filter, status: "in_progress", turns: { $size: turns.length }, [`turns.${turns.length - 1}.answer`]: { $exists: false } };
+  // A counter, not an array-index query: the database is Firestore with MongoDB compatibility.
+  const claim = { ...filter, status: "in_progress", answered: test.answered ?? 0 };
 
   if (index >= TOTAL_QUESTIONS) {
     let result: LevelResult = { startLevel: "A1", reason: FAILED_REASON };
@@ -177,7 +179,7 @@ export async function answerTest(userId: string, args: { testId?: unknown; text?
       }
     }
     const done: any = await tests().updateOne(claim, {
-      $set: { turns: answered, status: "done", startLevel: result.startLevel, reason: result.reason, resultSource, usage, ...(model ? { model } : {}), finishedAt: new Date() },
+      $set: { turns: answered, answered: index, status: "done", startLevel: result.startLevel, reason: result.reason, resultSource, usage, ...(model ? { model } : {}), finishedAt: new Date() },
     });
     if (!done?.modifiedCount) throw new LanguageError("invalid_argument", undefined, "this answer was already sent");
     return { index, total: TOTAL_QUESTIONS, done: true, result };
@@ -185,7 +187,7 @@ export async function answerTest(userId: string, args: { testId?: unknown; text?
 
   const next = await ask(userId, String(test._id), test.language, test.explanationLanguage ?? null, answered, index + 1, budget);
   const saved: any = await tests().updateOne(claim, {
-    $set: { turns: [...answered, next.turn], usage: next.usage ? addUsage(test.usage, next.usage) : test.usage },
+    $set: { turns: [...answered, next.turn], answered: index, usage: next.usage ? addUsage(test.usage, next.usage) : test.usage },
   });
   if (!saved?.modifiedCount) throw new LanguageError("invalid_argument", undefined, "this answer was already sent");
   return { turn: view(next.turn), index: index + 1, total: TOTAL_QUESTIONS, done: false };

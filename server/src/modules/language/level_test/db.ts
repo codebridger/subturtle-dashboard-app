@@ -14,7 +14,8 @@ const levelTestSchema = new Schema(
     explanationLanguage: { type: String },
     // in_progress → done (graded) → accepted | declined; or stopped, failed, abandoned.
     status: { type: String, required: true, default: "in_progress" },
-    turns: { type: [Object], default: [] }, // { ai, help, answer?, source: "model" | "fallback", askedAt, answeredAt? }
+    turns: { type: [Object], default: [] },
+    answered: { type: Number, default: 0 }, // answers so far; the claim for the next answer // { ai, help, answer?, source: "model" | "fallback", askedAt, answeredAt? }
     startLevel: { type: String, enum: ["A1", "A2", "B1", "B2"] },
     reason: { type: String },
     resultSource: { type: String }, // "model" | "fallback"
