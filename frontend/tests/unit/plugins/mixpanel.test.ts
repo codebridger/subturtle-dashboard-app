@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 const mp = vi.hoisted(() => ({
     init: vi.fn(),
     register: vi.fn(),
+    unregister: vi.fn(),
     identify: vi.fn(),
     reset: vi.fn(),
     track_pageview: vi.fn(),

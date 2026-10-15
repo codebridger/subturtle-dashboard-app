@@ -31,7 +31,7 @@
                         class="st-focus-ring h-[52px] w-full appearance-none rounded-st-md border-[1.5px] border-st-line bg-st-card pl-[46px] pr-11 font-st-sans text-st-base font-bold text-st-strong transition duration-150 ease-out focus:border-st-primary"
                     >
                         <option value="auto">{{ t('live-practice.native-language-auto') }}</option>
-                        <option v-for="lang in SUPPORTED_LANGUAGES" :key="lang.code" :value="lang.title">{{ lang.title }}</option>
+                        <option v-for="lang in LANGUAGES" :key="lang.code" :value="lang.name">{{ lang.name }}</option>
                     </select>
                     <StIcon name="solar:alt-arrow-down-linear" :size="20" class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-st-faint" />
                 </span>
@@ -97,7 +97,7 @@
 <script setup lang="ts">
     import { computed } from 'vue';
     import { StIcon, StSegmentedControl } from 'subturtle-ui';
-    import { SUPPORTED_LANGUAGES } from '~/utils/languages.static';
+    import { LANGUAGES } from '~/utils/languages';
     import VoicePicker from '~/components/live/VoicePicker.vue';
     import { useLiveSessionVoices } from '~/composables/useLiveSessionVoices';
     import type { CoachVoice } from '~/types/live-session.type';

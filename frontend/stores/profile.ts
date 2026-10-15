@@ -5,6 +5,7 @@ import { defineStore } from 'pinia';
 import { COLLECTIONS, DATABASE, type FreemiumAllocationType, type ProfileType, type SubscriptionType } from '~/types/database.type';
 import { isDeadSessionError } from '~/utils/deadSession';
 import { identifyAnalyticsUser, resetAnalyticsUser } from '~/plugins/mixpanel';
+import { useLanguageStore } from '~/stores/language';
 
 
 export const useProfileStore = defineStore('profile', () => {
@@ -162,6 +163,7 @@ export const useProfileStore = defineStore('profile', () => {
         }
         profilePictureBase64.value = '';
         resetAnalyticsUser();
+        useLanguageStore().reset();
         authentication.logout();
         userDetail.value = undefined;
     }
@@ -236,6 +238,9 @@ export const useProfileStore = defineStore('profile', () => {
             getProfileInfo(),
             // Fetch subscription details
             fetchSubscription(),
+            // Languages (D-01). Never rejects: a server without the language module just
+            // leaves multilingual off and the dashboard English-only.
+            useLanguageStore().bootstrap(),
         ]);
     }
 

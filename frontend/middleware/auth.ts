@@ -1,4 +1,8 @@
 import { useProfileStore } from '~/stores/profile';
+import { useLanguageStore } from '~/stores/language';
+
+/** The screens a learner with no language yet may open (D-20): the steps themselves. */
+const FIRST_RUN_PATHS = ['/settings/languages/add', '/settings/languages/test', '/practice/starter-pack', '/settings/profile'];
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
     const profileStore = useProfileStore();
@@ -13,6 +17,12 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
     }
 
     if (profileStore.isLogin) {
+        // First run (D-20, Q11): a new account picks a language before anything else. Only an
+        // account the server marks `needs_language` is gated; existing learners are English.
+        const language = useLanguageStore();
+        if (language.needsLanguage && !FIRST_RUN_PATHS.includes(to.path)) {
+            return navigateTo({ path: '/settings/languages/add', query: { first: '1' } });
+        }
         if (to.fullPath === '/' || to.fullPath === '/#') {
             return navigateTo('/statistic');
         }
