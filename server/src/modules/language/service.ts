@@ -34,7 +34,7 @@ import { normaliseSourceUrl } from "../translation/url-normalise";
 import { isUserOnFreemium, updateFreemiumAllocation } from "../subscription/service";
 import { LeitnerService } from "../leitner_box/service";
 import { PoolService } from "../pool/service";
-import { CEFR_STARTS, CefrStart, LanguageProfile, LanguageStatus, StarterPackState } from "./db";
+import { CEFR_STARTS, CefrStart, LanguageProfile, LanguageStatus, StarterPackState } from "./types";
 import { getLanguagePlan, LanguagePlan, Plan } from "./plan";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -48,6 +48,9 @@ export const MAX_PENDING_PHRASES = 1000;
 
 /** How long `syncProfile` treats a language with no language profile yet as an add in flight. */
 const IN_FLIGHT_MS = 2 * 60 * 1000;
+
+/** Repair passes before `syncProfile` gives up on a profile other calls keep changing. */
+const SYNC_ATTEMPTS = 5;
 
 const MAX_GOALS = 10;
 const MAX_GOAL_LENGTH = 60;
@@ -322,6 +325,23 @@ export class LanguageService {
     plan: LanguagePlan,
     preferred: LangCode[] = []
   ): Promise<{ profile: any; languages: LanguageProfile[] }> {
+    for (let attempt = 1; ; attempt++) {
+      const result = await this.syncOnce(userId, plan, preferred);
+      if (result.settled || attempt >= SYNC_ATTEMPTS) return result;
+    }
+  }
+
+  /**
+   * One repair pass. The profile write is conditional on the two arrays still holding what
+   * this pass read: a parallel `add-language` may have pushed its language in between, and
+   * an unconditional `$set` would erase that push and free its slot (a lost update). A
+   * pass that loses that race reports `settled: false` and the caller runs another.
+   */
+  private static async syncOnce(
+    userId: string,
+    plan: LanguagePlan,
+    preferred: LangCode[]
+  ): Promise<{ profile: any; languages: LanguageProfile[]; settled: boolean }> {
     let profile: any = await profiles().findOne({ refId: userId }).lean();
     profile = await this.adoptLegacyAccount(userId, profile);
     let languages = (await languageProfiles().find({ userId }).lean()) as unknown as LanguageProfile[];
@@ -369,12 +389,14 @@ export class LanguageService {
     if (!sameList(profile?.pausedLanguages, pausedCodes)) set.pausedLanguages = pausedCodes;
     if ((profile?.learningLanguage ?? null) !== learningLanguage) set.learningLanguage = learningLanguage;
     if (profile?.onboardingState !== onboardingState) set.onboardingState = onboardingState;
-    if (Object.keys(set).length > 0) {
-      await profiles().updateOne({ refId: userId }, { $set: set, $setOnInsert: { refId: userId } }, { upsert: true });
-      profile = { ...(profile || { refId: userId }), ...set };
-    }
+    if (Object.keys(set).length === 0) return { profile, languages, settled: true };
 
-    return { profile, languages };
+    const unchanged = (field: string) => (Array.isArray(profile?.[field]) ? { [field]: profile[field] } : { [field]: { $exists: false } });
+    const result = profile
+      ? await profiles().updateOne({ refId: userId, ...unchanged("learningLanguages"), ...unchanged("pausedLanguages") }, { $set: set })
+      : await profiles().updateOne({ refId: userId }, { $set: set, $setOnInsert: { refId: userId } }, { upsert: true });
+    if (profile && !result.matchedCount) return { profile, languages, settled: false };
+    return { profile: { ...(profile || { refId: userId }), ...set }, languages, settled: true };
   }
 
   // --- writes ----------------------------------------------------------------------------
