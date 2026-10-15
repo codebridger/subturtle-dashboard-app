@@ -1,3 +1,10 @@
+# [1.3.0-dev.25](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.24...v1.3.0-dev.25) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** follow the level test, starter pack, speech and streak contract updates (D-07, D-18, D-19, D-24) ([1e5985a](https://github.com/codebridger/subturtle-dashboard-app/commit/1e5985abba7cb27f1fc35f84b42a0c99050e4fbf))
+
 # [1.3.0-dev.24](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.23...v1.3.0-dev.24) (2026-10-15)
 
 
