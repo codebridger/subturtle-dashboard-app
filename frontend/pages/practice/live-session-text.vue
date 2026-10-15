@@ -460,7 +460,13 @@ async function createLiveSession() {
             onUpdate: handleSessionEvent,
         })
         .then(() => {
-            analytic.track('live-session_started', { provider: 'gemini', mode: 'text' });
+            // Best-effort: without a Mixpanel token (local, CI) track() throws, and an unguarded
+            // call here sent a session that had started fine into the error screen.
+            try {
+                analytic.track('live-session_started', { provider: 'gemini', mode: 'text' });
+            } catch (e) {
+                console.error('Failed to track live-session_started:', e);
+            }
             triggerTheConversation();
             return profileStore.fetchSubscription();
         })

@@ -165,22 +165,30 @@ class _LevelTestScreenState extends ConsumerState<LevelTestScreen> {
     final router = GoRouter.of(context);
     final controller = ref.read(languageStateProvider.notifier);
     try {
+      // Finish first: the server saves the level when the learner has the
+      // language (`applied`); a new language gets it through add-language.
+      LevelTestFinish? finished;
+      if (_testId != null) {
+        try {
+          finished = await _api.languages.finishLevelTest(_testId!, accept: accept);
+          controller.replace(finished.state);
+        } catch (e) {
+          // The test never blocks adding the language (A1 when it failed).
+          debugPrint('finish-level-test failed: $e');
+        }
+      }
       if (widget.from == LevelTestFrom.manage) {
-        // The language exists. Accept saves the new start level; stopping keeps the old one.
-        if (_testId != null) controller.replace(await _api.languages.finishLevelTest(_testId!, accept: accept));
+        // The language exists: accept saved the new start level; stopping keeps the old one.
         if (mounted) router.pop();
         return;
       }
-      if (!_alreadyAdded) {
-        await controller.add(widget.language, startLevel: level ?? CefrStart.a1, startLevelSource: accept ? 'test' : 'default', goals: widget.goals.isEmpty ? null : widget.goals);
-      }
-      if (_testId != null) {
-        try {
-          controller.replace(await _api.languages.finishLevelTest(_testId!, accept: accept));
-        } catch (e) {
-          // The level is already saved by add-language; a missing finish is not worth a stop.
-          debugPrint('finish-level-test failed: $e');
-        }
+      if (!_alreadyAdded && !(finished?.applied ?? false)) {
+        await controller.add(
+          widget.language,
+          startLevel: accept ? (finished?.result?.startLevel ?? level) : CefrStart.a1,
+          startLevelSource: accept ? 'test' : 'default',
+          goals: widget.goals.isEmpty ? null : widget.goals,
+        );
       }
       refreshLearningData(ref);
       final s = ref.read(languageStateProvider).value;

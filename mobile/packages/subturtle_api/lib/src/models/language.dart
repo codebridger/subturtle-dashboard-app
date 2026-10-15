@@ -64,6 +64,7 @@ class LearningLanguageCaps {
     this.ttsVoice = '',
     this.enabled = true,
     this.features = const LanguageFeatures(),
+    this.serverSpeechVoice,
   });
 
   final String code;
@@ -80,6 +81,33 @@ class LearningLanguageCaps {
 
   /// "German · Deutsch" (pickers show both names; English shows once).
   String get label => nativeName.isEmpty || nativeName == name ? name : '$name · $nativeName';
+
+  /// The register's non-HD voice for phrase audio (`speechVoice`), when the
+  /// server sends it.
+  final String? serverSpeechVoice;
+
+  /// A voice `textToSpeechBase64` accepts for this language. The server refuses
+  /// HD voices (the register's Chirp 3 HD ones are for the Coach), so phrase
+  /// audio uses the register's `speechVoice`, else a standard voice Google has
+  /// for the language ([speechVoices]).
+  String get speechVoice {
+    final server = serverSpeechVoice;
+    if (server != null && server.isNotEmpty && !server.contains('HD')) return server;
+    if (ttsVoice.isNotEmpty && !ttsVoice.contains('HD')) return ttsVoice;
+    return speechVoices[ttsLanguageCode] ?? speechVoices[_defaultLocales[code]] ?? '$ttsLanguageCode-Standard-A';
+  }
+
+  /// Non-HD Google voices that exist for the launch languages (from the TTS
+  /// voice list): Neural2 where there is one, then WaveNet, then Standard.
+  static const speechVoices = {
+    'en-US': 'en-US-Standard-A',
+    'es-ES': 'es-ES-Neural2-A',
+    'de-DE': 'de-DE-Neural2-G',
+    'fr-FR': 'fr-FR-Neural2-F',
+    'it-IT': 'it-IT-Neural2-A',
+    'sv-SE': 'sv-SE-Wavenet-A',
+    'lt-LT': 'lt-LT-Standard-B',
+  };
 
   /// `de-DE` from `de-DE-Chirp3-HD-Kore`, for the TTS `languageCode`.
   String get ttsLanguageCode {
@@ -98,6 +126,7 @@ class LearningLanguageCaps {
       ttsVoice: str(j['ttsVoice']),
       enabled: boolean(j['enabled'], true),
       features: LanguageFeatures.fromJson(j['features']),
+      serverSpeechVoice: strOrNull(j['speechVoice']),
     );
   }
 
@@ -482,18 +511,48 @@ class LevelTestStep {
   }
 }
 
+/// `finish-level-test`: the new state, the result, and whether the level was
+/// saved on the language. When [applied] is false (the language is not added
+/// yet), the client sends the result to `add-language`.
+class LevelTestFinish {
+  const LevelTestFinish({required this.state, this.result, this.applied = false, this.language});
+  final LanguageState state;
+  final LevelTestResult? result;
+  final bool applied;
+  final String? language;
+
+  factory LevelTestFinish.fromJson(dynamic v) {
+    final j = asJson(v);
+    return LevelTestFinish(
+      state: LanguageState.fromJson(j['state'] is Map ? j['state'] : j),
+      result: j['result'] is Map ? LevelTestResult.fromJson(j['result']) : null,
+      applied: boolean(j['applied']),
+      language: strOrNull(j['language']),
+    );
+  }
+}
+
 // ---------------------------------------------------------------- starter pack
 
 /// One chunk of a starter pack. [band] is the frequency band (1 = top 1,000).
 class StarterPackItem {
-  const StarterPackItem({required this.id, required this.text, required this.translation, this.audioUrl, this.band = 1, this.group = ''});
+  const StarterPackItem({required this.id, required this.text, required this.translation, this.audioUrl, this.band = 1, this.group = '', this.translationLanguage, this.lemma, this.form});
 
   final String id;
   final String text;
   final String translation;
+
+  /// Absent until the server has generated the audio: speak it with TTS then.
   final String? audioUrl;
   final int band;
+
+  /// The group id (`greetings`); its name is in [StarterPack.groups].
   final String group;
+
+  /// The own language the translation is in.
+  final String? translationLanguage;
+  final String? lemma;
+  final String? form;
 
   factory StarterPackItem.fromJson(dynamic v) {
     final j = asJson(v);
@@ -504,35 +563,71 @@ class StarterPackItem {
       audioUrl: strOrNull(j['audioUrl']),
       band: integer(j['band'], 1),
       group: str(j['group']),
+      translationLanguage: strOrNull(j['translationLanguage']),
+      lemma: strOrNull(j['lemma']),
+      form: strOrNull(j['form']),
     );
   }
 }
 
 /// `get-starter-pack`.
 class StarterPack {
-  const StarterPack({required this.items, this.heard = const {}});
+  const StarterPack({required this.items, this.heard = const {}, this.state, this.total, this.groups = const {}, this.version});
   final List<StarterPackItem> items;
   final Set<String> heard;
+
+  /// none, offered, in_progress, done or skipped.
+  final String? state;
+  final int? total;
+
+  /// Group id → name ("greetings" → "Greetings").
+  final Map<String, String> groups;
+  final int? version;
 
   List<StarterPackItem> get unheard => [for (final i in items) if (!heard.contains(i.id)) i];
 
   factory StarterPack.fromJson(dynamic v) {
     final j = asJson(v);
-    return StarterPack(items: listOf(j['items'], StarterPackItem.fromJson), heard: listOf(j['heard'], (e) => str(e)).toSet());
+    final groups = <String, String>{};
+    for (final g in listOf(j['groups'], asJson)) {
+      final id = str(g['id']);
+      if (id.isNotEmpty) groups[id] = str(g['name'], id);
+    }
+    return StarterPack(
+      items: listOf(j['items'], StarterPackItem.fromJson),
+      heard: listOf(j['heard'], (e) => str(e)).toSet(),
+      state: strOrNull(j['state']),
+      total: intOrNull(j['total']),
+      groups: groups,
+      version: intOrNull(j['version']),
+    );
   }
 }
 
 /// `complete-starter-pack-items`.
 class StarterPackProgress {
-  const StarterPackProgress({required this.heard, required this.total, required this.done});
+  const StarterPackProgress({required this.heard, required this.total, required this.done, this.added = const [], this.deferred = const []});
   final int heard;
   final int total;
   final bool done;
 
+  /// Items that joined review now.
+  final List<String> added;
+
+  /// Items over today's intake cap: not heard yet, offered again tomorrow.
+  final List<String> deferred;
+
   factory StarterPackProgress.fromJson(dynamic v) {
     final j = asJson(v);
     final heard = j['heard'];
-    return StarterPackProgress(heard: heard is List ? heard.length : integer(heard), total: integer(j['total']), done: boolean(j['done']));
+    List<String> ids(dynamic x) => x is List ? [for (final e in x) str(e)] : const [];
+    return StarterPackProgress(
+      heard: heard is List ? heard.length : integer(heard),
+      total: integer(j['total']),
+      done: boolean(j['done']),
+      added: ids(j['added']),
+      deferred: ids(j['deferred']),
+    );
   }
 }
 

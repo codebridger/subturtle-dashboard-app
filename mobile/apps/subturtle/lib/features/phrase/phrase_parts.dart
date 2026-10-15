@@ -178,12 +178,10 @@ class _SpeakButtonState extends ConsumerState<SpeakButton> {
   }
 
   String _voiceOf(String? code) {
+    // A voice textToSpeechBase64 accepts (it refuses the register's HD voices).
     final caps = ref.read(languageCapsProvider).value?.learningByCode(code ?? 'en');
-    if (caps != null && caps.ttsVoice.isNotEmpty) return caps.ttsVoice;
-    return switch (code) {
-      null || 'en' => 'en-US-Standard-A',
-      _ => '${LearningLanguageCaps(code: code, name: code, nativeName: '').ttsLanguageCode}-Standard-A',
-    };
+    if (caps != null) return caps.speechVoice;
+    return code == null || code == 'en' ? 'en-US-Standard-A' : LearningLanguageCaps(code: code, name: code, nativeName: '').speechVoice;
   }
 
   @override

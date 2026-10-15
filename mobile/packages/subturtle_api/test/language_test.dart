@@ -162,9 +162,58 @@ void main() {
       expect(last.done, isTrue);
       expect(last.result!.startLevel, 'A2');
       expect(server.last('answer-level-test').args['text'], 'Ich heiße Sara.');
-      server.onFunction('finish-level-test', {'state': stateJson()});
-      await api.languages.finishLevelTest('t1', accept: true);
+      server.onFunction('finish-level-test', {'state': stateJson(), 'result': {'startLevel': 'A2', 'reason': 'x'}, 'applied': false, 'language': 'fr'});
+      final f = await api.languages.finishLevelTest('t1', accept: true);
       expect(server.last('finish-level-test').args['accept'], isTrue);
+      expect(f.applied, isFalse, reason: 'a new language: the client sends the level to add-language');
+      expect(f.result!.startLevel, 'A2');
+      expect(f.language, 'fr');
+      expect(f.state.active, 'de');
+    });
+  });
+
+  group('contract updates', () {
+    test('simple translation: a plain string, or the withLanguage object', () async {
+      final (api, server) = await signedIn();
+      server.onFunction('translateWithContext', 'باید');
+      expect(await api.translation.translateSimple(phrase: 'muss', context: '', targetLanguage: 'Persian'), 'باید');
+      server.onFunction('translateWithContext', {'translation': 'باید', 'detectedLanguage': 'de', 'resolvedLanguage': 'de', 'inProfile': true});
+      expect(await api.translation.translateSimple(phrase: 'muss', context: '', targetLanguage: 'Persian'), 'باید');
+    });
+
+    test('check-cloze-answer: result, expected and reason', () async {
+      final (api, server) = await signedIn();
+      server.onFunction('check-cloze-answer', {'result': 'close', 'expected': 'bin', 'reason': 'accent'});
+      final c = (await api.review.checkCloze(phraseId: 'p1', answer: 'bin'))!;
+      expect([c.result, c.expected, c.reason], ['close', 'bin', 'accent']);
+      server.onFunction('check-cloze-answer', {'result': 'right', 'expected': 'bin'});
+      expect((await api.review.checkCloze(phraseId: 'p1', answer: 'bin'))!.reason, isNull);
+    });
+
+    test('speech never asks for an HD voice (the TTS function refuses them)', () async {
+      final (api, server) = await signedIn();
+      server.onFunction('textToSpeechBase64', 'data:audio/mp3;base64,AA');
+      await api.translation.speak('Labas', voiceName: 'lt-LT-Chirp3-HD-Kore');
+      expect(server.last('textToSpeechBase64').args, {'text': 'Labas', 'languageCode': 'lt-LT', 'voiceName': 'lt-LT-Standard-B'});
+      for (final code in ['en', 'es', 'de', 'fr', 'it', 'sv', 'lt']) {
+        final caps = LearningLanguageCaps(code: code, name: code, nativeName: '', ttsVoice: '$code-XX-Chirp3-HD-Kore');
+        expect(caps.speechVoice, isNot(contains('HD')), reason: code);
+      }
+      expect(const LearningLanguageCaps(code: 'de', name: 'German', nativeName: 'Deutsch', ttsVoice: 'de-DE-Chirp3-HD-Kore').speechVoice, 'de-DE-Neural2-G');
+      // The register's speechVoice wins when the server sends it; an HD one is ignored.
+      final fromServer = LearningLanguageCaps.fromJson({'code': 'de', 'name': 'German', 'ttsVoice': 'de-DE-Chirp3-HD-Kore', 'speechVoice': 'de-DE-Wavenet-G'});
+      expect(fromServer.speechVoice, 'de-DE-Wavenet-G');
+      expect(LearningLanguageCaps.fromJson({'code': 'de', 'speechVoice': 'de-DE-Chirp3-HD-Puck'}).speechVoice, 'de-DE-Neural2-G');
+    });
+
+    test('submit-review reply and the board without language stay readable', () async {
+      final (api, server) = await signedIn();
+      server.onFunction('submit-review', {'success': true, 'language': 'de', 'result': 'close'});
+      await api.review.submit('p1', learned: true, result: 'close', language: 'de');
+      server.onFunction('get-board', [
+        {'_id': 'a', 'type': 'leitner_review', 'meta': {'dueCount': 1}},
+      ]);
+      expect((await api.board.getBoard()).single.dueCount, 1);
     });
   });
 
@@ -173,16 +222,29 @@ void main() {
       final (api, server) = await signedIn();
       server.onFunction('get-starter-pack', {
         'items': [
-          {'id': 'g1', 'text': 'Guten Morgen', 'translation': 'صبح بخیر', 'band': 1, 'group': 'Greetings'},
-          {'id': 'g2', 'text': 'Danke', 'translation': 'ممنون', 'band': 1, 'group': 'Greetings'},
+          {'id': 'g1', 'text': 'Guten Morgen', 'translation': 'صبح بخیر', 'translationLanguage': 'fa', 'band': 1, 'group': 'greetings', 'lemma': 'Morgen', 'form': 'Morgen'},
+          {'id': 'g2', 'text': 'Danke', 'translation': 'ممنون', 'translationLanguage': 'fa', 'band': 1, 'group': 'greetings'},
         ],
         'heard': ['g1'],
+        'state': 'in_progress',
+        'total': 150,
+        'groups': [
+          {'id': 'greetings', 'name': 'Greetings'},
+        ],
+        'version': 1,
       });
       final pack = await api.starterPacks.get('de');
       expect(pack.unheard.single.id, 'g2');
-      server.onFunction('complete-starter-pack-items', {'heard': 2, 'total': 2, 'done': true});
-      final p = await api.starterPacks.complete('de', ['g2']);
-      expect(p.done, isTrue);
+      expect(pack.groups['greetings'], 'Greetings');
+      expect([pack.state, pack.total, pack.version], ['in_progress', 150, 1]);
+      expect(pack.items.first.audioUrl, isNull);
+      expect(pack.items.first.translationLanguage, 'fa');
+      expect(pack.items.first.lemma, 'Morgen');
+      server.onFunction('complete-starter-pack-items', {'heard': 2, 'total': 150, 'done': false, 'added': ['g2'], 'deferred': ['g3']});
+      final p = await api.starterPacks.complete('de', ['g2', 'g3']);
+      expect(p.added, ['g2']);
+      expect(p.deferred, ['g3']);
+      expect(p.done, isFalse);
       server.onFunction('skip-starter-pack', {'state': stateJson()});
       await api.starterPacks.skip('de');
       expect(server.last('skip-starter-pack').args['language'], 'de');
@@ -330,7 +392,7 @@ void main() {
       await api.translation.advise(phrase: 'ich muss', context: '', message: 'Is it formal?', sourceLanguage: 'German');
       expect(server.last('translationAdvice').args['sourceLanguage'], 'German');
       await api.translation.speak('Guten Morgen', voiceName: 'de-DE-Chirp3-HD-Kore');
-      expect(server.last('textToSpeechBase64').args, {'text': 'Guten Morgen', 'languageCode': 'de-DE', 'voiceName': 'de-DE-Chirp3-HD-Kore'});
+      expect(server.last('textToSpeechBase64').args, {'text': 'Guten Morgen', 'languageCode': 'de-DE', 'voiceName': 'de-DE-Neural2-G'});
       await api.translation.speak('Hello');
       expect(server.last('textToSpeechBase64').args['languageCode'], 'en-US');
     });

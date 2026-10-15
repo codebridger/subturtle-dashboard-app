@@ -53,11 +53,11 @@ class SessionLaunch {
 }
 
 /// The voice preview for a coach voice in a learning language. English keeps
-/// the web's Neural2 map; other languages use the Chirp 3 HD voice of the same
-/// name, which every launch language has.
+/// the web's Neural2 map; other languages use the language's standard voice
+/// (the TTS function refuses the Chirp 3 HD voices that match the coach's).
 String coachPreviewVoiceFor(String voice, LearningLanguageCaps language) {
   if (language.code == 'en') return coachPreviewVoice[voice] ?? 'en-US-Standard-A';
-  return '${language.ttsLanguageCode}-Chirp3-HD-$voice';
+  return language.speechVoice;
 }
 
 /// What the preview says, in the language the Coach will speak.
