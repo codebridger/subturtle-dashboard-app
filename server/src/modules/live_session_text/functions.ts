@@ -43,6 +43,7 @@ import {
   mapUsage,
 } from "./utils";
 import type { TextSessionRecordType, TextTurnInput } from "./types";
+import { buildCoachSession } from "../live_session/coach/service";
 
 // Surface a soft "wrap up soon" flag this many user messages before the per-chat
 // cap (Council 004: e.g. message 51 of a 60-message Reader chat).
@@ -182,12 +183,17 @@ const createTextSession = defineFunction({
   permissionTypes: ["user_access"],
   callback: async function (context: {
     userId: string;
-    instructions: string;
+    /** The raw prompt; a multilingual client may send `language` and `phraseIds` instead (B-19). */
+    instructions?: string;
+    language?: string;
+    explanationLanguage?: string;
+    phraseIds?: string[];
     toolDeclarations?: any[];
     model?: string;
     metadata?: Record<string, any>;
   }) {
-    const { userId, instructions, toolDeclarations, model, metadata } = context;
+    const { userId, toolDeclarations, model, metadata } = context;
+    let { instructions } = context;
 
     // Only models priced in config.ts are accepted — `model` is client-supplied,
     // and an unpriced one would be billed at the fallback rate.
@@ -198,6 +204,13 @@ const createTextSession = defineFunction({
           ", "
         )}.`
       );
+    }
+
+    // B-19: no raw prompt → the server builds it for the learning language.
+    if (!instructions) {
+      if (!context.language && !context.phraseIds) throw new Error("instructions are required");
+      const coach = await buildCoachSession(userId, { ...context, mode: "text" });
+      instructions = coach.instructions;
     }
 
     // AI features are credit-gated; `minCredits: 1` blocks only at true

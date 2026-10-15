@@ -4,6 +4,8 @@ import { DATABASE_BOARD, BOARD_ACTIVITY_COLLECTION } from "../../config";
 export interface BoardActivity {
 	_id?: string;
 	userId: string;
+	/** The learning language (ADR-006). Missing on rows from before multilingual: English. */
+	language?: string;
 	type: string; // 'leitner_review' | 'ai_lecture' | 'ai_practice'
 	toastType: "singleton" | "unique";
 	refId?: string; // e.g. lecture ID
@@ -16,6 +18,9 @@ export interface BoardActivity {
 const boardActivitySchema = new Schema<BoardActivity>(
 	{
 		userId: { type: String, required: true, index: true },
+		// Part of the key (userId, type, language). The unique index is built by
+		// scripts/multilingual-indexes.mjs after the backfill, not at boot (ADR-006 point 11).
+		language: { type: String },
 		type: { type: String, required: true },
 		toastType: { type: String, required: true, enum: ["singleton", "unique"] },
 		refId: { type: String },

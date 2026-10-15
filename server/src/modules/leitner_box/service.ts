@@ -5,10 +5,16 @@ import { Document } from "mongoose";
 import { BoardService } from "../board/service";
 import { ScheduleService } from "../schedule/service";
 import { pickPrimaryChunkText } from "../../utils/chunk";
+import { LangCode, langOf, languageFilter, toCode } from "../../languages/helper";
+import { getLearnerLanguages, resolveLanguage, resolvePhraseLanguage } from "../../languages/learner";
+import { poolSettings } from "../../languages/language-settings";
+import { getOrCreate } from "../../utils/get-or-create";
+import { clozeFields } from "./cloze-cue";
 
 // Helper type since modular-rest types are opaque sometimes
 type LeitnerSystemDoc = Document & {
   userId: string;
+  language?: string;
   settings: {
     dailyLimit: number;
     totalBoxes: number;
@@ -21,6 +27,21 @@ type LeitnerSystemDoc = Document & {
   items: LeitnerItem[];
 };
 
+/**
+ * The three-way review result (Q4, contract section 3). `close` (right word, wrong form)
+ * keeps the card in its box: not up, not down.
+ */
+export type ReviewResult = "right" | "close" | "wrong";
+export const REVIEW_RESULTS: ReviewResult[] = ["right", "close", "wrong"];
+
+/** The result of a review request: `result` when valid, else the old `isCorrect` boolean. */
+export function toReviewResult(result: unknown, isCorrect?: unknown): ReviewResult | undefined {
+  if (typeof result === "string" && (REVIEW_RESULTS as string[]).includes(result)) return result as ReviewResult;
+  if (typeof result === "boolean") return result ? "right" : "wrong";
+  if (typeof isCorrect === "boolean") return isCorrect ? "right" : "wrong";
+  return undefined;
+}
+
 // Stored items are Mongoose subdocuments; spreading one copies internals (on Mongoose 8
 // including `$__parent`, the whole Leitner document) into every review item's JSON.
 // Plain objects keep only the item's fields, at the top level where the clients read them.
@@ -29,12 +50,44 @@ function toPlainItem(item: LeitnerItem): LeitnerItem {
   return typeof subdoc.toObject === "function" ? subdoc.toObject() : item;
 }
 
+/**
+ * Spaced review. One Leitner document per `(userId, language)` (ADR-006 point 3, work list
+ * B-10): each language has its own items, daily limit and box chain; the review hour and
+ * interval stay global on the profile. A document from before multilingual has no
+ * `language` and is the English one (`languageFilter`), so this works on today's data with
+ * no backfill.
+ *
+ * Every method takes an optional `language`. Without one, a phrase-scoped call (review,
+ * add, remove one card) uses the phrase's own language, and every other call uses the
+ * learner's active language (old clients).
+ */
 export class LeitnerService {
   private static syncedUsers = new Set<string>();
 
-  private static async getSystem(userId: string): Promise<LeitnerSystemDoc | null> {
+  private static async getSystem(userId: string, language: LangCode): Promise<LeitnerSystemDoc | null> {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
-    return (await col.findOne({ userId })) as unknown as LeitnerSystemDoc;
+    return (await col.findOne({ userId, ...languageFilter(language) })) as unknown as LeitnerSystemDoc;
+  }
+
+  /** Every Leitner document of the user (one per language). */
+  private static async getSystems(userId: string): Promise<LeitnerSystemDoc[]> {
+    const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
+    return ((await col.find({ userId })) as unknown as LeitnerSystemDoc[]) || [];
+  }
+
+  /** Refreshes the review card of one language's board after its due count changed. */
+  private static async refreshBoard(userId: string, language: LangCode, shouldToast: boolean, persistent = true, includeActive = true) {
+    const dueCount = await this.getDueCount(userId, language);
+    await BoardService.refreshActivity(
+      userId,
+      "leitner_review",
+      includeActive ? { dueCount, isActive: dueCount > 0 } : { dueCount },
+      shouldToast && dueCount > 0,
+      "singleton",
+      undefined,
+      persistent,
+      language
+    );
   }
 
   /** Coerce to an integer in [min, max]; throw on anything out of range. Guards the
@@ -57,8 +110,9 @@ export class LeitnerService {
     reviewHour: 9
   };
 
-  static async getSettings(userId: string) {
-    const system = await this.getSystem(userId);
+  static async getSettings(userId: string, language?: LangCode) {
+    const lang = await resolveLanguage(userId, language);
+    const system = await this.getSystem(userId, lang);
     const settings = system?.settings || this.DEFAULT_SETTINGS;
 
     // Proactive sync: if we are here and it's initialized but job might be missing 
@@ -73,35 +127,45 @@ export class LeitnerService {
     const profileCol = await getCollection(DATABASE, PROFILE_COLLECTION);
     const profile = await profileCol.findOne({ refId: userId }) as any;
 
-    // reviewHour/reviewInterval now live on the profile. Read profile-first, then
+    // reviewHour/reviewInterval now live on the profile (global). Read profile-first, then
     // fall back to the (legacy) Leitner-system value, then the default — so users
-    // whose values haven't been backfilled yet keep working. The Pool settings are
-    // profile-only (no Leitner fallback exists).
+    // whose values haven't been backfilled yet keep working. The Pool settings are per
+    // language: the language profile, then the profile (no Leitner fallback exists).
+    const pool = await poolSettings(userId, lang, profile);
     return {
       ...settings,
       reviewHour: profile?.reviewHour ?? settings.reviewHour ?? this.DEFAULT_SETTINGS.reviewHour,
       reviewInterval: profile?.reviewInterval ?? settings.reviewInterval ?? this.DEFAULT_SETTINGS.reviewInterval,
-      poolAgeCutoffDays: profile?.poolAgeCutoffDays ?? 7,
-      poolChunkSize: profile?.poolChunkSize ?? 10,
+      poolAgeCutoffDays: pool.poolAgeCutoffDays,
+      poolChunkSize: pool.poolChunkSize,
       timeZone: profile?.timeZone
     };
   }
 
-  static async ensureInitialized(userId: string) {
-    const existing = await this.getSystem(userId);
+  /**
+   * Makes sure the learner has a Leitner document for the language. Get-or-create is one
+   * upsert with `$setOnInsert` (ADR-006 point 3): two calls at once leave one document, and
+   * a duplicate-key error from the unique `(userId, language)` index counts as success.
+   * Returns the language it worked on.
+   */
+  static async ensureInitialized(userId: string, language?: LangCode): Promise<LangCode> {
+    const lang = await resolveLanguage(userId, language);
+    const existing = await this.getSystem(userId, lang);
     if (!existing) {
       const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
-      await col.create({
+      await getOrCreate(col, { userId, ...languageFilter(lang) }, {
         userId,
+        language: lang,
         settings: this.DEFAULT_SETTINGS,
         items: [],
       });
       await this.syncScheduledJob(userId);
     }
+    return lang;
   }
 
-  static async getDueItems(userId: string, _limit: number = 20) {
-    const system = await this.getSystem(userId);
+  static async getDueItems(userId: string, _limit: number = 20, language?: LangCode) {
+    const system = await this.getSystem(userId, await resolveLanguage(userId, language));
     if (!system) return [];
 
     const now = new Date();
@@ -148,12 +212,13 @@ export class LeitnerService {
         phrase,
         confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
         source_sentence: phrase?.context ?? null,
+        ...clozeFields(phrase),
       }
     }).filter((item: ReviewItem) => item.phrase);
   }
 
-  static async getCustomReviewItems(userId: string, phraseIds: string[]) {
-    const system = await this.getSystem(userId);
+  static async getCustomReviewItems(userId: string, phraseIds: string[], language?: LangCode) {
+    const system = await this.getSystem(userId, await resolveLanguage(userId, language));
     const items = system?.items || [];
     const now = new Date();
 
@@ -181,13 +246,14 @@ export class LeitnerService {
           phrase,
           confirmed_chunk: pickPrimaryChunkText(phrase?.chunks),
           source_sentence: phrase?.context ?? null,
+          ...clozeFields(phrase),
         };
       })
       .filter((item: ReviewItem) => item.phrase);
   }
 
-  static async getDueCount(userId: string): Promise<number> {
-    const system = await this.getSystem(userId);
+  static async getDueCount(userId: string, language?: LangCode): Promise<number> {
+    const system = await this.getSystem(userId, await resolveLanguage(userId, language));
     if (!system) return 0;
     const now = new Date();
     now.setHours(23, 59, 59, 999);
@@ -196,13 +262,27 @@ export class LeitnerService {
     return dueCount;
   }
 
-  static async submitReview(userId: string, phraseId: string, isCorrect: boolean): Promise<void> {
-    const system = await this.getSystem(userId);
+  /**
+   * Records one answer. `result` is the three-way result (`true` / `false` still work for old
+   * callers: right / wrong). Right moves the card up a box, wrong moves it down (twice wrong
+   * at box 1 sends it back to the Pool), and close keeps its box and schedules it again at
+   * that box's interval (Q4). Returns the language and the card's box after the answer.
+   */
+  static async submitReview(
+    userId: string,
+    phraseId: string,
+    result: ReviewResult | boolean,
+    language?: LangCode
+  ): Promise<{ language: LangCode; boxLevel: number | null }> {
+    const outcome: ReviewResult = typeof result === "boolean" ? (result ? "right" : "wrong") : result;
+    const isCorrect = outcome === "right";
+    const lang = await resolvePhraseLanguage(userId, phraseId, language);
+    const system = await this.getSystem(userId, lang);
     if (!system) {
-      await this.ensureInitialized(userId);
-      await this.submitReview(userId, phraseId, isCorrect);
-      return;
+      await this.ensureInitialized(userId, lang);
+      return this.submitReview(userId, phraseId, outcome, lang);
     }
+    let boxLevel: number | null = null;
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
     const itemIndex = system.items.findIndex((i: LeitnerItem) => i.phraseId.toString() === phraseId.toString());
@@ -212,6 +292,7 @@ export class LeitnerService {
     const now = new Date();
 
     if (!item) {
+      // A card answered before it was in a box starts at box 1; right moves it to box 2.
       const nextBox = isCorrect ? 2 : 1;
       const nextDate = this.calculateNextDate(nextBox, system.settings.boxIntervals);
 
@@ -220,8 +301,9 @@ export class LeitnerService {
         boxLevel: nextBox,
         nextReviewDate: nextDate,
         lastAttemptDate: now,
-        consecutiveIncorrect: isCorrect ? 0 : 1
+        consecutiveIncorrect: outcome === "wrong" ? 1 : 0
       };
+      boxLevel = nextBox;
 
       await col.updateOne(
         { _id: system._id },
@@ -231,7 +313,11 @@ export class LeitnerService {
       let nextBox = item.boxLevel;
       let nextConsecutiveIncorrect = item.consecutiveIncorrect || 0;
 
-      if (isCorrect) {
+      if (outcome === "close") {
+        // Close: right word, wrong form. The card stays in its box and the wrong-answer run
+        // is neither reset nor extended (Q4).
+        nextBox = item.boxLevel;
+      } else if (isCorrect) {
         nextBox = Math.min(item.boxLevel + 1, system.settings.totalBoxes);
         nextConsecutiveIncorrect = 0;
       } else {
@@ -249,12 +335,13 @@ export class LeitnerService {
       // Forgots; a Learned in between resets the counter (nextConsecutiveIncorrect = 0
       // above), so it never fires on Forgot/Learned/Forgot. Higher boxes demote
       // normally. We skip the box $set but still run the board-refresh tail below.
-      if (!isCorrect && item.boxLevel === 1 && nextConsecutiveIncorrect >= 2) {
-        await this.removePhraseFromBox(userId, phraseId);
+      if (outcome === "wrong" && item.boxLevel === 1 && nextConsecutiveIncorrect >= 2) {
+        await this.removePhraseFromBox(userId, phraseId, lang);
         // Lazy require avoids the pool <-> leitner_box import cycle (see PoolService.promote).
         const { PoolService } = require("../pool/service");
-        await PoolService.add(userId, phraseId);
+        await PoolService.add(userId, phraseId, lang);
       } else {
+        boxLevel = nextBox;
         const nextDate = this.calculateNextDate(nextBox, system.settings.boxIntervals);
 
         const updateField = `items.${itemIndex}`;
@@ -272,17 +359,9 @@ export class LeitnerService {
       }
     }
 
-    // Sync Board State after review
-    const dueCount = await this.getDueCount(userId);
-    await BoardService.refreshActivity(
-      userId,
-      "leitner_review",
-      { dueCount, isActive: dueCount > 0 },
-      false, // don't re-toast during session
-      "singleton",
-      undefined,
-      true // persistent
-    );
+    // Sync Board State after review (don't re-toast during session)
+    await this.refreshBoard(userId, lang, false);
+    return { language: lang, boxLevel };
   }
 
   private static calculateNextDate(boxLevel: number, intervals: number[]): Date {
@@ -294,8 +373,9 @@ export class LeitnerService {
     return now;
   }
 
-  static async getStats(userId: string) {
-    const system = await this.getSystem(userId);
+  static async getStats(userId: string, language?: LangCode) {
+    const lang = await resolveLanguage(userId, language);
+    const system = await this.getSystem(userId, lang);
     if (!system) return null;
 
     // Distribution
@@ -310,20 +390,22 @@ export class LeitnerService {
 
     // Return the profile-merged settings (reviewHour/reviewInterval + pool fields now
     // live on the profile) so the settings UI shows the authoritative values.
-    const settings = await this.getSettings(userId);
+    const settings = await this.getSettings(userId, lang);
 
     return {
+      language: lang,
       settings,
       distribution,
       totalItems: system.items.length
     };
   }
 
-  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean; reviewInterval?: number; reviewHour?: number; poolAgeCutoffDays?: number; poolChunkSize?: number }): Promise<void> {
-    const system = await this.getSystem(userId);
+  static async updateSettings(userId: string, settings: { dailyLimit?: number; totalBoxes?: number; boxIntervals?: number[]; boxQuotas?: number[]; autoEntry?: boolean; reviewInterval?: number; reviewHour?: number; poolAgeCutoffDays?: number; poolChunkSize?: number }, language?: LangCode): Promise<void> {
+    const lang = await resolveLanguage(userId, language);
+    const system = await this.getSystem(userId, lang);
     if (!system) {
-      await this.ensureInitialized(userId);
-      return this.updateSettings(userId, settings);
+      await this.ensureInitialized(userId, lang);
+      return this.updateSettings(userId, settings, lang);
     }
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
@@ -375,7 +457,7 @@ export class LeitnerService {
       // Let's use arrayFilters for atomicity if possible, but complexity is high.
       // Simpler approach: Load items, modify, save.
 
-      const updatedSystem = await this.getSystem(userId); // reload
+      const updatedSystem = await this.getSystem(userId, lang); // reload
       if (!updatedSystem) return;
 
       let hasChanges = false;
@@ -397,8 +479,10 @@ export class LeitnerService {
     }
   }
 
-  static async resetSystem(userId: string): Promise<void> {
-    const system = await this.getSystem(userId);
+  /** Empties one language's boxes; the other languages are not touched. */
+  static async resetSystem(userId: string, language?: LangCode): Promise<void> {
+    const lang = await resolveLanguage(userId, language);
+    const system = await this.getSystem(userId, lang);
     if (!system) return;
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
@@ -418,7 +502,8 @@ export class LeitnerService {
       false, // Hide toast
       "singleton",
       undefined,
-      true // persistent
+      true, // persistent
+      lang
     );
   }
 
@@ -426,12 +511,13 @@ export class LeitnerService {
     userId: string,
     phraseId: string,
     initialBox: number = 1,
-    opts: { onlyIfAbsent?: boolean; encountered?: boolean } = {}
+    opts: { onlyIfAbsent?: boolean; encountered?: boolean; language?: LangCode } = {}
   ): Promise<void> {
-    const system = await this.getSystem(userId);
+    const lang = await resolvePhraseLanguage(userId, phraseId, opts.language);
+    const system = await this.getSystem(userId, lang);
     if (!system) {
-      await this.ensureInitialized(userId);
-      return this.addPhraseToBox(userId, phraseId, initialBox, opts);
+      await this.ensureInitialized(userId, lang);
+      return this.addPhraseToBox(userId, phraseId, initialBox, { ...opts, language: lang });
     }
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
@@ -478,44 +564,44 @@ export class LeitnerService {
     // Sync Board State
     // We can assume at least 1 is due now (the one we just added)
     // plus any others.
-    const dueCount = await this.getDueCount(userId);
-    await BoardService.refreshActivity(
-      userId,
-      "leitner_review",
-      { dueCount, isActive: dueCount > 0 },
-      dueCount > 0,
-      "singleton",
-      undefined,
-      true // persistent
-    );
+    await this.refreshBoard(userId, lang, true);
   }
 
-  static async removePhraseFromBox(userId: string, phraseId: string): Promise<void> {
-    const system = await this.getSystem(userId);
-    if (!system) return;
+  /**
+   * Takes a card out of review. With a `language`, out of that language's boxes; without
+   * one, out of every language that holds it (a deleted phrase has no language left to
+   * read, so the delete triggers call it this way).
+   */
+  static async removePhraseFromBox(userId: string, phraseId: string, language?: LangCode): Promise<void> {
+    const given = toCode(language);
+    let systems: LeitnerSystemDoc[];
+    if (given) {
+      const system = await this.getSystem(userId, given);
+      systems = system ? [system] : [];
+    } else {
+      systems = (await this.getSystems(userId)).filter((system) =>
+        (system.items || []).some((item) => item.phraseId?.toString() === phraseId.toString())
+      );
+    }
+    if (systems.length === 0) return;
 
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
 
-    // Pull the item from the items array
-    await col.updateOne(
-      { _id: system._id },
-      { $pull: { items: { phraseId: phraseId } } }
-    );
+    for (const system of systems) {
+      // Pull the item from the items array
+      await col.updateOne(
+        { _id: system._id },
+        { $pull: { items: { phraseId: phraseId } } }
+      );
 
-    // Sync Board State
-    const dueCount = await this.getDueCount(userId);
-    await BoardService.refreshActivity(
-      userId,
-      "leitner_review",
-      { dueCount },
-      dueCount > 0,
-      "singleton"
-    );
+      // Sync Board State
+      await this.refreshBoard(userId, given ?? langOf(system), true, false, false);
+    }
   }
 
-  static async getPhraseManagementInfo(userId: string) {
-    console.log('[PhraseManagementInfo] Getting info for userId:', userId);
-    const system = await this.getSystem(userId);
+  static async getPhraseManagementInfo(userId: string, language?: LangCode) {
+    const lang = await resolveLanguage(userId, language);
+    const system = await this.getSystem(userId, lang);
     const phraseToBoxMap: Record<string, number> = {};
     // Phrases whose next review has come round. The Start-a-session bundle picker
     // intersects these with each bundle's phrase ids to show its "N due" count and
@@ -531,16 +617,17 @@ export class LeitnerService {
     }
 
     const bundleCollection = await getCollection(DATABASE, BUNDLE_COLLECTION);
+    // The bundles of this language only (B-09).
     const bundles = await bundleCollection.find({
       $or: [
         { refId: userId.toString() },
         { refId: userId }
-      ]
+      ],
+      ...languageFilter(lang)
     }).select('title _id').lean();
 
-    console.log('[PhraseManagementInfo] Bundles found for', userId, ':', bundles.length);
-
     return {
+      language: lang,
       phraseToBoxMap,
       // Additive: existing callers (the Leitner phrase picker) ignore it.
       duePhraseIds,
@@ -596,18 +683,30 @@ export class LeitnerService {
 }
 
 // Register global schedule job
-ScheduleService.register('leitner-review-job', async (args: { userId: string, expectedTime?: Date, executedTime?: Date }) => {
-  const { userId, expectedTime, executedTime } = args;
-  const dueCount = await LeitnerService.getDueCount(userId);
-  if (dueCount > 0) {
-    await BoardService.refreshActivity(
-      userId,
-      "leitner_review",
-      { dueCount, isActive: true },
-      true, // toast it!
-      "singleton",
-      undefined,
-      true // persistent
-    );
+/**
+ * The daily review reminder: one job per user (the review hour is global). It refreshes the
+ * review card of every language the learner studies now; paused and removed languages are
+ * skipped, so they get no reminder (ADR-006 point 7).
+ */
+export async function runReviewReminder(userId: string): Promise<void> {
+  const { studying } = await getLearnerLanguages(userId);
+  for (const language of studying) {
+    const dueCount = await LeitnerService.getDueCount(userId, language);
+    if (dueCount > 0) {
+      await BoardService.refreshActivity(
+        userId,
+        "leitner_review",
+        { dueCount, isActive: true },
+        true, // toast it!
+        "singleton",
+        undefined,
+        true, // persistent
+        language
+      );
+    }
   }
+}
+
+ScheduleService.register('leitner-review-job', async (args: { userId: string, expectedTime?: Date, executedTime?: Date }) => {
+  await runReviewReminder(args.userId);
 });

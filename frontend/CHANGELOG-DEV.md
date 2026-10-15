@@ -1,3 +1,17 @@
+# [1.3.0-dev.12](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.11...v1.3.0-dev.12) (2026-10-15)
+
+
+### Features
+
+* **server:** keep Leitner, Pool and board per language (B-10, B-11, B-12) ([17b3fa5](https://github.com/codebridger/subturtle-dashboard-app/commit/17b3fa54c9c303426573264d1952df6058224372))
+
+# [1.3.0-dev.11](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.10...v1.3.0-dev.11) (2026-10-15)
+
+
+### Features
+
+* **server:** build the Coach prompt on the server, per learning language (B-19, B-20) ([b0ec32c](https://github.com/codebridger/subturtle-dashboard-app/commit/b0ec32cf4d3d078df7a7aaf2a8467d31a182aa41))
+
 # [1.3.0-dev.10](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.9...v1.3.0-dev.10) (2026-10-15)
 
 
