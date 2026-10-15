@@ -24,8 +24,15 @@ jest.mock("../../subscription/service", () => ({
 
 const mockPoolAdd = jest.fn<(...args: any[]) => Promise<void>>();
 jest.mock("../../pool/service", () => ({ PoolService: { add: (...args: any[]) => mockPoolAdd(...args) } }));
+const mockDueCount = jest.fn<(...args: any[]) => Promise<number>>();
+const mockEnsureInitialized = jest.fn<(...args: any[]) => Promise<string>>();
 jest.mock("../../leitner_box/service", () => ({
-  LeitnerService: { getSettings: async () => ({ autoEntry: true }), ensureInitialized: async () => undefined, resyncSchedule: async () => undefined },
+  LeitnerService: {
+    getSettings: async () => ({ autoEntry: true }),
+    ensureInitialized: (...args: any[]) => mockEnsureInitialized(...args),
+    getDueCount: (...args: any[]) => mockDueCount(...args),
+    resyncSchedule: async () => undefined,
+  },
 }));
 
 import {
@@ -33,7 +40,6 @@ import {
   FREE_CREDIT_COLLECTION,
   LANGUAGE_INTEREST_COLLECTION,
   LANGUAGE_PROFILE_COLLECTION,
-  LEITNER_SYSTEM_COLLECTION,
   PHRASE_COLLECTION,
   PROFILE_COLLECTION,
   SUBSCRIPTION_COLLECTION,
@@ -51,7 +57,6 @@ let LanguageProfiles: Model<any>;
 let Interests: Model<any>;
 let Phrases: Model<any>;
 let Bundles: Model<any>;
-let Leitner: Model<any>;
 let Subscriptions: Model<any>;
 
 const newId = () => new mongoose.Types.ObjectId().toString();
@@ -67,7 +72,6 @@ beforeAll(async () => {
   Interests = connection.model(LANGUAGE_INTEREST_COLLECTION, languageInterest.schema);
   Phrases = connection.model(PHRASE_COLLECTION, phrase.schema);
   Bundles = connection.model(BUNDLE_COLLECTION, bundle.schema);
-  Leitner = connection.model(LEITNER_SYSTEM_COLLECTION, new Schema({ userId: String, language: String, items: Array }, { strict: false }));
   Subscriptions = connection.model(SUBSCRIPTION_COLLECTION, new Schema({}, { strict: false }));
   const FreeCredits = connection.model(FREE_CREDIT_COLLECTION, new Schema({}, { strict: false }));
   Object.assign(mockModels, {
@@ -76,7 +80,6 @@ beforeAll(async () => {
     [LANGUAGE_INTEREST_COLLECTION]: Interests,
     [PHRASE_COLLECTION]: Phrases,
     [BUNDLE_COLLECTION]: Bundles,
-    [LEITNER_SYSTEM_COLLECTION]: Leitner,
     [SUBSCRIPTION_COLLECTION]: Subscriptions,
     [FREE_CREDIT_COLLECTION]: FreeCredits,
   });
@@ -94,6 +97,8 @@ beforeEach(async () => {
   mockIsFreemium.mockResolvedValue(true);
   mockUpdateFreemium.mockResolvedValue(undefined);
   mockPoolAdd.mockResolvedValue(undefined);
+  mockDueCount.mockResolvedValue(0);
+  mockEnsureInitialized.mockResolvedValue("en");
   delete process.env.LANGUAGES_ENABLED;
   jest.spyOn(console, "error").mockImplementation(() => undefined);
 });
@@ -159,17 +164,12 @@ describe("old clients and accounts from before multilingual", () => {
     expect(profile.name).toBe("Old");
   });
 
-  it("counts English cards from the Leitner document with no language", async () => {
+  it("reports each language's due cards from its Leitner document", async () => {
     const userId = await legacyAccount();
-    await Leitner.create({
-      userId,
-      items: [
-        { phraseId: "a", nextReviewDate: new Date(Date.now() - DAY) },
-        { phraseId: "b", nextReviewDate: new Date(Date.now() + DAY) },
-      ],
-    });
+    mockDueCount.mockImplementation(async (_user: any, language: any) => (language === "en" ? 4 : 0));
     const state = await LanguageService.getState(userId);
-    expect(state.languages[0].dueCount).toBe(1);
+    expect(state.languages[0].dueCount).toBe(4);
+    expect(mockDueCount).toHaveBeenCalledWith(userId, "en");
   });
 
   it("a profile that never existed is treated as an existing English learner", async () => {
@@ -193,6 +193,7 @@ describe("first run (B-07)", () => {
     const { state } = await LanguageService.addLanguage(userId, { language: "German", goals: ["Travel"] });
 
     expect(state).toMatchObject({ learningLanguage: "de", onboardingState: "done", translationLanguage: "fa" });
+    expect(mockEnsureInitialized).toHaveBeenCalledWith(userId, "de");
     expect(state.languages[0]).toMatchObject({
       code: "de",
       status: "active",
@@ -509,6 +510,7 @@ describe("kept phrases (B-32)", () => {
     expect(moved.status).toBeUndefined();
     expect(moved.pendingExpiresAt).toBeUndefined();
     expect(mockPoolAdd).toHaveBeenCalledTimes(2);
+    expect(mockPoolAdd).toHaveBeenCalledWith(userId, a.phraseId, "de");
     expect(mockUpdateFreemium).not.toHaveBeenCalled(); // a paid learner
   });
 
