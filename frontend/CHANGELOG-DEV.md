@@ -1,3 +1,15 @@
+# [1.3.0-dev.14](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.13...v1.3.0-dev.14) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** ask check-cloze-answer only for the server's gap and show its reason (M-11) ([39b7894](https://github.com/codebridger/subturtle-dashboard-app/commit/39b7894f7e8cd46b6757f16e1f4473d8e9dede0e))
+
+
+### Features
+
+* **mobile:** save to the right language, Coach prompt from the server, fill the gap with the server check (M-09, M-10, M-11) ([0ef2ddd](https://github.com/codebridger/subturtle-dashboard-app/commit/0ef2ddd92e6da365b9d206c1fff7203d20ab5c42))
+
 # [1.3.0-dev.13](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.12...v1.3.0-dev.13) (2026-10-15)
 
 
