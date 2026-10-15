@@ -26,25 +26,16 @@ export interface ReviewItem extends LeitnerItem {
   phrase: any;
   confirmed_chunk: string | null;
   source_sentence: string | null;
-}
-
-/**
- * A due/custom review item as returned by the review RPCs. Extends the stored
- * {@link LeitnerItem} with the joined phrase document plus the two flat fields the
- * L3+ fill-in card needs:
- * - `confirmed_chunk` — text of the phrase's primary chunk (highest `confidence`,
- *   tie-break earliest), or `null` when the phrase has no chunks (renderer falls
- *   back to the recognition card).
- * - `source_sentence` — the phrase's `context` (kept whole), or `null` when absent.
- */
-export interface ReviewItem extends LeitnerItem {
-  phrase: any;
-  confirmed_chunk: string | null;
-  source_sentence: string | null;
+  /** The cloze cue (the word to recall and the form to type), or null without a chunk. */
+  cue?: { lemma: string; form: string } | null;
+  /** The answers the cloze accepts (checked by `check-cloze-answer`). */
+  acceptedAnswers?: string[];
 }
 
 export interface LeitnerSystem {
   userId: string;
+  /** The learning language (ADR-006). Missing on documents from before multilingual: English. */
+  language?: string;
   settings: {
     dailyLimit: number;
     totalBoxes: number;
@@ -60,6 +51,9 @@ export interface LeitnerSystem {
 const leitnerSystemSchema = new Schema<LeitnerSystem>(
   {
     userId: { type: String, required: true },
+    // One document per (userId, language). The unique index is built by
+    // scripts/multilingual-indexes.mjs after duplicates are merged (ADR-006 point 11).
+    language: { type: String },
     // Mixed, as Mongoose 5 stored the nested `type: {...}` this used to be (typePojoToMixed).
     // Mongoose 6+ would turn that into a subdocument: defaults applied to legacy documents
     // and `{ ...settings }` spreads in LeitnerService losing every field. Shape is

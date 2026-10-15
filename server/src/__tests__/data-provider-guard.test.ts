@@ -425,12 +425,16 @@ describe("dataProviderGuard paths", () => {
 });
 
 describe("collectionPolicy for the real collections", () => {
-  // Loads every module's db.ts so a new collection can't skip the guard unnoticed.
+  // Loads every db.ts under modules/ (modular-rest loads nested ones too, e.g.
+  // live_session/coach/db.ts) so a new collection can't skip the guard unnoticed.
   const modulesDir = path.join(__dirname, "..", "modules");
-  const definitions: any[] = fs
-    .readdirSync(modulesDir)
-    .filter((name) => fs.existsSync(path.join(modulesDir, name, "db.ts")))
-    .flatMap((name) => require(path.join(modulesDir, name, "db.ts")));
+  const dbFiles = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return entry.name === "__tests__" ? [] : dbFiles(full);
+      return entry.name === "db.ts" ? [full] : [];
+    });
+  const definitions: any[] = dbFiles(modulesDir).flatMap((file) => require(file));
 
   const table = Object.fromEntries(
     definitions.map((definition) => [
@@ -473,6 +477,7 @@ describe("collectionPolicy for the real collections", () => {
       // Their permission types belong to no client group: the router refuses clients.
       "user_content.leitner_system": null,
       "user_content.board_activity": null,
+      "user_content.coach_explanation_flag": null, // server-only Coach flags (B-19)
       "user_content.pool": null,
       "cms.legacy_usage": null, // server-only counters of old field names (B-17)
       "cms.scheduled_job": null,
