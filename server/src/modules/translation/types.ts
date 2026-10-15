@@ -4,6 +4,7 @@ export type {
   LinguisticData,
   Chunk,
   TranslationAdviceType,
+  SimpleTranslationType,
 } from "./schema";
 
 import type { Chunk } from "./schema";
@@ -12,11 +13,22 @@ import type { Chunk } from "./schema";
 export interface TranslateWithContextParams {
   phrase: string;
   context: string;
+  /** The selection's language when the client knows it; "" or "auto" lets the model detect it. */
   sourceLanguage?: string;
+  /** The learner's own language: the language of the translation (B-17). */
+  translationLanguage?: string;
+  /** @deprecated Old name of `translationLanguage`; still read, and counted (B-17). */
   targetLanguage?: string;
+  /** The learning language the request is about; missing means the learner's active one. */
+  language?: string;
   translationType?: "simple" | "detailed";
-  // Caller's user id — only used for the translation_requested analytics
-  // event. Anonymous sessions may omit it.
+  /**
+   * Simple mode only: return `{ translation, detectedLanguage, resolvedLanguage, inProfile }`
+   * instead of the bare translation string. Old clients leave it out and keep the string.
+   */
+  withLanguage?: boolean;
+  // Caller's user id — used for the translation_requested analytics event and to read the
+  // learner's languages (inProfile, resolvedLanguage). Anonymous sessions may omit it.
   userId?: string;
 }
 
@@ -32,5 +44,8 @@ export interface TranslationAdviceParams {
   currentChunks?: Chunk[];
   history?: TranslationAdviceMessage[];
   sourceLanguage?: string;
+  translationLanguage?: string;
+  /** @deprecated Old name of `translationLanguage` (B-17). */
   targetLanguage?: string;
+  learningLanguage?: string;
 }

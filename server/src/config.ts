@@ -37,6 +37,9 @@ export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 // Schedule
 export const DATABASE_SCHEDULE = "cms";
 export const SCHEDULE_JOB_COLLECTION = "scheduled_job";
+// Daily counters of requests that still use an old field name (e.g. `targetLanguage`,
+// work list B-17), so the old name can be removed after 30 days with none. Server only.
+export const LEGACY_USAGE_COLLECTION = "legacy_usage";
 
 // Leitner System
 export const DATABASE_LEITNER = DATABASE;

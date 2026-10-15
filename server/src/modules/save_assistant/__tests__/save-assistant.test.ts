@@ -147,7 +147,7 @@ describe("save assistant: full flow for one user", () => {
     expect(picked.cached).toBe(false);
     expect(picked.messageId).toMatch(/^assistant-/);
     expect(mockDetailed).toHaveBeenLastCalledWith(
-      expect.objectContaining({ phrase: "get out of", context: SENTENCE, sourceLanguage: "en", targetLanguage: "fa" })
+      expect.objectContaining({ phrase: "get out of", context: SENTENCE, sourceLanguage: "en", translationLanguage: "fa" })
     );
     expect(mockRecordUsage).toHaveBeenCalledTimes(2);
 
@@ -197,6 +197,7 @@ describe("save assistant: full flow for one user", () => {
         savedCount: 1,
         savedPhrases: ["get out of"],
         lastMessageAt: expect.any(Date),
+        language: "en",
       },
     ]);
     expect(list[0]).not.toHaveProperty("messages");
