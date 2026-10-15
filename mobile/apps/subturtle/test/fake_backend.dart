@@ -13,6 +13,8 @@ import 'package:subturtle/features/capture/save_engine.dart';
 import 'package:subturtle/features/plans/local_pricing.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 
+import 'fake_languages.dart';
+
 /// A fake Subturtle backend for widget tests. No network, no real account.
 class FakeBackend {
   final calls = <(String, Map<String, dynamic>)>[];
@@ -104,9 +106,11 @@ Future<FakeBackend> pumpApp(
   Key? boundaryKey,
   bool saveAssistantBackend = false,
   PricingProbe? pricingProbe,
+  FakeLanguageServer? languages,
 }) async {
   final backend = FakeBackend()..signedIn = signedIn;
   backend.seedDefaults();
+  languages?.install(backend);
   seed?.call(backend);
   SharedPreferences.setMockInitialValues({'language': 'Persian', 'haptics': false, 'theme': ?theme?.name});
   final prefs = await SharedPreferences.getInstance();
