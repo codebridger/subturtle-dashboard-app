@@ -1,3 +1,10 @@
+# [1.3.0-dev.22](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.21...v1.3.0-dev.22) (2026-10-15)
+
+
+### Features
+
+* **mobile:** use the register's speechVoice for phrase audio, with the checked list as fallback (M-12) ([3f4bd04](https://github.com/codebridger/subturtle-dashboard-app/commit/3f4bd049c1e277d9c272e22c333b6729d91402fc))
+
 # [1.3.0-dev.21](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.20...v1.3.0-dev.21) (2026-10-15)
 
 
