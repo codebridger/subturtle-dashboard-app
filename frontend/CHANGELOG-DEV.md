@@ -1,3 +1,10 @@
+# [1.3.0-dev.31](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.30...v1.3.0-dev.31) (2026-10-16)
+
+
+### Bug Fixes
+
+* **mobile:** Starter learners who removed their language can restore it from first run; Tell me survives a reload ([63e4bb9](https://github.com/codebridger/subturtle-dashboard-app/commit/63e4bb91bf2c17921cb46b7ff31f7f33f30c3482))
+
 # [1.3.0-dev.30](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.29...v1.3.0-dev.30) (2026-10-16)
 
 
