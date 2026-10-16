@@ -248,8 +248,9 @@ class StarterPackSummary {
   final int heard;
   final int total;
 
-  /// The pack can be offered on Today (not finished, not missing).
-  bool get isOpen => state == 'offered' || state == 'in_progress' || state == 'skipped';
+  /// The pack is offered on Today until it is done or skipped (Q5: an offer,
+  /// never a gate). Same rule as the web board.
+  bool get isOpen => state != 'done' && state != 'skipped';
   bool get isDone => state == 'done';
 
   factory StarterPackSummary.fromJson(dynamic v) {

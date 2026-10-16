@@ -42,7 +42,7 @@ class SubturtleApi {
     liveSessions = LiveSessionRepository(functions, data, uid, lang);
     textChat = TextChatRepository(functions, data, uid, lang);
     saveAssistant = SaveAssistantRepository(functions, data, uid, lang);
-    languages = LanguageRepository(functions, data, uid, lang);
+    languages = LanguageRepository(functions, data, uid, lang, auth.anonymousToken);
     starterPacks = StarterPackRepository(functions, data, uid, lang);
   }
 

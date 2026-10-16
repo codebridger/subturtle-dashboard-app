@@ -339,3 +339,105 @@ class OwnLanguageRow extends StatelessWidget {
     );
   }
 }
+
+/// "Coming later": learning languages the register lists but has not switched
+/// on yet, each with "Tell me" (B-06). Shown on the Languages page and in Add a
+/// language, like the web. "Tell me" survives a reload: the server lists the
+/// learner's interests.
+class ComingLaterSection extends ConsumerStatefulWidget {
+  const ComingLaterSection({super.key, required this.caps, required this.state, this.note});
+  final LanguageCapabilities caps;
+  final LanguageState state;
+
+  /// A line under the title, for example "Tell us you want it and we count you in."
+  final String? note;
+
+  @override
+  ConsumerState<ComingLaterSection> createState() => _ComingLaterSectionState();
+}
+
+class _ComingLaterSectionState extends ConsumerState<ComingLaterSection> {
+  /// "Tell me" answers this visit (code → on).
+  final _told = <String, bool>{};
+
+  bool _isTold(String code) => _told[code] ?? widget.state.interests.contains(code);
+
+  Future<void> _toggle(String code) async {
+    final on = !_isTold(code);
+    setState(() => _told[code] = on);
+    ref.read(hapticsProvider).selection();
+    try {
+      await ref.read(apiProvider).languages.setInterest(code, on: on);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _told[code] = !on);
+      showStToast(context, title: friendlyError(e), color: StToastColor.danger);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.st;
+    final langs = widget.caps.comingLater;
+    if (langs.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const StEyebrow('Coming later'),
+        if (widget.note != null) ...[
+          const SizedBox(height: 4),
+          Text(widget.note!, style: StType.bodySmall.copyWith(color: c.textMuted)),
+        ],
+        const SizedBox(height: 8),
+        for (final l in langs) ...[
+          _ComingLaterRow(lang: l, told: _isTold(l.code), onToggle: () => _toggle(l.code)),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _ComingLaterRow extends StatelessWidget {
+  const _ComingLaterRow({required this.lang, required this.told, required this.onToggle});
+  final LearningLanguageCaps lang;
+  final bool told;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.st;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: c.surfaceCard, borderRadius: StRadius.brLg, border: Border.all(color: c.borderSubtle)),
+      child: Row(
+        children: [
+          StLanguageChip(lang.code, size: 36),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(lang.label, style: StType.base(size: 14, weight: FontWeight.w800, height: 1.25).copyWith(color: c.textStrong)),
+                if (told)
+                  Semantics(
+                    liveRegion: true,
+                    child: Text('We will tell you when it is ready. Tap again to undo.', style: StType.bodySmall.copyWith(color: c.jade700, fontWeight: FontWeight.w700)),
+                  ),
+              ],
+            ),
+          ),
+          StButton(
+            label: told ? 'Got it' : 'Tell me',
+            size: StSize.sm,
+            variant: StButtonVariant.soft,
+            tone: told ? StTone.accent : StTone.neutral,
+            semanticLabel: told ? 'Got it. Tap to undo' : 'Tell me when ${lang.name} is ready',
+            onPressed: onToggle,
+          ),
+        ],
+      ),
+    );
+  }
+}

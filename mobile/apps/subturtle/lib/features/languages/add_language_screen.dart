@@ -42,9 +42,6 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
   bool _busy = false;
   Object? _error;
 
-  /// "Tell me" answers this visit (code → on).
-  final _told = <String, bool>{};
-
   List<LearningLanguageCaps> _choices(LanguageCapabilities caps, LanguageState s) {
     // A removed language can be added again (its data comes back); active and
     // paused ones are already in the list.
@@ -66,20 +63,6 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
       context.pop();
     } else {
       context.go('/today');
-    }
-  }
-
-  Future<void> _toggleTell(String code, LanguageState s) async {
-    // "Tell me" survives a reload: the server lists the learner's interests.
-    final on = !(_told[code] ?? s.interests.contains(code));
-    setState(() => _told[code] = on);
-    ref.read(hapticsProvider).selection();
-    try {
-      await ref.read(apiProvider).languages.setInterest(code, on: on);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _told[code] = !on);
-      showStToast(context, title: friendlyError(e), color: StToastColor.danger);
     }
   }
 
@@ -275,12 +258,7 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
               ],
               if (caps.comingLater.isNotEmpty) ...[
                 const SizedBox(height: 18),
-                const StEyebrow('Coming later'),
-                const SizedBox(height: 8),
-                for (final l in caps.comingLater) ...[
-                  _ComingLaterRow(lang: l, told: _told[l.code] ?? s.interests.contains(l.code), onToggle: () => _toggleTell(l.code, s)),
-                  const SizedBox(height: 8),
-                ],
+                ComingLaterSection(caps: caps, state: s),
               ],
             ],
           ),
@@ -448,50 +426,6 @@ class _ReadyGrid extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _ComingLaterRow extends StatelessWidget {
-  const _ComingLaterRow({required this.lang, required this.told, required this.onToggle});
-  final LearningLanguageCaps lang;
-  final bool told;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.st;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 52),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: c.surfaceCard, borderRadius: StRadius.brLg, border: Border.all(color: c.borderSubtle)),
-      child: Row(
-        children: [
-          StLanguageChip(lang.code, size: 36),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(lang.label, style: StType.base(size: 14, weight: FontWeight.w800, height: 1.25).copyWith(color: c.textStrong)),
-                if (told)
-                  Semantics(
-                    liveRegion: true,
-                    child: Text('We will tell you when it is ready. Tap again to undo.', style: StType.bodySmall.copyWith(color: c.jade700, fontWeight: FontWeight.w700)),
-                  ),
-              ],
-            ),
-          ),
-          StButton(
-            label: told ? 'Got it' : 'Tell me',
-            size: StSize.sm,
-            variant: StButtonVariant.soft,
-            tone: told ? StTone.accent : StTone.neutral,
-            semanticLabel: told ? 'Got it. Tap to undo' : 'Tell me when ${lang.name} is ready',
-            onPressed: onToggle,
-          ),
-        ],
-      ),
     );
   }
 }
