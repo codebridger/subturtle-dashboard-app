@@ -47,6 +47,8 @@ const summary = (code: string, extra: Summary = {}): Summary => ({
 
 interface FakeOptions {
     plan?: 'starter' | 'reader' | 'learner' | 'coach';
+    /** The chat test's first help line (default: Persian). */
+    testHelp?: string;
     maxLanguages?: number;
     languages?: Summary[];
     active?: string | null;
@@ -119,7 +121,7 @@ function createFakeServer(opts: FakeOptions = {}) {
                 return { status: 200, data: { on: args.on } };
             case 'start-level-test':
                 testTurn = 1;
-                return { status: 200, data: { testId: 't1', turn: { ai: 'Hallo! Wie heißt du?', help: 'سلام! اسمت چیه؟' }, index: 1, total: 3 } };
+                return { status: 200, data: { testId: 't1', turn: { ai: 'Hallo! Wie heißt du?', help: opts.testHelp ?? 'سلام! اسمت چیه؟' }, index: 1, total: 3 } };
             case 'answer-level-test':
                 testTurn += 1;
                 if (testTurn > 3) return { status: 200, data: { index: 3, total: 3, done: true, result: { startLevel: 'A2', reason: 'You answered in short sentences and used the past once.' } } };
@@ -149,6 +151,8 @@ function createFakeServer(opts: FakeOptions = {}) {
                 const deferred = args.itemIds.filter((id: string) => id.includes('small-talk'));
                 const added = args.itemIds.filter((id: string) => !deferred.includes(id));
                 packHeard.push(...added);
+                const packRow = state.languages.find((l: Summary) => l.code === state.learningLanguage);
+                if (packRow) packRow.starterPack = { state: 'in_progress', heard: packHeard.length, total: 2 };
                 return { status: 200, data: { heard: packHeard.length, total: 2, done: packHeard.length >= 2, added, deferred } };
             }
             case 'textToSpeechBase64':
@@ -492,5 +496,87 @@ test.describe('Multilingual dashboard', () => {
         await page.getByTestId('pack-item-de-small-talk-01').getByRole('button', { name: 'Mark as heard' }).click();
         await expect(page.getByTestId('pack-item-de-small-talk-01')).toContainText('Tomorrow');
         await expect(page.getByText('That is enough new phrases for today.')).toBeVisible();
+    });
+    test('Your progress counts the active language only', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en', { phraseCount: 142 }), summary('de', { phraseCount: 3 })], active: 'de' });
+        await boot(page, fake);
+        const reads: { op: string; collection: string; query: any }[] = [];
+        page.on('request', (req) => {
+            const m = req.url().match(/data-provider\/(find|count)$/);
+            if (m && req.method() === 'POST') {
+                const body = req.postDataJSON() || {};
+                reads.push({ op: m[1], collection: body.collection, query: body.query });
+            }
+        });
+        await page.goto('/#/statistic');
+
+        await expect.poll(() => reads.filter((r) => r.collection === 'phrase_bundle').length).toBeGreaterThanOrEqual(2);
+        for (const r of reads.filter((r) => r.collection === 'phrase_bundle' || r.collection === 'phrase')) {
+            expect(r.query.language, `${r.op} ${r.collection}`).toBe('de');
+        }
+    });
+
+    test('"Back to the steps" in the chat test returns to step 2 with the language picked', async ({ page }) => {
+        const fake = createFakeServer();
+        await boot(page, fake);
+        await page.goto('/#/settings/languages/add');
+        await page.getByTestId('pick-de').click();
+        await page.getByTestId('add-next').click();
+        await page.getByTestId('how-test').click();
+        await page.getByTestId('start-test').click();
+        await expect(page.getByTestId('test-progress')).toBeVisible();
+
+        await page.getByRole('link', { name: 'Back to the steps' }).click();
+        await expect(page.getByRole('heading', { name: 'Where should we start in German?' })).toBeVisible();
+        await expect(page.getByTestId('how-test')).toBeVisible();
+    });
+
+    test('English help in the chat test is not forced into a right-to-left run', async ({ page }) => {
+        const fake = createFakeServer({ testHelp: 'What is your name?' });
+        await boot(page, fake);
+        await page.goto('/#/settings/languages/test?language=de');
+
+        const help = page.getByText('What is your name?');
+        await expect(help).toBeVisible();
+        await expect(help).not.toHaveAttribute('dir', 'rtl');
+        expect(await help.evaluate((el) => getComputedStyle(el).direction)).toBe('ltr');
+    });
+
+    test('Persian help in the chat test stays a right-to-left run', async ({ page }) => {
+        const fake = createFakeServer();
+        await boot(page, fake);
+        await page.goto('/#/settings/languages/test?language=de');
+        await expect(page.getByText('سلام! اسمت چیه؟')).toHaveAttribute('dir', 'rtl');
+    });
+
+    test('Today shows starter pack progress after marking chunks', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { starterPack: { state: 'offered', heard: 0, total: 2 } })], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/practice/starter-pack');
+        await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Mark as heard' }).click();
+        await expect(page.getByTestId('pack-item-de-greetings-01')).toContainText('Heard');
+
+        // An in-app move to Today (no reload), as the sidebar link does; the phone layout hides the sidebar.
+        await page.evaluate(() => (window.location.hash = '#/board'));
+        await expect(page.getByTestId('starter-pack-card')).toContainText('1 of 2 heard');
+    });
+
+    test('a phrase and its Persian translation each get their own direction in a bundle', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { phraseCount: 1 })], active: 'de' });
+        await boot(page, fake);
+        const bundle = { _id: 'b1', title: 'Dark S1', refId: USER_ID, language: 'de', phrases: ['p1'], createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z' };
+        const phrase = { _id: 'p1', phrase: 'Ich habe angefangen', translation: 'من شروع کردم', translation_language: 'fa', refId: USER_ID, type: 'normal', language: 'de' };
+        await page.route('**/data-provider/findByIds', (route) => {
+            if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: corsHeaders(route) });
+            const body = route.request().postDataJSON() || {};
+            return respond(route, 200, { status: 'success', data: body.collection === 'phrase' ? [phrase] : [bundle] });
+        });
+        await page.goto('/#/bundles/b1');
+
+        const translation = page.getByTestId('phrase-translation');
+        await expect(translation).toHaveValue('من شروع کردم');
+        await expect(translation).toHaveAttribute('dir', 'auto');
+        expect(await translation.evaluate((el) => getComputedStyle(el).direction)).toBe('rtl');
+        expect(await page.getByTestId('phrase-text').evaluate((el) => getComputedStyle(el).direction)).toBe('ltr');
     });
 });

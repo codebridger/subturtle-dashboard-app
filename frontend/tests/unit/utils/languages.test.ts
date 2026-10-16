@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LANGUAGES, isRtl, languageName, nativeLanguageName, pickerLabel, shortCode, toCode } from '~/utils/languages';
+import { LANGUAGES, isRtl, languageName, nativeLanguageName, pickerLabel, runLanguage, shortCode, toCode } from '~/utils/languages';
 
 describe('languages list (D-09)', () => {
     it('has one entry per code', () => {
@@ -60,5 +60,23 @@ describe('languages list (D-09)', () => {
         for (const code of ['fa', 'ar', 'he', 'ur', 'ps']) expect(isRtl(code)).toBe(true);
         for (const code of ['en', 'de', 'tr', 'lt']) expect(isRtl(code)).toBe(false);
         expect(isRtl('Persian')).toBe(true);
+    });
+});
+
+describe('runLanguage (right-to-left runs only for right-to-left text)', () => {
+    it('keeps the own language for text written in it', () => {
+        expect(runLanguage('اسمت چیه؟', 'fa')).toBe('fa');
+        expect(runLanguage('מה שמך?', 'he')).toBe('he');
+        expect(runLanguage('Wie heißt du?', 'de')).toBe('de');
+    });
+
+    it('drops a right-to-left code on English fallback help, so its punctuation is not flipped', () => {
+        expect(runLanguage('What is your name, and where are you from?', 'fa')).toBeNull();
+        expect(runLanguage('', 'ar')).toBeNull();
+    });
+
+    it('answers null with no code', () => {
+        expect(runLanguage('Hallo', null)).toBeNull();
+        expect(runLanguage('Hallo', undefined)).toBeNull();
     });
 });

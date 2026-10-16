@@ -232,6 +232,13 @@
         else if (choices.value.length === 1) pick.value = choices.value[0].code;
     });
 
+    // "Back to the steps" from the chat test (`?step=2`) returns to step 2 with the language
+    // still picked, not to step 1 (UX spec, Flows: "X (back to step 2)").
+    const resumeStep2 = route.query.step === '2';
+    watchEffect(() => {
+        if (resumeStep2 && pick.value && step.value === 1 && !atLimit.value) step.value = 2;
+    });
+
     // The chat test is not ready for every language; A1 is then the only choice.
     watch(pickFeatures, (f) => {
         if (!f.levelTest) how.value = 'a1';

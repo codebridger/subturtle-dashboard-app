@@ -168,7 +168,16 @@
         }
     }
 
+    /** Items marked on this visit: the language state (and Today's card) is refreshed on leaving. */
+    let markedThisVisit = false;
+    onBeforeUnmount(() => {
+        // "12 of 150 heard · Continue" on Today needs the new count; the state is otherwise
+        // only refreshed when the pack is done.
+        if (markedThisVisit) language.refreshState();
+    });
+
     async function markHeard(item: StarterPackItem) {
+        markedThisVisit = true;
         heard.value = new Set([...heard.value, item.id]);
         try {
             const res = await languageApi.completeStarterPackItems(language.activeLanguage, [item.id]);

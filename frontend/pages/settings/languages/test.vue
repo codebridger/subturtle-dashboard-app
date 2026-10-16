@@ -21,7 +21,7 @@
                 <template v-for="(m, i) in log" :key="i">
                     <div v-if="m.ai" class="flex max-w-[78%] flex-col gap-1 self-start rounded-[var(--radius-lg)_var(--radius-lg)_var(--radius-lg)_var(--radius-xs)] border border-st-line bg-st-card px-4 py-3">
                         <LangText :code="lang" class="text-st-base font-bold text-st-strong">{{ m.text }}</LangText>
-                        <LangText v-if="m.help" :code="language.ownLanguage" class="text-st-sm text-st-muted">{{ m.help }}</LangText>
+                        <LangText v-if="m.help" :code="runLanguage(m.help, language.ownLanguage)" class="text-st-sm text-st-muted">{{ m.help }}</LangText>
                     </div>
                     <div v-else class="max-w-[78%] self-end rounded-[var(--radius-lg)_var(--radius-lg)_var(--radius-xs)_var(--radius-lg)] bg-st-primary-soft px-4 py-3 font-semibold text-st-strong">
                         <LangText :code="lang">{{ m.text }}</LangText>
@@ -83,7 +83,7 @@
     import { useLanguageStore, trackLanguageEvent } from '~/stores/language';
     import { usePageCrumb } from '~/composables/usePageCrumb';
     import { languageApi } from '~/utils/languageApi';
-    import { toCode } from '~/utils/languages';
+    import { runLanguage, toCode } from '~/utils/languages';
     import type { CefrStart } from '~/types/language.type';
 
     /**
@@ -111,7 +111,7 @@
     const ownName = computed(() => (language.ownLanguage ? language.nameOf(language.ownLanguage) : ''));
     const isManage = computed(() => route.query.manage === '1');
     const isFirstRun = computed(() => route.query.first === '1');
-    const backToSteps = computed(() => ({ path: '/settings/languages/add', query: { ...route.query, manage: undefined } }));
+    const backToSteps = computed(() => ({ path: '/settings/languages/add', query: { ...route.query, manage: undefined, step: '2' } }));
 
     usePageCrumb(() => ({ section: t('nav.account'), label: t('languages.test.title'), badge: langName.value || undefined }));
 
