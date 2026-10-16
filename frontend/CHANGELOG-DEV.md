@@ -1,3 +1,10 @@
+# [1.3.0-dev.29](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.28...v1.3.0-dev.29) (2026-10-16)
+
+
+### Bug Fixes
+
+* **server:** Starter cannot swap, Portuguese coming later, Tell me in language state (B-05, B-06, B-33) ([dde0dc8](https://github.com/codebridger/subturtle-dashboard-app/commit/dde0dc87487a8911309ee90b531519973ca29a51))
+
 # [1.3.0-dev.28](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.27...v1.3.0-dev.28) (2026-10-16)
 
 
