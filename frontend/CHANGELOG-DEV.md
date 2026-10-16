@@ -1,3 +1,10 @@
+# [1.3.0-dev.30](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.29...v1.3.0-dev.30) (2026-10-16)
+
+
+### Bug Fixes
+
+* **frontend:** match the multilingual designs from the end-to-end run (D-02, D-06, D-07, D-11, D-16, D-19, D-24) ([0e24d07](https://github.com/codebridger/subturtle-dashboard-app/commit/0e24d07310871714380662dff9a86bcd5c06af29))
+
 # [1.3.0-dev.29](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.28...v1.3.0-dev.29) (2026-10-16)
 
 
