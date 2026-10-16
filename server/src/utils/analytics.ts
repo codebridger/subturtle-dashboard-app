@@ -8,6 +8,8 @@
  * absence is logged once at startup — otherwise every server event silently
  * disappears, which is how they went dark after the Firebase move.
  */
+import { getCollection } from "@modular-rest/server";
+
 const mixpanel = require("mixpanel");
 
 let client: any = null;
@@ -41,17 +43,102 @@ export const SERVER_ANALYTICS_EVENTS = {
 };
 
 /**
- * Track a server-truth event. Fire-and-forget: errors are swallowed so a
- * failed analytics call can never break the calling webhook or RPC.
+ * Who an event belongs to (work list B-01).
+ * - `userId`: the caller's account id. For a logged-out extension user this is the ONE
+ *   account every logged-out visitor shares (modular-rest's `loginAnonymous`), so on its
+ *   own it says nothing about the person.
+ * - `deviceId`: the client's install analytics id (the extension's `analyticsAnonymousId`).
  */
-export function trackServerEvent(
+export interface AnalyticsPerson {
+  userId?: string | null;
+  deviceId?: string | null;
+}
+
+/** The distinct_id for a logged-out event when the client sent no install id (old clients). */
+export const UNKNOWN_ANONYMOUS_DISTINCT_ID = "anonymous-unknown";
+
+// The cached id of modular-rest's shared anonymous account (`cms.auth`, type "anonymous").
+let anonymousUserIdLookup: Promise<string | null> | null = null;
+
+/**
+ * The shared anonymous account's id, read once and cached for the life of the process.
+ * The account is created once and never changes, so one query is enough. A failed read is
+ * not cached, so the next event tries again.
+ */
+function getAnonymousUserId(): Promise<string | null> {
+  if (!anonymousUserIdLookup) {
+    anonymousUserIdLookup = (async () => {
+      const auth: any = getCollection("cms", "auth");
+      const doc = await auth.findOne({ type: "anonymous" }).select("_id").lean().exec();
+      return doc?._id ? String(doc._id) : null;
+    })().catch((err) => {
+      anonymousUserIdLookup = null;
+      throw err;
+    });
+  }
+  return anonymousUserIdLookup;
+}
+
+/** Test hook: forget the cached anonymous account id. */
+export function resetAnonymousUserIdCache(): void {
+  anonymousUserIdLookup = null;
+}
+
+/** A usable install id, or undefined. Accepts a raw id or a Mixpanel "$device:<id>" value. */
+function cleanDeviceId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const id = value.trim().replace(/^\$device:/, "");
+  return id && id.length <= 128 ? id : undefined;
+}
+
+/** True when `userId` is no real person: missing, "anonymous", or the shared anonymous account. */
+async function isLoggedOut(userId: string | undefined): Promise<boolean> {
+  if (!userId || userId === "anonymous") return true;
+  try {
+    return userId === (await getAnonymousUserId());
+  } catch (err) {
+    // We cannot tell, so we must not risk the shared id: treat the caller as logged out.
+    console.error("[analytics] failed to read the anonymous account id", err);
+    return true;
+  }
+}
+
+/**
+ * The Mixpanel identity properties for a person (simplified ID merge):
+ * - signed-in user: `distinct_id` = `$user_id` = user id, plus `$device_id` when known,
+ *   which joins the install to the account;
+ * - logged-out with an install id: `$device_id` only, so Mixpanel files the event under
+ *   `$device:<id>`, the same person the extension's own events use;
+ * - logged-out with no install id: `distinct_id` = "anonymous-unknown". Never the shared
+ *   anonymous account id.
+ */
+export async function identityProperties(person: AnalyticsPerson): Promise<Record<string, string>> {
+  const userId = typeof person.userId === "string" ? person.userId.trim() || undefined : undefined;
+  const deviceId = cleanDeviceId(person.deviceId);
+
+  if (!(await isLoggedOut(userId))) {
+    return deviceId
+      ? { distinct_id: userId!, $user_id: userId!, $device_id: deviceId }
+      : { distinct_id: userId! };
+  }
+  if (deviceId) return { distinct_id: `$device:${deviceId}`, $device_id: deviceId };
+  return { distinct_id: UNKNOWN_ANONYMOUS_DISTINCT_ID };
+}
+
+/**
+ * Track a server-truth event. Fire-and-forget: callers do not need to await it, and errors
+ * are swallowed so a failed analytics call can never break the calling webhook or RPC.
+ * The returned promise never rejects (tests await it).
+ */
+export async function trackServerEvent(
   event: string,
-  userId: string,
+  person: AnalyticsPerson,
   properties: Record<string, any> = {}
-): void {
+): Promise<void> {
   if (!client) return;
   try {
-    client.track(event, { distinct_id: userId, ...properties });
+    const identity = await identityProperties(person);
+    client.track(event, { ...properties, ...identity });
   } catch (err) {
     console.error("[analytics] failed to track event", event, err);
   }

@@ -30,6 +30,11 @@ export interface TranslateWithContextParams {
   // Caller's user id — used for the translation_requested analytics event and to read the
   // learner's languages (inProfile, resolvedLanguage). Anonymous sessions may omit it.
   userId?: string;
+  /**
+   * The client's install analytics id (the extension's `analyticsAnonymousId`, a UUID).
+   * A logged-out caller's analytics events are filed on it (B-01). Old clients leave it out.
+   */
+  deviceId?: string;
 }
 
 export interface TranslationAdviceMessage {

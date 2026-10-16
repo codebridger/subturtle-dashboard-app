@@ -122,7 +122,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(addNewSubscriptionWithCredit).not.toHaveBeenCalled(); // never guesses
     expect(trackServerEvent).toHaveBeenCalledWith(
       "entitlement-grant_refused",
-      "u1",
+      { userId: "u1" },
       expect.anything()
     );
   });
@@ -130,7 +130,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
   it("fires trial_started when a subscription is created as trialing", async () => {
     (resolveEntitlements as any).mockResolvedValue(entitlements);
     await adapter.handleWebhook(createdEvent());
-    expect(trackServerEvent).toHaveBeenCalledWith("trial_started", "u1", {
+    expect(trackServerEvent).toHaveBeenCalledWith("trial_started", { userId: "u1" }, {
       cadence: "monthly",
       tier: "learner",
       currency: "gbp",
@@ -146,7 +146,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(res.success).toBe(true);
     expect(trackServerEvent).toHaveBeenCalledWith(
       "subscription_canceled",
-      "u1",
+      { userId: "u1" },
       { was_trialing: false, lifetime_value_cents: 0 }
     );
   });
@@ -187,7 +187,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     expect(res.success).toBe(true);
     expect(trackServerEvent).toHaveBeenCalledWith(
       "subscription_started",
-      "u1",
+      { userId: "u1" },
       {
         cadence: "monthly",
         tier: "learner",
@@ -245,7 +245,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
     const event = createdEvent();
     (event.data.object as any).status = "active"; // no trial — returning customer
     await adapter.handleWebhook(event);
-    expect(trackServerEvent).toHaveBeenCalledWith("subscription_started", "u1", {
+    expect(trackServerEvent).toHaveBeenCalledWith("subscription_started", { userId: "u1" }, {
       cadence: "monthly",
       tier: "learner",
       currency: "gbp",
@@ -306,7 +306,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
       },
     };
     await adapter.handleWebhook(event);
-    expect(trackServerEvent).toHaveBeenCalledWith("subscription_started", "u1", {
+    expect(trackServerEvent).toHaveBeenCalledWith("subscription_started", { userId: "u1" }, {
       cadence: "monthly",
       tier: "learner",
       currency: "gbp",
@@ -326,7 +326,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
       data: { object: { customer: "cus_1", id: "sub_1", status: "canceled" } },
     };
     await adapter.handleWebhook(event);
-    expect(trackServerEvent).toHaveBeenCalledWith("subscription_canceled", "u1", {
+    expect(trackServerEvent).toHaveBeenCalledWith("subscription_canceled", { userId: "u1" }, {
       was_trialing: true,
       lifetime_value_cents: 0,
     });
@@ -356,7 +356,7 @@ describe("StripeAdapter.handleWebhook (metadata-driven grants)", () => {
       },
     };
     await adapter.handleWebhook(event);
-    expect(trackServerEvent).toHaveBeenCalledWith("subscription_canceled", "u1", {
+    expect(trackServerEvent).toHaveBeenCalledWith("subscription_canceled", { userId: "u1" }, {
       was_trialing: false,
       tier: "learner",
       lifetime_value_cents: 898,

@@ -77,7 +77,7 @@ describe("POST /auth/apple/identity-token-login", () => {
 
     expect(res.status).toBe(200);
     expect(mockUserManager.registerUser).toHaveBeenCalledWith({ email: "x@privaterelay.appleid.com" });
-    expect(mockTrack).toHaveBeenCalledWith("account_created", "new-user", { signup_provider: "apple" });
+    expect(mockTrack).toHaveBeenCalledWith("account_created", { userId: "new-user" }, { signup_provider: "apple" });
     expect(mockUpdateUserProfile).toHaveBeenCalledWith({ refId: "new-user", name: "Ada Lovelace" }, false);
     expect(mockEnsureInitialized).toHaveBeenCalledWith("new-user");
   });

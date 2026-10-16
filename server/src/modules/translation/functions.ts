@@ -48,7 +48,8 @@ const translateWithContext = defineFunction({
     // rate is word-detail-page_translation-error / translation_requested.
     trackServerEvent(
       SERVER_ANALYTICS_EVENTS.TRANSLATION_REQUESTED,
-      params.userId || "anonymous",
+      // B-01: never the shared anonymous account; logged-out callers go on their install id.
+      { userId: params.userId, deviceId: params.deviceId },
       {
         translation_type: translationType,
         source_lang: sourceLanguage || "auto",
