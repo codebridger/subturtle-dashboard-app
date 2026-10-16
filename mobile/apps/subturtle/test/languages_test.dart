@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:subturtle/app/providers.dart';
 import 'package:subturtle/app/router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subturtle/features/languages/language_ui.dart';
@@ -216,6 +217,66 @@ void main() {
       await tester.settle();
       expect(find.text('3 phrases are waiting for Spanish. Add it and they join your Spanish.'), findsOneWidget);
       expect(find.text('Next: Spanish'), findsOneWidget);
+    });
+  });
+
+  group('Starter: a removed language holds its place (server #138)', () {
+    testWidgets('first run after removing the only language offers Restore, never a dead end', (tester) async {
+      final langs = FakeLanguageServer(plan: 'starter', active: null, startLevels: {'de': 'A1'});
+      langs.langs['de']!.status = 'removed';
+      final b = await pumpApp(tester, languages: langs);
+      expect(eyebrow('Welcome to Subturtle'), findsOneWidget);
+      expect(textContaining('your German is kept until'), findsOneWidget);
+      expect(find.text('See plans'), findsOneWidget);
+      expect(find.text('Next: Spanish'), findsNothing, reason: 'any other language would be refused');
+      await tester.tap(find.text('Restore German'));
+      await tester.settle();
+      expect(argsOf(b, 'add-language').single['language'], 'de');
+      expect(langs.active, 'de');
+      expect(eyebrow('Today · German'), findsOneWidget);
+    });
+
+    testWidgets('a stale phone state: after reloading, first run offers Restore', (tester) async {
+      final langs = FakeLanguageServer(plan: 'starter', startLevels: {'en': 'B1', 'de': 'A1'});
+      langs.langs['de']!.status = 'removed';
+      langs.plan = 'reader';
+      await pumpApp(tester, languages: langs);
+      // The phone still thinks it is Reader; the server says Starter.
+      langs.plan = 'starter';
+      langs.langs['en']!.status = 'removed';
+      langs.active = null;
+      final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+      container.invalidate(languageStateProvider);
+      await tester.settle();
+      expect(eyebrow('Welcome to Subturtle'), findsOneWidget);
+      expect(find.widgetWithText(StButton, 'Restore English'), findsOneWidget, reason: 'the first removed language that holds the place');
+    });
+
+    test('a removed language counts against Starter only', () {
+      LanguageState s(String plan) => LanguageState(learningLanguage: 'en', plan: plan, maxLanguages: plan == 'starter' ? 1 : 3, languages: const [
+            LanguageSummary(code: 'en'),
+            LanguageSummary(code: 'de', status: 'removed'),
+          ]);
+      expect(s('starter').slotsUsed, 2);
+      expect(s('reader').slotsUsed, 1);
+      expect(planLimitOf(LanguageState(plan: 'starter', maxLanguages: 1, languages: const [LanguageSummary(code: 'de', status: 'removed')]))!.restore!.code, 'de');
+    });
+  });
+
+  group('Tell me and coming later', () {
+    testWidgets('a reload remembers Tell me; Portuguese is under Coming later', (tester) async {
+      final langs = FakeLanguageServer()..interests.add('pt');
+      await pumpApp(tester, languages: langs);
+      await openSwitcher(tester);
+      await tester.tap(find.text('Add a language'));
+      await tester.settle();
+      expect(eyebrow('Coming later'), findsOneWidget);
+      expect(find.text('Portuguese · Português'), findsOneWidget);
+      expect(find.text('Got it'), findsOneWidget, reason: 'from interests in get-language-state');
+      await tester.tap(find.text('Got it'));
+      await tester.settle();
+      expect(langs.interests, isEmpty);
+      expect(find.text('Tell me'), findsOneWidget);
     });
   });
 

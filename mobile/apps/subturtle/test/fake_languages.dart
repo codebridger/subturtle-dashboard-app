@@ -94,6 +94,7 @@ class FakeLanguageServer {
         'pending': [
           for (final e in pending.entries) {'language': e.key, 'count': e.value, 'expiresAt': '2026-11-14T00:00:00.000Z'},
         ],
+        'interests': [...interests],
       };
 
   Map<String, dynamic> _wrapped() => {'state': state()};
@@ -138,7 +139,11 @@ class FakeLanguageServer {
       if (!learning.any((l) => l['code'] == code && (l['enabled'] ?? true) == true)) throw ApiException('not_available');
       final existing = langs[code];
       final activeCount = langs.values.where((l) => l.status == 'active').length;
-      if ((existing == null || existing.status != 'active') && activeCount >= maxLanguages) {
+      // Starter cannot swap (server #138): another removed language still holds
+      // its place for 30 days, so only restoring that one gets in.
+      final held = plan == 'starter' ? langs.values.where((l) => l.status == 'removed' && l.code != code).length : 0;
+      final restoring = existing != null && existing.status == 'removed';
+      if ((existing == null || existing.status != 'active') && activeCount + held >= maxLanguages && !(restoring && activeCount < maxLanguages)) {
         throw ApiException('upgrade_needed: {"plan":"$plan","maxLanguages":$maxLanguages}');
       }
       if (existing != null && existing.status == 'removed') {

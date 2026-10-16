@@ -16,7 +16,7 @@ import '../../shared/widgets.dart';
 String languageMeta(LanguageSummary s) => 'Starting at ${s.startLevel} · ${s.dueCount} due · ${Fmt.plural(s.phraseCount, 'phrase')}';
 
 /// "2 of 10 used".
-String usedText(LanguageState s) => '${s.used} of ${s.maxLanguages} used';
+String usedText(LanguageState s) => '${s.slotsUsed} of ${s.maxLanguages} used';
 
 /// The plan's name as learners see it.
 String planName(String plan) => plan.isEmpty ? 'Starter' : plan[0].toUpperCase() + plan.substring(1);
@@ -24,8 +24,12 @@ String planName(String plan) => plan.isEmpty ? 'Starter' : plan[0].toUpperCase()
 /// What to show instead of "Add a language" at the plan's limit, or null when
 /// the learner can still add one. Starter never offers a swap (no Manage).
 class PlanLimit {
-  const PlanLimit({required this.text, this.actionLabel, this.canManage = false});
+  const PlanLimit({required this.text, this.actionLabel, this.canManage = false, this.restore});
   final String text;
+
+  /// On Starter, a removed language that still holds the place: restoring it
+  /// is the free way back in (and never leaves a learner stuck on first run).
+  final LanguageSummary? restore;
 
   /// "See plans" or "Upgrade"; null when no bigger plan has more languages.
   final String? actionLabel;
@@ -34,8 +38,18 @@ class PlanLimit {
   final bool canManage;
 }
 
-PlanLimit? planLimitOf(LanguageState s) {
+PlanLimit? planLimitOf(LanguageState s, {String Function(String code)? nameOf}) {
   if (!s.fromServer || !s.atLimit) return null;
+  final held = s.holdingPlace.firstOrNull;
+  if (held != null) {
+    final name = nameOf?.call(held.code) ?? held.code.toUpperCase();
+    final until = held.purgeAt == null ? 'for 30 days' : 'until ${Fmt.longDate(held.purgeAt)}';
+    return PlanLimit(
+      text: 'Starter includes 1 language, and your $name is kept $until. Restore it, or go Reader (3 languages) or Learner (10) to learn another.',
+      actionLabel: 'See plans',
+      restore: held,
+    );
+  }
   return switch (s.plan) {
     'starter' => const PlanLimit(text: 'Starter includes 1 language. To learn another, go Reader (3 languages) or Learner (10).', actionLabel: 'See plans'),
     'reader' => PlanLimit(text: 'You use ${s.used} of ${s.maxLanguages} languages on Reader. For up to 10, go Learner. Or remove one.', actionLabel: 'Upgrade', canManage: true),
@@ -43,21 +57,51 @@ PlanLimit? planLimitOf(LanguageState s) {
   };
 }
 
-/// The plan-limit card. Upgrade opens Plans (read-only on the phone).
-class PlanLimitCard extends StatelessWidget {
-  const PlanLimitCard({super.key, required this.limit, this.onManage, this.onUpgrade});
+/// The plan-limit card. Upgrade opens Plans (read-only on the phone). With a
+/// language to restore, "Restore German" comes first and See plans second.
+class PlanLimitCard extends ConsumerWidget {
+  const PlanLimitCard({super.key, required this.limit, this.onManage, this.onUpgrade, this.onRestore});
   final PlanLimit limit;
   final VoidCallback? onManage;
   final VoidCallback? onUpgrade;
+  final ValueChanged<String>? onRestore;
 
   @override
-  Widget build(BuildContext context) => StPlanLimitCard(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final upgrade = onUpgrade ?? () => context.push('/me/plan');
+    final restore = limit.restore;
+    if (restore != null && onRestore != null) {
+      return StPlanLimitCard(
         text: limit.text,
-        actionLabel: limit.actionLabel,
-        onAction: onUpgrade ?? () => context.push('/me/plan'),
-        secondaryLabel: limit.canManage && onManage != null ? 'Manage' : null,
-        onSecondary: onManage,
+        actionLabel: 'Restore ${capsOf(ref, restore.code).name}',
+        onAction: () => onRestore!(restore.code),
+        secondaryLabel: limit.actionLabel,
+        onSecondary: upgrade,
       );
+    }
+    return StPlanLimitCard(
+      text: limit.text,
+      actionLabel: limit.actionLabel,
+      onAction: upgrade,
+      secondaryLabel: limit.canManage && onManage != null ? 'Manage' : null,
+      onSecondary: onManage,
+    );
+  }
+}
+
+/// Restores a removed language (add-language brings its data back) and goes
+/// to its Today.
+Future<void> restoreLanguage(BuildContext context, WidgetRef ref, String code) async {
+  final router = GoRouter.of(context);
+  try {
+    await ref.read(languageStateProvider.notifier).add(code);
+  } catch (e) {
+    if (context.mounted) showStToast(context, title: friendlyError(e), color: StToastColor.danger);
+    return;
+  }
+  ref.read(hapticsProvider).success();
+  refreshLearningData(ref);
+  resetTabsToToday(router);
 }
 
 /// The ready languages the learner does not have yet, for the add row's note.
@@ -162,7 +206,7 @@ class _LanguageSwitcherSheetState extends ConsumerState<LanguageSwitcherSheet> {
     final caps = ref.watch(languageCapsProvider).value ?? LanguageCapabilities.fallback;
     final l1 = ref.watch(l1Provider).value;
     if (s == null) return const StSheet(title: 'Which language now?', child: SkeletonList(count: 2));
-    final limit = planLimitOf(s);
+    final limit = planLimitOf(s, nameOf: (c) => caps.learningByCode(c)?.name ?? c.toUpperCase());
     return StSheet(
       eyebrow: 'Your languages',
       title: 'Which language now?',
@@ -181,7 +225,16 @@ class _LanguageSwitcherSheetState extends ConsumerState<LanguageSwitcherSheet> {
           if (limit == null)
             StLanguageAddRow(note: addNote(caps, s), usedText: usedText(s), onTap: () => _goTo('/add-language'))
           else
-            PlanLimitCard(limit: limit, onManage: () => _goTo('/me/languages'), onUpgrade: () => _goTo('/me/plan')),
+            PlanLimitCard(
+              limit: limit,
+              onManage: () => _goTo('/me/languages'),
+              onUpgrade: () => _goTo('/me/plan'),
+              onRestore: (code) {
+                final router = GoRouter.of(context);
+                Navigator.pop(context);
+                ref.read(languageStateProvider.notifier).add(code).then((_) => resetTabsToToday(router), onError: (_) {});
+              },
+            ),
           const SizedBox(height: 18),
           const StEyebrow('Your own language'),
           const SizedBox(height: 8),
