@@ -210,7 +210,7 @@
         if (atLimit.value) return t('languages.add.upgrade-title');
         if (step.value === 1) return t('languages.add.step1-title');
         if (step.value === 2) return t('languages.add.step2-title', { language: pickName.value });
-        return t('languages.add.done-title', { language: pickName.value });
+        return t('languages.add.done-page-title');
     });
     const subtitle = computed(() => {
         if (atLimit.value || step.value === 3) return '';

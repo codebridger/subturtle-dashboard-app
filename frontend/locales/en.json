@@ -972,7 +972,9 @@
             },
             "removed-toast": "{language} was removed. It is kept for 30 days: add it again before {date} and everything comes back.",
             "error": "Something went wrong. Please try again.",
-            "retake": "Take the chat test again"
+            "retake": "Take the chat test again",
+            "coming-later-title": "Coming later",
+            "coming-later-note": "Tell us you want it and we count you in."
         },
         "add": {
             "overline": "Add a language",
@@ -994,7 +996,7 @@
             "step2-title": "Where should we start in {language}?",
             "step2-sub": "Take a short chat test, or start at A1. The test sets a start point, not a grade.",
             "how-test-title": "Take the chat test",
-            "how-test-text": "About 3 minutes with the Coach. It starts easy, gets harder, and finds where you start.",
+            "how-test-text": "About 3 minutes with the Coach. Type your answers. It starts easy, gets harder, and finds where you start.",
             "how-a1-title": "Start at A1",
             "how-a1-text": "Begin with the starter pack: short {language} with sound. You can take the test later.",
             "how-a1-text-nopack": "Begin from the start. You can take the test later.",
@@ -1027,7 +1029,8 @@
             "error": "We could not add {language}. Please try again.",
             "first-run-own": "Your own language",
             "first-run-own-sub": "Translations and Coach explanations use it.",
-            "first-run-own-pick": "Choose your language"
+            "first-run-own-pick": "Choose your language",
+            "done-page-title": "You are all set"
         },
         "test": {
             "title": "Chat test",
@@ -1063,8 +1066,7 @@
         "board": {
             "overline": "Today · {language}",
             "new-title": "Save your first {language} phrase",
-            "new-body": "Watch something in {language} with the extension and save a line you like. It shows up here for review.",
-            "new-cta": "Get the extension",
+            "new-body": "Nothing is due yet. Save a phrase from a video with the Chrome extension, or add one by hand. Your {language} review starts with it.",
             "pack-title": "Starter pack",
             "pack-body": "Short {language} with sound, about two minutes a day. Optional.",
             "pack-progress": "{heard} of {total} heard",
@@ -1084,31 +1086,40 @@
             "practice-text-cta": "Start",
             "new-sub": "{language} was just added. You start at {level}.",
             "new-sub-test": "{language} was just added. You start at {level}, from your chat test.",
-            "new-bundles": "Browse bundles"
+            "new-add": "Add a phrase",
+            "new-extension": "Get the Chrome extension",
+            "pack-body-new": "Optional. {total} short phrases with sound, about two minutes a day.",
+            "pack-body-new-nocount": "Optional. Short phrases with sound, about two minutes a day.",
+            "pack-start": "Start"
         },
         "studying": "{language}",
         "studying-label": "Studying {language}",
         "starter": {
-            "overline": "Starter pack · {language}",
+            "overline": "{language} · A0 and A1 start",
             "title": "Starter pack",
-            "subtitle": "Short {language} with sound. Listen, then mark what you heard. Saving from videos is open at any time.",
+            "subtitle": "Short, useful {language} with sound. Every chunk goes into your review. Saving from videos is open at any time.",
             "band-1": "Most common",
             "band-2": "Common",
             "band-3": "Useful",
-            "heard": "Heard",
-            "mark-heard": "Mark as heard",
-            "play": "Play",
-            "progress": "{heard} of {total} heard",
+            "play": "Play the sound",
+            "progress": "{heard} of {total} chunks heard",
             "skip": "Skip the starter pack",
             "skip-confirm": "Skip it? You can save phrases from videos right away.",
-            "done-title": "Starter pack done",
-            "done-body": "The phrases you heard are in your {language} review. Save more from videos when you watch.",
+            "done-title": "You finished the starter pack",
+            "done-body": "All {total} chunks are in your review. Saving {language} from videos and web pages is open now.",
             "skipped": "Starter pack skipped.",
             "go-today": "Go to Today",
             "empty": "The starter pack for {language} is not ready yet.",
             "error": "We could not load the starter pack. Please try again.",
-            "deferred": "That is enough new phrases for today. It is offered again tomorrow.",
-            "tomorrow": "Tomorrow"
+            "deferred": "That is enough new phrases for today. The rest is offered again tomorrow.",
+            "done-subtitle": "Well done. {language} review cards are ready on Today.",
+            "pace": "About 2 min a day",
+            "pace-done": "Done",
+            "next-label": "Next chunk",
+            "next": "Next chunk",
+            "later": "Skip for now. It stays on Today.",
+            "deferred-title": "That is all for today",
+            "mark-error": "We could not save that chunk. Please try again."
         },
         "cloze": {
             "cue": "{lemma} · {form}",

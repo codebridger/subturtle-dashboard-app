@@ -59,6 +59,8 @@ interface FakeOptions {
     multilingual?: boolean;
     /** get-review-session items. */
     review?: unknown[];
+    /** `interests` in get-language-state; leave out for a server that does not send it. */
+    interests?: string[];
 }
 
 /** A tiny language module that follows the contract. `calls` records every function call. */
@@ -71,6 +73,7 @@ function createFakeServer(opts: FakeOptions = {}) {
         plan: opts.plan ?? 'learner',
         maxLanguages: opts.maxLanguages ?? 10,
         pending: opts.pending ?? [],
+        ...(opts.interests ? { interests: [...opts.interests] } : {}),
     };
     const calls: { name: string; args: any }[] = [];
     const packHeard: string[] = [];
@@ -118,6 +121,7 @@ function createFakeServer(opts: FakeOptions = {}) {
                 state.translationLanguage = args.language;
                 return { status: 200, data: { state } };
             case 'set-language-interest':
+                if (state.interests) state.interests = args.on ? [...new Set([...state.interests, args.language])] : state.interests.filter((c: string) => c !== args.language);
                 return { status: 200, data: { on: args.on } };
             case 'start-level-test':
                 testTurn = 1;
@@ -269,7 +273,8 @@ test.describe('Multilingual dashboard', () => {
         await page.getByTestId('how-a1').click();
         await page.getByTestId('start-a1').click();
 
-        await expect(page.getByTestId('add-done')).toContainText('Italian is in your languages');
+        await expect(page.getByRole('heading', { level: 1, name: 'You are all set' })).toBeVisible();
+        await expect(page.getByTestId('add-done').getByRole('heading', { name: 'Italian is in your languages' })).toBeVisible();
         await expect(page.getByTestId('open-pack')).toBeVisible();
         expect(fake.calls.find((c) => c.name === 'add-language')?.args).toMatchObject({ language: 'it', startLevel: 'A1', startLevelSource: 'default' });
         await expect(menuTrigger(page)).toContainText('Italian');
@@ -292,6 +297,9 @@ test.describe('Multilingual dashboard', () => {
             await page.getByTestId('test-send').click();
         }
         await expect(page.getByTestId('test-result')).toContainText('Starting at A2');
+        // The result starts from the top: "Your start point" is not cut off under the top bar.
+        await expect(page.getByRole('heading', { level: 1, name: 'Your start point' })).toBeInViewport({ ratio: 1 });
+        expect(await page.locator('main').evaluate((el) => el.scrollTop)).toBe(0);
         await page.getByTestId('test-accept').click();
 
         await expect(page).toHaveURL(/#\/board/);
@@ -377,28 +385,76 @@ test.describe('Multilingual dashboard', () => {
         await page.goto('/#/board');
 
         await expect(page.getByText('Today · German')).toBeVisible();
-        await expect(page.getByTestId('board-new-language')).toContainText('Save your first German phrase');
-        await expect(page.getByTestId('starter-pack-card')).toContainText('German starter pack');
+        const first = page.getByTestId('board-first-phrase');
+        await expect(first).toContainText('Save your first German phrase');
+        await expect(first).toContainText('Nothing is due yet. Save a phrase from a video with the Chrome extension, or add one by hand.');
+        await expect(page.getByTestId('board-get-extension')).toHaveText('Get the Chrome extension');
+        await expect(page.getByTestId('board-get-extension')).toHaveAttribute('href', /chromewebstore\.google\.com/);
+        const pack = page.getByTestId('starter-pack-card');
+        await expect(pack).toContainText('German starter pack');
+        await expect(pack).toContainText('Optional.');
+        await expect(page.getByTestId('starter-pack-start')).toHaveText('Start');
         await expect(page.getByText("You're all caught up")).toHaveCount(0);
+
+        await page.getByTestId('board-add-phrase').click();
+        await expect(page).toHaveURL(/#\/bundles/);
     });
 
-    test('the starter pack marks chunks heard and ends on its finish state', async ({ page }) => {
+    test('the new-language starter pack card opens the pack', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en', { phraseCount: 142 }), summary('de', { phraseCount: 0, starterPack: { state: 'offered', heard: 0, total: 150 } })], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/board');
+
+        await expect(page.getByTestId('starter-pack-card')).toContainText('Optional. 150 short phrases with sound, about two minutes a day.');
+        await page.getByTestId('starter-pack-start').click();
+        await expect(page).toHaveURL(/#\/practice\/starter-pack/);
+    });
+
+    test('the starter pack shows one chunk at a time and ends on its finish state', async ({ page }) => {
         const fake = createFakeServer({ languages: [summary('en'), summary('de')], active: 'de' });
         await boot(page, fake);
         await page.goto('/#/practice/starter-pack');
 
-        await expect(page.getByTestId('pack-progress')).toHaveText('0 of 2 heard');
-        // The own-language translation is a right-to-left run.
-        await expect(page.getByText('صبح بخیر!')).toHaveAttribute('dir', 'rtl');
-        await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Mark as heard' }).click();
-        await expect(page.getByTestId('pack-progress')).toHaveText('1 of 2 heard');
-        await page.getByTestId('pack-item-de-greetings-02').getByRole('button', { name: 'Mark as heard' }).click();
+        await expect(page.getByTestId('pack-progress')).toHaveText('0 of 2 chunks heard');
+        // One chunk on screen, not the whole list.
+        await expect(page.locator('[data-testid^="pack-item-"]')).toHaveCount(1);
+        await expect(page.getByTestId('pack-text')).toHaveText('Hallo!');
+        await expect(page.getByTestId('pack-group')).toHaveText('Greetings');
+        await expect(page.getByTestId('pack-band')).toHaveText('Most common');
+        await expect(page.getByTestId('pack-later')).toHaveText('Skip for now. It stays on Today.');
 
-        await expect(page.getByTestId('pack-done')).toContainText('Starter pack done');
+        // The own-language translation is a right-to-left run, right under its phrase.
+        const translation = page.getByTestId('pack-translation');
+        await expect(translation).toHaveText('سلام!');
+        await expect(translation).toHaveAttribute('dir', 'rtl');
+        const phraseBox = (await page.getByTestId('pack-text').boundingBox())!;
+        const translationBox = (await translation.boundingBox())!;
+        expect(translationBox.y).toBeGreaterThanOrEqual(phraseBox.y + phraseBox.height - 1);
+        expect(Math.abs(translationBox.x - phraseBox.x)).toBeLessThan(4);
+
+        await page.getByTestId('pack-next').click();
+        await expect(page.getByTestId('pack-progress')).toHaveText('1 of 2 chunks heard');
+        await expect(page.getByTestId('pack-text')).toHaveText('Guten Morgen!');
+        await page.getByTestId('pack-next').click();
+
+        await expect(page.getByTestId('pack-done')).toContainText('You finished the starter pack');
+        await expect(page.getByTestId('pack-done')).toContainText('All 2 chunks are in your review.');
+        await expect(page.getByTestId('pack-progress')).toHaveText('2 of 2 chunks heard');
         expect(fake.calls.filter((c) => c.name === 'complete-starter-pack-items').map((c) => c.args)).toEqual([
             expect.objectContaining({ language: 'de', itemIds: ['de-greetings-01'] }),
             expect.objectContaining({ language: 'de', itemIds: ['de-greetings-02'] }),
         ]);
+        await page.getByTestId('pack-go-today').click();
+        await expect(page).toHaveURL(/#\/board/);
+    });
+
+    test('"Skip for now" goes to Today and keeps the pack', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { starterPack: { state: 'offered', heard: 0, total: 2 } })], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/practice/starter-pack');
+        await page.getByTestId('pack-later').click();
+        await expect(page).toHaveURL(/#\/board/);
+        expect(fake.calls.find((c) => c.name === 'skip-starter-pack')).toBeUndefined();
     });
 
     test('fill the gap shows the cue, says "Almost", and sends close to submit-review', async ({ page }) => {
@@ -476,7 +532,7 @@ test.describe('Multilingual dashboard', () => {
             .toMatchObject({ language: 'de', explanationLanguage: 'tr', phraseIds: ['p1'], mode: 'text' });
     });
 
-    test('the starter pack speaks by language, names its groups and keeps deferred items for tomorrow', async ({ page }) => {
+    test('the starter pack speaks by language, names its groups and stops for today when the intake is full', async ({ page }) => {
         const fake = createFakeServer({ languages: [summary('en'), summary('de')], active: 'de' });
         await boot(page, fake);
         await page.route('**/function/run', async (route) => {
@@ -484,19 +540,23 @@ test.describe('Multilingual dashboard', () => {
             const { name } = route.request().postDataJSON() || {};
             if (name !== 'get-starter-pack') return route.fallback();
             const res = fake.handle(name, {});
-            res.data.items.push({ id: 'de-small-talk-01', text: 'Wie geht’s?', translation: 'چطوری؟', band: 2, group: 'small-talk' });
+            // First in line, so the fake's intake rule (it defers small-talk) applies at once.
+            res.data.items.unshift({ id: 'de-small-talk-01', text: 'Wie geht’s?', translation: 'چطوری؟', band: 2, group: 'small-talk' });
             return respond(route, 200, { status: 'success', data: res.data });
         });
         await page.goto('/#/practice/starter-pack');
 
-        await expect(page.getByRole('heading', { name: 'Small talk' })).toBeVisible();
-        await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Play' }).click();
-        await expect.poll(() => fake.calls.find((c) => c.name === 'textToSpeechBase64')?.args).toEqual({ userId: USER_ID, text: 'Hallo!', language: 'de' });
+        await expect(page.getByTestId('pack-group')).toHaveText('Small talk');
+        await expect(page.getByTestId('pack-band')).toHaveText('Common');
+        await page.getByTestId('pack-item-de-small-talk-01').getByRole('button', { name: 'Play the sound' }).click();
+        await expect.poll(() => fake.calls.find((c) => c.name === 'textToSpeechBase64')?.args).toEqual({ userId: USER_ID, text: 'Wie geht’s?', language: 'de' });
 
-        await page.getByTestId('pack-item-de-small-talk-01').getByRole('button', { name: 'Mark as heard' }).click();
-        await expect(page.getByTestId('pack-item-de-small-talk-01')).toContainText('Tomorrow');
-        await expect(page.getByText('That is enough new phrases for today.')).toBeVisible();
+        await page.getByTestId('pack-next').click();
+        await expect(page.getByTestId('pack-deferred')).toContainText('That is enough new phrases for today.');
+        await expect(page.getByTestId('pack-progress')).toHaveText('0 of 2 chunks heard');
+        await expect(page.getByTestId('pack-go-today')).toBeVisible();
     });
+
     test('Your progress counts the active language only', async ({ page }) => {
         const fake = createFakeServer({ languages: [summary('en', { phraseCount: 142 }), summary('de', { phraseCount: 3 })], active: 'de' });
         await boot(page, fake);
@@ -553,8 +613,8 @@ test.describe('Multilingual dashboard', () => {
         const fake = createFakeServer({ languages: [summary('en'), summary('de', { starterPack: { state: 'offered', heard: 0, total: 2 } })], active: 'de' });
         await boot(page, fake);
         await page.goto('/#/practice/starter-pack');
-        await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Mark as heard' }).click();
-        await expect(page.getByTestId('pack-item-de-greetings-01')).toContainText('Heard');
+        await page.getByTestId('pack-next').click();
+        await expect(page.getByTestId('pack-progress')).toHaveText('1 of 2 chunks heard');
 
         // An in-app move to Today (no reload), as the sidebar link does; the phone layout hides the sidebar.
         await page.evaluate(() => (window.location.hash = '#/board'));
@@ -578,5 +638,84 @@ test.describe('Multilingual dashboard', () => {
         await expect(translation).toHaveAttribute('dir', 'auto');
         expect(await translation.evaluate((el) => getComputedStyle(el).direction)).toBe('rtl');
         expect(await page.getByTestId('phrase-text').evaluate((el) => getComputedStyle(el).direction)).toBe('ltr');
+    });
+
+    test('Languages lists a not-enabled language under "Coming later", and "Got it" comes back after a reload', async ({ page }) => {
+        const fake = createFakeServer({ interests: ['pt'] });
+        await boot(page, fake);
+        await page.goto('/#/settings/languages');
+
+        const later = page.getByTestId('languages-coming-later');
+        await expect(later.getByRole('heading', { name: 'Coming later' })).toBeVisible();
+        await expect(later.getByTestId('coming-later-pt')).toContainText('Portuguese · Português');
+        // The server remembers the press: the row starts on "Got it".
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Got it');
+        await expect(later).toContainText('We will tell you when it is ready.');
+
+        await page.getByTestId('tell-me-pt').click();
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Tell me');
+        expect(fake.calls.filter((c) => c.name === 'set-language-interest').pop()?.args).toMatchObject({ language: 'pt', on: false });
+
+        await page.getByTestId('tell-me-pt').click();
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Got it');
+        await page.reload();
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Got it');
+    });
+
+    test('Tell me still works when the server sends no interests', async ({ page }) => {
+        const fake = createFakeServer();
+        await boot(page, fake);
+        await page.goto('/#/settings/languages');
+
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Tell me');
+        await page.getByTestId('tell-me-pt').click();
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Got it');
+        // An in-app move keeps this visit's press.
+        await page.evaluate(() => (window.location.hash = '#/settings/languages/add'));
+        await expect(page.getByTestId('tell-me-pt')).toHaveText('Got it');
+    });
+
+    test('step 2 says the chat test is typed', async ({ page }) => {
+        const fake = createFakeServer();
+        await boot(page, fake);
+        await page.goto('/#/settings/languages/add?language=de');
+        await page.getByTestId('add-next').click();
+        await expect(page.getByTestId('how-test')).toContainText('Type your answers.');
+        await expect(page.getByTestId('how-test')).not.toContainText('talk');
+    });
+
+    test('Start a session shows "German, explained in Persian" in full', async ({ page }) => {
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { phraseCount: 3 })], active: 'de' });
+        await boot(page, fake);
+        const bundle = { _id: 'b1', title: 'Dark S1', refId: USER_ID, language: 'de', phrases: ['p1', 'p2', 'p3'], createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z' };
+        for (const [path, data] of [['**/data-provider/find', [bundle]], ['**/data-provider/count', 1]] as const) {
+            await page.route(path, (route) =>
+                route.request().method() === 'OPTIONS' ? route.fulfill({ status: 204, headers: corsHeaders(route) }) : respond(route, 200, { status: 'success', data })
+            );
+        }
+        await page.goto('/#/sessions/new');
+
+        const value = page.getByTestId('summary-explains');
+        await expect(value).toHaveText('German, explained in Persian');
+        // Wrapped, never cut off with an ellipsis.
+        expect(await value.evaluate((el) => ({ wrap: getComputedStyle(el).whiteSpace, clipped: el.scrollWidth > el.clientWidth }))).toEqual({ wrap: 'normal', clipped: false });
+    });
+
+    test('at phone width the language pill does not cover the breadcrumb', async ({ page }) => {
+        await page.setViewportSize({ width: 375, height: 812 });
+        const fake = createFakeServer({ languages: [summary('en'), summary('de', { phraseCount: 3 })], active: 'de' });
+        await boot(page, fake);
+        await page.goto('/#/board');
+
+        const crumb = page.getByTestId('page-crumb');
+        const pill = menuTrigger(page);
+        await expect(crumb).toBeVisible();
+        await expect(pill).toBeVisible();
+        const a = (await crumb.boundingBox())!;
+        const b = (await pill.boundingBox())!;
+        expect(a.x + a.width).toBeLessThanOrEqual(b.x);
+        // The page name is what stays.
+        await expect(crumb).toContainText("Today's board");
+        await expect(page.getByTestId('page-crumb-section')).toBeHidden();
     });
 });

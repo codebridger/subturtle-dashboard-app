@@ -1,63 +1,75 @@
 <template>
-    <div class="flex max-w-[900px] flex-col gap-5">
-        <StPageHeader :overline="t('languages.starter.overline', { language: name })" :title="t('languages.starter.title')" :subtitle="t('languages.starter.subtitle', { language: name })">
+    <div ref="rootRef" class="flex max-w-[760px] flex-col gap-[22px]">
+        <StPageHeader :overline="t('languages.starter.overline', { language: name })" :title="t('languages.starter.title')" :subtitle="subtitle">
             <template v-if="items.length && !done" #actions>
-                <StButton variant="ghost" color="neutral" :disabled="busy" data-testid="pack-skip" @click="skip">{{ t('languages.starter.skip') }}</StButton>
+                <StButton variant="ghost" color="neutral" size="sm" :disabled="busy" data-testid="pack-skip" @click="skip">{{ t('languages.starter.skip') }}</StButton>
             </template>
         </StPageHeader>
 
         <div v-if="loading" class="flex flex-col gap-3">
-            <StSkeleton v-for="n in 4" :key="n" class="h-[64px]" />
+            <StSkeleton class="h-[72px]" />
+            <StSkeleton class="h-[180px]" />
         </div>
 
-        <StCard v-else-if="error" padding="lg"><p class="text-st-base font-semibold text-st-body">{{ error }}</p></StCard>
+        <StCard v-else-if="error && !items.length" padding="lg"><p class="text-st-base font-semibold text-st-body">{{ error }}</p></StCard>
 
-        <!-- Finish state. -->
-        <section v-else-if="done" class="flex flex-col gap-3.5 rounded-st-xl border border-st-jade-500 bg-st-accent-tint px-6 py-[26px]" data-testid="pack-done">
-            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-st-card text-st-jade-600"><StIcon name="solar:check-circle-bold" :size="34" /></span>
-            <h2 class="text-st-xl font-black text-st-strong">{{ t('languages.starter.done-title') }}</h2>
-            <p class="text-st-base font-semibold leading-normal text-st-body">{{ t('languages.starter.done-body', { language: name }) }}</p>
-            <div><StButton color="primary" @click="router.push('/board')">{{ t('languages.starter.go-today') }}</StButton></div>
-        </section>
+        <p v-else-if="!items.length" class="text-st-base font-semibold text-st-muted">{{ t('languages.starter.empty', { language: name }) }}</p>
 
         <template v-else>
-            <div class="flex items-center gap-3">
-                <StProgressBar :value="heard.size" :max="items.length" color="accent" size="sm" class="flex-grow" />
-                <span class="text-st-xs font-extrabold text-st-muted" data-testid="pack-progress">{{ t('languages.starter.progress', { heard: heard.size, total: items.length }) }}</span>
-            </div>
-
-            <section v-for="group in groups" :key="group.id" class="flex flex-col gap-2">
-                <h2 class="text-st-2xs font-extrabold uppercase tracking-st-caps text-st-faint">{{ group.label }}</h2>
-                <div
-                    v-for="item in group.items"
-                    :key="item.id"
-                    class="flex min-h-[64px] items-center gap-3 rounded-st-lg border border-st-line bg-st-card px-4 py-2.5"
-                    :data-testid="`pack-item-${item.id}`"
-                >
-                    <StIconButton icon="solar:volume-loud-bold-duotone" variant="soft" color="neutral" :aria-label="t('languages.starter.play')" @click="play(item)" />
-                    <span class="flex min-w-0 flex-grow flex-col">
-                        <LangText :code="language.activeLanguage" class="text-st-base font-extrabold text-st-strong">{{ item.text }}</LangText>
-                        <LangText :code="item.translationLanguage || language.ownLanguage" class="text-st-sm font-semibold text-st-muted">{{ item.translation }}</LangText>
-                    </span>
-                    <StBadge :color="item.band === 1 ? 'accent' : item.band === 2 ? 'info' : 'neutral'">{{ t(`languages.starter.band-${item.band}`) }}</StBadge>
-                    <span v-if="deferred.has(item.id)" class="text-st-xs font-bold text-st-muted" :title="t('languages.starter.deferred')">{{ t('languages.starter.tomorrow') }}</span>
-                    <StButton
-                        v-else
-                        size="sm"
-                        :variant="heard.has(item.id) ? 'soft' : 'outline'"
-                        :color="heard.has(item.id) ? 'accent' : 'neutral'"
-                        :icon="heard.has(item.id) ? 'solar:check-circle-bold' : undefined"
-                        :disabled="heard.has(item.id) || busy"
-                        @click="markHeard(item)"
-                    >
-                        {{ heard.has(item.id) ? t('languages.starter.heard') : t('languages.starter.mark-heard') }}
-                    </StButton>
+            <!-- Progress: "12 of 150 chunks heard" and the pace. -->
+            <section class="flex flex-col gap-2.5 rounded-st-lg border border-st-line bg-st-card px-[22px] py-5 shadow-st-sm">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <span class="text-st-md font-extrabold text-st-strong" data-testid="pack-progress">{{ t('languages.starter.progress', { heard: heardCount, total }) }}</span>
+                    <span class="text-st-sm font-bold text-st-muted">{{ done ? t('languages.starter.pace-done') : t('languages.starter.pace') }}</span>
                 </div>
+                <StProgressBar :value="heardCount" :max="total" color="accent" size="md" class="w-full" />
             </section>
 
-            <p v-if="deferredNote" role="status" class="rounded-st-md bg-st-info-soft px-4 py-3 text-st-sm font-bold text-st-sky-600">{{ t('languages.starter.deferred') }}</p>
+            <!-- Finish state. -->
+            <section v-if="done" class="flex flex-col gap-3 rounded-st-xl border border-st-jade-500 bg-st-accent-tint px-6 py-[26px]" data-testid="pack-done">
+                <span class="flex h-14 w-14 items-center justify-center rounded-full bg-st-card text-st-jade-600"><StIcon name="solar:check-circle-bold" :size="34" /></span>
+                <h2 class="text-st-xl font-black text-st-strong">{{ t('languages.starter.done-title') }}</h2>
+                <p class="text-st-base font-semibold leading-normal text-st-body">{{ t('languages.starter.done-body', { language: name, total }) }}</p>
+            </section>
 
-            <p v-if="!items.length" class="text-st-base font-semibold text-st-muted">{{ t('languages.starter.empty', { language: name }) }}</p>
+            <!-- Over today's intake: the rest is offered again tomorrow. -->
+            <section v-else-if="!current" role="status" class="flex flex-col gap-2 rounded-st-xl bg-st-info-soft px-6 py-5" data-testid="pack-deferred">
+                <h2 class="text-st-md font-extrabold text-st-strong">{{ t('languages.starter.deferred-title') }}</h2>
+                <p class="text-st-base font-semibold leading-normal text-st-body">{{ t('languages.starter.deferred') }}</p>
+            </section>
+
+            <!-- One chunk at a time, with its sound. -->
+            <section v-else class="flex flex-col gap-3 rounded-st-xl border border-st-line bg-st-card p-6 shadow-st-md" :data-testid="`pack-item-${current.id}`">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-st-2xs font-extrabold uppercase tracking-st-caps text-st-faint">
+                        {{ t('languages.starter.next-label') }}<template v-if="currentGroup"> · <span data-testid="pack-group">{{ currentGroup }}</span></template>
+                    </span>
+                    <StBadge :color="current.band === 1 ? 'accent' : current.band === 2 ? 'info' : 'neutral'" data-testid="pack-band">{{ t(`languages.starter.band-${current.band}`) }}</StBadge>
+                </div>
+                <div class="flex items-center gap-3.5">
+                    <LangText :code="language.activeLanguage" class="min-w-0 flex-grow font-st-display text-st-2xl font-black tracking-st-tight text-st-strong [overflow-wrap:anywhere]" data-testid="pack-text">
+                        {{ current.text }}
+                    </LangText>
+                    <StIconButton icon="solar:play-circle-bold" variant="solid" color="primary" size="lg" rounded="full" class="shrink-0" :aria-label="t('languages.starter.play')" @click="play(current)" />
+                </div>
+                <!-- The own language sits right under the phrase, in its own direction and font. -->
+                <LangText :code="current.translationLanguage || language.ownLanguage" class="self-start text-st-md font-semibold text-st-body" data-testid="pack-translation">
+                    {{ current.translation }}
+                </LangText>
+                <span v-if="current.lemma && current.form" class="text-st-sm font-semibold text-st-muted">{{ current.lemma }} · {{ current.form }}</span>
+            </section>
+
+            <p v-if="error" role="alert" class="text-st-sm font-bold text-st-danger">{{ error }}</p>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <template v-if="done || !current">
+                    <StButton color="primary" data-testid="pack-go-today" @click="router.push('/board')">{{ t('languages.starter.go-today') }}</StButton>
+                </template>
+                <template v-else>
+                    <StButton color="primary" :disabled="busy" data-testid="pack-next" @click="next">{{ t('languages.starter.next') }}</StButton>
+                    <NuxtLink to="/board" class="text-st-sm font-bold text-st-link" data-testid="pack-later">{{ t('languages.starter.later') }}</NuxtLink>
+                </template>
+            </div>
         </template>
     </div>
 </template>
@@ -74,10 +86,11 @@
     import type { StarterPackItem } from '~/types/language.type';
 
     /**
-     * The starter pack (D-19, B-21): about 150 short chunks of the active language with sound,
-     * a frequency band and groups. Marking a chunk heard adds it to that language's review
-     * (within the intake cap). It has a finish state and a skip; saving from videos is open
-     * all along (Q5).
+     * The starter pack (D-19, B-21): about 150 short chunks of the active language, shown one
+     * at a time with sound, a frequency band chip and its group. "Next chunk" marks the chunk
+     * heard, which adds it to that language's review (within the intake cap), and shows the
+     * next one. It has a finish state, "Skip for now" (it stays on Today) and a full skip;
+     * saving from videos is open all along (Q5).
      */
     definePageMeta({
         layout: 'default',
@@ -92,29 +105,30 @@
     const name = computed(() => language.nameOf(language.activeLanguage));
     usePageCrumb(() => ({ section: t('practice.title'), label: t('languages.starter.title'), badge: name.value }));
 
+    const rootRef = ref<HTMLElement | null>(null);
     const loading = ref(true);
     const busy = ref(false);
     const error = ref('');
     const items = ref<StarterPackItem[]>([]);
+    const packTotal = ref(0);
     const heard = ref(new Set<string>());
-    /** Over today's intake (`deferred`): shown as "Tomorrow" and offered again then. */
+    /** Over today's intake (`deferred`): offered again tomorrow, so skipped for this visit. */
     const deferred = ref(new Set<string>());
-    const deferredNote = ref(false);
     const groupNames = ref<Record<string, string>>({});
     const done = ref(false);
 
-    const groups = computed(() => {
-        const map = new Map<string, StarterPackItem[]>();
-        for (const item of items.value) {
-            if (!map.has(item.group)) map.set(item.group, []);
-            map.get(item.group)!.push(item);
-        }
-        return [...map.entries()].map(([id, list]) => ({ id, label: groupNames.value[id] || groupLabel(id), items: list }));
-    });
+    const total = computed(() => packTotal.value || items.value.length);
+    const heardCount = computed(() => Math.min(heard.value.size, total.value));
+
+    /** The first chunk not heard yet and not held for tomorrow. */
+    const current = computed(() => items.value.find((i) => !heard.value.has(i.id) && !deferred.value.has(i.id)) ?? null);
+    const currentGroup = computed(() => (current.value ? groupNames.value[current.value.group] || groupLabel(current.value.group) : ''));
+
+    const subtitle = computed(() => (done.value ? t('languages.starter.done-subtitle', { language: name.value }) : t('languages.starter.subtitle', { language: name.value })));
 
     /** "small-talk" → "Small talk". The pack's own group names are English ids. */
     function groupLabel(id: string) {
-        const text = id.replace(/[-_]+/g, ' ').trim();
+        const text = (id || '').replace(/[-_]+/g, ' ').trim();
         return text.charAt(0).toUpperCase() + text.slice(1);
     }
 
@@ -143,11 +157,15 @@
     }
 
     function speak(text: string) {
-        if (!('speechSynthesis' in window)) return;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = language.activeLanguage;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+        try {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = language.activeLanguage;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        } catch {
+            // No voice in this browser: the text is still on screen.
+        }
     }
 
     async function load() {
@@ -156,10 +174,11 @@
         try {
             const pack = await languageApi.getStarterPack(language.activeLanguage);
             items.value = pack.items ?? [];
+            packTotal.value = pack.total ?? 0;
             heard.value = new Set(pack.heard ?? []);
             deferred.value = new Set();
             groupNames.value = Object.fromEntries((pack.groups ?? []).map((g) => [g.id, g.name]));
-            done.value = items.value.length > 0 && heard.value.size >= items.value.length;
+            done.value = pack.state === 'done' || (items.value.length > 0 && items.value.every((i) => heard.value.has(i.id)));
         } catch (e) {
             console.error('Starter pack failed to load:', e);
             error.value = t('languages.starter.error');
@@ -168,7 +187,7 @@
         }
     }
 
-    /** Items marked on this visit: the language state (and Today's card) is refreshed on leaving. */
+    /** Chunks marked on this visit: the language state (and Today's card) is refreshed on leaving. */
     let markedThisVisit = false;
     onBeforeUnmount(() => {
         // "12 of 150 heard · Continue" on Today needs the new count; the state is otherwise
@@ -176,32 +195,44 @@
         if (markedThisVisit) language.refreshState();
     });
 
-    async function markHeard(item: StarterPackItem) {
+    /** "Next chunk": mark the one on screen heard, then show and play the next one. */
+    async function next() {
+        const item = current.value;
+        if (!item || busy.value) return;
+        busy.value = true;
+        error.value = '';
         markedThisVisit = true;
-        heard.value = new Set([...heard.value, item.id]);
         try {
             const res = await languageApi.completeStarterPackItems(language.activeLanguage, [item.id]);
             if (res?.deferred?.includes(item.id)) {
-                const next = new Set(heard.value);
-                next.delete(item.id);
-                heard.value = next;
-                deferred.value = new Set([...deferred.value, item.id]);
-                deferredNote.value = true;
+                // Today's intake is full: every later chunk would wait too, so stop for today.
+                deferred.value = new Set([...deferred.value, ...items.value.filter((i) => !heard.value.has(i.id)).map((i) => i.id)]);
                 return;
             }
-            if (res?.done) {
+            heard.value = new Set([...heard.value, item.id]);
+            if (typeof res?.total === 'number' && res.total > 0) packTotal.value = res.total;
+            if (res?.done || !items.value.some((i) => !heard.value.has(i.id))) {
                 done.value = true;
                 trackLanguageEvent(ANALYTICS_EVENTS.STARTER_PACK_DONE, { language: language.activeLanguage });
                 language.refreshState();
+                scrollToTop();
+                return;
             }
+            // The click is a user gesture, so the browser lets the next chunk's sound play.
+            if (current.value) play(current.value);
         } catch (e) {
-            console.error('Marking a starter pack item failed:', e);
-            const next = new Set(heard.value);
-            next.delete(item.id);
-            heard.value = next;
+            console.error('Marking a starter pack chunk failed:', e);
+            error.value = t('languages.starter.mark-error');
+        } finally {
+            busy.value = false;
         }
     }
 
+    function scrollToTop() {
+        nextTick(() => rootRef.value?.closest('main')?.scrollTo?.({ top: 0 }));
+    }
+
+    /** The full skip: the pack leaves Today (B-21). "Skip for now" is only a link to Today. */
     async function skip() {
         if (!window.confirm(t('languages.starter.skip-confirm'))) return;
         busy.value = true;

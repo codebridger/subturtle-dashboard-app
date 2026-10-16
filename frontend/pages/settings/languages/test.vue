@@ -1,5 +1,5 @@
 <template>
-    <div class="flex max-w-[760px] flex-col gap-[18px]">
+    <div ref="rootRef" class="flex max-w-[760px] flex-col gap-[18px]">
         <StPageHeader
             :overline="t('languages.test.overline', { language: langName })"
             :title="result ? t('languages.test.result-title') : t('languages.test.title')"
@@ -124,6 +124,21 @@
     const busy = ref(false);
     const failed = ref('');
     const result = ref<{ startLevel: CefrStart; reason: string } | null>(null);
+    const rootRef = ref<HTMLElement | null>(null);
+
+    /**
+     * The chat is taller than the result, so the shell's scroll area is still scrolled down
+     * when the result replaces it, and "Your start point" sat under the top bar. Start the
+     * result (and a retake) from the top.
+     */
+    watch(result, (value, before) => {
+        if (!!value === !!before) return;
+        nextTick(() => {
+            const scroller = rootRef.value?.closest('main');
+            if (scroller) scroller.scrollTop = 0;
+            else window.scrollTo(0, 0);
+        });
+    });
 
     async function begin() {
         testId.value = null;

@@ -91,6 +91,33 @@ export const useLanguageStore = defineStore('language', () => {
     /** Learning languages the register knows but has not switched on yet ("Coming later"). */
     const comingLater = computed(() => learningCaps.value.filter((c) => !c.enabled));
 
+    /**
+     * Tell me (B-06). The server's list comes with the state (`interests`); a press on this
+     * visit wins over it, so the button never flips back before the next refresh. An older
+     * server sends no list: the button then starts at "Tell me" after a reload.
+     */
+    const interestOverrides = ref<Record<LangCode, boolean>>({});
+    const savedInterests = computed(() => new Set(normalizeInterests(state.value?.interests)));
+
+    function isInterested(code: LangCode) {
+        return interestOverrides.value[code] ?? savedInterests.value.has(code);
+    }
+
+    /** Optimistic; rolls back when the server says no. Returns the final value. */
+    async function setInterest(code: LangCode, on: boolean) {
+        const before = isInterested(code);
+        interestOverrides.value = { ...interestOverrides.value, [code]: on };
+        try {
+            const res = await languageApi.setLanguageInterest(code, on);
+            const final = typeof res?.on === 'boolean' ? res.on : on;
+            interestOverrides.value = { ...interestOverrides.value, [code]: final };
+            return final;
+        } catch (error) {
+            interestOverrides.value = { ...interestOverrides.value, [code]: before };
+            throw error;
+        }
+    }
+
     const needsLanguage = computed(() => enabled.value && state.value?.onboardingState === 'needs_language');
 
     function capsFor(code?: LangCode | null): LearningLanguageCaps | undefined {
@@ -223,6 +250,7 @@ export const useLanguageStore = defineStore('language', () => {
     function reset() {
         capabilities.value = null;
         state.value = null;
+        interestOverrides.value = {};
         status.value = 'idle';
         syncScope();
     }
@@ -249,6 +277,8 @@ export const useLanguageStore = defineStore('language', () => {
         canAdd,
         addable,
         comingLater,
+        isInterested,
+        setInterest,
         needsLanguage,
         capsFor,
         features,
@@ -268,6 +298,17 @@ export const useLanguageStore = defineStore('language', () => {
         reset,
     };
 });
+
+/**
+ * `interests` from get-language-state: language codes. Tolerates `{ language }` rows and
+ * anything else a server in the middle of a deploy might send (ignored).
+ */
+export function normalizeInterests(raw: unknown): LangCode[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((row) => (typeof row === 'string' ? row : row && typeof row === 'object' ? (row as any).language ?? (row as any).code : null))
+        .filter((code): code is string => typeof code === 'string' && code.length > 0);
+}
 
 /** Fire a multilingual analytics event (D-22). Never lets analytics break a flow. */
 export function trackLanguageEvent(event: string, props: Record<string, unknown> = {}) {
