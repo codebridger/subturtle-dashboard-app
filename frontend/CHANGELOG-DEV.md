@@ -1,3 +1,10 @@
+# [1.3.0-dev.32](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.31...v1.3.0-dev.32) (2026-10-16)
+
+
+### Bug Fixes
+
+* **frontend:** Starter learners who removed their language can restore it from first run (D-07, D-20, D-25) ([720d7de](https://github.com/codebridger/subturtle-dashboard-app/commit/720d7dec8721869b287ab2b631f58c7896e6d837)), closes [#138](https://github.com/codebridger/subturtle-dashboard-app/issues/138)
+
 # [1.3.0-dev.31](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.30...v1.3.0-dev.31) (2026-10-16)
 
 
