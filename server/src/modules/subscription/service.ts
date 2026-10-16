@@ -1117,7 +1117,7 @@ export async function recordUsage(props: {
         );
         trackServerEvent(
           SERVER_ANALYTICS_EVENTS.STARTER_AI_EXHAUSTED,
-          userId,
+          { userId },
           { daysSinceAllocation }
         );
         await freeCreditCollection.updateOne(

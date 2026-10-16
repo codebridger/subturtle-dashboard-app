@@ -18,7 +18,18 @@ export interface TranslateWithContextParams {
   // Caller's user id — only used for the translation_requested analytics
   // event. Anonymous sessions may omit it.
   userId?: string;
+  /**
+   * The client's install analytics id (the extension's `analyticsAnonymousId`, a UUID).
+   * A logged-out caller's analytics events are filed on it (B-01). Old clients leave it out.
+   */
+  deviceId?: string;
+  /** What asked for the translation (B-03). Old clients leave it out. */
+  trigger?: string;
 }
+
+/** The parts of the client that can ask for a translation (B-03, shared with the extension). */
+export const TRANSLATION_TRIGGERS = ["caption", "word", "selection", "definition", "detail"] as const;
+export type TranslationTrigger = (typeof TRANSLATION_TRIGGERS)[number];
 
 export interface TranslationAdviceMessage {
   role: "user" | "assistant";
