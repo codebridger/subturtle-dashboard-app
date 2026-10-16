@@ -47,7 +47,7 @@
             <!-- The translucent fill is a finished token, not `bg-page/80`: dark wants a
                  different base AND a different alpha (a translucent --surface-card). -->
             <header
-                class="st-relative st-z-sticky st-shrink-0 st-flex st-items-center st-justify-between st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-backdrop-blur-[8px]"
+                class="st-relative st-z-sticky st-shrink-0 st-flex st-items-center st-justify-between st-gap-3 st-h-[68px] st-px-4 md:st-px-8 st-border-b st-border-subtle st-backdrop-blur-[8px]"
                 :style="{ background: 'var(--surface-topbar)' }"
             >
                 <div class="st-flex st-items-center st-gap-3 st-min-w-0">

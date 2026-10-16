@@ -15,7 +15,9 @@
             <span class="st-inline-flex st-items-center st-justify-center st-w-7 st-h-7 st-shrink-0 st-rounded-circle st-bg-primary-soft st-text-rose-700 st-text-xs st-font-black">
                 {{ current.chip }}
             </span>
-            <span class="st-truncate">{{ current.name }}</span>
+            <!-- At phone width the pill is the chip alone, so it never runs into the breadcrumb;
+                 the name stays in the button's label. -->
+            <span class="st-hidden sm:st-block st-truncate" data-testid="language-menu-name">{{ current.name }}</span>
             <span v-if="current.level" class="st-hidden sm:st-inline st-text-xs st-font-bold st-text-muted">{{ current.level }}</span>
             <StIcon name="solar:alt-arrow-down-linear" :size="16" class="st-text-muted" />
         </button>

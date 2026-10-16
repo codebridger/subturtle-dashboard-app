@@ -119,9 +119,14 @@
                     {{ t('languages.page.restore') }}
                 </StButton>
             </div>
-
-            <ComingLaterRow v-if="language.comingLater.length" />
         </div>
+
+        <!-- Coming later (B-06): every learning language the register lists as not enabled yet. -->
+        <section v-if="language.comingLater.length" class="flex max-w-[900px] flex-col gap-2.5" data-testid="languages-coming-later">
+            <h2 class="text-st-2xs font-extrabold uppercase tracking-st-caps text-st-faint">{{ t('languages.page.coming-later-title') }}</h2>
+            <p class="text-st-sm font-semibold text-st-muted">{{ t('languages.page.coming-later-note') }}</p>
+            <ComingLaterRow />
+        </section>
 
         <StModal
             v-if="confirmCode"

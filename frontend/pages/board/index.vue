@@ -10,20 +10,24 @@
         <!-- New language, no phrases yet (D-11, Q5): ask for a first phrase and offer the starter
              pack. Never an empty "all caught up" board. -->
         <template v-else-if="isNewLanguage">
-            <section class="grid gap-[14px] [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]" data-testid="board-new-language">
-                <StCard class="flex flex-col">
-                    <span class="mb-5 inline-flex h-[54px] w-[54px] items-center justify-center rounded-st-md bg-st-primary-soft text-st-rose-600">
-                        <StIcon name="solar:bookmark-bold-duotone" :size="29" />
+            <section class="grid max-w-[900px] gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))]" data-testid="board-new-language">
+                <StCard class="flex flex-col" data-testid="board-first-phrase">
+                    <span class="mb-[18px] inline-flex h-[54px] w-[54px] items-center justify-center rounded-st-md bg-st-primary-soft text-st-rose-600">
+                        <StIcon name="solar:add-circle-bold-duotone" :size="29" />
                     </span>
                     <h3 class="mb-1.5 text-st-md font-extrabold text-st-strong">{{ t('languages.board.new-title', { language: activeName }) }}</h3>
                     <p class="mb-[18px] text-st-sm font-semibold text-st-muted [text-wrap:pretty]">{{ t('languages.board.new-body', { language: activeName }) }}</p>
-                    <div class="mt-auto">
-                        <StButton variant="outline" color="primary" icon="solar:notebook-bold" block @click="router.push('/bundles')">
-                            {{ t('languages.board.new-bundles') }}
+                    <div class="mt-auto flex flex-wrap items-center gap-2.5">
+                        <!-- A phrase lives in a bundle: Bundles has "New bundle" and each bundle "Add a phrase". -->
+                        <StButton color="primary" icon="solar:add-circle-bold" data-testid="board-add-phrase" @click="router.push('/bundles')">
+                            {{ t('languages.board.new-add') }}
                         </StButton>
+                        <a :href="chromeWebStoreUrl" target="_blank" rel="noopener noreferrer" class="text-st-sm font-bold text-st-link" data-testid="board-get-extension">
+                            {{ t('languages.board.new-extension') }}
+                        </a>
                     </div>
                 </StCard>
-                <StarterPackCard v-if="showPackCard" />
+                <StarterPackCard v-if="showPackCard" prominent />
             </section>
         </template>
 
@@ -149,6 +153,7 @@
     const { poolCount } = storeToRefs(poolStore);
 
     const loading = ref(true);
+    const chromeWebStoreUrl = useRuntimeConfig().public.chromeWebStoreUrl as string;
 
     const activities = computed(() => boardActivities.value);
 

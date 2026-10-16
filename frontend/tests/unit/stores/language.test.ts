@@ -9,7 +9,7 @@ vi.mock('~/plugins/mixpanel', () => ({ analytic: { track: vi.fn() }, registerLan
 const vue = await vi.importActual<typeof import('vue')>('vue');
 Object.assign(globalThis, { ref: vue.ref, computed: vue.computed, authUser: { value: { id: 'u1' } } });
 
-const { useLanguageStore, onLanguageSwitch } = await import('~/stores/language');
+const { useLanguageStore, onLanguageSwitch, normalizeInterests } = await import('~/stores/language');
 const { withLanguage } = await import('~/utils/languageScope');
 const { LanguageApiError, toLanguageApiError } = await import('~/utils/languageApi');
 
@@ -169,5 +169,61 @@ describe('toLanguageApiError', () => {
         expect(toLanguageApiError({ error: 'purging' }).code).toBe('purging');
         expect(toLanguageApiError({ message: 'Function with name add-language not found' }).code).toBe('missing');
         expect(toLanguageApiError({ message: 'Phrase not found' }).code).toBe('unknown');
+    });
+});
+
+describe('Tell me (B-06)', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        run.mockReset();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    it('reads the presses from get-language-state, so "Got it" survives a reload', async () => {
+        answer({ 'get-language-capabilities': CAPS, 'get-language-state': { ...STATE, interests: ['pt'] } });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        expect(store.isInterested('pt')).toBe(true);
+        expect(store.isInterested('ja')).toBe(false);
+    });
+
+    it('falls back to "Tell me" when the server sends no interests', async () => {
+        answer({ 'get-language-capabilities': CAPS, 'get-language-state': STATE });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        expect(store.enabled).toBe(true);
+        expect(store.isInterested('pt')).toBe(false);
+    });
+
+    it('keeps a press made on this visit, and takes the server answer', async () => {
+        answer({ 'get-language-capabilities': CAPS, 'get-language-state': STATE, 'set-language-interest': (args: any) => ({ on: args.on }) });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        await expect(store.setInterest('pt', true)).resolves.toBe(true);
+        expect(store.isInterested('pt')).toBe(true);
+        expect(run).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'set-language-interest', args: expect.objectContaining({ language: 'pt', on: true }) })
+        );
+        // A state refresh without the field does not flip it back.
+        await store.refreshState();
+        expect(store.isInterested('pt')).toBe(true);
+    });
+
+    it('rolls back when the server says no', async () => {
+        answer({
+            'get-language-capabilities': CAPS,
+            'get-language-state': { ...STATE, interests: ['pt'] },
+            'set-language-interest': { reject: new Error('down') },
+        });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        await expect(store.setInterest('pt', false)).rejects.toThrow('down');
+        expect(store.isInterested('pt')).toBe(true);
+    });
+
+    it('normalizes codes and { language } rows, and ignores anything else', () => {
+        expect(normalizeInterests(['pt', { language: 'ja' }, { code: 'ko' }, 3, null, ''])).toEqual(['pt', 'ja', 'ko']);
+        expect(normalizeInterests(undefined)).toEqual([]);
+        expect(normalizeInterests({ pt: true })).toEqual([]);
     });
 });

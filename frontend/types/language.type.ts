@@ -78,6 +78,11 @@ export interface LanguageState {
     maxLanguages: number;
     /** Kept phrases waiting for a language not added yet. */
     pending: PendingPhrases[];
+    /**
+     * "Coming later" languages the learner pressed Tell me for (B-06). Optional: older servers
+     * leave it out, and the dashboard then only remembers this visit's presses.
+     */
+    interests?: LangCode[];
 }
 
 export interface AddLanguageArgs {

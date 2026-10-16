@@ -117,9 +117,9 @@
             <div class="my-4 h-px bg-st-line" />
 
             <dl class="flex flex-col gap-3">
-                <div v-for="row in summaryRows" :key="row.label" class="flex items-baseline justify-between gap-3">
+                <div v-for="row in summaryRows" :key="row.key" class="flex items-baseline justify-between gap-3">
                     <dt class="flex-none text-st-base font-semibold text-st-muted">{{ row.label }}</dt>
-                    <dd class="min-w-0 truncate text-st-base font-extrabold text-st-strong">{{ row.value }}</dd>
+                    <dd class="min-w-0 text-right text-st-base font-extrabold text-st-strong [overflow-wrap:anywhere]" :data-testid="`summary-${row.key}`">{{ row.value }}</dd>
                 </div>
             </dl>
 
@@ -397,19 +397,22 @@
     });
 
     const summaryRows = computed(() => [
-        { label: t('live-session.summary.mode'), value: formData.mode === 'text' ? t('live-practice.mode.text') : t('live-practice.mode.voice') },
-        ...(formData.mode === 'text' ? [] : [{ label: t('live-session.summary.coach-voice'), value: formData.aiCharacter }]),
+        { key: 'mode', label: t('live-session.summary.mode'), value: formData.mode === 'text' ? t('live-practice.mode.text') : t('live-practice.mode.voice') },
+        ...(formData.mode === 'text' ? [] : [{ key: 'voice', label: t('live-session.summary.coach-voice'), value: formData.aiCharacter }]),
         language.enabled && formData.explanationLanguage
             ? {
-                  // "German, explained in Persian" (D-16).
+                  // "German, explained in Persian" (D-16). It wraps rather than cutting off.
+                  key: 'explains',
                   label: t('languages.coach.explains-in'),
                   value: t('languages.coach.summary', { language: language.nameOf(language.activeLanguage), own: language.nameOf(formData.explanationLanguage) }),
               }
             : {
+                  key: 'explains',
                   label: t('live-session.summary.fallback'),
                   value: formData.nativeLanguage === 'auto' ? t('live-session.summary.fallback-auto') : formData.nativeLanguage,
               },
         {
+            key: 'phrases',
             label: t('live-session.summary.phrases'),
             value:
                 formData.selectionMode === 'random'
