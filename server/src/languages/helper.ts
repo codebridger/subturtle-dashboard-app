@@ -113,11 +113,21 @@ export function requestLanguage(
 }
 
 /**
- * The Mongo filter for one language's documents. Until the migration's contract step
- * (ADR-006 point 11) English also matches documents with no `language`, which are English
- * by `langOf`; `{ $in: [..., null] }` matches both a null and a missing field.
+ * The Mongo filter for one language's documents, to spread into a query. Until the
+ * migration's contract step (ADR-006 point 11) English also matches documents with no
+ * `language`, which are English by `langOf`.
+ *
+ * English names each form on its own: `"en"`, a missing field, and `null`. On MongoDB
+ * `null` alone also matches a missing field, but Firestore with MongoDB compatibility does
+ * not promise that, so `{ $in: ["en", null] }` could miss old documents there. The `$or`
+ * sits inside `$and`, so it never replaces a caller's own `$or` when spread into a query.
+ *
+ * For a per-user document that must be found exactly once (Leitner, Pool, board), use
+ * `resolveLanguageDoc` in `language-docs.ts`, which does not match the language in the
+ * database at all.
  */
-export function languageFilter(language: LangCode): { language: LangCode | { $in: (LangCode | null)[] } } {
+export function languageFilter(language: LangCode): Record<string, any> {
   const code = toCode(language) ?? DEFAULT_LANGUAGE;
-  return code === DEFAULT_LANGUAGE ? { language: { $in: [DEFAULT_LANGUAGE, null] } } : { language: code };
+  if (code !== DEFAULT_LANGUAGE) return { language: code };
+  return { $and: [{ $or: [{ language: DEFAULT_LANGUAGE }, { language: { $exists: false } }, { language: null }] }] };
 }

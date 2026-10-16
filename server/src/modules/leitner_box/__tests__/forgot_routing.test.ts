@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 import { PoolService } from "../../pool/service";
@@ -40,11 +41,11 @@ describe("LeitnerService.submitReview — Forgot x2 at L1 -> Pool", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockSystemCollection = {
+		mockSystemCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		mockSystemCollection.updateOne.mockResolvedValue({});
 		(getCollection as any).mockImplementation((_db: string, col: string) => {
 			// No profile and no language profile: an old account, English only.

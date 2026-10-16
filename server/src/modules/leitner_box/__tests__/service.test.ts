@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -41,11 +42,11 @@ describe("LeitnerService", () => {
 		// test starts from an unsynced state.
 		(LeitnerService as any).syncedUsers.clear();
 		mockProfileCollection = undefined;
-		mockCollection = {
+		mockCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		// Default mock for getCollection to return generic collection
 		(getCollection as any).mockImplementation((db: string, col: string) => {
 			if (col === PROFILE_COLLECTION) {
@@ -110,9 +111,8 @@ describe("LeitnerService", () => {
 			// account with no language fields is English.
 			expect(mockCollection.create).not.toHaveBeenCalled();
 			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ userId: "user1", language: { $in: ["en", null] } },
+				{ userId: "user1", language: "en" },
 				{ $setOnInsert: expect.objectContaining({
-					language: "en",
 					settings: expect.objectContaining({ autoEntry: true }),
 					items: [],
 				}) },

@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -17,11 +18,11 @@ describe("LeitnerService Date Sensitivity", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockCollection = {
+		mockCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		mockPhraseCollection = {
 			find: jest.fn().mockReturnThis(),
 			toArray: jest.fn(),
