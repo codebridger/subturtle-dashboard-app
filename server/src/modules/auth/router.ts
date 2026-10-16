@@ -147,7 +147,7 @@ auth.get("/google/code-login", async (ctx) => {
       userId = await userManager.registerUser({ email });
       // Activation funnel entry: first successful OAuth exchange for a brand-new
       // account. Server-truth so it fires once, on the genuine new-user branch.
-      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, userId as string, {
+      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, { userId: userId as string }, {
         signup_provider: "google",
         oauth_timezone: timeZone || undefined,
         referrer: redirectUrl || undefined,
@@ -235,7 +235,7 @@ auth.get("/google/access-token-login", async (ctx) => {
       // token. No timezone/referrer on this path, so only the provider is known.
       trackServerEvent(
         SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED,
-        newUserId as string,
+        { userId: newUserId as string },
         { signup_provider: "google" }
       );
     } catch (error) {
@@ -305,7 +305,7 @@ auth.post("/apple/identity-token-login", async (ctx) => {
   } else {
     try {
       userId = await userManager.registerUser({ email });
-      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, userId, { signup_provider: "apple" });
+      trackServerEvent(SERVER_ANALYTICS_EVENTS.ACCOUNT_CREATED, { userId }, { signup_provider: "apple" });
     } catch (error) {
       ctx.throw(500, error instanceof Error ? error.message : "Registration failed");
       return;
