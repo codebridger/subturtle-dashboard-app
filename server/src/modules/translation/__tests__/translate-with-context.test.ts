@@ -112,4 +112,20 @@ describe("translateWithContext", () => {
     await translate({ phrase: "p", context: "c", translationLanguage: "fa" });
     expect(trackServerEvent).toHaveBeenCalledWith("translation_requested", { userId: undefined, deviceId: undefined }, expect.anything());
   });
+
+  it.each(["caption", "word", "selection", "definition", "detail"])("B-03: tracks the trigger %p as sent", async (trigger) => {
+    mockSimple.mockResolvedValue("x");
+    await translate({ phrase: "p", context: "c", translationLanguage: "fa", trigger });
+    expect(trackServerEvent).toHaveBeenCalledWith("translation_requested", expect.anything(), expect.objectContaining({ trigger }));
+  });
+
+  it.each([[undefined], [""], ["Caption"], ["popup"], [42], [{ x: 1 }]])("B-03: tracks trigger %p as \"unknown\"", async (trigger) => {
+    mockSimple.mockResolvedValue("x");
+    await translate({ phrase: "p", context: "c", translationLanguage: "fa", trigger });
+    expect(trackServerEvent).toHaveBeenCalledWith(
+      "translation_requested",
+      expect.anything(),
+      expect.objectContaining({ trigger: "unknown" })
+    );
+  });
 });
