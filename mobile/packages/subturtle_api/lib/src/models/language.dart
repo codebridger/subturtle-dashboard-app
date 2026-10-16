@@ -356,7 +356,11 @@ class LanguageState {
     this.maxLanguages = 1,
     this.pending = const [],
     this.fromServer = true,
+    this.interests = const [],
   });
+
+  /// Coming-later languages the learner asked to hear about ("Tell me").
+  final List<String> interests;
 
   /// The learner's own language (L1) code, e.g. `fa`. Null when not set.
   final String? translationLanguage;
@@ -401,7 +405,15 @@ class LanguageState {
   /// limit by definition (they were paused by a smaller plan), so only active ones count.
   int get used => studying.length;
 
-  bool get atLimit => used >= maxLanguages;
+  /// Removed languages that still hold a place: on Starter (no swap) a language
+  /// removed in the last 30 days keeps its place until it is deleted, so only
+  /// restoring it gets in.
+  List<LanguageSummary> get holdingPlace => isStarter ? removed : const [];
+
+  /// Places taken: studying languages, plus removed ones that hold a place.
+  int get slotsUsed => used + holdingPlace.length;
+
+  bool get atLimit => slotsUsed >= maxLanguages;
 
   /// Starter cannot swap: one language, and no remove-to-add.
   bool get isStarter => plan == 'starter';
@@ -424,6 +436,7 @@ class LanguageState {
       plan: str(j['plan'], 'starter'),
       maxLanguages: integer(j['maxLanguages'], 1),
       pending: listOf(j['pending'], PendingPhrases.fromJson),
+      interests: listOf(j['interests'], (e) => str(e)),
     );
   }
 
@@ -447,6 +460,7 @@ class LanguageState {
         maxLanguages: maxLanguages,
         pending: pending,
         fromServer: fromServer,
+        interests: interests,
       );
 }
 

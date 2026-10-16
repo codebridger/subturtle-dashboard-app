@@ -69,8 +69,9 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
     }
   }
 
-  Future<void> _toggleTell(String code) async {
-    final on = !(_told[code] ?? false);
+  Future<void> _toggleTell(String code, LanguageState s) async {
+    // "Tell me" survives a reload: the server lists the learner's interests.
+    final on = !(_told[code] ?? s.interests.contains(code));
     setState(() => _told[code] = on);
     ref.read(hapticsProvider).selection();
     try {
@@ -192,7 +193,10 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
   Widget _stepOne(BuildContext context, LanguageCapabilities caps, LanguageState s, List<LearningLanguageCaps> choices) {
     final c = context.st;
     final l1 = ref.watch(l1Provider).value;
-    final limit = widget.firstRun ? null : planLimitOf(s);
+    // The first run shows the limit only when a removed language holds the
+    // Starter place: then Restore is the way in, never a dead end.
+    final fullLimit = planLimitOf(s, nameOf: (c) => caps.learningByCode(c)?.name ?? c.toUpperCase());
+    final limit = widget.firstRun && fullLimit?.restore == null ? null : fullLimit;
     final picked = choices.where((l) => l.code == _pick).firstOrNull;
     final waiting = picked == null ? null : s.pendingFor(picked.code);
     return Column(
@@ -259,7 +263,7 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
               if (_error != null) ...[const SizedBox(height: 12), ErrorPanel(title: _errorTitle(_error!), error: _error is AddLanguageRefusal ? null : _error)],
               if (limit != null) ...[
                 const SizedBox(height: 14),
-                PlanLimitCard(limit: limit, onManage: () => context.push('/me/languages')),
+                PlanLimitCard(limit: limit, onManage: () => context.push('/me/languages'), onRestore: (code) => restoreLanguage(context, ref, code)),
               ] else ...[
                 const SizedBox(height: 18),
                 const StEyebrow('Ready now'),
@@ -274,7 +278,7 @@ class _AddLanguageScreenState extends ConsumerState<AddLanguageScreen> {
                 const StEyebrow('Coming later'),
                 const SizedBox(height: 8),
                 for (final l in caps.comingLater) ...[
-                  _ComingLaterRow(lang: l, told: _told[l.code] ?? false, onToggle: () => _toggleTell(l.code)),
+                  _ComingLaterRow(lang: l, told: _told[l.code] ?? s.interests.contains(l.code), onToggle: () => _toggleTell(l.code, s)),
                   const SizedBox(height: 8),
                 ],
               ],

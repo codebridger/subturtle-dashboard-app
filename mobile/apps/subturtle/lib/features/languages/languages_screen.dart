@@ -57,7 +57,7 @@ class LanguagesScreen extends ConsumerWidget {
 
   Widget _list(BuildContext context, WidgetRef ref, LanguageState s, LanguageCapabilities caps) {
     final c = context.st;
-    final limit = planLimitOf(s);
+    final limit = planLimitOf(s, nameOf: (c) => caps.learningByCode(c)?.name ?? c.toUpperCase());
     final shown = [...s.studying, ...s.paused, ...s.removed];
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
@@ -78,7 +78,7 @@ class LanguagesScreen extends ConsumerWidget {
         if (limit == null)
           StLanguageAddRow(note: addNote(caps, s), usedText: usedText(s), onTap: () => context.push('/add-language'))
         else
-          PlanLimitCard(limit: limit),
+          PlanLimitCard(limit: limit, onRestore: (code) => restoreLanguage(context, ref, code)),
         const SizedBox(height: 12),
         Text('A feature that is not ready for a language shows here as "not yet". It is not shown anywhere else in that language.', style: StType.bodySmall.copyWith(color: c.textMuted)),
       ],

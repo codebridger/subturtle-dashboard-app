@@ -20,6 +20,7 @@ Map<String, dynamic> stateJson({String? active = 'de', String plan = 'reader', i
       'pending': [
         {'language': 'es', 'count': 3, 'expiresAt': '2026-11-14T00:00:00.000Z'},
       ],
+      'interests': ['pt'],
     };
 
 void main() {
@@ -43,6 +44,8 @@ void main() {
       expect(s.used, 2);
       expect(s.atLimit, isFalse);
       expect(s.pendingFor('es')!.count, 3);
+      expect(s.interests, ['pt']);
+      expect(s.slotsUsed, 2, reason: 'on Reader a removed language does not hold a place');
       expect(s.needsLanguage, isFalse);
     });
 
