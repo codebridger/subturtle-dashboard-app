@@ -305,7 +305,7 @@ const createPhrase = defineFunction({
           : translation_language?.trim() || undefined;
         trackServerEvent(
           SERVER_ANALYTICS_EVENTS.PHRASE_SAVED_FIRST_TIME,
-          refId,
+          { userId: refId },
           {
             source_platform: sourcePlatformFromUrl(sourceUrl),
             language_pair: languagePair,

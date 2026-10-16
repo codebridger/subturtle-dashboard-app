@@ -4,7 +4,7 @@ import {
   getSimpleTranslation,
   getTranslationAdvice,
 } from "./service";
-import { TranslateWithContextParams, TranslationAdviceParams } from "./types";
+import { TRANSLATION_TRIGGERS, TranslateWithContextParams, TranslationAdviceParams, TranslationTrigger } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { synthesizeSpeech } from "./tts";
 import { getLearningLanguage } from "../../languages/registry";
@@ -14,6 +14,11 @@ import {
 } from "../../utils/analytics";
 import { isAutoOrUnknown, toCode } from "../../languages/helper";
 import { loadLearnerLanguages, readTranslationLanguage, resolveLanguage } from "./language";
+
+/** The client's `trigger` (B-03) if it is one we know, else "unknown" (old clients, typos). */
+function readTrigger(value: unknown): TranslationTrigger | "unknown" {
+  return (TRANSLATION_TRIGGERS as readonly unknown[]).includes(value) ? (value as TranslationTrigger) : "unknown";
+}
 
 /**
  * Translate a phrase with its context (B-14, B-15, B-17).
@@ -48,9 +53,11 @@ const translateWithContext = defineFunction({
     // rate is word-detail-page_translation-error / translation_requested.
     trackServerEvent(
       SERVER_ANALYTICS_EVENTS.TRANSLATION_REQUESTED,
-      params.userId || "anonymous",
+      // B-01: never the shared anonymous account; logged-out callers go on their install id.
+      { userId: params.userId, deviceId: params.deviceId },
       {
         translation_type: translationType,
+        trigger: readTrigger(params.trigger),
         source_lang: sourceLanguage || "auto",
         target_lang: own.value,
         learning_lang: learningLanguage || "unknown",

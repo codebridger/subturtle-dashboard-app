@@ -515,7 +515,7 @@ export class StripeAdapter implements PaymentAdapter {
           // e.g. a returning customer) is a direct paid start.
           if (grant.isNewSubscription) {
             if (subscription.status === "trialing") {
-              trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_STARTED, userId, {
+              trackServerEvent(SERVER_ANALYTICS_EVENTS.TRIAL_STARTED, { userId }, {
                 cadence,
                 tier: entitlements.tierId,
                 currency: subscription.currency,
@@ -523,7 +523,7 @@ export class StripeAdapter implements PaymentAdapter {
             } else if (subscription.status === "active") {
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
-                userId,
+                { userId },
                 {
                   cadence,
                   tier: entitlements.tierId,
@@ -589,7 +589,7 @@ export class StripeAdapter implements PaymentAdapter {
 
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED,
-                userId,
+                { userId },
                 {
                   was_trialing: !!wasTrialing,
                   tier,
@@ -675,7 +675,7 @@ export class StripeAdapter implements PaymentAdapter {
             if (userId) {
               trackServerEvent(
                 SERVER_ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
-                userId,
+                { userId },
                 {
                   cadence,
                   tier: entitlements.tierId,
@@ -754,7 +754,7 @@ export class StripeAdapter implements PaymentAdapter {
     if (userId) {
       trackServerEvent(
         SERVER_ANALYTICS_EVENTS.ENTITLEMENT_GRANT_REFUSED,
-        userId,
+        { userId },
         { priceId, error: err?.message || String(err) }
       );
     }
