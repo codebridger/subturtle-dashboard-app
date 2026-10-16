@@ -1,4 +1,5 @@
 import type { Mixpanel } from 'mixpanel-browser';
+import type { LocationQuery, Router } from 'vue-router';
 
 /**
  * Analytics behind consent: Mixpanel (product funnel) and the Google Ads tag (ad conversions).
@@ -16,6 +17,11 @@ const CONSENT_KEY = 'subturtle-consent';
 let mixpanel: Mixpanel | null = null;
 let loading: Promise<void> | null = null;
 
+/** The extension's install analytics id, read off the post-install link and waiting to be sent once. */
+let pendingInstallId: string | null = null;
+const INSTALL_ID_PARAM = 'install_id';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Sends one event if analytics is running; otherwise a no-op. Never throws: without a token (CI, a
  * fresh clone) or before consent there is no client, and a page must never break over a metric.
@@ -26,6 +32,30 @@ export function track(event: string, props: Record<string, unknown> = {}) {
         mixpanel.track(event, props);
     } catch (error) {
         console.warn('[analytics] track failed', event, error);
+    }
+}
+
+/**
+ * On first install the extension opens `/?install_id=<uuid>&utm_source=extension&utm_medium=install`.
+ * Keeps the id (only when it looks like a UUID) for `extension_installed`, and takes it off the address
+ * bar at once, so a reload or a shared link cannot send it again and no Mixpanel `$current_url` carries
+ * it. Other parameters (the UTM) stay. Call once, on the client, after `router.isReady()` and before
+ * `init()`, for the reason given on captureUtm().
+ *
+ * The event itself waits for consent: it is sent when Mixpanel starts, on this page view only. A
+ * visitor who declines, or never answers the banner, is not counted.
+ */
+export async function captureInstallId(router: Router, query: LocationQuery) {
+    if (!(INSTALL_ID_PARAM in query)) return;
+    const raw = query[INSTALL_ID_PARAM];
+    const value = (Array.isArray(raw) ? raw[0] : raw) ?? '';
+    pendingInstallId = UUID.test(value) ? value.toLowerCase() : null;
+    const { [INSTALL_ID_PARAM]: _dropped, ...rest } = query;
+    // router.replace writes the address bar with history.replaceState and keeps the router in step.
+    try {
+        await router.replace({ query: rest, hash: router.currentRoute.value.hash });
+    } catch (error) {
+        console.warn('[analytics] could not clear install_id from the URL', error);
     }
 }
 
@@ -69,6 +99,10 @@ export function useAnalytics() {
                     if (client.has_opted_out_tracking()) client.opt_in_tracking();
                     mixpanel = client;
                     track('landing-page_viewed', { path: route.path, product_hunt: utm.value.utm_source === 'producthunt', ...utm.value });
+                    if (pendingInstallId) {
+                        track('extension_installed', { install_id: pendingInstallId, ...utm.value });
+                        pendingInstallId = null;
+                    }
                 } catch (error) {
                     console.warn('[analytics] Mixpanel failed to start', error);
                 }
