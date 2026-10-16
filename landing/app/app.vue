@@ -19,6 +19,7 @@
     onMounted(async () => {
         await router.isReady();
         captureUtm(utm, route.query);
+        await captureInstallId(router, route.query);
         init();
     });
 </script>
