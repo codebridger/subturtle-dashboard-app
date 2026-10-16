@@ -115,7 +115,7 @@
                     <span class="text-st-base font-extrabold text-st-strong">{{ pickerName(r.code) }}</span>
                     <span class="text-st-sm font-semibold text-st-muted">{{ t('languages.page.removed-meta', { date: formatDate(r.purgeAt) }) }}</span>
                 </span>
-                <StButton v-if="language.canAdd" variant="soft" color="neutral" size="sm" :disabled="busy" @click="restore(r)">
+                <StButton v-if="language.canRestore" variant="soft" color="neutral" size="sm" :disabled="busy" @click="restore(r)">
                     {{ t('languages.page.restore') }}
                 </StButton>
             </div>

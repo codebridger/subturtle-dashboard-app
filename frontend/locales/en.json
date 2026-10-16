@@ -1030,7 +1030,10 @@
             "first-run-own": "Your own language",
             "first-run-own-sub": "Translations and Coach explanations use it.",
             "first-run-own-pick": "Choose your language",
-            "done-page-title": "You are all set"
+            "done-page-title": "You are all set",
+            "upgrade-card-body-removed": "You removed {language}, and it keeps its place until {date}. Restore {language} to go on with everything you had, or go Reader (up to 3 languages) or Learner (up to 10) to learn another language.",
+            "restore": "Restore {language}",
+            "restore-meta": "Removed. Kept until {date}: your phrases, review boxes and Coach history come back."
         },
         "test": {
             "title": "Chat test",

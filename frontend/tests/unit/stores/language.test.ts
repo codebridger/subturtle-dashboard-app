@@ -227,3 +227,45 @@ describe('Tell me (B-06)', () => {
         expect(normalizeInterests({ pt: true })).toEqual([]);
     });
 });
+
+describe('Starter holds a removed language\'s place (B-33)', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        run.mockReset();
+    });
+
+    const later = () => new Date(Date.now() + 86400000).toISOString();
+    const earlier = () => new Date(Date.now() - 86400000).toISOString();
+
+    it('blocks a new language but allows the restore', async () => {
+        const state = { ...STATE, plan: 'starter', maxLanguages: 1, learningLanguage: null, languages: [summary('de', { status: 'removed', purgeAt: later() })] };
+        answer({ 'get-language-capabilities': CAPS, 'get-language-state': state });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        expect(store.heldSlots).toBe(1);
+        expect(store.canAdd).toBe(false);
+        expect(store.canRestore).toBe(true);
+        expect(store.restorable.map((l) => l.code)).toEqual(['de']);
+    });
+
+    it('frees the place after the purge date, and on other plans at once', async () => {
+        answer({
+            'get-language-capabilities': CAPS,
+            'get-language-state': { ...STATE, plan: 'starter', maxLanguages: 1, languages: [summary('de', { status: 'removed', purgeAt: earlier() })] },
+        });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        expect(store.canAdd).toBe(true);
+        expect(store.restorable).toEqual([]);
+
+        setActivePinia(createPinia());
+        answer({
+            'get-language-capabilities': CAPS,
+            'get-language-state': { ...STATE, plan: 'reader', maxLanguages: 3, languages: [summary('en'), summary('de', { status: 'removed', purgeAt: later() })] },
+        });
+        const reader = useLanguageStore();
+        await reader.bootstrap();
+        expect(reader.heldSlots).toBe(0);
+        expect(reader.canAdd).toBe(true);
+    });
+});

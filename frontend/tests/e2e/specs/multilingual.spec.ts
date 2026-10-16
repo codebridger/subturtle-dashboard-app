@@ -61,6 +61,8 @@ interface FakeOptions {
     review?: unknown[];
     /** `interests` in get-language-state; leave out for a server that does not send it. */
     interests?: string[];
+    /** add-language answers upgrade_needed for these codes, whatever the client thinks. */
+    upgradeNeededFor?: string[];
 }
 
 /** A tiny language module that follows the contract. `calls` records every function call. */
@@ -92,7 +94,12 @@ function createFakeServer(opts: FakeOptions = {}) {
                 return { status: 200, data: { state } };
             case 'add-language': {
                 const existing = state.languages.find((l: Summary) => l.code === args.language);
-                if (active.length >= state.maxLanguages) {
+                // Starter has no swap: a language removed less than 30 days ago keeps its place (B-33).
+                const held =
+                    state.plan === 'starter' && existing?.status !== 'removed'
+                        ? state.languages.filter((l: Summary) => l.status === 'removed' && l.code !== args.language && (!l.purgeAt || new Date(l.purgeAt) > new Date())).length
+                        : 0;
+                if (active.length + held >= state.maxLanguages || opts.upgradeNeededFor?.includes(args.language)) {
                     return { status: 400, message: `upgrade_needed: ${JSON.stringify({ plan: state.plan, maxLanguages: state.maxLanguages })}` };
                 }
                 const kept = state.pending.find((p: any) => p.language === args.language);
@@ -717,5 +724,67 @@ test.describe('Multilingual dashboard', () => {
         // The page name is what stays.
         await expect(crumb).toContainText("Today's board");
         await expect(page.getByTestId('page-crumb-section')).toBeHidden();
+    });
+
+    test('Starter first run after removing the only language: upgrade card and Restore, never stuck', async ({ page }) => {
+        const purgeAt = new Date(Date.now() + 20 * 86400000).toISOString();
+        const fake = createFakeServer({
+            plan: 'starter',
+            maxLanguages: 1,
+            languages: [summary('de', { status: 'removed', purgeAt, startLevel: 'A2', startLevelSource: 'test', phraseCount: 38 })],
+            active: null,
+            onboarding: 'needs_language',
+        });
+        await boot(page, fake);
+        await page.goto('/#/board');
+
+        await expect(page).toHaveURL(/#\/settings\/languages\/add\?first=1/);
+        const card = page.getByTestId('plan-limit');
+        await expect(card.getByRole('heading', { name: 'Starter includes 1 language' })).toBeVisible();
+        await expect(card).toContainText('You removed German, and it keeps its place until');
+        // Today would send the learner straight back, so it is not offered here.
+        await expect(card.getByRole('link', { name: 'Back to Today' })).toHaveCount(0);
+        await expect(page.getByTestId('pick-fr')).toHaveCount(0);
+
+        await page.getByTestId('restore-de-button').click();
+        await expect(page).toHaveURL(/#\/board/);
+        expect(fake.calls.filter((c) => c.name === 'add-language').pop()?.args).toMatchObject({ language: 'de', startLevel: 'A2', startLevelSource: 'test' });
+        await expect(menuTrigger(page)).toContainText('German');
+    });
+
+    test('Starter first run can open the plans page', async ({ page }) => {
+        const fake = createFakeServer({
+            plan: 'starter',
+            maxLanguages: 1,
+            languages: [summary('de', { status: 'removed', purgeAt: new Date(Date.now() + 86400000).toISOString() })],
+            active: null,
+            onboarding: 'needs_language',
+        });
+        await boot(page, fake);
+        await page.goto('/#/settings/languages/add?first=1');
+        await page.getByTestId('plan-limit-plans').click();
+        await expect(page).toHaveURL(/#\/settings\/subscription/);
+    });
+
+    test('an upgrade_needed answer in first run shows the upgrade card instead of looping', async ({ page }) => {
+        const fake = createFakeServer({ languages: [], active: null, onboarding: 'needs_language', upgradeNeededFor: ['fr'] });
+        await boot(page, fake);
+        await page.goto('/#/settings/languages/add?first=1');
+        await page.getByTestId('pick-fr').click();
+        await page.getByTestId('add-next').click();
+        await page.getByTestId('how-a1').click();
+        await page.getByTestId('start-a1').click();
+        await expect(page.getByTestId('plan-limit')).toBeVisible();
+        await expect(page.getByTestId('plan-limit-plans')).toBeVisible();
+    });
+
+    test('Languages offers "Add it back" on Starter while the removed language holds the place', async ({ page }) => {
+        const purgeAt = new Date(Date.now() + 20 * 86400000).toISOString();
+        const fake = createFakeServer({ plan: 'starter', maxLanguages: 1, languages: [summary('de', { status: 'removed', purgeAt })], active: null });
+        await boot(page, fake);
+        await page.goto('/#/settings/languages');
+        await expect(page.getByTestId('plan-limit')).toBeVisible();
+        await page.getByTestId('removed-de').getByRole('button', { name: 'Add it back' }).click();
+        await expect(page.getByTestId('language-card-de')).toBeVisible();
     });
 });
