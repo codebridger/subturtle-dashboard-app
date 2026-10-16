@@ -1,3 +1,16 @@
+# [1.3.0-dev.35](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.34...v1.3.0-dev.35) (2026-10-16)
+
+
+### Bug Fixes
+
+* **analytics:** B-01 track server events on the install id, not the shared anonymous account ([af0ac01](https://github.com/codebridger/subturtle-dashboard-app/commit/af0ac01cd4503a229683afd4be4cfe59474919ce))
+
+
+### Features
+
+* **analytics:** B-03 tag translation_requested with the client trigger ([62b14f1](https://github.com/codebridger/subturtle-dashboard-app/commit/62b14f10b5182fb720cbab9bc4b0e733369ab99a))
+* **landing:** D-01 track extension_installed from the post-install link ([e0883e7](https://github.com/codebridger/subturtle-dashboard-app/commit/e0883e7e3b52474ef5f56db309f8ce688bdfa172))
+
 # [1.3.0-dev.34](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.33...v1.3.0-dev.34) (2026-10-16)
 
 
