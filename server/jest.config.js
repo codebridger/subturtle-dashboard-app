@@ -16,5 +16,7 @@ module.exports = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   testTimeout: 10000,
+  // Each ts-jest worker can grow to ~3 GB; the default (cores - 1) filled a 16 GB Mac and froze it.
+  maxWorkers: "50%",
   verbose: true,
 };
