@@ -4,12 +4,17 @@ import {
   getSimpleTranslation,
   getTranslationAdvice,
 } from "./service";
-import { TranslateWithContextParams, TranslationAdviceParams } from "./types";
+import { TRANSLATION_TRIGGERS, TranslateWithContextParams, TranslationAdviceParams, TranslationTrigger } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
 } from "../../utils/analytics";
+
+/** The client's `trigger` (B-03) if it is one we know, else "unknown" (old clients, typos). */
+function readTrigger(value: unknown): TranslationTrigger | "unknown" {
+  return (TRANSLATION_TRIGGERS as readonly unknown[]).includes(value) ? (value as TranslationTrigger) : "unknown";
+}
 
 /**
  * Function to translate a phrase with its context
@@ -42,6 +47,7 @@ const translateWithContext = defineFunction({
       { userId: params.userId, deviceId: params.deviceId },
       {
         translation_type: translationType,
+        trigger: readTrigger(params.trigger),
         source_lang: sourceLanguage || "auto",
         target_lang: targetLanguage,
       }
