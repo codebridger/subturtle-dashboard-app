@@ -1,3 +1,10 @@
+# [1.3.0-dev.33](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.32...v1.3.0-dev.33) (2026-10-16)
+
+
+### Bug Fixes
+
+* **server:** find learners' old Leitner, Pool and board documents on every database (B-10, B-11, B-12) ([6af41ca](https://github.com/codebridger/subturtle-dashboard-app/commit/6af41cac1b115fa747f1d97cadfa500ac9f94a53))
+
 # [1.3.0-dev.32](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.31...v1.3.0-dev.32) (2026-10-16)
 
 
