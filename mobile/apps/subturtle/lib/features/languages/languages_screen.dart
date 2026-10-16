@@ -79,6 +79,10 @@ class LanguagesScreen extends ConsumerWidget {
           StLanguageAddRow(note: addNote(caps, s), usedText: usedText(s), onTap: () => context.push('/add-language'))
         else
           PlanLimitCard(limit: limit, onRestore: (code) => restoreLanguage(context, ref, code)),
+        if (caps.comingLater.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          ComingLaterSection(caps: caps, state: s, note: 'Tell us you want it and we count you in.'),
+        ],
         const SizedBox(height: 12),
         Text('A feature that is not ready for a language shows here as "not yet". It is not shown anywhere else in that language.', style: StType.bodySmall.copyWith(color: c.textMuted)),
       ],

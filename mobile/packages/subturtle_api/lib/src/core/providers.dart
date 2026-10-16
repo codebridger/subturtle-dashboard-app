@@ -9,8 +9,9 @@ class FunctionProvider {
   FunctionProvider(this._client);
   final RestClient _client;
 
-  Future<dynamic> run(String name, [Object? args]) async {
-    final body = await _client.post('/function/run', {'name': name, 'args': args ?? const <String, dynamic>{}});
+  /// [as] sends that token instead of the signed-in one (see [RestClient.post]).
+  Future<dynamic> run(String name, [Object? args, String? as]) async {
+    final body = await _client.post('/function/run', {'name': name, 'args': args ?? const <String, dynamic>{}}, as);
     return body is Map ? body['data'] : body;
   }
 }

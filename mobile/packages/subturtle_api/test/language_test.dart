@@ -445,4 +445,62 @@ void main() {
       expect(Profile.fromJson({'_id': 'pr'}).learningLanguage, isNull);
     });
   });
+
+  group('before sign in', () {
+    test('capabilities: gets an anonymous token, sends it once, and keeps it', () async {
+      final server = FakeServer();
+      server.onPath('/user/loginAnonymous', (_) => FakeServer.json({'token': 'anon-token'}));
+      server.functions['get-language-capabilities'] = (c) => c.headers['authorization'] == 'anon-token'
+          ? FakeServer.json({'status': 'success', 'data': {'learning': [{'code': 'de', 'name': 'German', 'nativeName': 'Deutsch', 'enabled': true, 'features': {}}], 'own': []}})
+          : FakeServer.json({'status': 'error', 'message': 'authentication is required'}, status: 401);
+      var signedOut = 0;
+      final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: server.client);
+      api.client.onUnauthorized = (_) => signedOut++;
+
+      final caps = await api.languages.capabilities();
+      expect(caps.fromServer, isTrue);
+      expect(caps.learningByCode('de'), isNotNull);
+      expect(api.client.token, isNull, reason: 'the anonymous token is never the signed-in token');
+
+      await api.languages.capabilities();
+      expect(server.calls.where((c) => c.url.path == '/user/loginAnonymous'), hasLength(1));
+      expect(signedOut, 0);
+    });
+
+    test('capabilities: a stale anonymous token is dropped and never signs out', () async {
+      final server = FakeServer();
+      var n = 0;
+      server.onPath('/user/loginAnonymous', (_) => FakeServer.json({'token': 'anon-${++n}'}));
+      server.functions['get-language-capabilities'] = (c) => c.headers['authorization'] == 'anon-2'
+          ? FakeServer.json({'status': 'success', 'data': {'learning': [], 'own': []}})
+          : FakeServer.json({'status': 'error', 'message': 'authentication is required'}, status: 401);
+      var signedOut = 0;
+      final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: server.client);
+      api.client.onUnauthorized = (_) => signedOut++;
+
+      await expectLater(api.languages.capabilities(), throwsA(isA<ApiException>()));
+      await api.languages.capabilities();
+      expect(n, 2);
+      expect(signedOut, 0);
+    });
+
+    test('capabilities: signed in, uses the account token and no anonymous one', () async {
+      final (api, server) = await signedIn();
+      server.onFunction('get-language-capabilities', {'learning': [], 'own': []});
+      await api.languages.capabilities();
+      expect(server.last('get-language-capabilities').headers['authorization'], fakeJwt('u1'));
+      expect(server.calls.where((c) => c.url.path == '/user/loginAnonymous'), isEmpty);
+    });
+  });
+
+  group('StarterPackSummary.isOpen (same rule as the web board)', () {
+    test('offered until done or skipped', () {
+      bool open(String s) => StarterPackSummary(state: s).isOpen;
+      expect(open('none'), isTrue, reason: 'learners from before multilingual have none');
+      expect(open('offered'), isTrue);
+      expect(open('in_progress'), isTrue);
+      expect(open('done'), isFalse);
+      expect(open('skipped'), isFalse);
+    });
+  });
 }

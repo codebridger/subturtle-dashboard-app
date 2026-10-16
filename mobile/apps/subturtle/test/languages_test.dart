@@ -278,6 +278,21 @@ void main() {
       expect(langs.interests, isEmpty);
       expect(find.text('Tell me'), findsOneWidget);
     });
+
+    testWidgets('the Languages page lists Coming later with Tell me, like the web', (tester) async {
+      final langs = FakeLanguageServer();
+      await pumpApp(tester, languages: langs);
+      await openSwitcher(tester);
+      await tester.tap(find.text('Manage languages'));
+      await tester.settle();
+      await tester.scrollUntilVisible(find.text('Portuguese · Português'), 100);
+      expect(eyebrow('Coming later'), findsOneWidget);
+      expect(find.text('Tell us you want it and we count you in.'), findsOneWidget);
+      await tester.tap(find.text('Tell me'));
+      await tester.settle();
+      expect(langs.interests, ['pt']);
+      expect(find.text('Got it'), findsOneWidget);
+    });
   });
 
   group('a server without the chat test or starter packs yet', () {

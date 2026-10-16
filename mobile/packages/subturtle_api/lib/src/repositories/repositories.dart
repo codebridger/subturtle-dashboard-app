@@ -606,14 +606,23 @@ class SaveAssistantRepository extends _Repo {
 /// the English-only app it was. The other calls are only reachable from screens
 /// the app shows when the server has the module.
 class LanguageRepository extends _Repo {
-  LanguageRepository(super.fn, super.data, super.userId, [super.activeLanguage]);
+  LanguageRepository(super.fn, super.data, super.userId, [super.activeLanguage, this.anonymousToken]);
+
+  /// Gets an anonymous token (`/user/loginAnonymous`). Before sign in the
+  /// server still wants a token, even on a public function: with none it
+  /// answers 401 and the app would fall back to English only.
+  final Future<String> Function()? anonymousToken;
+  String? _anonymous;
 
   /// Every learning and own language. Public (works with an anonymous token).
   Future<LanguageCapabilities> capabilities() async {
     try {
-      return LanguageCapabilities.fromJson(await fn.run('get-language-capabilities', const <String, dynamic>{}));
+      String? as;
+      if (userId().isEmpty && anonymousToken != null) as = _anonymous ??= await anonymousToken!();
+      return LanguageCapabilities.fromJson(await fn.run('get-language-capabilities', const <String, dynamic>{}, as));
     } on ApiException catch (e) {
       if (e.isMissingFunction) return LanguageCapabilities.fallback;
+      if (e.isAuthError) _anonymous = null; // an old anonymous token: get a new one next time
       rethrow;
     }
   }
