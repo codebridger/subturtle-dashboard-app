@@ -556,7 +556,8 @@ test.describe('Multilingual dashboard', () => {
         await page.getByTestId('pack-item-de-greetings-01').getByRole('button', { name: 'Mark as heard' }).click();
         await expect(page.getByTestId('pack-item-de-greetings-01')).toContainText('Heard');
 
-        await page.getByText("Today's board", { exact: true }).first().click();
+        // An in-app move to Today (no reload), as the sidebar link does; the phone layout hides the sidebar.
+        await page.evaluate(() => (window.location.hash = '#/board'));
         await expect(page.getByTestId('starter-pack-card')).toContainText('1 of 2 heard');
     });
 
