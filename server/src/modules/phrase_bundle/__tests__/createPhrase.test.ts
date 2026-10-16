@@ -110,7 +110,7 @@ describe("createPhrase persistence", () => {
 
     expect(trackServerEvent).toHaveBeenCalledWith(
       "phrase_saved_first-time",
-      "user-1",
+      { userId: "user-1" },
       { source_platform: "youtube", language_pair: "en-fa" }
     );
   });
