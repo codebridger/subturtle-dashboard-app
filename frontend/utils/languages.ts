@@ -243,3 +243,18 @@ export function shortCode(value?: string | null): string {
     const code = toCode(value);
     return code ? code.toUpperCase() : '';
 }
+
+/** Letters of the right-to-left scripts our own languages use (Hebrew, Arabic, Syriac, Thaana, N'Ko and their presentation forms). */
+const RTL_LETTER = /[֐-߿ࡠ-ࣿיִ-﷿ﹰ-﻿]/;
+
+/**
+ * The language to mark a run of text with, when it should be in `code` but may not be: the
+ * chat test's fixed questions carry English help even for a Persian speaker. A right-to-left
+ * code on text with no right-to-left letter would flip its punctuation ("?What is your name"),
+ * so that text gets no language and the browser picks its direction (`dir="auto"`).
+ */
+export function runLanguage(text: string | null | undefined, code: string | null | undefined): string | null {
+    if (!code) return null;
+    if (isRtl(code) && !RTL_LETTER.test(text ?? '')) return null;
+    return code;
+}

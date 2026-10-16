@@ -59,6 +59,8 @@
                 :error="error || errors.phrase"
                 :disabled="isLinguisticPhrase || isSubmitting"
                 :rows="2"
+                dir="auto"
+                data-testid="phrase-text"
             />
 
             <StTextarea
@@ -68,6 +70,8 @@
                 :error="errors.translation"
                 :disabled="isLinguisticPhrase || isSubmitting"
                 :rows="2"
+                dir="auto"
+                data-testid="phrase-translation"
             />
         </div>
     </StCard>

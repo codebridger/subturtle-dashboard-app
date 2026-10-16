@@ -160,6 +160,7 @@
 <script setup lang="ts">
     import { useLanguageStore } from '~/stores/language';
     import { dataProvider } from '@modular-rest/client';
+    import { languageQuery } from '~/utils/languageScope';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StIconButton, StSkeleton, StStatTile } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
@@ -230,16 +231,17 @@
 
     async function getRecentBundles() {
         const [recent, all] = await Promise.all([
+            // The active language's bundles only: no number on this page mixes languages (D-12).
             dataProvider.find<PhraseBundleType>({
                 database: DATABASE.USER_CONTENT,
                 collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: { refId: authUser.value?.id },
+                query: { refId: authUser.value?.id, ...languageQuery() },
                 options: { limit: 3, sort: { updatedAt: -1 } },
             }),
             dataProvider.count({
                 database: DATABASE.USER_CONTENT,
                 collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: { refId: authUser.value?.id },
+                query: { refId: authUser.value?.id, ...languageQuery() },
             }),
         ]);
 
@@ -254,7 +256,7 @@
                     await dataProvider.count({
                         database: DATABASE.USER_CONTENT,
                         collection: COLLECTIONS.PHRASE,
-                        query: { refId: authUser.value?.id },
+                        query: { refId: authUser.value?.id, ...languageQuery() },
                     })
                 ) || 0;
         } catch (error) {
