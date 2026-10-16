@@ -224,9 +224,18 @@ describe("first run (B-07)", () => {
 describe("add-language checks", () => {
   it("refuses a language not in the register, or switched off", async () => {
     const userId = await newAccount();
-    await expectError(LanguageService.addLanguage(userId, { language: "pt" }), "not_available", { language: "pt" });
+    await expectError(LanguageService.addLanguage(userId, { language: "ja" }), "not_available", { language: "ja" });
     process.env.LANGUAGES_ENABLED = "de";
     await expectError(LanguageService.addLanguage(userId, { language: "fr" }), "not_available");
+  });
+
+  it("refuses Portuguese (coming later), even when LANGUAGES_ENABLED names it", async () => {
+    const userId = await newAccount();
+    await expectError(LanguageService.addLanguage(userId, { language: "Portuguese" }), "not_available", { language: "pt" });
+    process.env.LANGUAGES_ENABLED = "pt,de";
+    await expectError(LanguageService.addLanguage(userId, { language: "pt" }), "not_available", { language: "pt" });
+    expect(await LanguageProfiles.countDocuments({ userId })).toBe(0);
+    expect((await Profiles.findOne({ refId: userId }).lean<any>()).learningLanguages ?? []).toEqual([]);
   });
 
   it("refuses a bad level, source or goals", async () => {
@@ -257,6 +266,63 @@ describe("plan limit (B-33)", () => {
   it("an existing English learner on Starter cannot swap", async () => {
     const userId = await legacyAccount();
     await expectError(LanguageService.addLanguage(userId, { language: "de" }), "upgrade_needed", { plan: "starter", maxLanguages: 1 });
+  });
+
+  it("Starter cannot swap: a removed language holds its slot, but adding it back restores it", async () => {
+    const userId = await newAccount();
+    await LanguageService.addLanguage(userId, { language: "de" });
+    await Phrases.create({ refId: userId, phrase: "Kind", translation: "child", language: "de" });
+    await LanguageService.removeLanguage(userId, "de");
+
+    await expectError(LanguageService.addLanguage(userId, { language: "es" }), "upgrade_needed", { plan: "starter", maxLanguages: 1 });
+    expect(await LanguageProfiles.countDocuments({ userId, language: "es" })).toBe(0);
+    expect((await Profiles.findOne({ refId: userId }).lean<any>()).learningLanguages).toEqual([]);
+
+    const { state } = await LanguageService.addLanguage(userId, { language: "de" });
+    expect(state).toMatchObject({ learningLanguage: "de", onboardingState: "done" });
+    expect(state.languages).toHaveLength(1);
+    expect(state.languages[0]).toMatchObject({ code: "de", status: "active", phraseCount: 1 });
+  });
+
+  it("an existing English learner on Starter cannot swap by removing English first", async () => {
+    const userId = await legacyAccount();
+    await LanguageService.getState(userId);
+    await LanguageService.removeLanguage(userId, "en");
+    await expectError(LanguageService.addLanguage(userId, { language: "de" }), "upgrade_needed", { plan: "starter", maxLanguages: 1 });
+    expect((await LanguageService.addLanguage(userId, { language: "en" })).state.learningLanguage).toBe("en");
+  });
+
+  it("on Starter a removed language stops holding its slot after its 30 days", async () => {
+    const userId = await newAccount();
+    await LanguageService.addLanguage(userId, { language: "de" });
+    await LanguageService.removeLanguage(userId, "de");
+    await LanguageProfiles.updateOne({ userId, language: "de" }, { $set: { purgeAt: new Date(Date.now() - DAY) } });
+    expect((await LanguageService.addLanguage(userId, { language: "es" })).state.learningLanguage).toBe("es");
+  });
+
+  it("on Starter a remove racing an add of another language never lets the new one in", async () => {
+    for (let round = 0; round < 5; round++) {
+      const userId = await newAccount();
+      await LanguageService.addLanguage(userId, { language: "de" });
+      const [removed, added] = await Promise.allSettled([
+        LanguageService.removeLanguage(userId, "de"),
+        LanguageService.addLanguage(userId, { language: "es" }),
+      ]);
+      expect(removed.status).toBe("fulfilled");
+      expect(added.status).toBe("rejected");
+      expect((added as PromiseRejectedResult).reason.message).toMatch(/^upgrade_needed/);
+      expect(await LanguageProfiles.countDocuments({ userId, language: "es", status: "active" })).toBe(0);
+      expect((await LanguageService.getState(userId)).languages.filter((l) => l.status === "active")).toEqual([]);
+    }
+  });
+
+  it("paid plans keep today's behaviour: a removed language frees its slot", async () => {
+    const userId = await newAccount();
+    await subscribe(userId, "reader");
+    for (const language of ["de", "fr", "es"]) await LanguageService.addLanguage(userId, { language });
+    await LanguageService.removeLanguage(userId, "fr");
+    const { state } = await LanguageService.addLanguage(userId, { language: "it" });
+    expect(state.languages.filter((l) => l.status === "active").map((l) => l.code).sort()).toEqual(["de", "es", "it"]);
   });
 
   it("reads the limit from the subscription snapshot, else the tier's number", async () => {
@@ -324,6 +390,33 @@ describe("plan limit (B-33)", () => {
     state = await LanguageService.getState(userId);
     expect(state.languages.every((l) => l.status === "active")).toBe(true);
     expect(state.learningLanguage).toBe("de");
+  });
+
+  it("pause-languages keeps `keep` first, fills spare room, pauses the rest, leaves removed ones alone", async () => {
+    const userId = await newAccount();
+    await subscribe(userId, "coach");
+    for (const language of ["de", "fr", "es", "it", "sv"]) await LanguageService.addLanguage(userId, { language });
+    await LanguageService.removeLanguage(userId, "sv");
+    await LanguageService.setActiveLanguage(userId, "it");
+
+    // Down to Reader (3): the active language, then the oldest.
+    await Subscriptions.deleteMany({});
+    await subscribe(userId, "reader");
+    let state = await LanguageService.getState(userId);
+    const statusOf = (s: typeof state) => Object.fromEntries(s.languages.map((l) => [l.code, l.status]));
+    expect(statusOf(state)).toEqual({ de: "active", fr: "active", es: "paused", it: "active", sv: "removed" });
+
+    // keep shorter than the limit: kept first, then the active language, then the oldest.
+    ({ state } = await LanguageService.pauseLanguages(userId, ["es"]));
+    expect(statusOf(state)).toEqual({ de: "active", fr: "paused", es: "active", it: "active", sv: "removed" });
+    expect(state.learningLanguage).toBe("es"); // the active language (it) was not in keep
+
+    // keep in order with the active language in it: fr, de, then the oldest other active (es).
+    await LanguageService.setActiveLanguage(userId, "de");
+    ({ state } = await LanguageService.pauseLanguages(userId, ["fr", "de"]));
+    expect(statusOf(state)).toEqual({ de: "active", fr: "active", es: "active", it: "paused", sv: "removed" });
+    expect(state.learningLanguage).toBe("de");
+    expect((await Profiles.findOne({ refId: userId }).lean<any>()).pausedLanguages).toEqual(["it"]);
   });
 
   it("pause-languages refuses more than the plan allows, or a language the learner lacks", async () => {
@@ -475,6 +568,19 @@ describe("settings, own language and interest (B-05, B-06)", () => {
     expect(await LanguageService.setLanguageInterest(b, "pt", false)).toEqual({ on: false });
     expect(await Interests.countDocuments({ language: "pt" })).toBe(1);
     await expectError(LanguageService.setLanguageInterest(a, "Klingon", true), "invalid_argument");
+  });
+
+  it("get-language-state returns the learner's Tell me languages", async () => {
+    const a = await newAccount();
+    const b = await newAccount();
+    expect((await LanguageService.getState(a)).interests).toEqual([]);
+    await LanguageService.setLanguageInterest(a, "pt", true);
+    await LanguageService.setLanguageInterest(a, "Japanese", true);
+    await LanguageService.setLanguageInterest(b, "ko", true);
+    expect((await LanguageService.getState(a)).interests).toEqual(["ja", "pt"]);
+    await LanguageService.setLanguageInterest(a, "ja", false);
+    expect((await LanguageService.getState(a)).interests).toEqual(["pt"]);
+    expect((await fn("get-language-state")({ userId: b })).interests).toEqual(["ko"]);
   });
 });
 

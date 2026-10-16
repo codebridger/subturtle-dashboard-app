@@ -10,6 +10,7 @@ const EXPECTED: Record<string, string> = {
   it: "it-IT-Neural2-A",
   sv: "sv-SE-Wavenet-A",
   lt: "lt-LT-Standard-B",
+  pt: "pt-BR-Neural2-A",
 };
 
 describe("speechVoice", () => {

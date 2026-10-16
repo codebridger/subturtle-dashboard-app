@@ -66,7 +66,7 @@ describe("generateStarterPackAudio", () => {
   });
 
   it("refuses a language that is not in the register", async () => {
-    await expect(run([pack("pt", ["Olá"])])).rejects.toThrow(/not a learning language/);
+    await expect(run([pack("ja", ["こんにちは"])])).rejects.toThrow(/not a learning language/);
   });
 
   it("reads the voice's language code", () => {
