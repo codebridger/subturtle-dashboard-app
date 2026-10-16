@@ -1,7 +1,7 @@
 /**
- * B-14 / B-17: translateWithContext reads both language names, sends the learning
- * language, and returns detectedLanguage / resolvedLanguage / inProfile. Simple mode keeps
- * its bare string unless the caller sends `withLanguage: true`.
+ * translateWithContext on main: provider errors, and the translation_requested event
+ * (B-01: the caller and its install id; B-03: the client trigger). The multilingual
+ * tests for this function live on dev.
  */
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 
@@ -39,58 +39,6 @@ beforeEach(() => {
 });
 
 describe("translateWithContext", () => {
-  it("simple mode returns the bare string for old clients", async () => {
-    mockSimple.mockResolvedValue("ترجمه");
-    const out = await translate({ phrase: "Hallo", context: "Hallo du", targetLanguage: "fa", sourceLanguage: "auto", userId: USER });
-    expect(out).toBe("ترجمه");
-    expect(mockSimple.mock.calls[0][0]).toEqual(
-      expect.objectContaining({ sourceLanguage: "", translationLanguage: "fa", learningLanguage: "de" })
-    );
-    // the old name is counted
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      expect.objectContaining({ field: "targetLanguage", surface: "translateWithContext" }),
-      expect.anything(),
-      { upsert: true }
-    );
-  });
-
-  it("simple mode with withLanguage returns the language fields", async () => {
-    mockSimple.mockResolvedValue({ translation: "سلام", source: "es" });
-    const out = await translate({ phrase: "Hola", context: "Hola", translationLanguage: "fa", withLanguage: true, userId: USER });
-    expect(out).toEqual({ translation: "سلام", detectedLanguage: "es", resolvedLanguage: "es", inProfile: true });
-    expect(mockSimple.mock.calls[0][0]).toEqual(expect.objectContaining({ withLanguage: true }));
-    expect(mockUpdateOne).not.toHaveBeenCalled();
-  });
-
-  it("detailed mode adds the three fields and falls back to the active language", async () => {
-    mockDetailed.mockResolvedValue({ chunks: [], language_info: { source: "fr", target: "fa" }, translation: { phrase: "x" } });
-    const out = await translate({ phrase: "Il y a", context: "Il y a", translationLanguage: "fa", translationType: "detailed", userId: USER });
-    expect(out.detectedLanguage).toBe("fr");
-    expect(out.resolvedLanguage).toBe("de");
-    expect(out.inProfile).toBe(false);
-    expect(out.translation.phrase).toBe("x");
-  });
-
-  it("a language argument the learner has replaces the active one", async () => {
-    mockDetailed.mockResolvedValue({ chunks: [], language_info: { source: "fr", target: "fa" } });
-    const out = await translate({ phrase: "p", context: "c", translationLanguage: "fa", translationType: "detailed", userId: USER, language: "es" });
-    expect(out.resolvedLanguage).toBe("es");
-    expect(mockDetailed.mock.calls[0][0]).toEqual(expect.objectContaining({ learningLanguage: "es" }));
-  });
-
-  it("an anonymous caller gets unknown unless detection finds nothing to place", async () => {
-    mockDetailed.mockResolvedValue({ chunks: [], language_info: { source: "en", target: "fa" } });
-    const out = await translate({ phrase: "p", context: "c", targetLanguage: "fa", translationType: "detailed" });
-    expect(out).toEqual(expect.objectContaining({ detectedLanguage: "en", resolvedLanguage: "unknown", inProfile: false }));
-  });
-
-  it("a profile from before multilingual is English", async () => {
-    mockProfile = { refId: USER };
-    mockDetailed.mockResolvedValue({ chunks: [], language_info: { source: "en", target: "fa" } });
-    const out = await translate({ phrase: "p", context: "c", translationLanguage: "fa", translationType: "detailed", userId: USER });
-    expect(out).toEqual(expect.objectContaining({ detectedLanguage: "en", resolvedLanguage: "en", inProfile: true }));
-  });
-
   it("wraps provider errors once", async () => {
     jest.spyOn(console, "error").mockImplementation(() => undefined);
     mockDetailed.mockRejectedValue(new Error("Failed to translate text: boom"));
