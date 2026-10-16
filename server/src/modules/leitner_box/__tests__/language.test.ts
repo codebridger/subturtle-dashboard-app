@@ -324,7 +324,8 @@ describe("board per language", () => {
     await call(boardFns, "consume-activity", { userId: ALICE, type: "leitner_review", language: "de" });
     const rows: any[] = await Board.find({ userId: ALICE }).lean();
     expect(rows.find((r) => r.language === "de").state).toBe("idle");
-    expect(rows.find((r) => !r.language).state).toBe("toasted");
+    // The old row is adopted on the way (it now says "en") and is still toasted.
+    expect(rows.find((r) => r.language === "en").state).toBe("toasted");
   });
 
   it("parallel refreshes create one row", async () => {

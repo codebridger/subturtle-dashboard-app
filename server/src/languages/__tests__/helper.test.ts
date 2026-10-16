@@ -120,7 +120,9 @@ describe("requestLanguage (request default)", () => {
 
 describe("languageFilter", () => {
   it("matches documents with no language for English", () => {
-    expect(languageFilter("en")).toEqual({ language: { $in: ["en", null] } });
+    expect(languageFilter("en")).toEqual({
+      $and: [{ $or: [{ language: "en" }, { language: { $exists: false } }, { language: null }] }],
+    });
   });
 
   it("matches the code only for other languages", () => {

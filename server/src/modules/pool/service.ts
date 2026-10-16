@@ -7,7 +7,7 @@ import {
 } from "../../config";
 import { PoolItem } from "./db";
 import { pickPrimaryChunkText } from "../../utils/chunk";
-import { LangCode, langOf, languageFilter, toCode } from "../../languages/helper";
+import { LangCode, langOf, toCode } from "../../languages/helper";
 import {
   getLearnerLanguages,
   isStudying,
@@ -18,11 +18,15 @@ import {
 } from "../../languages/learner";
 import { getOrCreate } from "../../utils/get-or-create";
 import { poolSettings } from "../../languages/language-settings";
+import { findLanguageDocs, itemsPlan, mergePoolItems, resolveLanguageDoc } from "../../languages/language-docs";
+
+const POOL_MERGE = itemsPlan(mergePoolItems);
 
 /**
  * The Pool: one document per `(userId, language)` (ADR-006 point 3, work list B-11). A Pool
- * from before multilingual has no `language` and is the English Pool (`languageFilter`), so
- * this works on today's data with no backfill.
+ * from before multilingual has no `language` and is the English Pool, so this works on
+ * today's data with no backfill. The Pool is found in code (`resolveLanguageDoc`), not with
+ * one language filter, so an old Pool is found on every database and adopted.
  *
  * Every method takes an optional `language`. Without one, a phrase-scoped call (add,
  * remove, promote) uses the phrase's own language, and a list call uses the active language.
@@ -34,7 +38,17 @@ export class PoolService {
 
   private static async findPool(userId: string, language: LangCode) {
     const col = await this.getCollection();
-    return (await col.findOne({ userId, ...languageFilter(language) })) as any;
+    return (await resolveLanguageDoc(col as any, { userId }, language, POOL_MERGE)) as any;
+  }
+
+  /** The Pool of the language, created when the learner has none (old or new). */
+  private static async getOrCreatePool(userId: string, language: LangCode) {
+    const found = await this.findPool(userId, language);
+    if (found) return found;
+    const col = await this.getCollection();
+    await getOrCreate(col, { userId, language }, { userId, language, items: [] });
+    // Read again: merges a copy a racing call made before the unique index exists.
+    return this.findPool(userId, language);
   }
 
   /**
@@ -44,14 +58,13 @@ export class PoolService {
   static async add(userId: string, phraseId: string, language?: LangCode): Promise<void> {
     const col = await this.getCollection();
     const lang = await resolvePhraseLanguage(userId, phraseId, language);
-    const filter = { userId, ...languageFilter(lang) };
-
-    await getOrCreate(col, filter, { userId, language: lang, items: [] });
+    const pool = await this.getOrCreatePool(userId, lang);
+    if (!pool) throw new Error(`Could not create the ${lang} Pool for ${userId}`);
 
     // One conditional push: a phrase already in the Pool does not match, so two adds at
     // once still leave one item.
     await col.updateOne(
-      { ...filter, "items.phraseId": { $ne: String(phraseId) } },
+      { _id: pool._id, "items.phraseId": { $ne: String(phraseId) } },
       { $push: { items: { phraseId: String(phraseId), pooled_at: new Date(), encountered: false } } }
     );
   }
@@ -65,7 +78,9 @@ export class PoolService {
     const col = await this.getCollection();
     const pull = { $pull: { items: { phraseId: String(phraseId) } } };
     if (language) {
-      await col.updateOne({ userId, ...languageFilter(language) }, pull);
+      // Every copy of the language (an old Pool and a new one), found in code.
+      const pools = await findLanguageDocs(col as any, { userId }, language);
+      if (pools.length > 0) await col.updateMany({ _id: { $in: pools.map((pool: any) => pool._id) } }, pull);
     } else {
       await col.updateMany({ userId, "items.phraseId": String(phraseId) }, pull);
     }

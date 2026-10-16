@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -29,11 +30,11 @@ describe("LeitnerService Timing Tests", () => {
 		jest.setSystemTime(new Date("2026-01-28T10:00:00Z"));
 		jest.clearAllMocks();
 
-		mockSystemCollection = {
+		mockSystemCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 
 		mockPhraseCollection = {
 			find: jest.fn().mockReturnValue({
@@ -62,7 +63,8 @@ describe("LeitnerService Timing Tests", () => {
 		const items = await LeitnerService.getDueItems(userId);
 
 		expect(items).toEqual([]);
-		expect(mockSystemCollection.findOne).toHaveBeenCalledWith({ userId, language: { $in: ["en", null] } });
+		// The learner's documents are listed by owner only; the language is picked in code.
+		expect(mockSystemCollection.find).toHaveBeenCalledWith({ userId }, { _id: 1, language: 1, refId: 1 });
 	});
 
 	it("Case 2: Phrase Addition - should make a newly added phrase immediately due", async () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { BoardService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -11,8 +12,8 @@ jest.mock("@modular-rest/server", () => ({
 }));
 
 // A request with no language works on the active language; these profiles have none, so
-// English, which also matches rows from before multilingual.
-const EN = { language: { $in: ["en", null] } };
+// English. A new row is created with the plain code; old rows are found in code.
+const EN = { language: "en" };
 
 describe("BoardService Tests", () => {
 	let mockCollection: any;
@@ -21,12 +22,12 @@ describe("BoardService Tests", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 
-		mockCollection = {
+		mockCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
 			find: jest.fn(),
-		};
+		});
 
 		(getCollection as any).mockResolvedValue(mockCollection);
 	});
@@ -41,7 +42,6 @@ describe("BoardService Tests", () => {
 			expect(mockCollection.updateOne).toHaveBeenCalledWith(
 				{ userId, type: "test_type", ...EN },
 				{ $setOnInsert: expect.objectContaining({
-					language: "en",
 					state: "toasted",
 					persistent: false,
 					meta: { count: 1 }
@@ -60,7 +60,6 @@ describe("BoardService Tests", () => {
 			expect(mockCollection.updateOne).toHaveBeenCalledWith(
 				{ userId, type: "test_type", ...EN },
 				{ $setOnInsert: expect.objectContaining({
-					language: "en",
 					state: "idle",
 					persistent: true,
 					meta: { isActive: true }
@@ -128,9 +127,9 @@ describe("BoardService Tests", () => {
 		it("should query for either toasted or (persistent and active) activities", async () => {
 			await BoardService.getBoard(userId);
 
+			// The language is picked in code, so the query has none.
 			expect(mockCollection.find).toHaveBeenCalledWith({
 				userId,
-				...EN,
 				$or: [
 					{ state: "toasted" },
 					{ persistent: true, "meta.isActive": true }
@@ -141,10 +140,12 @@ describe("BoardService Tests", () => {
 
 	describe("consumeActivity", () => {
 		it("should set state to idle", async () => {
+			mockCollection.findOne.mockResolvedValue({ _id: "act_1", type: "test_type", state: "toasted" });
+			mockCollection.updateMany = jest.fn();
 			await BoardService.consumeActivity(userId, "test_type");
 
-			expect(mockCollection.updateOne).toHaveBeenCalledWith(
-				{ userId, type: "test_type", ...EN },
+			expect(mockCollection.updateMany).toHaveBeenCalledWith(
+				{ _id: { $in: ["act_1"] } },
 				expect.objectContaining({
 					$set: expect.objectContaining({ state: "idle" })
 				})

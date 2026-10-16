@@ -9,6 +9,9 @@ import { LangCode, langOf, languageFilter, toCode } from "../../languages/helper
 import { getLearnerLanguages, resolveLanguage, resolvePhraseLanguage } from "../../languages/learner";
 import { findLanguageProfile, poolSettings } from "../../languages/language-settings";
 import { getOrCreate } from "../../utils/get-or-create";
+import { itemsPlan, mergeLeitnerItems, resolveLanguageDoc } from "../../languages/language-docs";
+
+const LEITNER_MERGE = itemsPlan(mergeLeitnerItems);
 import { clozeFields } from "./cloze-cue";
 
 // Helper type since modular-rest types are opaque sometimes
@@ -54,7 +57,7 @@ function toPlainItem(item: LeitnerItem): LeitnerItem {
  * Spaced review. One Leitner document per `(userId, language)` (ADR-006 point 3, work list
  * B-10): each language has its own items, daily limit and box chain; the review hour and
  * interval stay global on the profile. A document from before multilingual has no
- * `language` and is the English one (`languageFilter`), so this works on today's data with
+ * `language` and is the English one (found in code by `getSystem`), so this works on today's data with
  * no backfill.
  *
  * Every method takes an optional `language`. Without one, a phrase-scoped call (review,
@@ -64,9 +67,14 @@ function toPlainItem(item: LeitnerItem): LeitnerItem {
 export class LeitnerService {
   private static syncedUsers = new Set<string>();
 
+  /**
+   * The learner's Leitner document for the language. Resolved in code, not with one
+   * language filter (`resolveLanguageDoc`): an old document with no `language` is found on
+   * every database and adopted, and duplicate copies are merged into one.
+   */
   private static async getSystem(userId: string, language: LangCode): Promise<LeitnerSystemDoc | null> {
     const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
-    return (await col.findOne({ userId, ...languageFilter(language) })) as unknown as LeitnerSystemDoc;
+    return (await resolveLanguageDoc(col as any, { userId }, language, LEITNER_MERGE)) as LeitnerSystemDoc | null;
   }
 
   /** Every Leitner document of the user (one per language). */
@@ -143,9 +151,12 @@ export class LeitnerService {
   }
 
   /**
-   * Makes sure the learner has a Leitner document for the language. Get-or-create is one
-   * upsert with `$setOnInsert` (ADR-006 point 3): two calls at once leave one document, and
-   * a duplicate-key error from the unique `(userId, language)` index counts as success.
+   * Makes sure the learner has a Leitner document for the language. It creates one only
+   * when `getSystem` finds none, old or new, so an old document is never hidden by a new
+   * empty one. The create is one upsert with `$setOnInsert` on the plain `language` value
+   * (ADR-006 point 3); a duplicate-key error from the unique `(userId, language)` index
+   * counts as success. Before that index exists two calls at once can both insert, so the
+   * document is read again afterwards, which merges any copy into one.
    * Returns the language it worked on.
    */
   static async ensureInitialized(userId: string, language?: LangCode): Promise<LangCode> {
@@ -153,12 +164,13 @@ export class LeitnerService {
     const existing = await this.getSystem(userId, lang);
     if (!existing) {
       const col = await getCollection(DATABASE_LEITNER, LEITNER_SYSTEM_COLLECTION);
-      await getOrCreate(col, { userId, ...languageFilter(lang) }, {
+      await getOrCreate(col, { userId, language: lang }, {
         userId,
         language: lang,
         settings: this.DEFAULT_SETTINGS,
         items: [],
       });
+      await this.getSystem(userId, lang);
       await this.syncScheduledJob(userId);
     }
     return lang;

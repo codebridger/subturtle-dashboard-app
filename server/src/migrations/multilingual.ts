@@ -32,6 +32,9 @@ import {
 } from "../config";
 import { DEFAULT_LANGUAGE, langOf, toCode } from "../languages/helper";
 import { getOwnLanguage } from "../languages/registry";
+import { mergeLeitnerItems, mergePoolItems } from "../languages/language-docs";
+
+export { mergeLeitnerItems, mergePoolItems };
 import { pickPrimaryChunkText } from "../utils/chunk";
 
 type Db = any; // mongodb Db: the driver types are not a direct dependency of the server
@@ -55,7 +58,9 @@ export interface StepReport {
 
 const DEFAULT_BATCH = 500;
 /** A stored document with no language: missing or null (both are English, `langOf`). */
-const NO_LANGUAGE = { language: null };
+// Both forms, not `{ language: null }` alone: on Firestore with MongoDB compatibility a null
+// match is not promised to find a missing field.
+const NO_LANGUAGE = { $or: [{ language: null }, { language: { $exists: false } }] };
 
 const pluralize = mongoose.pluralize() as (name: string) => string;
 
@@ -335,42 +340,7 @@ async function forEachUserGroup(collection: any, batchSize: number, fn: (userId:
   if (current !== null) await fn(current, group);
 }
 
-function byPhrase(items: Doc[] | undefined): Map<string, Doc> {
-  const map = new Map<string, Doc>();
-  for (const item of items || []) if (item?.phraseId) map.set(String(item.phraseId), item);
-  return map;
-}
-
 const time = (value: unknown) => (value ? new Date(value as any).getTime() : 0);
-
-/** Merges Leitner items: the copy answered last wins. */
-export function mergeLeitnerItems(primary: Doc[], others: Doc[][]): Doc[] {
-  const merged = byPhrase(primary);
-  for (const items of others) {
-    for (const [id, item] of byPhrase(items)) {
-      const kept = merged.get(id);
-      if (!kept || time(item.lastAttemptDate) > time(kept.lastAttemptDate)) merged.set(id, item);
-    }
-  }
-  return [...merged.values()];
-}
-
-/** Merges Pool items: the earliest `pooled_at` wins, and a phrase met in any copy is met. */
-export function mergePoolItems(primary: Doc[], others: Doc[][]): Doc[] {
-  const merged = byPhrase(primary);
-  for (const items of others) {
-    for (const [id, item] of byPhrase(items)) {
-      const kept = merged.get(id);
-      if (!kept) merged.set(id, item);
-      else
-        merged.set(id, {
-          ...(time(item.pooled_at) < time(kept.pooled_at) ? item : kept),
-          encountered: Boolean(kept.encountered || item.encountered),
-        });
-    }
-  }
-  return [...merged.values()];
-}
 
 async function mergePerUserLanguage(
   db: Db,

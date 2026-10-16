@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { PoolService } from "../service";
 import { getCollection } from "@modular-rest/server";
 import { LeitnerService } from "../../leitner_box/service";
@@ -28,12 +29,13 @@ describe("PoolService", () => {
 		jest.setSystemTime(new Date("2026-07-03T10:00:00Z"));
 		jest.clearAllMocks();
 
-		mockPoolCollection = {
+		mockPoolCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
+			updateMany: jest.fn(),
 			find: jest.fn(),
-		};
+		});
 		mockProfileCollection = { findOne: jest.fn() };
 
 		(getCollection as any).mockImplementation((_db: string, col: string) => {
@@ -52,16 +54,19 @@ describe("PoolService", () => {
 		// The real idempotency (a second add pushes nothing) runs against MongoDB in
 		// language.test.ts; here we check the shape of the two writes.
 		it("gets-or-creates the language's pool, then pushes with a server-set pooled_at", async () => {
+			// No Pool yet; after the upsert the read finds the new one.
+			mockPoolCollection.findOne.mockResolvedValueOnce(null).mockResolvedValue({ _id: "pool_en", userId, language: "en", items: [] });
 			await PoolService.add(userId, "p1");
 
 			expect(mockPoolCollection.create).not.toHaveBeenCalled();
 			const [upsert, push] = mockPoolCollection.updateOne.mock.calls;
+			// The upsert pins the plain language value, never a filter that needs null semantics.
 			expect(upsert).toEqual([
-				{ userId, language: { $in: ["en", null] } },
-				{ $setOnInsert: { language: "en", items: [] } },
+				{ userId, language: "en" },
+				{ $setOnInsert: { items: [] } },
 				{ upsert: true },
 			]);
-			expect(push[0]).toEqual({ userId, language: { $in: ["en", null] }, "items.phraseId": { $ne: "p1" } });
+			expect(push[0]).toEqual({ _id: "pool_en", "items.phraseId": { $ne: "p1" } });
 			const item = push[1].$push.items;
 			expect(item.phraseId).toBe("p1");
 			expect(item.encountered).toBe(false);
@@ -69,16 +74,19 @@ describe("PoolService", () => {
 		});
 
 		it("only pushes when the phrase is not in the pool yet (conditional push)", async () => {
+			mockPoolCollection.findOne.mockResolvedValue({ _id: "pool_de", userId, language: "de", items: [] });
 			await PoolService.add(userId, "p1", "de");
 
-			const push = mockPoolCollection.updateOne.mock.calls[1];
-			expect(push[0]).toEqual({ userId, language: "de", "items.phraseId": { $ne: "p1" } });
+			// The Pool exists, so no upsert: just the conditional push.
+			const [push] = mockPoolCollection.updateOne.mock.calls;
+			expect(push[0]).toEqual({ _id: "pool_de", "items.phraseId": { $ne: "p1" } });
 		});
 	});
 
 	describe("promote", () => {
 		it("adds to L1 (onlyIfAbsent) then removes from the pool", async () => {
 			mockPoolCollection.updateOne.mockResolvedValue({});
+			mockPoolCollection.findOne.mockResolvedValue({ _id: "pool_en", userId, language: "en", items: [] });
 
 			await PoolService.promote(userId, ["p1"], { encountered: true });
 
@@ -88,8 +96,8 @@ describe("PoolService", () => {
 				language: "en",
 			});
 			// remove -> $pull on the pool collection
-			expect(mockPoolCollection.updateOne).toHaveBeenCalledWith(
-				{ userId, language: { $in: ["en", null] } },
+			expect(mockPoolCollection.updateMany).toHaveBeenCalledWith(
+				{ _id: { $in: ["pool_en"] } },
 				{ $pull: { items: { phraseId: "p1" } } }
 			);
 		});

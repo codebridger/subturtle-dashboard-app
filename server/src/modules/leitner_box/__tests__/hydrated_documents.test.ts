@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import mongoose from "mongoose";
 
 // The other Leitner tests feed plain objects. These use real Mongoose documents (no
@@ -31,7 +32,7 @@ describe("LeitnerService on hydrated Mongoose documents", () => {
     (getCollection as any).mockImplementation((_db: string, collection: string) => {
       // No profile and no language profile: an old account, English only.
       if (collection === "language_profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
-      if (collection === "leitner_system") return Promise.resolve({ findOne: jest.fn(async () => system), updateOne: jest.fn() });
+      if (collection === "leitner_system") return Promise.resolve(findFromFindOne({ findOne: jest.fn(async () => system), updateOne: jest.fn() }));
       if (collection === "phrase") return Promise.resolve({ find: jest.fn(async () => [{ _id: phraseId, phrase: "hit the sack", chunks: [] }]) });
       if (collection === "profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
       return Promise.resolve({});
