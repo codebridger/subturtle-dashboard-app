@@ -20,11 +20,16 @@
         <p v-for="p in language.pending" :key="p.language" class="text-st-sm font-bold text-st-sky-600">
             {{ t('languages.add.upgrade-waiting', { n: p.count, language: language.nameOf(p.language), date: formatLanguageDate(p.expiresAt) }, p.count) }}
         </p>
+        <!-- A way back in that needs no upgrade: restoring the removed language (B-33). -->
+        <slot />
         <div class="flex flex-wrap items-center gap-2.5">
-            <StButton color="primary" icon="solar:crown-bold" @click="router.push(plansUrl)">{{ isStarter ? t('languages.page.see-plans') : t('languages.page.upgrade') }}</StButton>
+            <StButton :variant="$slots.default ? 'outline' : 'solid'" color="primary" icon="solar:crown-bold" data-testid="plan-limit-plans" @click="router.push(plansUrl)">
+                {{ isStarter ? t('languages.page.see-plans') : t('languages.page.upgrade') }}
+            </StButton>
             <!-- Reader can make room by removing one; Starter has no swap (Q14). -->
-            <StButton v-if="!isStarter" variant="ghost" color="neutral" @click="router.push('/settings/languages')">{{ t('languages.add.manage') }}</StButton>
-            <NuxtLink to="/board" class="text-st-sm font-bold text-st-link">{{ t('languages.add.back-to-today') }}</NuxtLink>
+            <StButton v-if="!isStarter && !firstRun" variant="ghost" color="neutral" @click="router.push('/settings/languages')">{{ t('languages.add.manage') }}</StButton>
+            <!-- In first run Today sends the learner straight back here, so it is not offered. -->
+            <NuxtLink v-if="!firstRun" to="/board" class="text-st-sm font-bold text-st-link">{{ t('languages.add.back-to-today') }}</NuxtLink>
         </div>
     </section>
 </template>
@@ -39,7 +44,7 @@
      * instead of "Add a language" wherever the learner is at the limit. Upgrade goes to the
      * plans page with the next plan suggested.
      */
-    withDefaults(defineProps<{ compact?: boolean }>(), { compact: false });
+    withDefaults(defineProps<{ compact?: boolean; firstRun?: boolean }>(), { compact: false, firstRun: false });
 
     const { t } = useI18n();
     const router = useRouter();
@@ -62,6 +67,11 @@
     });
 
     const body = computed(() => {
+        // Starter with no active language: the one place is held by a language removed lately.
+        const held = language.restorable[0];
+        if (isStarter.value && !language.languages.length && held) {
+            return t('languages.add.upgrade-card-body-removed', { language: language.nameOf(held.code), date: formatLanguageDate(held.purgeAt) });
+        }
         if (isStarter.value) return t('languages.add.upgrade-card-body', { language: activeName.value });
         if (language.plan === 'reader') return t('languages.add.upgrade-card-body-reader', { used: language.usedCount, max: language.maxLanguages });
         return t('languages.add.upgrade-card-body-full');

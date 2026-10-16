@@ -1,8 +1,11 @@
 import { useProfileStore } from '~/stores/profile';
 import { useLanguageStore } from '~/stores/language';
 
-/** The screens a learner with no language yet may open (D-20): the steps themselves. */
-const FIRST_RUN_PATHS = ['/settings/languages/add', '/settings/languages/test', '/practice/starter-pack', '/settings/profile'];
+/**
+ * The screens a learner with no language yet may open (D-20): the steps themselves, and the
+ * plans page, which a Starter learner whose removed language still holds its slot needs.
+ */
+const FIRST_RUN_PATHS = ['/settings/languages/add', '/settings/languages/test', '/practice/starter-pack', '/settings/profile', '/settings/subscription'];
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
     const profileStore = useProfileStore();

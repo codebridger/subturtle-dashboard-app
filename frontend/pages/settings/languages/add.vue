@@ -11,7 +11,27 @@
         </div>
 
         <!-- At the plan limit, step 1 is replaced by the upgrade card (D-25). Starter never swaps. -->
-        <PlanLimitCard v-if="atLimit" />
+        <PlanLimitCard v-if="atLimit" :first-run="isFirstRun">
+            <!-- Starter holds a removed language's place for 30 days (B-33): bringing it back is
+                 always possible, so the learner is never stuck, even in first run. -->
+            <template v-if="language.canRestore && language.restorable.length">
+                <div
+                    v-for="r in language.restorable"
+                    :key="r.code"
+                    :data-testid="`restore-${r.code}`"
+                    class="flex flex-wrap items-center gap-3 rounded-st-lg border border-st-line bg-st-card px-4 py-3"
+                >
+                    <LanguageChip :code="r.code" />
+                    <span class="flex min-w-[12rem] flex-1 flex-col">
+                        <span class="text-st-base font-extrabold text-st-strong">{{ pickerLabel(r.code) }}</span>
+                        <span class="text-st-sm font-semibold text-st-muted">{{ t('languages.add.restore-meta', { date: formatLanguageDate(r.purgeAt) }) }}</span>
+                    </span>
+                    <StButton color="primary" icon="solar:refresh-bold" :disabled="busy" :data-testid="`restore-${r.code}-button`" @click="restore(r)">
+                        {{ t('languages.add.restore', { language: language.nameOf(r.code) }) }}
+                    </StButton>
+                </div>
+            </template>
+        </PlanLimitCard>
 
         <!-- Step 1: pick one of the ready languages the learner does not have yet (Q13). -->
         <div v-else-if="step === 1" class="flex flex-col gap-3">
@@ -137,6 +157,7 @@
     import { formatLanguageDate } from '~/utils/languageDates';
     import { LanguageApiError } from '~/utils/languageApi';
     import { toCode } from '~/utils/languages';
+    import type { LanguageSummary } from '~/types/language.type';
 
     /**
      * Add a language (D-07): three steps in one screen — pick, how to start (chat test or A1),
@@ -179,9 +200,35 @@
         });
     });
 
-    // A removed language comes back without counting as a new one only if the server says so;
-    // the limit card shows whenever the learner has no free place (Q14).
-    const atLimit = computed(() => !isFirstRun.value && !language.canAdd && step.value !== 3);
+    /** The server answered `upgrade_needed` (another tab, or a place we did not know was held). */
+    const upgradeNeeded = ref(false);
+    // The limit card shows whenever the learner has no free place (Q14), first run included: on
+    // Starter a removed language holds the place for 30 days, and the card then offers to
+    // restore it (B-33).
+    const atLimit = computed(() => (!language.canAdd || upgradeNeeded.value) && step.value !== 3);
+
+    const pickerLabel = (code: string) => {
+        const name = language.nameOf(code);
+        const native = language.nativeNameOf(code);
+        return native && native !== name ? `${name} · ${native}` : name;
+    };
+
+    /** Bring a removed language back as it was, level included (Q2), and go to its Today. */
+    async function restore(r: LanguageSummary) {
+        busy.value = true;
+        error.value = '';
+        try {
+            await language.addLanguage({ language: r.code, startLevel: r.startLevel, startLevelSource: r.startLevelSource });
+            if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: r.code, start_level_source: r.startLevelSource });
+            upgradeNeeded.value = false;
+            router.push('/board');
+        } catch (e) {
+            console.error('Restoring a language failed:', e);
+            error.value = t('languages.add.error', { language: language.nameOf(r.code) });
+        } finally {
+            busy.value = false;
+        }
+    }
 
     const pickName = computed(() => (pick.value ? language.nameOf(pick.value) : ''));
     const pickFeatures = computed(() => language.features(pick.value));
@@ -296,6 +343,7 @@
             // The limit can be reached in another tab; the card then takes over step 1.
             if (e instanceof LanguageApiError && e.code === 'upgrade_needed') {
                 await language.refreshState();
+                upgradeNeeded.value = true;
                 step.value = 1;
             } else {
                 error.value = messageFor(e);

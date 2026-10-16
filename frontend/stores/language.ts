@@ -79,9 +79,26 @@ export const useLanguageStore = defineStore('language', () => {
     const maxLanguages = computed(() => state.value?.maxLanguages ?? 1);
     /** Paused languages do not count: after a downgrade they wait for an upgrade (B-33). */
     const usedCount = computed(() => languages.value.length);
-    const atLimit = computed(() => usedCount.value >= maxLanguages.value);
+    /**
+     * Starter has no swap (Council 008, B-33): a language removed less than 30 days ago (and not
+     * purged) still holds its slot there, so only that language can come back. Other plans
+     * free the slot at once.
+     */
+    const heldSlots = computed(() => {
+        if (plan.value !== 'starter') return 0;
+        const now = Date.now();
+        return removedLanguages.value.filter((l) => !l.purgeAt || new Date(l.purgeAt).getTime() > now).length;
+    });
+    const atLimit = computed(() => usedCount.value + heldSlots.value >= maxLanguages.value);
     /** Starter has one language and no swap: adding always offers an upgrade (Q14). */
     const canAdd = computed(() => enabled.value && !atLimit.value);
+    /** Bringing a removed language back only needs a free place among the active ones. */
+    const canRestore = computed(() => enabled.value && usedCount.value < maxLanguages.value);
+    /** Removed languages that can still come back with everything (before their purge date). */
+    const restorable = computed(() => {
+        const now = Date.now();
+        return removedLanguages.value.filter((l) => !l.purgeAt || new Date(l.purgeAt).getTime() > now);
+    });
 
     /** A learning language not added yet and switched on in the register. */
     const addable = computed(() => {
@@ -274,7 +291,10 @@ export const useLanguageStore = defineStore('language', () => {
         maxLanguages,
         usedCount,
         atLimit,
+        heldSlots,
         canAdd,
+        canRestore,
+        restorable,
         addable,
         comingLater,
         isInterested,

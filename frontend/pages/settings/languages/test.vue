@@ -225,7 +225,13 @@
             else if (language.activeLanguage !== lang.value) await language.switchLanguage(lang.value);
             if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'test' });
             router.push('/board');
-        } catch (error) {
+        } catch (error: any) {
+            // Starter's place is held by a removed language (B-33): the steps offer the upgrade
+            // and the restore.
+            if (error?.code === 'upgrade_needed') {
+                router.push({ path: '/settings/languages/add', query: isFirstRun.value ? { first: '1' } : {} });
+                return;
+            }
             console.error('Accepting the level test failed:', error);
             failed.value = t('languages.add.error', { language: langName.value });
         } finally {
@@ -252,7 +258,7 @@
             if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'default' });
             router.push(language.features(lang.value).starterPack ? '/practice/starter-pack' : '/board');
         } catch (error: any) {
-            if (error?.code === 'upgrade_needed') router.push('/settings/languages/add');
+            if (error?.code === 'upgrade_needed') router.push({ path: '/settings/languages/add', query: isFirstRun.value ? { first: '1' } : {} });
             else failed.value = t('languages.add.error', { language: langName.value });
         } finally {
             busy.value = false;
