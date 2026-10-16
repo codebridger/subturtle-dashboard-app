@@ -111,6 +111,8 @@ export interface LanguageState {
   plan: Plan;
   maxLanguages: number;
   pending: { language: LangCode; count: number; expiresAt: string }[];
+  /** The languages this learner asked to be told about ("Tell me", B-06). */
+  interests: LangCode[];
 }
 
 // --- extension points ---------------------------------------------------------------------
@@ -206,7 +208,14 @@ export class LanguageService {
       plan: plan.plan,
       maxLanguages: plan.maxLanguages,
       pending: await this.pendingSummary(userId),
+      interests: await this.interestList(userId),
     };
+  }
+
+  /** The learner's "Tell me" languages, A to Z (B-06). */
+  private static async interestList(userId: string): Promise<LangCode[]> {
+    const rows: any[] = await interests().find({ userId }, { language: 1 }).lean();
+    return [...new Set(rows.map((row) => toCode(row.language)).filter((code): code is LangCode => Boolean(code)))].sort();
   }
 
   private static async summarise(userId: string, lp: LanguageProfile, own: LangCode | null, profile: any): Promise<LanguageSummary> {
@@ -432,7 +441,12 @@ export class LanguageService {
     if (existing?.status === "purging") throw new LanguageError("purging", { language });
 
     if (existing?.status !== "active") {
-      await this.claimSlot(userId, language, plan);
+      // Starter cannot swap (Council 008): a language removed in the last 30 days still holds
+      // its slot until it is purged, so only re-adding that language (a restore) gets in.
+      const noSwap = plan.plan === "starter" && existing?.status !== "removed";
+      const held = noSwap ? await this.removedHolding(userId, language) : 0;
+      await this.claimSlot(userId, language, plan, plan.maxLanguages - held);
+      if (noSwap) await this.recheckRemovedHolding(userId, language, plan);
       try {
         if (existing) await this.restore(existing);
         else await this.create(userId, language, { startLevel, startLevelSource, goals, own: toCode(profile?.translationLanguage) });
@@ -468,15 +482,18 @@ export class LanguageService {
 
   /**
    * The plan limit as one conditional update (ADR-006 point 8): push the language only where
-   * it is not there yet and the array has fewer than `maxLanguages` entries. Of two parallel
-   * calls at the limit, exactly one matches.
+   * it is not there yet and the array has fewer than `slots` entries (`maxLanguages`, less
+   * any slots removed languages still hold). Of two parallel calls at the limit, exactly one
+   * matches.
    */
-  private static async claimSlot(userId: string, language: LangCode, plan: LanguagePlan): Promise<void> {
+  private static async claimSlot(userId: string, language: LangCode, plan: LanguagePlan, slots: number): Promise<void> {
+    const upgradeNeeded = () => new LanguageError("upgrade_needed", { plan: plan.plan, maxLanguages: plan.maxLanguages });
+    if (slots < 1) throw upgradeNeeded();
     const result = await profiles().updateOne(
       {
         refId: userId,
         learningLanguages: { $ne: language },
-        [`learningLanguages.${plan.maxLanguages - 1}`]: { $exists: false },
+        [`learningLanguages.${slots - 1}`]: { $exists: false },
       },
       { $push: { learningLanguages: language }, $pull: { pausedLanguages: language } }
     );
@@ -485,6 +502,26 @@ export class LanguageService {
     const profile: any = await profiles().findOne({ refId: userId }, { learningLanguages: 1 }).lean();
     // A parallel add of the same language got there first: the slot is ours too.
     if (profile?.learningLanguages?.includes(language)) return;
+    throw upgradeNeeded();
+  }
+
+  /** Other languages removed less than 30 days ago and not purged: on Starter they hold a slot. */
+  private static async removedHolding(userId: string, except: LangCode): Promise<number> {
+    return languageProfiles().countDocuments({ userId, language: { $ne: except }, status: "removed", purgeAt: { $gt: new Date() } });
+  }
+
+  /**
+   * After the claim, count again: a parallel `remove-language` may have freed its slot in the
+   * profile array after `removedHolding` read. A remove sets `removed` before it pulls the
+   * language from the array, so this read sees it. Over the limit: undo the claim and refuse.
+   */
+  private static async recheckRemovedHolding(userId: string, language: LangCode, plan: LanguagePlan): Promise<void> {
+    const [profile, held] = await Promise.all([
+      profiles().findOne({ refId: userId }, { learningLanguages: 1 }).lean() as Promise<any>,
+      this.removedHolding(userId, language),
+    ]);
+    if ((profile?.learningLanguages?.length ?? 0) + held <= plan.maxLanguages) return;
+    await profiles().updateOne({ refId: userId }, { $pull: { learningLanguages: language } });
     throw new LanguageError("upgrade_needed", { plan: plan.plan, maxLanguages: plan.maxLanguages });
   }
 

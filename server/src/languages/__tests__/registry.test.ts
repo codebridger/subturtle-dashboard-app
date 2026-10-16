@@ -16,11 +16,27 @@ describe("capability register", () => {
     else process.env.LANGUAGES_ENABLED = saved;
   });
 
-  it("lists the seven launch languages, all enabled by default", () => {
+  it("lists the seven launch languages, all enabled by default, then Portuguese as coming later", () => {
     delete process.env.LANGUAGES_ENABLED;
     const { learning } = getLanguageCapabilities();
-    expect(learning.map((l) => l.code)).toEqual(LAUNCH);
-    expect(learning.every((l) => l.enabled)).toBe(true);
+    expect(learning.map((l) => l.code)).toEqual([...LAUNCH, "pt"]);
+    expect(learning.filter((l) => l.enabled).map((l) => l.code)).toEqual(LAUNCH);
+  });
+
+  it("lists Portuguese switched off with no features, so clients show it under Coming later", () => {
+    delete process.env.LANGUAGES_ENABLED;
+    const pt = getLearningLanguage("Portuguese")!;
+    expect(pt).toMatchObject({ code: "pt", name: "Portuguese", nativeName: "Português", rtl: false, enabled: false });
+    expect(Object.values(pt.features).every((on) => on === false)).toBe(true);
+    expect(isLearningLanguageEnabled("pt")).toBe(false);
+    expect(hasFeature("pt", "save")).toBe(false);
+  });
+
+  it("LANGUAGES_ENABLED never switches on a coming-later language", () => {
+    process.env.LANGUAGES_ENABLED = "de,pt";
+    expect(isLearningLanguageEnabled("pt")).toBe(false);
+    expect(isLearningLanguageEnabled("de")).toBe(true);
+    expect(getLanguageCapabilities().learning.map((l) => l.code)).toContain("pt");
   });
 
   it("names languages in English and natively, with a voice and no map yet", () => {
@@ -32,8 +48,8 @@ describe("capability register", () => {
   });
 
   it("returns undefined for a language that is not in the register", () => {
-    expect(getLearningLanguage("pt")).toBeUndefined();
-    expect(isLearningLanguageEnabled("pt")).toBe(false);
+    expect(getLearningLanguage("ja")).toBeUndefined();
+    expect(isLearningLanguageEnabled("ja")).toBe(false);
   });
 
   it("LANGUAGES_ENABLED switches on exactly the listed languages, plus English", () => {
@@ -49,7 +65,7 @@ describe("capability register", () => {
 
   it("an empty LANGUAGES_ENABLED means no override", () => {
     process.env.LANGUAGES_ENABLED = "";
-    expect(getLanguageCapabilities().learning.every((l) => l.enabled)).toBe(true);
+    expect(getLanguageCapabilities().learning.filter((l) => l.enabled).map((l) => l.code)).toEqual(LAUNCH);
   });
 
   it("does not let callers change the register", () => {

@@ -7,7 +7,9 @@
  * `LANGUAGES_ENABLED` (comma-separated codes, e.g. "en,de") switches learning languages on
  * or off without a deploy of this file, for the dark phases. When it is unset every
  * language marked `enabled` here is on; when it is set, exactly the listed ones are.
- * English always stays on: every existing learner studies it.
+ * English always stays on: every existing learner studies it. A language marked
+ * `comingLater` (Portuguese) is listed with `enabled: false` and no features, and the
+ * override never switches it on.
  */
 import { DEFAULT_LANGUAGE, LangCode, isRtl, toCode, toNativeName, toTitle } from "./helper";
 import { LANGUAGES } from "./list";
@@ -57,7 +59,23 @@ interface LearningEntry {
   speechVoice: string;
   enabled: boolean;
   features: LanguageFeatures;
+  /**
+   * Listed so clients can show it under "Coming later" with Tell me (B-06), but not ready:
+   * it stays off even when LANGUAGES_ENABLED names it.
+   */
+  comingLater?: true;
 }
+
+const NO_FEATURES: LanguageFeatures = {
+  save: false,
+  review: false,
+  cloze: false,
+  coachText: false,
+  coachVoice: false,
+  levelTest: false,
+  starterPack: false,
+  map: false,
+};
 
 // The launch set (Council 008, Q15). The knowledge map is the next round, so `map` is off.
 // `starterPack` follows the authored packs: all seven launch languages have one (C-01,
@@ -113,6 +131,15 @@ const LEARNING: LearningEntry[] = [
     enabled: true,
     features: { save: true, review: true, cloze: true, coachText: true, coachVoice: true, levelTest: true, starterPack: true, map: false },
   },
+  // Coming later: listed, not switched on, no features yet.
+  {
+    code: "pt",
+    ttsVoice: "pt-BR-Chirp3-HD-Kore",
+    speechVoice: "pt-BR-Neural2-A",
+    enabled: false,
+    features: NO_FEATURES,
+    comingLater: true,
+  },
 ];
 
 // Own languages whose Coach explanations a teacher has checked (Q10). Every other own
@@ -140,7 +167,7 @@ export function getLearningLanguages(): LearningLanguageCaps[] {
     rtl: isRtl(entry.code),
     ttsVoice: entry.ttsVoice,
     speechVoice: entry.speechVoice,
-    enabled: override ? override.has(entry.code) : entry.enabled,
+    enabled: !entry.comingLater && (override ? override.has(entry.code) : entry.enabled),
     features: { ...entry.features },
   }));
 }
