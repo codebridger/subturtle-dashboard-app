@@ -1,3 +1,10 @@
+# [1.3.0-dev.34](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.33...v1.3.0-dev.34) (2026-10-16)
+
+
+### Bug Fixes
+
+* **mobile:** starter pack card rule, Coming later on Languages, language list before sign in (M-02, M-05, M-07) ([6927786](https://github.com/codebridger/subturtle-dashboard-app/commit/692778687c70d7a22e5a233476fa0252d12ab7e1))
+
 # [1.3.0-dev.33](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.32...v1.3.0-dev.33) (2026-10-16)
 
 
