@@ -14,6 +14,7 @@ import {
 } from "../../../config";
 import { DEFAULT_LANGUAGE, LangCode, isAutoOrUnknown, langOf, requestLanguage, toCode } from "../../../languages/helper";
 import { getLearningLanguage, getOwnLanguage, hasFeature } from "../../../languages/registry";
+import { fireServerEvent, SERVER_ANALYTICS_EVENTS } from "../../../utils/analytics";
 import { readLanguageProfile } from "./language-profile";
 import { CefrLevel, CoachMode, CoachPhrase, buildCoachInstructions, coachVoiceFor } from "./template";
 
@@ -183,10 +184,16 @@ export async function flagCoachExplanation(
   const pair = await sessionLanguages(userId, sessionId, args);
   if (!pair) throw new Error("Session not found");
 
-  await getCollection(DATABASE, COACH_EXPLANATION_FLAG_COLLECTION).updateOne(
+  const flags = getCollection(DATABASE, COACH_EXPLANATION_FLAG_COLLECTION);
+  const before: any = await flags.findOne({ userId, sessionId, turnIndex } as any, { on: 1 } as any).lean();
+  await flags.updateOne(
     { userId, sessionId, turnIndex } as any,
     { $set: { on, language: pair.language, explanationLanguage: pair.explanationLanguage } } as any,
     { upsert: true }
   );
+  // Only turning a flag on counts, and only when it was not on already.
+  if (on && before?.on !== true) {
+    fireServerEvent(SERVER_ANALYTICS_EVENTS.COACH_EXPLANATION_FLAGGED, userId, { language: pair.language, turn_index: turnIndex });
+  }
   return { on };
 }

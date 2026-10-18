@@ -9,6 +9,7 @@ vi.mock('~/plugins/mixpanel', () => ({ analytic: { track: vi.fn() }, registerLan
 const vue = await vi.importActual<typeof import('vue')>('vue');
 Object.assign(globalThis, { ref: vue.ref, computed: vue.computed, authUser: { value: { id: 'u1' } } });
 
+const { analytic } = await import('~/plugins/mixpanel');
 const { useLanguageStore, onLanguageSwitch, normalizeInterests } = await import('~/stores/language');
 const { withLanguage } = await import('~/utils/languageScope');
 const { LanguageApiError, toLanguageApiError } = await import('~/utils/languageApi');
@@ -60,6 +61,7 @@ describe('language store (D-01)', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         run.mockReset();
+        vi.mocked(analytic.track).mockClear();
         vi.spyOn(console, 'warn').mockImplementation(() => {});
         vi.spyOn(console, 'error').mockImplementation(() => {});
     });
@@ -115,6 +117,24 @@ describe('language store (D-01)', () => {
         expect(store.activeLanguage).toBe('de');
         expect(reset).toHaveBeenCalledTimes(1);
         expect(withLanguage({})).toEqual({ language: 'de' });
+    });
+
+    it('sends no language analytics itself: the server sends them (B-28)', async () => {
+        const two = { ...STATE, languages: [summary('en'), summary('de')] };
+        answer({
+            'get-language-capabilities': CAPS,
+            'get-language-state': STATE,
+            'set-active-language': ({ language }: any) => ({ state: { ...two, learningLanguage: language } }),
+            'add-language': { state: two },
+            'remove-language': { state: STATE, purgeAt: '2026-11-17T00:00:00.000Z' },
+        });
+        const store = useLanguageStore();
+        await store.bootstrap();
+        await store.addLanguage({ language: 'de', startLevel: 'A2', startLevelSource: 'test' });
+        await store.switchLanguage('en');
+        await store.removeLanguage('de');
+
+        expect(analytic.track).not.toHaveBeenCalled();
     });
 
     it('reports the plan limit as upgrade_needed with its details', async () => {

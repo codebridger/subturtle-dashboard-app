@@ -13,6 +13,9 @@ jest.mock("@modular-rest/server", () => ({
   getCollection: jest.fn((_db: string, name: string) => mockModels[name]),
 }));
 jest.mock("../../../phrase_bundle/triggers", () => ({ phraseBundleTriggers: [] }));
+jest.mock("mixpanel", () => require("../../../../utils/test-support/mixpanel-capture").mixpanelMock);
+
+import { anonymousAuthStub, failMixpanel, flushEvents, resetMixpanel, sent } from "../../../../utils/test-support/mixpanel-capture";
 
 import { BUNDLE_COLLECTION, LANGUAGE_PROFILE_COLLECTION, PHRASE_COLLECTION, PROFILE_COLLECTION } from "../../../../config";
 import { LanguageService } from "../../service";
@@ -67,6 +70,7 @@ beforeAll(async () => {
     [BUNDLE_COLLECTION]: Bundles,
     [LANGUAGE_PROFILE_COLLECTION]: LanguageProfiles,
     [PROFILE_COLLECTION]: Profiles,
+    auth: anonymousAuthStub as any,
   });
   await Promise.all([Bundles.init(), LanguageProfiles.init()]);
 }, 120000);
@@ -80,6 +84,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await Promise.all([Phrases, Bundles, LanguageProfiles, Profiles].map((m) => m.deleteMany({})));
   jest.restoreAllMocks();
+  resetMixpanel();
   jest.spyOn(LanguageService, "getState").mockResolvedValue({ mocked: true } as any);
   delete process.env.STARTER_PACK_AUDIO_BASE_URL;
   delete process.env.LANGUAGES_ENABLED;
@@ -220,5 +225,59 @@ describe("onLanguageAdded hook", () => {
     const lp = await LanguageProfiles.findOne().lean<any>();
     await onAdded({ userId: USER, language: "de", languageProfile: lp });
     expect((await LanguageProfiles.findOne().lean<any>()).starterPack.total).toBe(3);
+  });
+});
+
+describe("server analytics (B-28)", () => {
+  const ALL = ["de-greetings-01", "de-greetings-02", "de-greetings-03"];
+
+  it("sends starter_pack_done once, on the call that hears the last item", async () => {
+    await complete({ userId: USER, language: "de", itemIds: ALL.slice(0, 2) });
+    await flushEvents();
+    expect(sent).toEqual([]);
+
+    await complete({ userId: USER, language: "de", itemIds: ALL });
+    await complete({ userId: USER, language: "de", itemIds: ALL }); // nothing new
+    await flushEvents();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("starter_pack_done");
+    expect(sent[0].props).toMatchObject({ distinct_id: USER, language: "de" });
+  });
+
+  it("sends nothing from complete-starter-pack-items when it fails or hears nothing new", async () => {
+    await expect(complete({ userId: USER, language: "de", itemIds: "nope" })).rejects.toThrow(/^invalid_argument/);
+    await complete({ userId: USER, language: "de", itemIds: ["nope"] });
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("skip-starter-pack sends starter_pack_skipped once, with how many were heard", async () => {
+    await complete({ userId: USER, language: "de", itemIds: ALL.slice(0, 2) });
+    await skipPack({ userId: USER, language: "de" });
+    await skipPack({ userId: USER, language: "de" }); // already skipped
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("starter_pack_skipped");
+    expect(sent[0].props).toMatchObject({ distinct_id: USER, language: "de", heard: 2 });
+  });
+
+  it("skip-starter-pack sends nothing for a finished pack or a language the learner lacks", async () => {
+    await complete({ userId: USER, language: "de", itemIds: ALL });
+    await flushEvents();
+    resetMixpanel();
+    await skipPack({ userId: USER, language: "de" });
+    await expect(skipPack({ userId: USER, language: "fr" })).rejects.toThrow();
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("a Mixpanel error never fails complete or skip", async () => {
+    failMixpanel(true);
+    await expect(complete({ userId: USER, language: "de", itemIds: ALL })).resolves.toMatchObject({ done: true });
+    await LanguageProfiles.updateOne({ userId: USER, language: "de" }, { $set: { "starterPack.state": "offered" } });
+    await expect(skipPack({ userId: USER, language: "de" })).resolves.toEqual({ state: { mocked: true } });
+    await flushEvents();
+    expect(sent).toEqual([]);
   });
 });

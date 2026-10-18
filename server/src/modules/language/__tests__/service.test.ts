@@ -35,6 +35,9 @@ jest.mock("../../leitner_box/service", () => ({
   },
 }));
 
+jest.mock("mixpanel", () => require("../../../utils/test-support/mixpanel-capture").mixpanelMock);
+
+import { anonymousAuthStub, failMixpanel, flushEvents, resetMixpanel, sent, sentNamed } from "../../../utils/test-support/mixpanel-capture";
 import {
   BUNDLE_COLLECTION,
   FREE_CREDIT_COLLECTION,
@@ -82,6 +85,7 @@ beforeAll(async () => {
     [BUNDLE_COLLECTION]: Bundles,
     [SUBSCRIPTION_COLLECTION]: Subscriptions,
     [FREE_CREDIT_COLLECTION]: FreeCredits,
+    auth: anonymousAuthStub as any,
   });
   await Promise.all([LanguageProfiles.init(), Interests.init(), Bundles.init()]);
 }, 120000);
@@ -92,8 +96,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await Promise.all(Object.values(mockModels).map((model) => model.deleteMany({})));
+  await Promise.all(Object.values(mockModels).map((model) => model.deleteMany?.({})));
   jest.clearAllMocks();
+  resetMixpanel();
   mockIsFreemium.mockResolvedValue(true);
   mockUpdateFreemium.mockResolvedValue(undefined);
   mockPoolAdd.mockResolvedValue(undefined);
@@ -688,5 +693,140 @@ describe("functions", () => {
     expect(state.languages[0]).toMatchObject({ code: "it", startLevel: "A2" });
     expect((await fn("get-language-state")({ userId })).learningLanguage).toBe("it");
     await expect(fn("get-language-state")({})).rejects.toThrow("User ID is required");
+  });
+});
+
+describe("server analytics (B-28)", () => {
+  const phrase = { phrase: "Kind", translation: "child", translation_language: "fa", type: "normal" };
+
+  async function readerWith(...languages: string[]): Promise<string> {
+    const userId = await newAccount();
+    await subscribe(userId, "reader");
+    for (const language of languages) await LanguageService.addLanguage(userId, { language });
+    await flushEvents();
+    resetMixpanel();
+    return userId;
+  }
+
+  it("add-language sends language_added once, on the learner, with the level", async () => {
+    const userId = await newAccount();
+    await fn("add-language")({ userId, language: "German", startLevel: "A2", startLevelSource: "test" });
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("language_added");
+    expect(sent[0].props).toMatchObject({ distinct_id: userId, language: "de", start_level: "A2", start_level_source: "test" });
+  });
+
+  it("add-language sends it again for a restored language, but not for one already active", async () => {
+    const userId = await readerWith("de", "fr");
+    await fn("add-language")({ userId, language: "de" }); // already active
+    await fn("remove-language")({ userId, language: "fr" });
+    await flushEvents();
+    resetMixpanel();
+
+    await fn("add-language")({ userId, language: "fr" }); // restore
+    await fn("add-language")({ userId, language: "fr" }); // active again: nothing
+    await flushEvents();
+    expect(sent.map((e) => e.event)).toEqual(["language_added"]);
+    expect(sent[0].props).toMatchObject({ language: "fr", start_level: "A1" });
+  });
+
+  it("add-language sends nothing when it fails", async () => {
+    const userId = await newAccount();
+    await expect(fn("add-language")({ userId, language: "Klingon" })).rejects.toThrow();
+    await fn("add-language")({ userId, language: "de" }); // Starter: one language
+    await flushEvents();
+    resetMixpanel();
+    await expect(fn("add-language")({ userId, language: "fr" })).rejects.toThrow("upgrade_needed");
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("remove-language sends language_removed once; removing it again sends nothing", async () => {
+    const userId = await readerWith("de", "fr");
+    await fn("remove-language")({ userId, language: "fr" });
+    await fn("remove-language")({ userId, language: "fr" });
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("language_removed");
+    expect(sent[0].props).toMatchObject({ distinct_id: userId, language: "fr" });
+  });
+
+  it("remove-language sends nothing for a language the learner never had", async () => {
+    const userId = await readerWith("de");
+    await expect(fn("remove-language")({ userId, language: "fr" })).rejects.toThrow("not_found");
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("set-active-language sends language_switched with from and to", async () => {
+    const userId = await readerWith("de", "fr"); // fr is active
+    await fn("set-active-language")({ userId, language: "de" });
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("language_switched");
+    expect(sent[0].props).toMatchObject({ distinct_id: userId, from_language: "fr", to_language: "de" });
+  });
+
+  it("set-active-language sends nothing for the active language or one the learner lacks", async () => {
+    const userId = await readerWith("de", "fr");
+    await fn("set-active-language")({ userId, language: "fr" });
+    await expect(fn("set-active-language")({ userId, language: "it" })).rejects.toThrow("not_active");
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("set-language-interest sends language_interest only when the answer changed", async () => {
+    const userId = await newAccount();
+    await fn("set-language-interest")({ userId, language: "pt", on: true });
+    await fn("set-language-interest")({ userId, language: "pt", on: true }); // same: nothing
+    await fn("set-language-interest")({ userId, language: "pt", on: false });
+    await fn("set-language-interest")({ userId, language: "pt", on: false }); // same: nothing
+    await flushEvents();
+
+    expect(sent.map((e) => [e.event, e.props.language, e.props.on])).toEqual([
+      ["language_interest", "pt", true],
+      ["language_interest", "pt", false],
+    ]);
+    expect(sent[0].props.distinct_id).toBe(userId);
+  });
+
+  it("set-language-interest sends nothing for a bad request", async () => {
+    const userId = await newAccount();
+    await expect(fn("set-language-interest")({ userId, language: "Klingon", on: true })).rejects.toThrow("invalid_argument");
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("keep-phrase-pending sends phrase_kept_pending for a new kept phrase, not for a refresh", async () => {
+    const userId = await legacyAccount();
+    await fn("keep-phrase-pending")({ userId, phrase, language: "German" });
+    await fn("keep-phrase-pending")({ userId, phrase, language: "de" }); // same text: refreshes
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("phrase_kept_pending");
+    expect(sent[0].props).toMatchObject({ distinct_id: userId, language: "de" });
+  });
+
+  it("keep-phrase-pending sends nothing when it fails", async () => {
+    const userId = await legacyAccount();
+    await expect(fn("keep-phrase-pending")({ userId, phrase: { phrase: "Kind" }, language: "de" })).rejects.toThrow("invalid_argument");
+    await expect(fn("keep-phrase-pending")({ userId, phrase, language: "Klingon" })).rejects.toThrow();
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("a Mixpanel error never fails the learner's call", async () => {
+    const userId = await newAccount();
+    failMixpanel(true);
+    await expect(fn("add-language")({ userId, language: "de" })).resolves.toMatchObject({ state: { learningLanguage: "de" } });
+    await expect(fn("set-language-interest")({ userId, language: "pt", on: true })).resolves.toEqual({ on: true });
+    await expect(fn("keep-phrase-pending")({ userId, phrase, language: "fr" })).resolves.toMatchObject({ phraseId: expect.any(String) });
+    await flushEvents();
+    expect(sentNamed("language_added")).toEqual([]);
   });
 });

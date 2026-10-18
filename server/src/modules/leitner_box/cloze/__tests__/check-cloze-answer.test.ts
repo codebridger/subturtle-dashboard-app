@@ -2,7 +2,7 @@
  * B-18: `check-cloze-answer` on a real in-memory MongoDB with the real phrase schema, so
  * the cue fields are really stored and read back, and one user cannot check another's phrase.
  */
-import { describe, it, expect, jest, beforeAll, afterAll } from "@jest/globals";
+import { describe, it, expect, jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
 import mongoose, { Connection, Model } from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
@@ -13,6 +13,9 @@ jest.mock("@modular-rest/server", () => ({
   getCollection: jest.fn((_db: string, name: string) => mockModels[name]),
 }));
 jest.mock("../../../phrase_bundle/triggers", () => ({ phraseBundleTriggers: [] }));
+jest.mock("mixpanel", () => require("../../../../utils/test-support/mixpanel-capture").mixpanelMock);
+
+import { anonymousAuthStub, failMixpanel, flushEvents, resetMixpanel, sent } from "../../../../utils/test-support/mixpanel-capture";
 
 import { PHRASE_COLLECTION } from "../../../../config";
 
@@ -34,6 +37,7 @@ beforeAll(async () => {
   connection = await mongoose.createConnection(mongo.getUri()).asPromise();
   Phrases = connection.model(PHRASE_COLLECTION, phraseDefinition.schema);
   mockModels[PHRASE_COLLECTION] = Phrases;
+  mockModels.auth = anonymousAuthStub as any;
   const german = await Phrases.create({
     refId: ALICE,
     type: "linguistic",
@@ -78,5 +82,38 @@ describe("check-cloze-answer", () => {
     await expect(check({ phraseId: germanId, answer: "x" })).rejects.toThrow(/userId/);
     await expect(check({ userId: ALICE, phraseId: "nope", answer: "x" })).rejects.toThrow(/not found/);
     await expect(check({ userId: ALICE, phraseId: germanId })).rejects.toThrow(/answer/);
+  });
+});
+
+describe("server analytics (B-28)", () => {
+  beforeEach(() => resetMixpanel());
+
+  it("sends cloze_result for each check, with the phrase's language and the result", async () => {
+    await check({ userId: ALICE, phraseId: germanId, answer: "Warte auf" });
+    await check({ userId: ALICE, phraseId: germanId, answer: "warten auf" });
+    await check({ userId: ALICE, phraseId: oldId, answer: "gave in" });
+    await flushEvents();
+
+    expect(sent.map((e) => [e.event, e.props.language, e.props.result])).toEqual([
+      ["cloze_result", "de", "right"],
+      ["cloze_result", "de", "close"],
+      ["cloze_result", "en", "wrong"], // an old phrase with no language is English
+    ]);
+    expect(sent[0].props.distinct_id).toBe(ALICE);
+  });
+
+  it("sends nothing when the check fails", async () => {
+    await expect(check({ userId: BOB, phraseId: germanId, answer: "warte auf" })).rejects.toThrow(/not found/);
+    await expect(check({ userId: ALICE, phraseId: "nope", answer: "x" })).rejects.toThrow(/not found/);
+    await expect(check({ userId: ALICE, phraseId: germanId })).rejects.toThrow(/answer/);
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("a Mixpanel error never fails the check", async () => {
+    failMixpanel(true);
+    await expect(check({ userId: ALICE, phraseId: germanId, answer: "warte auf" })).resolves.toMatchObject({ result: "right" });
+    await flushEvents();
+    expect(sent).toEqual([]);
   });
 });

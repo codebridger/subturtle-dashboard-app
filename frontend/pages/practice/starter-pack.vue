@@ -75,12 +75,11 @@
 </template>
 
 <script setup lang="ts">
-    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StBadge, StButton, StCard, StIcon, StIconButton, StProgressBar, StSkeleton } from 'subturtle-ui';
     import { toastSuccess } from 'pilotui/toast';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import LangText from '~/components/language/LangText.vue';
-    import { useLanguageStore, trackLanguageEvent } from '~/stores/language';
+    import { useLanguageStore } from '~/stores/language';
     import { usePageCrumb } from '~/composables/usePageCrumb';
     import { languageApi } from '~/utils/languageApi';
     import type { StarterPackItem } from '~/types/language.type';
@@ -213,7 +212,6 @@
             if (typeof res?.total === 'number' && res.total > 0) packTotal.value = res.total;
             if (res?.done || !items.value.some((i) => !heard.value.has(i.id))) {
                 done.value = true;
-                trackLanguageEvent(ANALYTICS_EVENTS.STARTER_PACK_DONE, { language: language.activeLanguage });
                 language.refreshState();
                 scrollToTop();
                 return;
@@ -238,7 +236,6 @@
         busy.value = true;
         try {
             language.setState(await languageApi.skipStarterPack(language.activeLanguage));
-            trackLanguageEvent(ANALYTICS_EVENTS.STARTER_PACK_SKIPPED, { language: language.activeLanguage, heard: heard.value.size });
             toastSuccess(t('languages.starter.skipped'), { position: 'top-end' });
             router.push('/board');
         } catch (e) {

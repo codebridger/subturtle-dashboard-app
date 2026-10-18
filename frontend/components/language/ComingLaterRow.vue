@@ -21,10 +21,9 @@
 </template>
 
 <script setup lang="ts">
-    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StButton } from 'subturtle-ui';
     import LanguageChip from '~/components/language/LanguageChip.vue';
-    import { useLanguageStore, trackLanguageEvent } from '~/stores/language';
+    import { useLanguageStore } from '~/stores/language';
     import type { LearningLanguageCaps } from '~/types/language.type';
 
     /**
@@ -42,7 +41,6 @@
         const on = !language.isInterested(code);
         try {
             await language.setInterest(code, on);
-            trackLanguageEvent(ANALYTICS_EVENTS.LANGUAGE_INTEREST, { language: code, on });
         } catch (error) {
             console.error('Tell me failed:', error);
         }

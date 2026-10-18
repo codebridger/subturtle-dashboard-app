@@ -40,6 +40,18 @@ export const SERVER_ANALYTICS_EVENTS = {
   ENTITLEMENT_GRANT_REFUSED: "entitlement-grant_refused",
   // Fired on every translation API call (doc: backend tracking plan).
   TRANSLATION_REQUESTED: "translation_requested",
+  // Multilingual round 1 (B-28). Sent from the function where the action happens, so the web,
+  // the phone and the extension are all counted. Each carries `language`.
+  LANGUAGE_ADDED: "language_added", // props: { language, start_level, start_level_source } — new or restored
+  LANGUAGE_REMOVED: "language_removed", // props: { language }
+  LANGUAGE_SWITCHED: "language_switched", // props: { from_language, to_language }
+  LANGUAGE_INTEREST: "language_interest", // props: { language, on } — "Tell me", only when it changed
+  LEVEL_TEST_DONE: "level_test_done", // props: { language, start_level }
+  STARTER_PACK_DONE: "starter_pack_done", // props: { language } — the last item heard
+  STARTER_PACK_SKIPPED: "starter_pack_skipped", // props: { language, heard }
+  PHRASE_KEPT_PENDING: "phrase_kept_pending", // props: { language } — a new kept phrase, not a refresh
+  CLOZE_RESULT: "cloze_result", // props: { language, result: "right" | "close" | "wrong" }
+  COACH_EXPLANATION_FLAGGED: "coach_explanation_flagged", // props: { language, turn_index } — flag turned on
 };
 
 /**
@@ -141,5 +153,17 @@ export async function trackServerEvent(
     client.track(event, { ...properties, ...identity });
   } catch (err) {
     console.error("[analytics] failed to track event", event, err);
+  }
+}
+
+/**
+ * Send an event for a learner action without waiting for it or ever throwing. Use this inside
+ * a function that has already succeeded: an analytics problem must not fail the learner's call.
+ */
+export function fireServerEvent(event: string, userId: string, properties: Record<string, any> = {}): void {
+  try {
+    void trackServerEvent(event, { userId }, properties).catch(() => undefined);
+  } catch (err) {
+    console.error("[analytics] failed to send event", event, err);
   }
 }

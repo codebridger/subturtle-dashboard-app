@@ -19,6 +19,7 @@ import { LangCode, requestLanguage, toCode, toTitle } from "../../../languages/h
 import { hasFeature } from "../../../languages/registry";
 import { DEFAULT_NEW_PHRASES_PER_DAY } from "../../../languages/language-settings";
 import { StarterPackItem, audioUrlFor, getStarterPack, translationFor } from "../../../languages/starter-pack";
+import { fireServerEvent, SERVER_ANALYTICS_EVENTS } from "../../../utils/analytics";
 import { LanguageError, LanguageService } from "../service";
 import type { LanguageProfile } from "../types";
 
@@ -204,6 +205,8 @@ export async function completeItems(
   const state = done ? "done" : heard > 0 ? "in_progress" : after?.starterPack?.state ?? "offered";
   // A skipped pack the learner opens again counts as in progress.
   if (state !== after?.starterPack?.state) await languageProfiles().updateOne({ userId, language }, { $set: { "starterPack.state": state } });
+  // Once, on the call that hears the last item.
+  if (state === "done" && after?.starterPack?.state !== "done") fireServerEvent(SERVER_ANALYTICS_EVENTS.STARTER_PACK_DONE, userId, { language });
 
   return { heard, total, done, added, deferred };
 }
@@ -214,8 +217,12 @@ export async function skip(userId: string, args: { language?: unknown }) {
   const language = requestLanguage(args, profile);
   const languageProfile = await LanguageService.getLanguageProfile(userId, language);
   requireActive(languageProfile, language);
-  if (languageProfile!.starterPack?.state !== "done") {
+  const was = languageProfile!.starterPack?.state;
+  if (was !== "done") {
     await languageProfiles().updateOne({ userId, language }, { $set: { "starterPack.state": "skipped" } });
+    if (was !== "skipped") {
+      fireServerEvent(SERVER_ANALYTICS_EVENTS.STARTER_PACK_SKIPPED, userId, { language, heard: languageProfile!.starterPack?.heard?.length ?? 0 });
+    }
   }
   return { state: await LanguageService.getState(userId) };
 }

@@ -12,6 +12,9 @@ jest.mock("@modular-rest/server", () => ({
   getCollection: jest.fn((_db: string, name: string) => mockModels[name]),
 }));
 
+jest.mock("mixpanel", () => require("../../../../utils/test-support/mixpanel-capture").mixpanelMock);
+
+import { anonymousAuthStub, failMixpanel, flushEvents, resetMixpanel, sent } from "../../../../utils/test-support/mixpanel-capture";
 import {
   COACH_EXPLANATION_FLAG_COLLECTION,
   LANGUAGE_PROFILE_COLLECTION,
@@ -51,6 +54,7 @@ beforeAll(async () => {
     [COACH_EXPLANATION_FLAG_COLLECTION]: Flags,
     [LIVE_SESSION_TEXT_COLLECTION]: TextSessions,
     [LIVE_SESSION_COLLECTION]: VoiceSessions,
+    auth: anonymousAuthStub as any,
   });
   await Flags.init();
 }, 120000);
@@ -63,6 +67,7 @@ afterAll(async () => {
 let p1: string, p2: string, bobPhrase: string;
 beforeEach(async () => {
   await Promise.all([Profiles, Phrases, LanguageProfiles, Flags, TextSessions, VoiceSessions].map((m) => m.deleteMany({})));
+  resetMixpanel();
   delete process.env.COACH_FLAG_SWITCH_THRESHOLD;
   delete process.env.LANGUAGES_ENABLED;
   await Profiles.create({ refId: ALICE, learningLanguage: "de", learningLanguages: ["de"], translationLanguage: "fa" });
@@ -152,5 +157,46 @@ describe("flag-coach-explanation", () => {
     expect(out.instructions).toMatch(/native language is English/);
     // Another pair is not affected.
     expect((await getCoachInstructions({ userId: ALICE, explanationLanguage: "fa", phraseIds: [p1], mode: "text" })).explanationLanguage).toBe("fa");
+  });
+});
+
+describe("server analytics (B-28)", () => {
+  const textSession = async () => String((await TextSessions.create({ refId: ALICE, metadata: { language: "de", explanationLanguage: "ar" } }))._id);
+
+  it("sends coach_explanation_flagged when a flag is turned on, once", async () => {
+    const sessionId = await textSession();
+    await flag({ userId: ALICE, sessionId, turnIndex: 3, on: true });
+    await flag({ userId: ALICE, sessionId, turnIndex: 3, on: true }); // already on
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("coach_explanation_flagged");
+    expect(sent[0].props).toMatchObject({ distinct_id: ALICE, language: "de", turn_index: 3 });
+  });
+
+  it("sends it again when the learner flags the same turn after undoing it", async () => {
+    const sessionId = await textSession();
+    await flag({ userId: ALICE, sessionId, turnIndex: 1, on: true });
+    await flag({ userId: ALICE, sessionId, turnIndex: 1, on: false });
+    await flag({ userId: ALICE, sessionId, turnIndex: 1, on: true });
+    await flushEvents();
+    expect(sent.map((e) => e.event)).toEqual(["coach_explanation_flagged", "coach_explanation_flagged"]);
+  });
+
+  it("sends nothing for undo, or when the flag fails", async () => {
+    const sessionId = await textSession();
+    await flag({ userId: ALICE, sessionId, turnIndex: 2, on: false });
+    await expect(flag({ userId: BOB, sessionId, turnIndex: 0, on: true })).rejects.toThrow(/not found/);
+    await expect(flag({ userId: ALICE, sessionId, turnIndex: -1 })).rejects.toThrow(/turnIndex/);
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("a Mixpanel error never fails the flag", async () => {
+    const sessionId = await textSession();
+    failMixpanel(true);
+    await expect(flag({ userId: ALICE, sessionId, turnIndex: 0, on: true })).resolves.toEqual({ on: true });
+    await flushEvents();
+    expect(sent).toEqual([]);
   });
 });

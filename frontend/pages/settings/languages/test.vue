@@ -178,7 +178,6 @@
             if (res.done) {
                 // A finished test with no result is a failure: start at A1 (B-31).
                 result.value = res.result ?? { startLevel: 'A1', reason: t('languages.test.failed') };
-                trackLanguageEvent(ANALYTICS_EVENTS.LEVEL_TEST_DONE, { language: lang.value, start_level: result.value.startLevel });
             } else if (res.turn) {
                 log.value.push({ ai: true, text: res.turn.ai, help: res.turn.help });
             }

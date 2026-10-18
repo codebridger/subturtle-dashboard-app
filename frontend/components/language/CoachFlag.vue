@@ -14,9 +14,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
     import { StIcon } from 'subturtle-ui';
-    import { trackLanguageEvent } from '~/stores/language';
     import { languageApi } from '~/utils/languageApi';
 
     /**
@@ -35,7 +33,6 @@
         busy.value = true;
         try {
             await languageApi.flagCoachExplanation({ sessionId: props.sessionId, turnIndex: props.turnIndex, on });
-            if (on) trackLanguageEvent(ANALYTICS_EVENTS.COACH_EXPLANATION_FLAGGED, { language: props.language, turn_index: props.turnIndex });
         } catch (error) {
             console.error('Flagging the explanation failed:', error);
             flagged.value = !on;
