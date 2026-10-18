@@ -1,3 +1,10 @@
+# [1.3.0-dev.36](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.35...v1.3.0-dev.36) (2026-10-18)
+
+
+### Features
+
+* **analytics:** send the language events from the server, add phrase_kept_pending (B-28) ([0fca5a9](https://github.com/codebridger/subturtle-dashboard-app/commit/0fca5a9b3cca0a42c5f6a8bc2df4ba46ea87c42f))
+
 # [1.3.0-dev.35](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.34...v1.3.0-dev.35) (2026-10-16)
 
 
