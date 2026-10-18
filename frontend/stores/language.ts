@@ -15,7 +15,6 @@ import { isCapabilities, isLanguageState, languageApi, LanguageApiError } from '
 import { setLanguageScope } from '~/utils/languageScope';
 import { isRtl, languageName, nativeLanguageName } from '~/utils/languages';
 import { analytic, registerLanguageAnalytics } from '~/plugins/mixpanel';
-import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 /**
  * The learner's languages (D-01): capabilities, the language state, the active language and
@@ -227,10 +226,8 @@ export const useLanguageStore = defineStore('language', () => {
      */
     async function switchLanguage(code: LangCode) {
         if (!enabled.value || code === activeLanguage.value) return;
-        const from = activeLanguage.value;
         applyState(await languageApi.setActiveLanguage(code));
         await reloadScopedStores();
-        trackLanguageEvent(ANALYTICS_EVENTS.LANGUAGE_SWITCHED, { from_language: from, to_language: code });
     }
 
     async function addLanguage(args: AddLanguageArgs) {
@@ -238,7 +235,6 @@ export const useLanguageStore = defineStore('language', () => {
         const next = await languageApi.addLanguage(args);
         applyState(next);
         if (activeLanguage.value !== before) await reloadScopedStores();
-        trackLanguageEvent(ANALYTICS_EVENTS.LANGUAGE_ADDED, { language: args.language, start_level: args.startLevel ?? 'A1', start_level_source: args.startLevelSource ?? 'default' });
         return next;
     }
 
@@ -247,7 +243,6 @@ export const useLanguageStore = defineStore('language', () => {
         const { state: next, purgeAt } = await languageApi.removeLanguage(code);
         applyState(next);
         if (activeLanguage.value !== before) await reloadScopedStores();
-        trackLanguageEvent(ANALYTICS_EVENTS.LANGUAGE_REMOVED, { language: code });
         return { purgeAt: purgeAt ?? summaryFor(code)?.purgeAt };
     }
 

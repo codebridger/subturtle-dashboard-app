@@ -26,6 +26,9 @@ jest.mock("../../../subscription/service", () => ({
   recordUsage: (...args: any[]) => mockRecordUsage(...args),
 }));
 
+jest.mock("mixpanel", () => require("../../../../utils/test-support/mixpanel-capture").mixpanelMock);
+
+import { anonymousAuthStub, failMixpanel, flushEvents, resetMixpanel, sent } from "../../../../utils/test-support/mixpanel-capture";
 import { LANGUAGE_PROFILE_COLLECTION, LEVEL_TEST_COLLECTION, PROFILE_COLLECTION } from "../../../../config";
 import { LanguageService } from "../../service";
 import { FAILED_REASON, STOPPED_REASON } from "../service";
@@ -63,7 +66,7 @@ beforeAll(async () => {
   Tests = connection.model(LEVEL_TEST_COLLECTION, require("../db")[0].schema);
   LanguageProfiles = connection.model(LANGUAGE_PROFILE_COLLECTION, require("../../db").find((d: any) => d.collection === LANGUAGE_PROFILE_COLLECTION).schema);
   Profiles = connection.model(PROFILE_COLLECTION, new Schema({}, { strict: false }));
-  Object.assign(mockModels, { [LEVEL_TEST_COLLECTION]: Tests, [LANGUAGE_PROFILE_COLLECTION]: LanguageProfiles, [PROFILE_COLLECTION]: Profiles });
+  Object.assign(mockModels, { [LEVEL_TEST_COLLECTION]: Tests, [LANGUAGE_PROFILE_COLLECTION]: LanguageProfiles, [PROFILE_COLLECTION]: Profiles, auth: anonymousAuthStub as any });
   await LanguageProfiles.init();
 }, 120000);
 
@@ -76,6 +79,7 @@ beforeEach(async () => {
   await Promise.all([Tests, LanguageProfiles, Profiles].map((m) => m.deleteMany({})));
   jest.clearAllMocks();
   jest.restoreAllMocks();
+  resetMixpanel();
   jest.spyOn(LanguageService, "getState").mockResolvedValue({ mocked: true } as any);
   jest.spyOn(console, "warn").mockImplementation(() => undefined);
   process.env.GEMINI_API_KEY = "test";
@@ -272,5 +276,51 @@ describe("content", () => {
     expect(questionPrompt("lt", null, 3)).toMatch(/question 3 of 6/);
     expect(questionPrompt("lt", null, 3)).toMatch(/own language is English/);
     expect(gradePrompt("sv")).toMatch(/choose the lower one/);
+  });
+});
+
+describe("server analytics (B-28)", () => {
+  it("finish-level-test sends level_test_done once, with the language and the level", async () => {
+    const { testId } = await start({ userId: USER, language: "de" });
+    await runAll(testId);
+    await finish({ userId: USER, testId, accept: true });
+    await finish({ userId: USER, testId, accept: true }); // asking again changes nothing
+    await flushEvents();
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].event).toBe("level_test_done");
+    expect(sent[0].props).toMatchObject({ distinct_id: USER, language: "de", start_level: "B1" });
+  });
+
+  it("finish-level-test sends it for a declined result and for a stopped test, at A1", async () => {
+    const declined = await start({ userId: USER, language: "de" });
+    await runAll(declined.testId);
+    await finish({ userId: USER, testId: declined.testId, accept: false });
+    const stopped = await start({ userId: USER, language: "fr" });
+    await answer({ userId: USER, testId: stopped.testId, text: "Bonjour" });
+    await finish({ userId: USER, testId: stopped.testId, accept: true });
+    await flushEvents();
+
+    expect(sent.map((e) => [e.event, e.props.language, e.props.start_level])).toEqual([
+      ["level_test_done", "de", "A1"],
+      ["level_test_done", "fr", "A1"],
+    ]);
+  });
+
+  it("finish-level-test sends nothing when the test is not found, and answering does not send it", async () => {
+    const { testId } = await start({ userId: USER, language: "de" });
+    await answer({ userId: USER, testId, text: "Hallo" });
+    await expect(finish({ userId: OTHER, testId, accept: true })).rejects.toThrow(/^not_found/);
+    await flushEvents();
+    expect(sent).toEqual([]);
+  });
+
+  it("a Mixpanel error never fails finish-level-test", async () => {
+    const { testId } = await start({ userId: USER, language: "de" });
+    await runAll(testId);
+    failMixpanel(true);
+    await expect(finish({ userId: USER, testId, accept: true })).resolves.toMatchObject({ language: "de" });
+    await flushEvents();
+    expect(sent).toEqual([]);
   });
 });

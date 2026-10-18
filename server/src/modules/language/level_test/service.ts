@@ -17,6 +17,7 @@ import { getLearningLanguage, getOwnLanguage, hasFeature } from "../../../langua
 import { checkCreditAllocation, recordUsage } from "../../subscription/service";
 import { AI_CREDIT_EXHAUSTED_CODE } from "../../subscription/config";
 import { extractTextCostCalculationInput } from "../../live_session_text/utils";
+import { fireServerEvent, SERVER_ANALYTICS_EVENTS } from "../../../utils/analytics";
 import { LanguageError, LanguageService } from "../service";
 import { fallbackQuestion } from "./questions";
 import { ModelResult, StartLevel, TOTAL_QUESTIONS, Turn, grade, nextQuestion } from "./model";
@@ -202,9 +203,12 @@ export async function finishTest(userId: string, args: { testId?: unknown; accep
 
   let result: LevelResult;
   let applied = false;
+  // Only the call that really closes the test counts; asking again for a finished test sends nothing.
+  let closed = false;
   if (test.status === "done" && accept) {
     result = { startLevel: test.startLevel, reason: test.reason };
-    await tests().updateOne({ ...filter, status: "done" }, { $set: { status: "accepted", finishedAt: new Date() } });
+    const update: any = await tests().updateOne({ ...filter, status: "done" }, { $set: { status: "accepted", finishedAt: new Date() } });
+    closed = Boolean(update?.modifiedCount);
     // Saved on the language when the learner has it; a new language gets it through add-language.
     const saved: any = await languageProfiles().updateOne(
       { userId, language: test.language, status: { $in: ["active", "paused"] } },
@@ -214,14 +218,17 @@ export async function finishTest(userId: string, args: { testId?: unknown; accep
   } else if (test.status === "done") {
     // Declined: the learner chose "Start at A1 instead".
     result = { startLevel: "A1", reason: STOPPED_REASON };
-    await tests().updateOne({ ...filter, status: "done" }, { $set: { status: "declined", finishedAt: new Date() } });
+    const update: any = await tests().updateOne({ ...filter, status: "done" }, { $set: { status: "declined", finishedAt: new Date() } });
+    closed = Boolean(update?.modifiedCount);
   } else if (test.status === "in_progress") {
     result = { startLevel: "A1", reason: STOPPED_REASON };
-    await tests().updateOne({ ...filter, status: "in_progress" }, { $set: { status: "stopped", startLevel: "A1", reason: STOPPED_REASON, finishedAt: new Date() } });
+    const update: any = await tests().updateOne({ ...filter, status: "in_progress" }, { $set: { status: "stopped", startLevel: "A1", reason: STOPPED_REASON, finishedAt: new Date() } });
+    closed = Boolean(update?.modifiedCount);
   } else {
     // Already finished: answer the same again.
     result = test.status === "accepted" ? { startLevel: test.startLevel, reason: test.reason } : { startLevel: "A1", reason: test.reason || STOPPED_REASON };
   }
+  if (closed) fireServerEvent(SERVER_ANALYTICS_EVENTS.LEVEL_TEST_DONE, userId, { language: test.language, start_level: result.startLevel });
 
   return { state: await LanguageService.getState(userId), result, applied, language: test.language };
 }

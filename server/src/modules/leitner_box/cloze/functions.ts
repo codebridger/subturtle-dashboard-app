@@ -10,7 +10,8 @@ import { defineFunction, getCollection } from "@modular-rest/server";
 import { Types } from "mongoose";
 import { DATABASE, PHRASE_COLLECTION } from "../../../config";
 import { checkClozeAnswer } from "../../../languages/cloze";
-import { toCode } from "../../../languages/helper";
+import { langOf, toCode } from "../../../languages/helper";
+import { fireServerEvent, SERVER_ANALYTICS_EVENTS } from "../../../utils/analytics";
 
 const checkClozeAnswerFn = defineFunction({
   name: "check-cloze-answer",
@@ -27,6 +28,7 @@ const checkClozeAnswerFn = defineFunction({
     if (!phrase) throw new Error("Phrase not found");
 
     const { result, expected, reason } = checkClozeAnswer(phrase, args.answer.slice(0, 500), toCode(args.language));
+    fireServerEvent(SERVER_ANALYTICS_EVENTS.CLOZE_RESULT, userId, { language: langOf(phrase), result });
     return { result, expected, reason };
   },
 });

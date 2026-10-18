@@ -34,6 +34,7 @@ import {
   DEFAULT_POOL_CHUNK_SIZE,
   positive,
 } from "../../languages/language-settings";
+import { fireServerEvent, SERVER_ANALYTICS_EVENTS as EVENTS } from "../../utils/analytics";
 import { normaliseSourceUrl } from "../translation/url-normalise";
 import { isUserOnFreemium, updateFreemiumAllocation } from "../subscription/service";
 import { LeitnerService } from "../leitner_box/service";
@@ -475,6 +476,11 @@ export class LanguageService {
           console.error(`[language] onLanguageAdded hook failed for ${userId}/${language}`, error);
         }
       }
+      fireServerEvent(EVENTS.LANGUAGE_ADDED, userId, {
+        language,
+        start_level: languageProfile.startLevel ?? startLevel,
+        start_level_source: languageProfile.startLevelSource ?? startLevelSource,
+      });
     }
 
     return { state: await this.getState(userId) };
@@ -573,7 +579,12 @@ export class LanguageService {
     const code = toCode(language);
     const lp = code ? await this.getLanguageProfile(userId, code) : null;
     if (!lp || lp.status !== "active") throw new LanguageError("not_active", { language: code ?? String(language ?? "") });
+    const before: any = await profiles().findOne({ refId: userId }, { learningLanguage: 1 }).lean();
     await profiles().updateOne({ refId: userId }, { $set: { learningLanguage: code } });
+    // Switching to the language that is already active changes nothing, so it sends nothing.
+    if (before?.learningLanguage !== code) {
+      fireServerEvent(EVENTS.LANGUAGE_SWITCHED, userId, { from_language: before?.learningLanguage ?? null, to_language: code });
+    }
     return { state: await this.getState(userId) };
   }
 
@@ -596,6 +607,7 @@ export class LanguageService {
         { $set: { status: "removed", removedAt: now, purgeAt } }
       );
       if (!result.modifiedCount) throw new Error(`Language ${code} changed while it was being removed; try again`);
+      fireServerEvent(EVENTS.LANGUAGE_REMOVED, userId, { language: code });
     }
     await profiles().updateOne({ refId: userId }, { $pull: { learningLanguages: code, pausedLanguages: code } });
 
@@ -679,15 +691,19 @@ export class LanguageService {
     const code = toCode(language);
     if (!code) throw invalid("language is not a language we know");
     if (typeof on !== "boolean") throw invalid("on must be true or false");
+    let changed = false;
     if (on) {
       try {
-        await interests().updateOne({ userId, language: code }, { $setOnInsert: { userId, language: code } }, { upsert: true });
+        const result: any = await interests().updateOne({ userId, language: code }, { $setOnInsert: { userId, language: code } }, { upsert: true });
+        changed = Boolean(result?.upsertedCount);
       } catch (error) {
         if (!isDuplicateKeyError(error)) throw error;
       }
     } else {
-      await interests().deleteOne({ userId, language: code });
+      const result: any = await interests().deleteOne({ userId, language: code });
+      changed = Boolean(result?.deletedCount);
     }
+    if (changed) fireServerEvent(EVENTS.LANGUAGE_INTEREST, userId, { language: code, on });
     return { on };
   }
 
@@ -746,6 +762,8 @@ export class LanguageService {
       }
       const [inserted] = await phrases().insertMany([doc]);
       phraseId = String(inserted._id);
+      // Keeping the same text again only refreshes the 30 days, so it sends nothing.
+      fireServerEvent(EVENTS.PHRASE_KEPT_PENDING, userId, { language });
     }
 
     // Kept for a language the learner already studies (a stale client): it joins at once.
