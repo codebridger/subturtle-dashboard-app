@@ -1,3 +1,10 @@
+# [1.3.0-dev.37](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.36...v1.3.0-dev.37) (2026-10-24)
+
+
+### Bug Fixes
+
+* move the level test and Coach text default off retired Gemini 2.5 models ([1dad046](https://github.com/codebridger/subturtle-dashboard-app/commit/1dad0460dc56d97e0026bd6cfe9705185a3eb39e))
+
 # [1.3.0-dev.36](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.35...v1.3.0-dev.36) (2026-10-18)
 
 
