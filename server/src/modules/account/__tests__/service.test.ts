@@ -82,6 +82,9 @@ describe("deleteUserAccount", () => {
       "user_content.review_log": { userId: USER_ID },
       "user_content.live_session": { refId: USER_ID },
       "user_content.live_session_text": { refId: USER_ID },
+      "user_content.save_assistant_session": { refId: USER_ID },
+      "user_content.level_test": { userId: USER_ID },
+      "user_content.coach_explanation_flag": { userId: USER_ID },
       "user_content.subscription": { user_id: USER_OID },
       "user_content.usage": { user_id: USER_OID },
       "user_content.free_credit": { user_id: USER_OID },
@@ -97,6 +100,28 @@ describe("deleteUserAccount", () => {
     expect(mockRemoveFile).toHaveBeenCalledWith("file-1");
     expect(result.deleted["cms.auth"]).toBe(1);
     expect(result.canceledStripeSubscriptions).toEqual([]);
+  });
+
+  it("deletes the level tests, Coach flags and save chats of the user", async () => {
+    const result = await deleteUserAccount(USER_ID);
+
+    expect(collections["user_content.level_test"].deleteMany).toHaveBeenCalledWith({ userId: USER_ID });
+    expect(collections["user_content.coach_explanation_flag"].deleteMany).toHaveBeenCalledWith({ userId: USER_ID });
+    expect(collections["user_content.save_assistant_session"].deleteMany).toHaveBeenCalledWith({ refId: USER_ID });
+    expect(result.deleted["user_content.level_test"]).toBe(1);
+    expect(result.deleted["user_content.coach_explanation_flag"]).toBe(1);
+    expect(result.deleted["user_content.save_assistant_session"]).toBe(1);
+  });
+
+  it("is safe to run twice: a second run over already-deleted data finishes without error", async () => {
+    await deleteUserAccount(USER_ID);
+    for (const c of Object.values(collections)) {
+      c.deleteMany.mockResolvedValue({ deletedCount: 0 });
+      c.deleteOne.mockResolvedValue({ deletedCount: 0 });
+    }
+    const second = await deleteUserAccount(USER_ID);
+    expect(second.deleted["user_content.level_test"]).toBe(0);
+    expect(second.deleted["cms.auth"]).toBe(0);
   });
 
   it("deletes the auth document last", async () => {

@@ -8,6 +8,9 @@
  *     immediately. If any cancel fails the whole deletion is aborted before a document is
  *     touched, and the user can retry.
  *  2. The user's documents, collection by collection, each filtered by the user's id only.
+ *     Every collection a `modules/**\/db.ts` defines is either deleted here or named in
+ *     `__tests__/collections.test.ts` as holding no user data, so a new collection cannot be
+ *     forgotten: that test fails until it is one or the other.
  *  3. The auth document last, so a failure part-way leaves a signed-in account that can
  *     run the deletion again. Every step is a no-op for data that is already gone, so a
  *     retry finishes the job.
@@ -28,6 +31,9 @@ import {
   BUNDLE_COLLECTION,
   LIVE_SESSION_COLLECTION,
   LIVE_SESSION_TEXT_COLLECTION,
+  LEVEL_TEST_COLLECTION,
+  COACH_EXPLANATION_FLAG_COLLECTION,
+  SAVE_ASSISTANT_SESSION_COLLECTION,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
   FREE_CREDIT_COLLECTION,
@@ -166,9 +172,14 @@ export async function deleteUserAccount(userId: string): Promise<AccountDeletion
   await deleteMany(deleted, DATABASE, LANGUAGE_INTEREST_COLLECTION, { userId });
   await deleteMany(deleted, DATABASE, REVIEW_LOG_COLLECTION, { userId });
 
-  // Practice sessions (voice and text).
+  // Practice sessions (voice, text and the save chat).
   await deleteMany(deleted, DATABASE, LIVE_SESSION_COLLECTION, { refId: userId });
   await deleteMany(deleted, DATABASE, LIVE_SESSION_TEXT_COLLECTION, { refId: userId });
+  await deleteMany(deleted, DATABASE, SAVE_ASSISTANT_SESSION_COLLECTION, { refId: userId });
+
+  // Language data: the AI level-test chats and the Coach "explanation looks wrong" flags.
+  await deleteMany(deleted, DATABASE, LEVEL_TEST_COLLECTION, { userId });
+  await deleteMany(deleted, DATABASE, COACH_EXPLANATION_FLAG_COLLECTION, { userId });
 
   // Subscription, usage and billing records.
   await deleteMany(deleted, DATABASE, SUBSCRIPTION_COLLECTION, { user_id: userObjectId });
