@@ -6,7 +6,7 @@
 
 // Default model when the caller does not pin one. Must be a function-calling
 // capable Gemini text model (see the requirement on TEXT_PRICES_PER_M).
-export const DEFAULT_TEXT_MODEL = "gemini-2.5-flash-lite";
+export const DEFAULT_TEXT_MODEL = "gemini-3.1-flash-lite";
 
 // Markup applied on top of the published per-million rates (same hook the audio
 // module exposes). 0 means "use the published rates as-is"; bump it if a
@@ -94,7 +94,7 @@ export const CACHE_REFRESH_BUFFER_MS = 60 * 1000;
 //   - gemini-2.5-flash      : 1,024 tokens
 //   - gemini-3.1-flash-lite : 1,024 tokens
 // A small bundle's prefix (system prompt + phrase list + tools) can fall under
-// the floor — notably on the default flash-lite model — so cache creation is
+// the floor — notably on gemini-2.5-flash-lite — so cache creation is
 // best-effort: `ensureTextCache` falls back to inlining the prefix (the original
 // behaviour) and disables further attempts for that session. The fallback keys
 // off the API error, not a local token count, since the cached total (prefix +

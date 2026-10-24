@@ -14,8 +14,10 @@ import { toTitle } from "../../../languages/helper";
 import { mapUsage } from "../../live_session_text/utils";
 import type { TextTokenUsageType } from "../../live_session_text/types";
 
-export const QUESTION_MODEL = "gemini-2.5-flash-lite";
-export const GRADE_MODEL = "gemini-2.5-flash";
+// gemini-2.5-flash and -flash-lite answer 404 ("no longer available to new users") on newer Google
+// projects, so both calls use gemini-3.1-flash-lite, which is priced in live_session_text/config.ts.
+export const QUESTION_MODEL = "gemini-3.1-flash-lite";
+export const GRADE_MODEL = "gemini-3.1-flash-lite";
 export const TOTAL_QUESTIONS = 6;
 export const LEVELS = ["A1", "A2", "B1", "B2"] as const;
 export type StartLevel = (typeof LEVELS)[number];
