@@ -399,7 +399,7 @@ describe("create-text-session", () => {
       userId: "user1",
       instructions: "be a tutor",
     });
-    expect(res.model).toBe("gemini-2.5-flash-lite");
+    expect(res.model).toBe("gemini-3.1-flash-lite");
   });
 
   it("rejects an unsupported model before any credit check or write", async () => {

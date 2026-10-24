@@ -51,10 +51,13 @@ let Tests: Model<any>, LanguageProfiles: Model<any>, Profiles: Model<any>;
 /** A recorded Gemini answer. */
 const reply = (json: any) => ({ text: JSON.stringify(json), usageMetadata: { promptTokenCount: 300, candidatesTokenCount: 40, totalTokenCount: 340 } });
 
+/** Both calls share one model, so the grading call is told apart by its prompt. */
+const isGrade = (request: any) => String(request.config?.systemInstruction ?? "").startsWith("You are a careful CEFR examiner");
+
 /** Questions answered by the "model": question n, help in Persian; grading gives B1. */
 function recordedModel(level = "B1") {
   mockGenerate.mockImplementation(async (request: any) => {
-    if (request.model === GRADE_MODEL) return reply({ startLevel: level, reason: "You told a clear story about last weekend and gave reasons for your plans." });
+    if (isGrade(request)) return reply({ startLevel: level, reason: "You told a clear story about last weekend and gave reasons for your plans." });
     const n = (request.contents[0].parts[0].text.match(/question (\d)/g) || []).length;
     return reply({ ai: `Frage ${n}?`, help: `سوال ${n}` });
   });
@@ -190,7 +193,7 @@ describe("fallbacks", () => {
 
   it("a failed grade means A1", async () => {
     mockGenerate.mockImplementation(async (request: any) => {
-      if (request.model === GRADE_MODEL) return reply({ startLevel: "C2", reason: "x" });
+      if (isGrade(request)) return reply({ startLevel: "C2", reason: "x" });
       return reply({ ai: "Q?", help: "h" });
     });
     const { testId } = await start({ userId: USER, language: "fr" });
