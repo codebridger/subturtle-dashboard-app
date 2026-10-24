@@ -891,7 +891,18 @@
         "subscription": "Subscription",
         "sign-out": "Sign out",
         "saves": "{used} / {total} saves",
-        "languages": "Languages"
+        "languages": "Languages",
+        "delete": {
+            "section-title": "Delete account",
+            "section-body": "Permanently delete your account and everything in it. This cannot be undone.",
+            "open": "Delete account",
+            "title": "Delete your account?",
+            "message": "This deletes your account and everything in it: your phrases, bundles, reviews, Coach sessions and language data. A paid plan is cancelled at once. This cannot be undone.",
+            "confirm": "Delete my account",
+            "deleting": "Deleting…",
+            "failed": "We couldn't delete your account. Nothing was lost if this message stays; you can try again.",
+            "failed-with-reason": "We couldn't delete your account: {reason}"
+        }
     },
     "theme": {
         "light": "Light",

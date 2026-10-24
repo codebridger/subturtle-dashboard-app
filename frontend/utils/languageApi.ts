@@ -40,7 +40,7 @@ export class LanguageApiError extends Error {
 }
 
 /** The error text from any of the shapes modular-rest and axios produce. */
-function errorText(error: any): string {
+export function errorText(error: any): string {
     const candidates = [error?.error, error?.message, error?.response?.data?.error, error?.response?.data?.message, error];
     for (const value of candidates) {
         if (typeof value === 'string' && value) return value;

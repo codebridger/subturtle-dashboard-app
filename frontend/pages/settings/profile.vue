@@ -89,6 +89,9 @@
                     </StButton>
                 </div>
             </StCard>
+
+            <!-- Shown with the form, not the skeleton, so the page does not shift when the profile lands. -->
+            <DeleteAccountSection v-if="!loading" />
         </div>
 
         <StModal v-if="confirmOwn" :title="t('languages.profile.own-language')" size="sm" @close="cancelOwnLanguage">
@@ -107,6 +110,7 @@
     import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
     import { useProfileStore } from '~/stores/profile';
     import { StAvatar, StButton, StCard, StIcon, StInput, StModal, StSkeleton } from 'subturtle-ui';
+    import DeleteAccountSection from '~/components/profile/DeleteAccountSection.vue';
     import OwnLanguagePicker from '~/components/language/OwnLanguagePicker.vue';
     import { useLanguageStore } from '~/stores/language';
     import StPageHeader from '~/components/common/StPageHeader.vue';
