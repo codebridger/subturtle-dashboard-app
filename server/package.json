@@ -16,6 +16,7 @@
     "spike:firestore": "ts-node --transpile-only scripts/firestore-go-no-go.ts",
     "starter-pack:audio": "ts-node --transpile-only scripts/generate-starter-pack-audio.ts",
     "migrate:multilingual": "ts-node --transpile-only scripts/multilingual-backfill.ts",
+    "migrate:multilingual-detected": "ts-node --transpile-only scripts/multilingual-detected.ts",
     "migrate:multilingual-indexes": "ts-node --transpile-only scripts/multilingual-indexes.ts",
     "migrate:review-log-snapshot": "ts-node --transpile-only scripts/review-log-snapshot.ts"
   },
