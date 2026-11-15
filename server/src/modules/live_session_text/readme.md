@@ -61,7 +61,7 @@ Collection `live_session_text` (name in [`server/src/config.ts`](../../config.ts
 Each `text-turn` maps the response `usageMetadata` (`mapUsage`) and calls `recordUsage` so credits
 are deducted **server-side** (authoritative — unlike the audio path, which trusts browser-reported
 usage). Pricing is **model-aware**: `TEXT_PRICES_PER_M` in `config.ts` is keyed by model id with a
-`DEFAULT` fallback. The model is a parameter (default `gemini-2.5-flash-lite`).
+`DEFAULT` fallback. The model is a parameter (default `gemini-3.1-flash-lite`).
 
 > ⚠️ The per-million USD rates in `config.ts` are published rates to **confirm against current
 > Gemini pricing** before relying on the billing numbers.
@@ -83,8 +83,8 @@ name via `config.cachedContent` on each `generateContent` call. Gemini reports t
 - **Lifecycle.** The cache name and expiry live on the session record (`cacheName`,
   `cacheExpireTime`). A turn reuses a live cache and transparently recreates it once it nears the
   `CACHE_TTL_SECONDS` TTL (within `CACHE_REFRESH_BUFFER_MS`).
-- **Fallback.** Creation needs a prefix above the model's token floor — **2,048 tokens on the
-  default `gemini-2.5-flash-lite`**, 1,024 on `gemini-2.5-flash` / `gemini-3.1-flash-lite` (verified
+- **Fallback.** Creation needs a prefix above the model's token floor — 2,048 tokens on
+  `gemini-2.5-flash-lite`, 1,024 on the default `gemini-3.1-flash-lite` and on `gemini-2.5-flash` (verified
   against the live API). A small bundle can fall under that and `caches.create` returns 400;
   `ensureTextCache` then sets `cacheDisabled` and the turn inlines the prefix exactly as before —
   caching is a best-effort cost optimization, never a hard dependency. (A real ≈3,100-token session

@@ -1,0 +1,391 @@
+{
+  "language": "lt",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "lt-greetings-07",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Cue 'pasimatyti' with 'See you later' invites the standard form 'pasimatysime', which is equally correct but would be marked wrong against the spoken short form 'Pasimatysim'. The short form is fine as A1 text (it is what learners hear in videos, and the note gives the standard form); the blank just should not sit on it.",
+          "fix": {
+            "lemma": "vėlai",
+            "form": "vėliau"
+          }
+        },
+        {
+          "id": "lt-polite-08",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'Taip, ___.' with cue 'prašyti' and 'Yes, please' accepts 'prašyčiau' (and colloquially 'prašom') just as well as 'prašau'. No other word in the chunk makes a useful blank.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-questions-13",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The blanked 'tikras' changes with the listener's gender ('tikra' to a woman), so a correct feminine answer would be marked wrong. The only other word is 'tu'.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-time-03",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "'الآن حالاً' is a redundant, colloquial-sounding stack. In MSA 'right now' is simply 'في الحال' or 'الآن فوراً'.",
+          "fix": {
+            "translations.ar": "في الحال."
+          }
+        },
+        {
+          "id": "lt-time-07",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Both 'rytoj ryte' and 'rytoj rytą' (accusative of time) are standard, so a learner typing 'rytą' for the cue 'rytas' would be wrongly marked wrong. Move the blank to the invariant 'Rytoj'.",
+          "fix": {
+            "lemma": "rytoj",
+            "form": "Rytoj"
+          }
+        },
+        {
+          "id": "lt-time-12",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Both 'vakar vakare' and 'vakar vakarą' are standard, so the cue 'vakaras' has two valid answers. Move the blank to the invariant 'Vakar', which is also the first match of the substring.",
+          "fix": {
+            "lemma": "vakar",
+            "form": "Vakar"
+          }
+        },
+        {
+          "id": "lt-places-12",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The participle agrees with the referent: 'atidarytas' for a masculine noun such as restoranas or bankas, against neuter 'atidaryta'. The translation 'Is it open?' does not fix the referent, so two answers are valid.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-places-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The cue 'uždaryti' accepts 'uždarytas' (for a masculine referent) and 'uždarė' ('they have already closed', a very natural way to say 'It's closed now') as well as 'uždaryta'. Blank the invariant 'Jau' instead.",
+          "fix": {
+            "lemma": "jau",
+            "form": "Jau"
+          }
+        },
+        {
+          "id": "lt-food-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'vegetaras' changes with the speaker's gender ('vegetarė'), so a female learner's correct answer would be marked wrong. No invariant word is left to blank.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-food-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'sotus' changes with the speaker's gender ('soti'), so the feminine answer would be marked wrong. Only 'Aš' and 'jau' remain, so drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-travel-14",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'Sustokite' depends on register: 'Sustok' (tu) or the spoken 'Sustokit' are also correct, and the translation (at least in en) does not force Jūs. Blank the invariant 'čia' instead.",
+          "fix": {
+            "lemma": "čia",
+            "form": "čia"
+          }
+        },
+        {
+          "id": "lt-work-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'studentas' changes with the speaker's gender ('studentė'), so the feminine answer would be marked wrong. No other word is left to blank.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-work-03",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'užsiėmęs' changes with the speaker's gender ('užsiėmusi'). The cue 'užsiimti' to 'užsiėmęs' (irregular past stem -ėm- plus participle ending) is also too big a jump for an A1 beginner, and the common synonym 'užimtas' adds confusion.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-feelings-01",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'laimingas' changes with the speaker's gender ('laiminga'), so the feminine answer would be marked wrong.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-feelings-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'pavargęs' changes with the speaker's gender ('pavargusi'), and the cue 'pavargti' with 'I'm tired' also accepts the very common 'pavargau'. The participle cue is not helpful for a beginner.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "lt-needs-09",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "'Aš ___.' with cue 'pasiklysti' and 'I'm lost' could also take the participle 'pasiklydęs' (the same pattern as 'Aš pavargęs'), which is grammatical but less common, and gendered. The past tense 'pasiklydau' is the natural answer, so probably acceptable.",
+          "fix": {}
+        },
+        {
+          "id": "lt-feelings-11",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "With the cue 'pasiilgti' and a present-tense 'I miss you', a learner may type 'pasiilgstu' ('Pasiilgstu tavęs' is attested). Blanking 'tavęs' (genitive of tu, a single answer) avoids this and drills the genitive object.",
+          "fix": {
+            "lemma": "tu",
+            "form": "tavęs"
+          }
+        },
+        {
+          "id": "lt-travel-15",
+          "severity": "doubt",
+          "field": "text",
+          "problem": "Concept is the generic 'How long does it take?'; the text narrows it to 'How long does the trip take?'. 'Kiek laiko užtrunka?' is the natural generic chunk and keeps a single-answer cloze. The current text is correct and natural, so this is optional.",
+          "fix": {
+            "text": "Kiek laiko užtrunka?",
+            "lemma": "užtrukti",
+            "form": "užtrunka",
+            "translations.fa": "چقدر طول می‌کشد؟",
+            "translations.ar": "كم من الوقت يستغرق ذلك؟",
+            "translations.es": "¿Cuánto tarda?",
+            "translations.vi": "Mất bao lâu?",
+            "translations.en": "How long does it take?",
+            "translations.tr": "Ne kadar sürer?"
+          }
+        }
+      ],
+      "cloze": {
+        "checked": 120,
+        "defensible": 106
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 1
+        },
+        "es": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "en": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "The Lithuanian is good: every text is grammatical with correct diacritics and case endings, the chunks are natural, and the gender and register notes are accurate. The spoken short forms 'Einam'/'Pasimatysim' are right for an A1 listening pack, and 'Noriu valgyti' / 'Kas tas žmogus?' are natural enough to keep. The real weakness is the cloze set: 14 of 120 blanks have a second valid answer, mostly speaker-gendered predicatives and participles, plus a few time-adverbial, aspect or register alternatives. Translations are clean, with one unnatural Arabic rendering."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "lt-greetings-07",
+          "status": "clean"
+        },
+        {
+          "id": "lt-polite-08",
+          "status": "clean"
+        },
+        {
+          "id": "lt-questions-13",
+          "status": "clean"
+        },
+        {
+          "id": "lt-time-03",
+          "status": "clean"
+        },
+        {
+          "id": "lt-time-07",
+          "status": "clean"
+        },
+        {
+          "id": "lt-time-12",
+          "status": "clean"
+        },
+        {
+          "id": "lt-places-12",
+          "status": "clean"
+        },
+        {
+          "id": "lt-places-15",
+          "status": "clean"
+        },
+        {
+          "id": "lt-food-09",
+          "status": "clean"
+        },
+        {
+          "id": "lt-food-15",
+          "status": "clean"
+        },
+        {
+          "id": "lt-travel-14",
+          "status": "clean"
+        },
+        {
+          "id": "lt-work-02",
+          "status": "clean"
+        },
+        {
+          "id": "lt-work-03",
+          "status": "clean"
+        },
+        {
+          "id": "lt-feelings-01",
+          "status": "clean"
+        },
+        {
+          "id": "lt-feelings-02",
+          "status": "clean"
+        },
+        {
+          "id": "lt-feelings-11",
+          "status": "clean"
+        },
+        {
+          "id": "lt-travel-15",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "lt-work-10",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "Calque of \"What is your number?\". Vietnamese asks for phone numbers with \"bao nhiêu\", not \"là gì\".",
+          "fix": {
+            "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+          }
+        },
+        {
+          "id": "lt-feelings-12",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "\"مبروك\" is the colloquial form; MSA is expected, which would be \"تهانينا!\" (or \"مبارك!\").",
+          "fix": {
+            "translations.ar": "تهانينا!"
+          }
+        },
+        {
+          "id": "lt-feelings-04",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "Bare \"Tôi thích.\" sounds clipped as a standalone \"I like it\". Vietnamese avoids \"nó\" for objects, so the natural choice is \"Tôi thích lắm.\" or \"Mình thích cái này.\". The current form is passable as a reply.",
+          "fix": {
+            "translations.vi": "Tôi thích lắm."
+          }
+        },
+        {
+          "id": "lt-food-13",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "\"للأخذ معي\" is understandable but not the usual MSA phrasing for takeaway. \"للأخذ إلى الخارج\" or \"طلب خارجي\" is more standard; the everyday \"سفري\" is colloquial.",
+          "fix": {
+            "translations.ar": "للأخذ إلى الخارج، من فضلك."
+          }
+        }
+      ],
+      "finalCleanItems": 145,
+      "doubtful": [
+        "lt-needs-09",
+        "lt-feelings-04",
+        "lt-food-13"
+      ]
+    }
+  ],
+  "leadFixes": [
+    {
+      "id": "lt-feelings-04",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "'Tôi thích.' is clipped (reviewer doubt); the reviewer's 'Tôi thích lắm.' adds 'a lot', so the lead used the object form other packs use.",
+      "fix": {
+        "translations.vi": "Tôi thích cái này."
+      },
+      "source": "lead"
+    }
+  ],
+  "crossPackFixes": [
+    {
+      "id": "lt-travel-14",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Cho tôi xuống ở đây."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "lt-travel-11",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Tôi đến đây du lịch."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "lt-greetings-15",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Chào mừng bạn!"
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  }
+}

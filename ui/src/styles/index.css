@@ -1,5 +1,5 @@
 /* Google Fonts must be the first statement in the file, or browsers drop it. */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&family=Vazirmatn:wght@400;600;700;800&family=Noto+Naskh+Arabic:wght@400;600;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap');
 @import './tokens.css';
 /* MUST come after tokens.css — it re-points the same names under `html[data-theme='dark']`. */
 @import './theme-tokens.css';
@@ -47,6 +47,32 @@
     height: 7px;
     border-radius: 50%;
     background: rgb(var(--rose-500));
+}
+
+/*
+ * Own-language text (D-21). The learner's own language can be written right to left (Persian,
+ * Arabic, Hebrew, Urdu) while the screen and the learning language stay left to right. Every
+ * such run is isolated, so its direction never reorders the text around it (a German sentence,
+ * the blank of a fill-the-gap card), and takes a font that has the script: Nunito has no
+ * Arabic or Hebrew glyphs. `StLangText` sets `lang` and `dir`; these rules pick the font.
+ */
+.st-lang {
+    unicode-bidi: isolate;
+}
+.st-lang:lang(fa),
+.st-lang:lang(ps),
+.st-lang:lang(ckb),
+.st-lang:lang(ug),
+.st-lang:lang(sd) {
+    font-family: var(--font-persian);
+}
+.st-lang:lang(ar),
+.st-lang:lang(ur) {
+    font-family: var(--font-arabic);
+}
+.st-lang:lang(he),
+.st-lang:lang(yi) {
+    font-family: var(--font-hebrew);
 }
 
 /*

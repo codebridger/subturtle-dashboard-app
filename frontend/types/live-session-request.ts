@@ -11,6 +11,12 @@ export interface LiveSessionRequest {
   /** Explanation language (English name, e.g. "Spanish") or "auto". */
   nativeLanguage?: string;
   /**
+   * Multilingual (D-16): the learning language and the own-language code the Coach explains in.
+   * With both, the session asks the server for the Coach prompt (`get-coach-instructions`).
+   */
+  language?: string;
+  explanationLanguage?: string;
+  /**
    * Conversation transport. "voice" (default) is the audio Live API; "text" is
    * the text-only `generateContent` path (separate store + server module).
    */

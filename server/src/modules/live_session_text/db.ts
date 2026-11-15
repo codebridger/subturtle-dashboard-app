@@ -14,6 +14,10 @@ const textSessionSchema = new Schema<TextSessionRecordType>(
     dialogs: { type: [Object], default: [] },
     usage: { type: Object },
     metadata: { type: Object, default: {} },
+    // The learning language and the Coach's explanation language (B-13). Missing on
+    // sessions from before multilingual: English.
+    language: { type: String },
+    explanationLanguage: { type: String },
     cacheName: { type: String },
     cacheExpireTime: { type: Number },
     cacheDisabled: { type: Boolean, default: false },

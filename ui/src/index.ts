@@ -19,6 +19,7 @@ export { default as StCard } from './elements/StCard.vue';
 export { default as StEmptyState } from './elements/StEmptyState.vue';
 export { default as StIconButton } from './elements/StIconButton.vue';
 export { default as StInput } from './elements/StInput.vue';
+export { default as StLangText } from './elements/StLangText.vue';
 export { default as StModal } from './elements/StModal.vue';
 export { default as StProgressBar } from './elements/StProgressBar.vue';
 export { default as StSegmentedControl } from './elements/StSegmentedControl.vue';
@@ -34,7 +35,8 @@ export { default as StStatTile } from './brand/StStatTile.vue';
 // Shell
 export { default as StAppShell } from './shell/StAppShell.vue';
 export { default as StProfileMenu } from './shell/StProfileMenu.vue';
+export { default as StLanguageMenu } from './shell/StLanguageMenu.vue';
 export { default as StSidebarNav } from './shell/StSidebarNav.vue';
 
 export type { StSegment } from './elements/StSegmentedControl.vue';
-export type { StNavGroup, StNavItem, StProfileMenuItem, StTheme, StTone, StSize, StPadding, StElevation } from './types';
+export type { StNavGroup, StNavItem, StProfileMenuItem, StLanguageMenuItem, StLanguageMenuAction, StTheme, StTone, StSize, StPadding, StElevation } from './types';

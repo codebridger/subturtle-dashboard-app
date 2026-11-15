@@ -1,3 +1,264 @@
+# [1.3.0-dev.37](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.36...v1.3.0-dev.37) (2026-10-24)
+
+
+### Bug Fixes
+
+* move the level test and Coach text default off retired Gemini 2.5 models ([1dad046](https://github.com/codebridger/subturtle-dashboard-app/commit/1dad0460dc56d97e0026bd6cfe9705185a3eb39e))
+
+# [1.3.0-dev.36](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.35...v1.3.0-dev.36) (2026-10-18)
+
+
+### Features
+
+* **analytics:** send the language events from the server, add phrase_kept_pending (B-28) ([0fca5a9](https://github.com/codebridger/subturtle-dashboard-app/commit/0fca5a9b3cca0a42c5f6a8bc2df4ba46ea87c42f))
+
+# [1.3.0-dev.35](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.34...v1.3.0-dev.35) (2026-10-16)
+
+
+### Bug Fixes
+
+* **analytics:** B-01 track server events on the install id, not the shared anonymous account ([af0ac01](https://github.com/codebridger/subturtle-dashboard-app/commit/af0ac01cd4503a229683afd4be4cfe59474919ce))
+
+
+### Features
+
+* **analytics:** B-03 tag translation_requested with the client trigger ([62b14f1](https://github.com/codebridger/subturtle-dashboard-app/commit/62b14f10b5182fb720cbab9bc4b0e733369ab99a))
+* **landing:** D-01 track extension_installed from the post-install link ([e0883e7](https://github.com/codebridger/subturtle-dashboard-app/commit/e0883e7e3b52474ef5f56db309f8ce688bdfa172))
+
+# [1.3.0-dev.34](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.33...v1.3.0-dev.34) (2026-10-16)
+
+
+### Bug Fixes
+
+* **mobile:** starter pack card rule, Coming later on Languages, language list before sign in (M-02, M-05, M-07) ([6927786](https://github.com/codebridger/subturtle-dashboard-app/commit/692778687c70d7a22e5a233476fa0252d12ab7e1))
+
+# [1.3.0-dev.33](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.32...v1.3.0-dev.33) (2026-10-16)
+
+
+### Bug Fixes
+
+* **server:** find learners' old Leitner, Pool and board documents on every database (B-10, B-11, B-12) ([6af41ca](https://github.com/codebridger/subturtle-dashboard-app/commit/6af41cac1b115fa747f1d97cadfa500ac9f94a53))
+
+# [1.3.0-dev.32](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.31...v1.3.0-dev.32) (2026-10-16)
+
+
+### Bug Fixes
+
+* **frontend:** Starter learners who removed their language can restore it from first run (D-07, D-20, D-25) ([720d7de](https://github.com/codebridger/subturtle-dashboard-app/commit/720d7dec8721869b287ab2b631f58c7896e6d837)), closes [#138](https://github.com/codebridger/subturtle-dashboard-app/issues/138)
+
+# [1.3.0-dev.31](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.30...v1.3.0-dev.31) (2026-10-16)
+
+
+### Bug Fixes
+
+* **mobile:** Starter learners who removed their language can restore it from first run; Tell me survives a reload ([63e4bb9](https://github.com/codebridger/subturtle-dashboard-app/commit/63e4bb91bf2c17921cb46b7ff31f7f33f30c3482))
+
+# [1.3.0-dev.30](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.29...v1.3.0-dev.30) (2026-10-16)
+
+
+### Bug Fixes
+
+* **frontend:** match the multilingual designs from the end-to-end run (D-02, D-06, D-07, D-11, D-16, D-19, D-24) ([0e24d07](https://github.com/codebridger/subturtle-dashboard-app/commit/0e24d07310871714380662dff9a86bcd5c06af29))
+
+# [1.3.0-dev.29](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.28...v1.3.0-dev.29) (2026-10-16)
+
+
+### Bug Fixes
+
+* **server:** Starter cannot swap, Portuguese coming later, Tell me in language state (B-05, B-06, B-33) ([dde0dc8](https://github.com/codebridger/subturtle-dashboard-app/commit/dde0dc87487a8911309ee90b531519973ca29a51))
+
+# [1.3.0-dev.28](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.27...v1.3.0-dev.28) (2026-10-16)
+
+
+### Bug Fixes
+
+* **frontend:** multilingual fixes from the round-1 end-to-end run (D-07, D-12, D-19, D-21) ([a7de888](https://github.com/codebridger/subturtle-dashboard-app/commit/a7de88862b5b7c6b6de1ac52d23c533307a606d6))
+
+# [1.3.0-dev.27](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.26...v1.3.0-dev.27) (2026-10-15)
+
+
+### Features
+
+* **mobile:** read the per-language settings from get-language-state; Me shows and ticks New phrases a day (M-08) ([d6d1cdf](https://github.com/codebridger/subturtle-dashboard-app/commit/d6d1cdf3d0c90cf03b1503d20ea55a767e0b86f9))
+
+# [1.3.0-dev.26](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.25...v1.3.0-dev.26) (2026-10-15)
+
+
+### Features
+
+* **server:** return per-language settings in get-language-state (B-05) ([93fdedd](https://github.com/codebridger/subturtle-dashboard-app/commit/93fdedd33795a4bb8d1a5863958a331cc69947f5))
+
+# [1.3.0-dev.25](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.24...v1.3.0-dev.25) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** follow the level test, starter pack, speech and streak contract updates (D-07, D-18, D-19, D-24) ([1e5985a](https://github.com/codebridger/subturtle-dashboard-app/commit/1e5985abba7cb27f1fc35f84b42a0c99050e4fbf))
+
+# [1.3.0-dev.24](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.23...v1.3.0-dev.24) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** write the Pool settings to the language's profile from update-settings (B-11) ([f5757f7](https://github.com/codebridger/subturtle-dashboard-app/commit/f5757f7362ea89710c7c8c35729ef6b95fe8c2bc))
+
+
+### Features
+
+* **server:** review log, and backfill and index scripts with dry run by default (B-27, B-30) ([9e08de2](https://github.com/codebridger/subturtle-dashboard-app/commit/9e08de2e15a1c64e9b5dad6cfecf957470b680ff))
+
+# [1.3.0-dev.23](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.22...v1.3.0-dev.23) (2026-10-15)
+
+
+### Features
+
+* **server:** a non-HD speech voice per learning language for textToSpeechBase64 (B-20, B-22) ([e9e8c49](https://github.com/codebridger/subturtle-dashboard-app/commit/e9e8c49258acb63430637e7c0ca44fbc9123aff9))
+
+# [1.3.0-dev.22](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.21...v1.3.0-dev.22) (2026-10-15)
+
+
+### Features
+
+* **mobile:** use the register's speechVoice for phrase audio, with the checked list as fallback (M-12) ([3f4bd04](https://github.com/codebridger/subturtle-dashboard-app/commit/3f4bd049c1e277d9c272e22c333b6729d91402fc))
+
+# [1.3.0-dev.21](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.20...v1.3.0-dev.21) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** speak with voices the TTS function accepts; follow the updated language contract (M-12, M-14, M-06) ([d0255c9](https://github.com/codebridger/subturtle-dashboard-app/commit/d0255c9d94af062dc7eb9581edeafbb3367b349f))
+
+# [1.3.0-dev.20](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.19...v1.3.0-dev.20) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** never let analytics stop a Coach session from starting ([3e1d899](https://github.com/codebridger/subturtle-dashboard-app/commit/3e1d899ea2a948e7530e6d43b4db122ba93b92d5))
+
+# [1.3.0-dev.19](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.18...v1.3.0-dev.19) (2026-10-15)
+
+
+### Features
+
+* **server:** phrases and bundles per language, and old builds default safely (B-08, B-09, B-24, B-25) ([d46f00a](https://github.com/codebridger/subturtle-dashboard-app/commit/d46f00ac72f9bb38aca66056888760682349e6c0))
+* **server:** save each phrase under its learning language (B-08, B-09, B-25) ([990ef7e](https://github.com/codebridger/subturtle-dashboard-app/commit/990ef7e1653c7674a4196647e011420c58926961))
+
+# [1.3.0-dev.18](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.17...v1.3.0-dev.18) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** never trap the learner when the server has no chat test or starter pack yet ([43e0369](https://github.com/codebridger/subturtle-dashboard-app/commit/43e0369325d0a2103bf5a68b1d8a5e7a07a18175))
+* **mobile:** the switcher opens over the tab bar; the pill's caption is not cut; own-language chip shows the code ([d593983](https://github.com/codebridger/subturtle-dashboard-app/commit/d593983c1fa888de2d6c7aa12e5916c54db83149))
+
+# [1.3.0-dev.17](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.16...v1.3.0-dev.17) (2026-10-15)
+
+
+### Features
+
+* **server:** sessions and progress per language, and the missing-language warning (B-13, B-23, B-26) ([50b372b](https://github.com/codebridger/subturtle-dashboard-app/commit/50b372b5c2ff0e7529f401f2fcdf1440f9adbc58))
+
+# [1.3.0-dev.16](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.15...v1.3.0-dev.16) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** avoid distinct and array-index queries on Firestore (B-19, B-31) ([4d3950a](https://github.com/codebridger/subturtle-dashboard-app/commit/4d3950a416e55b2b7bf487a58e26d0d87c0494aa))
+
+
+### Features
+
+* **server:** starter packs on for every launch language (B-21) ([6c7a58a](https://github.com/codebridger/subturtle-dashboard-app/commit/6c7a58a48fad91f31eb3631fc06e4f696e86d295))
+
+# [1.3.0-dev.15](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.14...v1.3.0-dev.15) (2026-10-15)
+
+
+### Features
+
+* **frontend:** run the extension's Practice now session in the phrase's language (D-16) ([825b192](https://github.com/codebridger/subturtle-dashboard-app/commit/825b1926d713fe854c47e99bef1ddfa300e6552d))
+
+# [1.3.0-dev.14](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.13...v1.3.0-dev.14) (2026-10-15)
+
+
+### Bug Fixes
+
+* **mobile:** ask check-cloze-answer only for the server's gap and show its reason (M-11) ([39b7894](https://github.com/codebridger/subturtle-dashboard-app/commit/39b7894f7e8cd46b6757f16e1f4473d8e9dede0e))
+
+
+### Features
+
+* **mobile:** save to the right language, Coach prompt from the server, fill the gap with the server check (M-09, M-10, M-11) ([0ef2ddd](https://github.com/codebridger/subturtle-dashboard-app/commit/0ef2ddd92e6da365b9d206c1fff7203d20ab5c42))
+
+# [1.3.0-dev.13](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.12...v1.3.0-dev.13) (2026-10-15)
+
+
+### Bug Fixes
+
+* **frontend:** read check-cloze-answer reason and the review item's cue (D-14) ([3561379](https://github.com/codebridger/subturtle-dashboard-app/commit/3561379cd98e5fba676dce92c52cffd3b07774dd))
+
+# [1.3.0-dev.12](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.11...v1.3.0-dev.12) (2026-10-15)
+
+
+### Features
+
+* **server:** keep Leitner, Pool and board per language (B-10, B-11, B-12) ([17b3fa5](https://github.com/codebridger/subturtle-dashboard-app/commit/17b3fa54c9c303426573264d1952df6058224372))
+
+# [1.3.0-dev.11](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.10...v1.3.0-dev.11) (2026-10-15)
+
+
+### Features
+
+* **server:** build the Coach prompt on the server, per learning language (B-19, B-20) ([b0ec32c](https://github.com/codebridger/subturtle-dashboard-app/commit/b0ec32cf4d3d078df7a7aaf2a8467d31a182aa41))
+
+# [1.3.0-dev.10](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.9...v1.3.0-dev.10) (2026-10-15)
+
+
+### Features
+
+* **server:** the shared fill-in-the-gap checker and check-cloze-answer (B-18) ([e33feda](https://github.com/codebridger/subturtle-dashboard-app/commit/e33fedac26afb631dd826fe2e0533745e0ec4f26))
+
+# [1.3.0-dev.9](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.8...v1.3.0-dev.9) (2026-10-15)
+
+
+### Features
+
+* **frontend:** board, bundles, review and fill-the-gap per language (D-11 to D-14, D-19) ([ad370c9](https://github.com/codebridger/subturtle-dashboard-app/commit/ad370c9afe177d5280deebae5128dba9eaae4f7f))
+* **frontend:** settings scope labels, Coach explains in, explanation flag, history and progress per language (D-10, D-15 to D-18, D-22) ([28f90cc](https://github.com/codebridger/subturtle-dashboard-app/commit/28f90ccd4f81e0868327a44353f86fb513b1a1f6))
+
+# [1.3.0-dev.8](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.7...v1.3.0-dev.8) (2026-10-15)
+
+
+### Features
+
+* **server:** translation and save assistant learn the learner's languages (B-14, B-15, B-16, B-17) ([53c61fd](https://github.com/codebridger/subturtle-dashboard-app/commit/53c61fde564bf3abb8fed922d47d3d77daccafaf))
+
+# [1.3.0-dev.7](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.6...v1.3.0-dev.7) (2026-10-15)
+
+
+### Bug Fixes
+
+* **server:** apply AI review fixes to the starter packs (C-01, C-03, C-04) ([c05fe44](https://github.com/codebridger/subturtle-dashboard-app/commit/c05fe44c6a330e93c91a6066d3f2d8665f30a4b5))
+
+
+### Features
+
+* **server:** add A1 starter packs for seven learning languages (C-01) ([d25ad9f](https://github.com/codebridger/subturtle-dashboard-app/commit/d25ad9fc601b60066fa17a0e7cae2258cb4cb5b9))
+
+# [1.3.0-dev.6](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.5...v1.3.0-dev.6) (2026-10-15)
+
+
+### Features
+
+* **frontend:** add the language store, header language menu and language screens behind one flag (D-01 to D-09, D-20, D-21, D-23 to D-25) ([9fc23ab](https://github.com/codebridger/subturtle-dashboard-app/commit/9fc23abfd9ffe02da4456e2510358fcf85e6d0f8))
+
+# [1.3.0-dev.5](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.4...v1.3.0-dev.5) (2026-10-15)
+
+
+### Features
+
+* **mobile:** add the language API client and fake language server (M-02) ([ffc0a4a](https://github.com/codebridger/subturtle-dashboard-app/commit/ffc0a4af3f18900f47c9fe53c2233a49007489d0))
+* **server:** add the language helper, capability register and profile language fields (B-01, B-02, B-03) ([b6d5dec](https://github.com/codebridger/subturtle-dashboard-app/commit/b6d5deca0e8c49d01da104f70642145723e13cb1))
+
 # [1.3.0-dev.4](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.3.0-dev.3...v1.3.0-dev.4) (2026-10-15)
 
 

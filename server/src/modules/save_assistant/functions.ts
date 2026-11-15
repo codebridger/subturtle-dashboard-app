@@ -28,6 +28,12 @@ import {
 } from "../translation/service";
 import type { DetailedPhraseDataType } from "../translation/types";
 import {
+  loadLearnerLanguages,
+  readTranslationLanguage,
+  resolveLanguage,
+} from "../translation/language";
+import { UNKNOWN, isAutoOrUnknown, langOf, languageFilter, toCode } from "../../languages/helper";
+import {
   BUNDLE_COLLECTION,
   DATABASE,
   PHRASE_COLLECTION,
@@ -175,14 +181,23 @@ const createSaveSession = defineFunction({
     message: string;
     source?: SaveSessionSource;
     sourceLanguage?: string;
-    targetLanguage: string;
+    /** The learner's own language (B-17); `targetLanguage` is the old name. */
+    translationLanguage?: string;
+    targetLanguage?: string;
+    /** The learning language to save into; missing means detected (if the learner has it), then active. */
+    language?: string;
   }) {
     const userId = requireUser(context.userId);
     const message = requireText(context.message, "message");
-    const targetLanguage = requireText(context.targetLanguage, "targetLanguage");
+    const own = readTranslationLanguage(context, "createSaveSession");
+    if (!own.value) throw new Error("translationLanguage (or the old targetLanguage) is required");
     // "" lets the model detect the language, as translateWithContext does for "auto".
     let sourceLanguage = (context.sourceLanguage || "").trim();
-    if (sourceLanguage.toLowerCase() === "auto") sourceLanguage = "";
+    if (isAutoOrUnknown(sourceLanguage)) sourceLanguage = "";
+
+    const learner = await loadLearnerLanguages(userId);
+    const requested = toCode(context.language);
+    const learningLanguage = requested ?? learner.active ?? undefined;
 
     await assertBudget(userId);
 
@@ -191,7 +206,8 @@ const createSaveSession = defineFunction({
         phrase: message,
         context: message,
         sourceLanguage,
-        targetLanguage,
+        translationLanguage: own.value,
+        learningLanguage,
       })
     );
 
@@ -201,6 +217,15 @@ const createSaveSession = defineFunction({
       translation
     );
     await bill(userId, usage, { action: "create" });
+
+    // B-16: given → detected (if the learner has it) → active.
+    const resolution = resolveLanguage(
+      translation.language_info?.source || sourceLanguage,
+      learner
+    );
+    const language =
+      requested ??
+      (resolution.resolvedLanguage !== UNKNOWN ? resolution.resolvedLanguage : undefined);
 
     const candidates = buildCandidates(message, translation);
     const userMessage = makeMessage({ role: "user", kind: "text", text: message });
@@ -216,7 +241,10 @@ const createSaveSession = defineFunction({
       title: makeTitle(message),
       source: context.source,
       sourceLanguage: sourceLanguage || translation.language_info?.source,
-      targetLanguage,
+      targetLanguage: own.value,
+      translationLanguage: own.code ?? own.value,
+      ...(language ? { language } : {}),
+      detectedLanguage: resolution.detectedLanguage,
       messages: [userMessage, translationMessage],
       candidates,
       savedPhraseIds: [],
@@ -231,6 +259,9 @@ const createSaveSession = defineFunction({
       candidates,
       translation,
       messageId: translationMessage.id,
+      detectedLanguage: resolution.detectedLanguage,
+      language: language ?? UNKNOWN,
+      inProfile: resolution.inProfile,
     };
   },
 });
@@ -256,7 +287,10 @@ const saveSessionTurn = defineFunction({
     const filter = { _id: record._id, refId: userId } as any;
     const original = originalText(record);
     const sourceLanguage = record.sourceLanguage || "";
-    const targetLanguage = record.targetLanguage;
+    // Sessions from before B-16 have only `targetLanguage`.
+    const translationLanguage = record.translationLanguage || record.targetLanguage;
+    const learningLanguage = record.language;
+    const sessionDetected = record.detectedLanguage || UNKNOWN;
 
     if (hasPick) {
       const pick = requireText(context.pick, "pick");
@@ -284,7 +318,8 @@ const saveSessionTurn = defineFunction({
             phrase: candidate.text,
             context: original,
             sourceLanguage,
-            targetLanguage,
+            translationLanguage,
+            learningLanguage,
           })
         );
         usage = estimateUsage(
@@ -309,7 +344,15 @@ const saveSessionTurn = defineFunction({
       if (usage) update.$inc = usageIncrement(usage);
       await sessions().updateOne(filter, update);
 
-      return { translation, messageId: reply.id, cached: !!cached, wrapUp };
+      const detectedLanguage =
+        toCode(translation?.language_info?.source) ?? sessionDetected;
+      return {
+        translation,
+        messageId: reply.id,
+        cached: !!cached,
+        wrapUp,
+        detectedLanguage,
+      };
     }
 
     const message = requireText(context.message, "message");
@@ -332,7 +375,8 @@ const saveSessionTurn = defineFunction({
         currentChunks: focusPayload?.chunks || [],
         history,
         sourceLanguage,
-        targetLanguage,
+        translationLanguage,
+        learningLanguage,
       })
     );
 
@@ -365,6 +409,7 @@ const saveSessionTurn = defineFunction({
       reply: replyText,
       messageId: reply.id,
       wrapUp,
+      detectedLanguage: sessionDetected,
       ...(candidates ? { candidates } : {}),
     };
   },
@@ -453,9 +498,14 @@ const listSaveSessions = defineFunction({
     onlySaved?: boolean;
     limit?: number;
     before?: string | Date;
+    language?: string;
   }) {
     const userId = requireUser(context.userId);
     const filter: any = { refId: userId };
+
+    // Optional per-language history (M-09). Old sessions have no language: English.
+    const language = toCode(context.language);
+    if (language) Object.assign(filter, languageFilter(language));
 
     if (context.onlySaved) filter.savedCount = { $gt: 0 };
 
@@ -478,7 +528,7 @@ const listSaveSessions = defineFunction({
         : LIST_DEFAULT_LIMIT;
 
     const docs: any[] = await sessions()
-      .find(filter, { title: 1, savedCount: 1, savedPhrases: 1, lastMessageAt: 1 })
+      .find(filter, { title: 1, savedCount: 1, savedPhrases: 1, lastMessageAt: 1, language: 1 })
       .sort({ lastMessageAt: -1, _id: -1 })
       .limit(limit)
       .lean();
@@ -489,6 +539,7 @@ const listSaveSessions = defineFunction({
       savedCount: d.savedCount || 0,
       savedPhrases: d.savedPhrases || [],
       lastMessageAt: d.lastMessageAt,
+      language: langOf(d),
     }));
   },
 });

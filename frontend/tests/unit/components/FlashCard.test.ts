@@ -3,7 +3,11 @@ vi.mock('vue', async () => await vi.importActual('vue'));
 // Avoid importing the real pilotui Card in jsdom; the stub below renders the slot.
 vi.mock('pilotui/elements', () => ({ Card: { name: 'Card', template: '<div><slot /></div>' } }));
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import FlashCard from '~/components/widget/FlashCard.vue';
+
+// FlashCard reads the language store for the fill-the-gap check (D-14).
+setActivePinia(createPinia());
 
 const mountCard = (props: Record<string, unknown>) =>
     mount(FlashCard, {

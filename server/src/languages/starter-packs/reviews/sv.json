@@ -1,0 +1,218 @@
+{
+  "language": "sv",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "sv-feelings-05",
+          "severity": "error",
+          "field": "text",
+          "problem": "With an unstressed pronoun object, standard Swedish puts it before the negation (object shift): 'Jag gillar det inte.' The current order 'Jag gillar inte det' stresses 'det' (I don't like THAT), so the pack teaches the marked form and lists the default one as the alternative.",
+          "fix": {
+            "text": "Jag gillar det inte.",
+            "note": "Unstressed 'det' goes before 'inte'. 'Jag gillar inte det' stresses 'det': I don't like THAT."
+          }
+        },
+        {
+          "id": "sv-time-13",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'I helg' (no article) is just as standard as 'i helgen' for 'this weekend', so a learner typing 'helg' in 'I ___.' would be wrongly marked wrong. The only other word is 'I', so there is no invariant target to move the cloze to.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "sv-work-14",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'maila' is as standard as 'mejla' (both are in SAOL, and the note says so), so 'maila' typed into 'Kan du ___ mig?' would be wrongly marked wrong. The other words (kan, du, mig) are poor targets.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "sv-food-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The adjective agrees with whatever is being tasted, and the card does not fix the referent: about soppan or kakan a Swede says 'Mm, vad god!'. A learner typing 'god' for the cue 'god' would be marked wrong. The only other word is 'Vad'.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "sv-feelings-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Same agreement issue as food-06: 'Vad rolig!' is valid about a funny person or a common-gender thing (en film, en hatt). The bare exclamation does not fix the referent, so 'rolig' would be wrongly marked wrong. The only other word is 'Vad'.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "sv-polite-13",
+          "severity": "doubt",
+          "field": "text",
+          "problem": "Asking someone to talk more slowly, a Swede would normally say 'Kan du prata lite långsammare?'. 'Lite långsammare, tack.' copies the 'X, tack' ordering pattern and sounds curt or phrasebook-like here, though it is understood.",
+          "fix": {
+            "text": "Kan du prata lite långsammare?",
+            "translations.fa": "ممکن است کمی آهسته‌تر صحبت کنید؟",
+            "translations.ar": "هل يمكنك أن تتكلم ببطء أكثر قليلًا؟",
+            "translations.es": "¿Puede hablar un poco más despacio?",
+            "translations.vi": "Bạn có thể nói chậm hơn một chút được không?",
+            "translations.en": "Can you speak a little more slowly?",
+            "translations.tr": "Biraz daha yavaş konuşabilir misiniz?"
+          }
+        },
+        {
+          "id": "sv-feelings-12",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "'مبروك' is colloquial. Under the MSA rule, 'تهانينا' (or 'مبارك') is the standard form, although 'مبروك' is very widely used.",
+          "fix": {
+            "translations.ar": "تهانينا!"
+          }
+        }
+      ],
+      "cloze": {
+        "checked": 129,
+        "defensible": 125
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "es": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "en": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "A high-quality pack. The Swedish is natural and idiomatic, including the du-everywhere register and the 'tack' strategy for 'please' (Ja tack, Ett kaffe tack, 'Snälla' kept for pleading, with an accurate note), and translations in all six languages are correct and register-appropriate. The main problems are clozes: four targets accept a second valid answer (i helg / i helgen, maila / mejla, and adjective agreement in 'Vad gott!' and 'Vad roligt!'), plus one word-order issue (Jag gillar det inte). The idiomatic targets bitti, dags, fara, vilse and ont can be answered because the lemma cue equals the answer. Det-subject adjective clozes (öppet, stängt, långt, ledigt, starkt) are defensible because 'det' forces the -t form."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "sv-feelings-05",
+          "status": "clean"
+        },
+        {
+          "id": "sv-time-13",
+          "status": "clean"
+        },
+        {
+          "id": "sv-work-14",
+          "status": "clean"
+        },
+        {
+          "id": "sv-food-06",
+          "status": "clean"
+        },
+        {
+          "id": "sv-feelings-15",
+          "status": "clean"
+        },
+        {
+          "id": "sv-polite-13",
+          "status": "clean"
+        },
+        {
+          "id": "sv-feelings-12",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "sv-work-10",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "Calque of 'what is your number'. Vietnamese asks for a number with 'bao nhiêu', not 'là gì'.",
+          "fix": {
+            "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+          }
+        },
+        {
+          "id": "sv-needs-15",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "Word-for-word calque: 'điện thoại của tôi' repeats the subject 'tôi' and sounds stilted. Natural Vietnamese uses reflexive 'của mình' (or drops the possessive).",
+          "fix": {
+            "translations.vi": "Tôi đang tìm điện thoại của mình."
+          }
+        },
+        {
+          "id": "sv-polite-08",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "'بله، لطفاً' reads as a calque of 'Yes, please'. When accepting an offer, Persian more naturally says 'بله، ممنون' or 'بله، ممنون می‌شوم'. It is heard in service settings, so it may be acceptable.",
+          "fix": {
+            "translations.fa": "بله، ممنون می‌شوم."
+          }
+        },
+        {
+          "id": "sv-questions-08",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "'او کیست؟' means 'who is he/she?' and assumes a person who has already been mentioned. For 'Vem är det?' (who is that / who is it, at the door) Persian uses 'آن کیست؟' or just 'کیست؟'.",
+          "fix": {
+            "translations.fa": "آن کیست؟"
+          }
+        },
+        {
+          "id": "sv-places-08",
+          "severity": "doubt",
+          "field": "text",
+          "problem": "'nära härifrån' is grammatical but a little unusual. Natives more often say 'Det ligger nära', 'Det är inte långt härifrån' or 'Det ligger här i närheten'. It is acceptable, but not the most idiomatic choice.",
+          "fix": {}
+        }
+      ],
+      "finalCleanItems": 145,
+      "doubtful": [
+        "sv-polite-08",
+        "sv-questions-08",
+        "sv-places-08"
+      ]
+    }
+  ],
+  "leadFixes": [],
+  "crossPackFixes": [
+    {
+      "id": "sv-questions-08",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "من ذلك؟"
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  }
+}

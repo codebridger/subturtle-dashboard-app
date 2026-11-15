@@ -100,6 +100,7 @@
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
                                     <span class="text-st-sm font-extrabold text-st-strong">{{ t('smart_review.global_daily_limit') }}</span>
+                                    <ScopeLabel scope="language" />
                                     <StBadge v-if="changed.dailyLimit" color="warning">{{ t('smart_review.changed') }}</StBadge>
                                 </div>
                                 <p class="mt-[3px] text-st-xs font-semibold text-st-muted">{{ t('smart_review.max_phrases_desc') }}</p>
@@ -116,7 +117,11 @@
                         <div class="h-px bg-st-line" />
 
                         <div>
-                            <div class="text-st-sm font-extrabold text-st-strong">{{ t('smart_review.review_interval') }}</div>
+                            <!-- The review hour is one for every language (D-15). -->
+                            <div class="flex items-center gap-2">
+                                <span class="text-st-sm font-extrabold text-st-strong">{{ t('smart_review.review_interval') }}</span>
+                                <ScopeLabel scope="all" />
+                            </div>
                             <p class="mb-2.5 mt-[3px] text-st-xs font-semibold text-st-muted">{{ t('smart_review.session_frequency_desc') }}</p>
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-st-2xs font-extrabold uppercase tracking-st-caps text-st-faint">{{ t('smart_review.each') }}</span>
@@ -163,7 +168,10 @@
             <!-- Right column: the chain -->
             <div class="flex min-w-0 flex-[1_1_640px] flex-col gap-3">
                 <div class="flex flex-wrap items-baseline justify-between gap-4">
-                    <h2 class="font-st-display text-st-lg font-black tracking-st-tight text-st-strong">{{ t('smart_review.the_chain') }}</h2>
+                    <h2 class="flex items-center gap-2 font-st-display text-st-lg font-black tracking-st-tight text-st-strong">
+                        {{ t('smart_review.the_chain') }}
+                        <ScopeLabel scope="language" />
+                    </h2>
                     <span class="text-st-xs font-bold text-st-faint">{{ chainNote }}</span>
                 </div>
 
@@ -294,7 +302,9 @@
 </template>
 
 <script lang="ts" setup>
+    import ScopeLabel from '~/components/language/ScopeLabel.vue';
     import { ref, watch } from 'vue';
+    import { withLanguage } from '~/utils/languageScope';
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StInput, StModal, StStatTile, StSwitch } from 'subturtle-ui';
     import { toastSuccess, toastError } from 'pilotui/toast';
     import LeitnerPhrasePicker from './LeitnerPhrasePicker.vue';
@@ -580,10 +590,10 @@
         try {
             await functionProvider.run({
                 name: 'update-settings',
-                args: {
+                args: withLanguage({
                     userId: authUser.value?.id,
                     settings: localSettings.value,
-                },
+                }),
             });
             saveFailed.value = false;
             settingsDirty.value = false;
@@ -603,9 +613,9 @@
         try {
             await functionProvider.run({
                 name: 'reset-system',
-                args: {
+                args: withLanguage({
                     userId: authUser.value?.id,
-                },
+                }),
             });
             resetOpen.value = false;
             openLevel.value = null;

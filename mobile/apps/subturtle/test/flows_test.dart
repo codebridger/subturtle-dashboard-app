@@ -235,7 +235,7 @@ void main() {
       await tester.settle();
       await send(tester, sentence);
 
-      expect(backend.calls.lastWhere((c) => c.$1 == 'createSaveSession').$2, {'userId': 'u1', 'message': sentence, 'targetLanguage': 'Persian', 'source': {'kind': 'typed'}});
+      expect(backend.calls.lastWhere((c) => c.$1 == 'createSaveSession').$2, {'userId': 'u1', 'message': sentence, 'targetLanguage': 'Persian', 'language': 'en', 'source': {'kind': 'typed'}});
       // Chips in sentence order, without the whole sentence; the first is picked.
       expect(backend.calls.lastWhere((c) => c.$1 == 'saveSessionTurn').$2['pick'], 'had to');
       expect(find.text('مجبور بودن'), findsOneWidget);

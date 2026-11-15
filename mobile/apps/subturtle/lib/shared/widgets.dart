@@ -20,6 +20,9 @@ class AsyncBody<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A language switch reloads scoped data: show the skeleton, never the old
+    // language's data under the new one.
+    if (value.isReloading) return loading;
     // Keep showing old data while a refresh runs.
     if (value.hasValue) return data(value.requireValue);
     if (value.hasError) return ErrorPanel(title: errorTitle, error: value.error!, onRetry: onRetry);

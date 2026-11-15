@@ -1,0 +1,4 @@
+{
+  "$comment": "Starter pack audio (B-22), written by `yarn starter-pack:audio`. One entry per item that has a stored MP3: { file, voice, textHash }. `file` is relative to STARTER_PACK_AUDIO_BASE_URL. An item whose text changed (textHash differs) gets no audioUrl until the audio is made again. Empty until the script runs for real.",
+  "languages": {}
+}

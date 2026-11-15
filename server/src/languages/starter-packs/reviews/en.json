@@ -1,0 +1,231 @@
+{
+  "language": "en",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "en-travel-12",
+          "severity": "error",
+          "field": "text",
+          "problem": "Inconsistent with the pack's deliberate American English (bathroom, check, to go, vacation, round-trip, sick, on the weekend): at a US train station the everyday question is \"Which track?\", and the item's own note admits this. Every other US/UK split puts the American form in text and the British form in note; this one does the reverse.",
+          "fix": {
+            "text": "Which track?",
+            "lemma": "track",
+            "form": "track",
+            "note": "At a train station. British English: \"Which platform?\""
+          }
+        },
+        {
+          "id": "en-work-01",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "\"چه کار می‌کنی؟\" is mostly read as \"What are you doing (right now)?\". The job sense is possible but not the first reading, so the card can mislead.",
+          "fix": {
+            "translations.fa": "شغلت چیست؟"
+          }
+        },
+        {
+          "id": "en-needs-15",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Tôi đang tìm điện thoại của tôi.\" repeats the possessive in a word-for-word way. Vietnamese normally leaves it out here.",
+          "fix": {
+            "translations.vi": "Tôi đang tìm điện thoại."
+          }
+        },
+        {
+          "id": "en-food-02",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "\"قليلًا من الماء من فضلك\" means \"a little water\" and is a stiff stand-alone request. \"بعض الماء\" fits \"some water\" better.",
+          "fix": {
+            "translations.ar": "بعض الماء من فضلك."
+          }
+        }
+      ],
+      "cloze": {
+        "checked": 127,
+        "defensible": 127
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "es": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "A clean, natural A1 pack: the English chunks are idiomatic, the notes are accurate (including the US/UK pairs), and every cloze target appears in its text and has one answer given the lemma cue and the translation's tense or degree. The only real error is \"Which platform?\", which breaks the pack's American-English choice. The translations are correct and the scripts are clean (Persian ی/ک and ZWNJ, Arabic hamza and tanwin, full Vietnamese diacritics); the three doubts are small naturalness tweaks. The translations use a masculine default (ar/es adjectives such as سعيد, cansado), but no note gives the feminine form. That is arguably out of scope for an English-language note."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "en-travel-12",
+          "status": "clean"
+        },
+        {
+          "id": "en-work-01",
+          "status": "clean"
+        },
+        {
+          "id": "en-needs-15",
+          "status": "clean"
+        },
+        {
+          "id": "en-food-02",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "en-places-06",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "\"مستقیم به جلو\" reads as a word-for-word translation of \"straight ahead\". In speech a Persian speaker giving directions says \"مستقیم\" or \"همین‌طور مستقیم\".",
+          "fix": {
+            "translations.fa": "همین‌طور مستقیم."
+          }
+        },
+        {
+          "id": "en-greetings-15",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "Bare \"Chào mừng!\" sounds cut off as a spoken welcome. Vietnamese normally names the person welcomed.",
+          "fix": {
+            "translations.vi": "Chào mừng bạn!"
+          }
+        },
+        {
+          "id": "en-questions-13",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Bạn chắc không?\" is clipped speech. The standard question is \"Bạn có chắc không?\".",
+          "fix": {
+            "translations.vi": "Bạn có chắc không?"
+          }
+        },
+        {
+          "id": "en-places-02",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Nó ở đây.\" carries the English \"it\" over as \"nó\". When pointing something out, a native says \"Ở đây này.\"",
+          "fix": {
+            "translations.vi": "Ở đây này."
+          }
+        },
+        {
+          "id": "en-feelings-04",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "\"Tôi thích nó.\" carries \"it\" over as \"nó\", which sounds translated when the thing is in front of you.",
+          "fix": {
+            "translations.vi": "Tôi thích cái này."
+          }
+        },
+        {
+          "id": "en-feelings-05",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "Same \"nó\" calque as feelings-04.",
+          "fix": {
+            "translations.vi": "Tôi không thích cái này."
+          }
+        },
+        {
+          "id": "en-questions-04",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "\"كيف تقول ذلك\" uses the specific \"you\" where English means people in general. The impersonal passive is the usual MSA form.",
+          "fix": {
+            "translations.ar": "كيف يُقال ذلك بالإنجليزية؟"
+          }
+        }
+      ],
+      "finalCleanItems": 143,
+      "doubtful": [
+        "en-places-06",
+        "en-greetings-15",
+        "en-questions-13",
+        "en-places-02",
+        "en-feelings-04",
+        "en-feelings-05",
+        "en-questions-04"
+      ]
+    }
+  ],
+  "leadFixes": [],
+  "crossPackFixes": [
+    {
+      "id": "en-work-10",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "en-feelings-12",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "تهانينا!"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "en-questions-08",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "من ذلك؟"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "en-travel-14",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Cho tôi xuống ở đây."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "en-travel-04",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Làm sao để đến sân bay?"
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  }
+}

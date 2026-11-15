@@ -13,6 +13,7 @@ import 'package:subturtle_ui/subturtle_ui.dart';
 
 import '../../app/config.dart';
 import '../../app/providers.dart';
+import '../../shared/languages.dart';
 import '../../shared/widgets.dart';
 
 enum _Step { start, email, signUpEmail, signUpCode, signUpPassword }
@@ -731,7 +732,7 @@ class _PhraseCard extends StatelessWidget {
         children: [
           Text(phrase, style: StType.titleSmall.copyWith(color: c.textStrong)),
           const SizedBox(height: 2),
-          StL1Text(l1, rtl: true, style: StType.bodyMedium.copyWith(color: c.textMuted)),
+          StL1Text(l1, rtl: startsRightToLeft(l1), style: StType.bodyMedium.copyWith(color: c.textMuted)),
         ],
       ),
     );

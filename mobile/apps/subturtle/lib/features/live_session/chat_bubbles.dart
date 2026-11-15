@@ -149,12 +149,16 @@ class _TypingBubbleState extends State<TypingBubble> with SingleTickerProviderSt
 /// With [showTranslations] off the translations read `••••` (self-test mode,
 /// as on the web).
 class PhraseStrip extends StatelessWidget {
-  const PhraseStrip({super.key, required this.phrases, required this.active, required this.done, required this.onTap, this.showTranslations = true});
+  const PhraseStrip({super.key, required this.phrases, required this.active, required this.done, required this.onTap, this.showTranslations = true, this.l1Rtl});
   final List<Phrase> phrases;
   final int active;
   final Set<int> done;
   final ValueChanged<int> onTap;
   final bool showTranslations;
+
+  /// Direction of the translations: from the learner's own language. Null
+  /// (not known yet) reads the script.
+  final bool? l1Rtl;
 
   static final _rtl = RegExp(r'[\u0590-\u08FF]');
 
@@ -199,7 +203,7 @@ class PhraseStrip extends StatelessWidget {
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 180),
                             child: showTranslations
-                                ? StL1Text(phrases[i].translation, rtl: _rtl.hasMatch(phrases[i].translation), maxLines: 1, style: StType.bodySmall.copyWith(color: c.textMuted, fontWeight: FontWeight.w400))
+                                ? StL1Text(phrases[i].translation, rtl: l1Rtl ?? _rtl.hasMatch(phrases[i].translation), maxLines: 1, style: StType.bodySmall.copyWith(color: c.textMuted, fontWeight: FontWeight.w400))
                                 : Text('••••', style: StType.bodySmall.copyWith(color: c.textFaint)),
                           ),
                         ],

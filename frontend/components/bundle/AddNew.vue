@@ -43,6 +43,7 @@
 
 <script setup lang="ts">
     import { StButton, StInput, StModal, StTextarea } from 'subturtle-ui';
+    import { languageField } from '~/utils/languageScope';
     import { dataProvider } from '@modular-rest/client';
     import { useForm } from 'vee-validate';
     import * as yup from 'yup';
@@ -101,6 +102,8 @@
                     title: title.value,
                     desc: description.value,
                     refId: authUser.value?.id,
+                    // A bundle belongs to the active language (B-09, D-12).
+                    ...languageField(),
                 },
             })
             .then(({ _id }) => {

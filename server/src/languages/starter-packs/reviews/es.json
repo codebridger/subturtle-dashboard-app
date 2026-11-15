@@ -1,0 +1,502 @@
+{
+  "language": "es",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "es-greetings-02",
+          "severity": "error",
+          "field": "note",
+          "problem": "¡Buenas! cannot be a short form of 'buenos días' (masculine); it shortens buenas tardes / buenas noches, though it is used at any time of day.",
+          "fix": {
+            "note": "Casual short form of buenas tardes / buenas noches; works at any time of day, even in the morning."
+          }
+        },
+        {
+          "id": "es-greetings-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "¿Cómo ___? with cue 'estar': 'está' (usted, or 'how is he/she') is equally valid; en/ar/vi translations do not mark informal register.",
+          "fix": {
+            "lemma": "cómo",
+            "form": "Cómo"
+          }
+        },
+        {
+          "id": "es-questions-05",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "¿De dónde ___? with cue 'ser': polite 'es' is equally valid for en/ar/vi learners.",
+          "fix": {
+            "lemma": "dónde",
+            "form": "dónde"
+          }
+        },
+        {
+          "id": "es-questions-06",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "¿Dónde ___? with cue 'vivir': polite 'vive' is equally valid for en/ar/vi learners.",
+          "fix": {
+            "lemma": "dónde",
+            "form": "Dónde"
+          }
+        },
+        {
+          "id": "es-questions-13",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "¿Estás ___? with cue 'seguro': 'segura' is equally valid (addressee gender unknown in en/fa/tr/vi); no other target avoids the tú/usted ambiguity (Estás/Está).",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "es-needs-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (perdido): a female learner would correctly type 'perdida', which would be marked wrong.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-work-03",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (ocupado): 'ocupada' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-feelings-01",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (contento): 'contenta' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-feelings-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (cansado): 'cansada' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-feelings-10",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (enfermo): 'enferma' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-feelings-13",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (aburrido): 'aburrida' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-food-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Estoy ___ (lleno): 'llena' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Estoy"
+          }
+        },
+        {
+          "id": "es-food-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "Soy ___ (vegetariano): 'vegetariana' is equally valid for a female speaker.",
+          "fix": {
+            "lemma": "ser",
+            "form": "Soy"
+          }
+        },
+        {
+          "id": "es-food-05",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "___ este, por favor (querer) with translation 'I'd like this one': 'Quisiera' is equally (arguably more) valid; targeting 'este' instead fails too, since 'esta' is valid for a feminine dish.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "es-travel-14",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "___ aquí, por favor (parar): tú-form 'Para' is equally valid (often used to taxi drivers; en/vi/ar translations do not mark usted).",
+          "fix": {
+            "lemma": "aquí",
+            "form": "aquí"
+          }
+        },
+        {
+          "id": "es-polite-08",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "'Vâng, làm ơn.' is a calque of 'Yes, please'; Vietnamese accepts an offer with 'cho tôi xin'.",
+          "fix": {
+            "translations.vi": "Vâng, cho tôi xin."
+          }
+        },
+        {
+          "id": "es-food-10",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "'Làm ơn không cho đường.' is stilted; natural ordering phrase is 'Không đường nhé.' / 'Cho tôi không đường.'",
+          "fix": {
+            "translations.vi": "Cho tôi không đường nhé."
+          }
+        },
+        {
+          "id": "es-places-12",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "¿Está ___? (abierto): with a feminine referent (la tienda, la farmacia) 'abierta' is also valid; masculine is only the neutral default.",
+          "fix": {
+            "lemma": "estar",
+            "form": "Está"
+          }
+        },
+        {
+          "id": "es-places-15",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "Está ___ (cerrado): 'cerrada' is also valid for a feminine referent (la tienda).",
+          "fix": {
+            "lemma": "estar",
+            "form": "Está"
+          }
+        },
+        {
+          "id": "es-food-06",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "¡Está ___! (delicioso): 'deliciosa' is also valid for a feminine dish (la comida, la sopa).",
+          "fix": {
+            "lemma": "estar",
+            "form": "Está"
+          }
+        }
+      ],
+      "cloze": {
+        "checked": 130,
+        "defensible": 116
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 2
+        },
+        "en": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "The Spanish texts are correct, natural and well pitched at A1; Spain/Latin American mixing is handled well, with every chosen form understood across varieties and accurate notes, except one wrong note on ¡Buenas!. The main weakness is the cloze: gender-inflected adjectives (perdido, cansado, lleno...) and tú-form verbs whose en/ar/vi translations do not mark register admit a second valid answer. Translations are strong; only two Vietnamese lines are calqued."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "es-greetings-02",
+          "status": "clean"
+        },
+        {
+          "id": "es-greetings-09",
+          "status": "clean"
+        },
+        {
+          "id": "es-questions-05",
+          "status": "clean"
+        },
+        {
+          "id": "es-questions-06",
+          "status": "clean"
+        },
+        {
+          "id": "es-questions-13",
+          "status": "clean"
+        },
+        {
+          "id": "es-needs-09",
+          "status": "clean"
+        },
+        {
+          "id": "es-work-03",
+          "status": "clean"
+        },
+        {
+          "id": "es-feelings-01",
+          "status": "clean"
+        },
+        {
+          "id": "es-feelings-02",
+          "status": "clean"
+        },
+        {
+          "id": "es-feelings-10",
+          "status": "clean"
+        },
+        {
+          "id": "es-feelings-13",
+          "status": "clean"
+        },
+        {
+          "id": "es-food-15",
+          "status": "clean"
+        },
+        {
+          "id": "es-food-09",
+          "status": "clean"
+        },
+        {
+          "id": "es-food-05",
+          "status": "clean"
+        },
+        {
+          "id": "es-travel-14",
+          "status": "clean"
+        },
+        {
+          "id": "es-polite-08",
+          "status": "clean"
+        },
+        {
+          "id": "es-food-10",
+          "status": "clean"
+        },
+        {
+          "id": "es-places-12",
+          "status": "clean"
+        },
+        {
+          "id": "es-places-15",
+          "status": "clean"
+        },
+        {
+          "id": "es-food-06",
+          "status": "clean"
+        },
+        {
+          "id": "es-time-07",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "es-time-11",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'___ tarde.' (cue llegar): 'Llegué' is equally valid, especially for fa (دیر کرده‌ام, perfect), tr (Geç kaldım, past form) and vi (bị muộn rồi) learners, whose translations read as past/perfect.",
+          "fix": {
+            "lemma": "tarde",
+            "form": "tarde"
+          }
+        },
+        {
+          "id": "es-feelings-15",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'¡Qué ___!' (cue gracioso): 'graciosa' is equally valid for a feminine referent (la película, la foto); 'That's funny!' does not force masculine.",
+          "fix": {
+            "lemma": "qué",
+            "form": "Qué"
+          }
+        },
+        {
+          "id": "es-questions-15",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "'¿Qué te ___?' (cue pasar): the fa translation چیزی شده؟ ('has something happened?') makes 'pasó' defensible for fa learners. A present-tense fa line removes it.",
+          "fix": {
+            "translations.fa": "چه‌ات است؟"
+          }
+        },
+        {
+          "id": "es-feelings-11",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "'Te ___.' (cue extrañar): tr 'Seni özledim' and fa 'دلم برایت تنگ شده است' are past/perfect in form, so a learner might type 'extrañé' (I missed you). Idiomatically both mean 'I miss you', so probably acceptable."
+        },
+        {
+          "id": "es-food-05",
+          "severity": "doubt",
+          "field": "text",
+          "problem": "In a service situation many teachers would correct the blunt 'Quiero este' to 'Quisiera este', which is the polite register the pack rules require and matches en 'I'd like'. Ordering with quiero + por favor is common in practice, though.",
+          "fix": {
+            "text": "Quisiera este, por favor."
+          }
+        },
+        {
+          "id": "es-travel-11",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "'Tôi đến đây đi nghỉ.' is a bit clipped; a native would more likely write 'Tôi đến đây để đi nghỉ.'",
+          "fix": {
+            "translations.vi": "Tôi đến đây để đi nghỉ."
+          }
+        }
+      ],
+      "finalCleanItems": 144,
+      "doubtful": [
+        "es-questions-15",
+        "es-feelings-11",
+        "es-food-05",
+        "es-travel-11"
+      ]
+    },
+    {
+      "round": "round3-recheck",
+      "recheck": [
+        {
+          "id": "es-time-11",
+          "status": "clean"
+        },
+        {
+          "id": "es-feelings-15",
+          "status": "clean"
+        },
+        {
+          "id": "es-food-05",
+          "status": "clean"
+        },
+        {
+          "id": "es-travel-11",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [],
+      "finalCleanItems": 148,
+      "doubtful": [
+        "es-questions-15",
+        "es-feelings-11"
+      ]
+    }
+  ],
+  "leadFixes": [
+    {
+      "id": "es-time-07",
+      "severity": "error",
+      "field": "form",
+      "problem": "The app blanks the first case-insensitive match, which is the sentence-initial 'Mañana', not the 'mañana' in form.",
+      "fix": {
+        "form": "Mañana"
+      },
+      "source": "lead"
+    }
+  ],
+  "crossPackFixes": [
+    {
+      "id": "es-work-10",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "es-feelings-12",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "تهانينا!"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "es-questions-08",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "من ذلك؟"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "es-places-02",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Ở đây này."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "es-feelings-04",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Tôi thích cái này."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "es-places-06",
+      "severity": "error",
+      "field": "translations.tr",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.tr": "Dümdüz gidin."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "es-travel-11",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Tôi đến đây du lịch."
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  }
+}

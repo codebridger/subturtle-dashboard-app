@@ -56,6 +56,7 @@
 
 <script setup lang="ts">
 import { dataProvider, functionProvider } from '@modular-rest/client';
+import { withLanguage } from '~/utils/languageScope';
 import { IconButton, Button, Icon } from 'pilotui/elements';
 import { Modal } from 'pilotui/complex';
 import { toastError } from 'pilotui/toast';
@@ -66,8 +67,8 @@ import { analytic } from '~/plugins/mixpanel';
 import { ANALYTICS_EVENTS } from '~/constants/analyticsEvents';
 
 definePageMeta({
-    // @ts-ignore
-    layout: 'empty',
+    // The app shell, so the language menu is on every screen (D-04).
+    layout: 'default',
     // @ts-ignore
     middleware: ['auth'],
 });
@@ -130,7 +131,7 @@ function fetchFlashcard() {
     if (isLeitnerMode.value) {
         return functionProvider.run({
             name: 'get-review-session',
-            args: { limit: 20, userId: authUser.value?.id }
+            args: withLanguage({ limit: 20, userId: authUser.value?.id })
         }).then((items: any) => {
             if (!Array.isArray(items) || items.length === 0) {
                 bundle.value = { title: 'Daily Review', phrases: [], refId: authUser.value?.id } as any;

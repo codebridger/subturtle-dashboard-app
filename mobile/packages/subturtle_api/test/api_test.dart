@@ -168,7 +168,7 @@ void main() {
       await api.board.getPool();
       await api.board.completePoolSession(['p1', 'p2']);
       expect(server.last('get-review-session').args, {'userId': 'me', 'limit': 20});
-      expect(server.last('submit-review').args, {'userId': 'me', 'phraseId': 'p1', 'isCorrect': true});
+      expect(server.last('submit-review').args, {'userId': 'me', 'phraseId': 'p1', 'isCorrect': true, 'result': 'right'});
       expect(server.last('complete-pool-session').args['phraseIds'], ['p1', 'p2']);
     });
 

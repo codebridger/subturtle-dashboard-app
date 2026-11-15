@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { CHUNK_TYPES } from "./language-hints";
 
 // A reusable language pattern detected inside the user's selection.
 export const ChunkSchema = z.object({
@@ -12,14 +13,8 @@ export const ChunkSchema = z.object({
     .string()
     .describe("The exact reusable pattern as it appears in the selection."),
   type: z
-    .enum([
-      "collocation",
-      "phrasal_verb",
-      "idiom",
-      "discourse_marker",
-      "other",
-    ])
-    .describe("Kind of reusable language pattern."),
+    .enum(CHUNK_TYPES)
+    .describe("Kind of reusable language pattern (pick the one that fits the selection's language)."),
   definition: z
     .string()
     .describe(
@@ -33,6 +28,21 @@ export const ChunkSchema = z.object({
   confidence: z
     .number()
     .describe("Model confidence that this is a useful learnable chunk (0-1)."),
+  lemma: z
+    .string()
+    .describe(
+      "The dictionary form of the chunk in its own language: the infinitive for a verb (with its reflexive pronoun or separable prefix), a noun with its article. The same as text when text is already the dictionary form."
+    ),
+  form: z
+    .string()
+    .describe(
+      "A short English label for the form used in the text, e.g. 'past tense, 3rd person singular' or 'dative plural'. Empty when it is the dictionary form."
+    ),
+  acceptedAnswers: z
+    .array(z.string())
+    .describe(
+      "Every answer that is correct for a fill-in-the-gap on this chunk in this sentence, the exact text first, then only true variants (contractions and their full forms, other correct spellings). Never other forms or synonyms."
+    ),
 });
 
 // Define the LinguisticData schema
@@ -70,7 +80,7 @@ export const LanguageLearningDataSchema = z.object({
   chunks: z
     .array(ChunkSchema)
     .describe(
-      "Reusable language patterns found inside the user's selection. At most one chunk per 5-8 words of selection, hard ceiling of 2. Return an empty array for selections under ~5 words, or when the selection's language differs from the target learning language."
+      "Reusable language patterns found inside the user's selection, in the selection's own language. At most one chunk per 5-8 words of selection, hard ceiling of 2. Return an empty array for selections under ~5 words."
     ),
   direction: z
     .object({
@@ -89,8 +99,10 @@ export const LanguageLearningDataSchema = z.object({
     .describe("Translations of the provided phrase and context"),
   language_info: z
     .object({
-      source: z.string().describe("Source language code"),
-      target: z.string().describe("Target language code"),
+      source: z
+        .string()
+        .describe("ISO 639-1 code of the language the selection is written in (detected from the text), e.g. 'de'"),
+      target: z.string().describe("ISO 639-1 code of the language of the translation, e.g. 'fa'"),
     })
     .describe("Language information"),
   linguistic_data: LinguisticDataSchema.describe(
@@ -102,6 +114,16 @@ export const LanguageLearningDataSchema = z.object({
 export type Chunk = z.infer<typeof ChunkSchema>;
 export type LinguisticData = z.infer<typeof LinguisticDataSchema>;
 export type DetailedPhraseDataType = z.infer<typeof LanguageLearningDataSchema>;
+
+// Simple translation when the caller asks for the language too (`withLanguage`, B-14).
+export const SimpleTranslationSchema = z.object({
+  translation: z.string().describe("The translation of the phrase, by its context"),
+  source: z
+    .string()
+    .describe("ISO 639-1 code of the language the phrase is written in (detected from the text), e.g. 'de'"),
+});
+
+export type SimpleTranslationType = z.infer<typeof SimpleTranslationSchema>;
 
 // Advisor response: the model either replies with text or returns updated chunks.
 export const TranslationAdviceSchema = z.object({

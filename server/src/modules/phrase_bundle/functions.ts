@@ -18,6 +18,35 @@ import { openRouter } from "../../utils/openrouter";
 import { TRANSLATION_MODELS } from "../../utils/openrouter-models";
 import { trackServerEvent, SERVER_ANALYTICS_EVENTS } from "../../utils/analytics";
 import { z } from "zod";
+import { LangCode, languageFilter, langOf, toCode } from "../../languages/helper";
+import { getLearnerLanguages, resolveLanguage } from "../../languages/learner";
+
+/** How a phrase's `language` was set (B-08, B-25). */
+export type LanguageSource = "user" | "detected" | "active" | "legacy" | "backfill";
+
+/**
+ * The learning language a new phrase is saved under (B-08, B-25):
+ * - the `language` the client sent ("user");
+ * - otherwise the language the translation detected (`language_info.source`), when the
+ *   learner studies it (or has it paused);
+ * - otherwise the active language.
+ * A request with no `language` comes from an old extension or dashboard build, so it is
+ * marked "legacy" whichever way the language was found. The phrase's language wins over
+ * its bundle's. `detected` is the cleaned detected language, kept when it differs.
+ */
+export async function resolvePhraseLanguage(
+  userId: string,
+  args: { language?: unknown; language_info?: { source?: unknown } | null }
+): Promise<{ language: LangCode; languageSource: LanguageSource; detected?: LangCode }> {
+  const given = toCode(args.language);
+  const detected = toCode(args.language_info?.source);
+  if (given) return { language: given, languageSource: "user", ...(detected && detected !== given ? { detected } : {}) };
+
+  const learner = await getLearnerLanguages(userId);
+  const known = new Set([learner.active, ...learner.studying, ...learner.paused]);
+  const language = detected && known.has(detected) ? detected : learner.active;
+  return { language, languageSource: "legacy", ...(detected && detected !== language ? { detected } : {}) };
+}
 
 /**
  * Map a saved-from page URL to the coarse `source_platform` bucket the activation
@@ -49,9 +78,11 @@ interface RemovePhraseParams {
 }
 
 // Use PhraseSchema type and add bundleIds for the function parameters
-interface CreatePhraseParams extends Omit<PhraseSchema, "refId"> {
+interface CreatePhraseParams extends Omit<PhraseSchema, "refId" | "language"> {
   bundleIds: string[];
   refId: string;
+  /** The learning language; old builds send none (B-25). */
+  language?: string;
 }
 
 interface UpdatePhraseParams {
@@ -176,6 +207,7 @@ const createPhrase = defineFunction({
     linguistic_data,
     chunks,
     sourceUrl,
+    language: requestedLanguage,
   }: CreatePhraseParams): Promise<any> => {
     const phraseBundleCollection = getCollection<any>(
       DATABASE,
@@ -193,13 +225,19 @@ const createPhrase = defineFunction({
       throw new Error("One or more bundles not found or access denied");
     }
 
-    // Check if phrase already exists. Match by phrase + type (+ owner) only:
+    const resolved = await resolvePhraseLanguage(refId, { language: requestedLanguage, language_info });
+
+    // Check if phrase already exists. Match by phrase + type + language (+ owner) only:
     // the translation can vary between AI calls, so including it would create
-    // duplicate phrase docs for the same saved text.
+    // duplicate phrase docs for the same saved text. German "Kind" and English "kind"
+    // are different phrases (B-08). Kept (pending) phrases wait outside every bundle and
+    // are not reused here.
     const existingPhrase = await phraseCollection.findOne({
       refId: refId,
       phrase: phrase.trim(),
       type: type,
+      status: { $ne: "pending" },
+      ...languageFilter(resolved.language),
     });
 
     let phraseId: Types.ObjectId;
@@ -232,7 +270,11 @@ const createPhrase = defineFunction({
         translation_language: translation_language?.trim(),
         refId,
         type,
+        language: resolved.language,
+        languageSource: resolved.languageSource,
       };
+      // A detected language we did not save it under, kept for review (ADR-006).
+      if (resolved.detected) newPhraseDoc.languageDetected = resolved.detected;
 
       // Add linguistic-specific fields if type is linguistic
       if (type === "linguistic") {
@@ -297,23 +339,28 @@ const createPhrase = defineFunction({
       )
     );
 
-    // Return the phrase (either existing or newly created)
-    return (
-      existingPhrase || {
-        _id: phraseId,
-        phrase: phrase.trim(),
-        translation: translation.trim(),
-        translation_language: translation_language?.trim(),
-        refId,
-        type,
-        ...(type === "linguistic" && {
-          context,
-          direction,
-          language_info,
-          linguistic_data,
-        }),
-      }
-    );
+    // Return the phrase (either existing or newly created), with the language it is
+    // saved under (contract section 3).
+    if (existingPhrase) {
+      const existing: any = typeof (existingPhrase as any).toObject === "function" ? (existingPhrase as any).toObject() : existingPhrase;
+      return { ...existing, language: langOf(existing), languageSource: existing.languageSource ?? "backfill" };
+    }
+    return {
+      _id: phraseId,
+      phrase: phrase.trim(),
+      translation: translation.trim(),
+      translation_language: translation_language?.trim(),
+      refId,
+      type,
+      language: resolved.language,
+      languageSource: resolved.languageSource,
+      ...(type === "linguistic" && {
+        context,
+        direction,
+        language_info,
+        linguistic_data,
+      }),
+    };
   },
 });
 
@@ -349,6 +396,8 @@ interface BundleSuggestionParams {
   refId: string;
   pageTitle?: string;
   pageUrl?: string;
+  /** The learning language; missing means the active one (B-09). */
+  language?: string;
 }
 
 const BundleNameSchema = z.object({
@@ -374,6 +423,7 @@ const getBundleSuggestionForPage = defineFunction({
     refId,
     pageTitle,
     pageUrl,
+    language,
   }: BundleSuggestionParams): Promise<{
     matchedBundle: { _id: string; title: string } | null;
     suggestedName: string | null;
@@ -384,18 +434,21 @@ const getBundleSuggestionForPage = defineFunction({
       BUNDLE_COLLECTION
     );
 
+    // Only bundles of this language: a German page suggests a German bundle (B-09).
+    const scope = languageFilter(await resolveLanguage(refId, language));
+
     // 1. Existing bundle from this same page (matched by normalised URL).
     const sourceUrl = normaliseSourceUrl(pageUrl || "");
     if (sourceUrl) {
       const phrases = await phraseCollection.find(
-        { refId, sourceUrl },
+        { refId, sourceUrl, ...scope },
         { _id: 1 }
       );
       const phraseIds = (phrases || []).map((p: any) => p._id);
 
       if (phraseIds.length) {
         const bundle = await phraseBundleCollection.findOne(
-          { refId, phrases: { $in: phraseIds } },
+          { refId, phrases: { $in: phraseIds }, ...scope },
           {},
           { sort: { _id: -1 } }
         );
@@ -443,6 +496,7 @@ const getBundleSuggestionForPage = defineFunction({
       const existingByName = await phraseBundleCollection.findOne({
         refId,
         title: name,
+        ...scope,
       });
       if (existingByName) {
         return {

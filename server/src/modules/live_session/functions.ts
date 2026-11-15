@@ -33,6 +33,9 @@ import { GEMINI_LIVE_SESSION_MODEL } from "./gemini/config";
 import { requestEphemeralToken } from "./openai/functions";
 import { requestGeminiEphemeralToken } from "./gemini/functions";
 import { LIVE_SESSION_VOICES } from "./voices";
+import { sessionLanguages } from "./session-language";
+import { languageFilter } from "../../languages/helper";
+import { resolveLanguage } from "../../languages/learner";
 
 const createLiveSession = defineFunction({
   name: "create-live-session-record",
@@ -43,9 +46,14 @@ const createLiveSession = defineFunction({
     type: SessionType;
     provider?: LiveSessionProvider;
     metadata?: LiveSessionMetadataType;
+    /** The learning language; missing means the active one (B-13). */
+    language?: string;
+    /** The language the Coach explains in; missing means the learner's setting. */
+    explanationLanguage?: string;
   }) {
     const { userId, session, type, provider, metadata } = context;
     const collection = getCollection(DATABASE, LIVE_SESSION_COLLECTION);
+    const languages = await sessionLanguages(String(userId), context);
 
     try {
       const recordedSession = await collection.create({
@@ -54,6 +62,7 @@ const createLiveSession = defineFunction({
         provider,
         session,
         metadata,
+        ...languages,
       });
 
       return recordedSession.toJSON();
@@ -169,9 +178,13 @@ const listLiveSessions = defineFunction({
     userId: string;
     page?: number;
     limit?: number;
+    /** The learning language; missing means the active one (B-13). */
+    language?: string;
   }) {
     const { userId, page = 0, limit = 20 } = context;
     await assertFeatureEnabled(userId, "session_history");
+    // One language's history. Sessions from before multilingual have no language: English.
+    const filter = { refId: userId, ...languageFilter(await resolveLanguage(userId, context.language)) };
 
     const window = (page + 1) * limit;
     const voiceCol = getCollection<LiveSessionRecordType>(
@@ -180,10 +193,10 @@ const listLiveSessions = defineFunction({
     );
     const textCol = getCollection<any>(DATABASE, LIVE_SESSION_TEXT_COLLECTION);
     const [voice, text, voiceCount, textCount] = await Promise.all([
-      voiceCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
-      textCol.find({ refId: userId }).sort({ createdAt: -1 }).limit(window),
-      voiceCol.countDocuments({ refId: userId }),
-      textCol.countDocuments({ refId: userId }),
+      voiceCol.find(filter).sort({ createdAt: -1 }).limit(window),
+      textCol.find(filter).sort({ createdAt: -1 }).limit(window),
+      voiceCol.countDocuments(filter),
+      textCol.countDocuments(filter),
     ]);
     const merged = [...(voice as any[]), ...(text as any[])].sort(
       (a, b) =>

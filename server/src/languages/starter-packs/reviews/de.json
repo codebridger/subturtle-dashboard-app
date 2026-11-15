@@ -1,0 +1,504 @@
+{
+  "language": "de",
+  "reviewer": "AI (a separate agent per language acting as a strict native-speaker teacher); not a human check",
+  "rounds": [
+    {
+      "round": "round1-review",
+      "itemsChecked": 150,
+      "findings": [
+        {
+          "id": "de-polite-06",
+          "severity": "error",
+          "field": "lemma",
+          "problem": "'leid' is not a dictionary form here: 'Tut mir leid' is the separable verb leidtun (post-2006 spelling; 'Leid' is a noun). With lemma 'leid' the cue simply gives the answer away. Use the verb as cue, consistent with de-needs-13 (wehtun/weh); the blank 'Tut mir ___!' then has exactly one answer, 'leid'.",
+          "fix": {
+            "lemma": "leidtun"
+          }
+        },
+        {
+          "id": "de-polite-08",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'Ja, ___!' with cue 'gern' accepts both 'gern' and 'gerne' equally (both standard and very common); a learner typing the cue form 'gern' would be marked wrong. No other word in the chunk is a useful target, so drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-places-10",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "'Ich bin zu ___.' with cue 'Haus' leads a beginner to type 'Haus' (and colloquial 'zu Haus' exists), but the expected answer is the fossilized dative 'Hause'. Not one defensible answer. Blank the verb instead: 'Ich ___ zu Hause.' with cue 'sein' has exactly one answer, 'bin'.",
+          "fix": {
+            "lemma": "sein",
+            "form": "bin"
+          }
+        },
+        {
+          "id": "de-polite-12",
+          "severity": "doubt",
+          "field": "translations.fa",
+          "problem": "'دوباره تکرار' is a pleonasm (تکرار already means 'again'); common in speech but stilted in writing.",
+          "fix": {
+            "translations.fa": "می‌شود لطفاً تکرار کنید؟"
+          }
+        },
+        {
+          "id": "de-time-03",
+          "severity": "doubt",
+          "field": "translations.ar",
+          "problem": "'الآن فورًا' is a redundant, awkward pairing; 'حالًا' or 'فورًا' alone reads more naturally for 'right now'.",
+          "fix": {
+            "translations.ar": "الآن حالًا."
+          }
+        },
+        {
+          "id": "de-places-06",
+          "severity": "doubt",
+          "field": "translations.tr",
+          "problem": "'Dümdüz ileri.' is understandable but unusual when giving directions; Turkish speakers say 'Dümdüz gidin.' (fa is also rendered as an imperative).",
+          "fix": {
+            "translations.tr": "Dümdüz gidin."
+          }
+        },
+        {
+          "id": "de-needs-15",
+          "severity": "doubt",
+          "field": "translations.vi",
+          "problem": "'điện thoại của tôi' is a redundant calque of 'my'; Vietnamese normally omits the possessive here.",
+          "fix": {
+            "translations.vi": "Tôi đang tìm điện thoại."
+          }
+        },
+        {
+          "id": "de-places-15",
+          "severity": "doubt",
+          "field": "note",
+          "problem": "'Es hat zu' is grammatical but not what natives typically say; the everyday casual forms are 'Es ist zu' / 'Die haben zu'.",
+          "fix": {
+            "note": "Casual: Es ist zu. / Die haben zu."
+          }
+        },
+        {
+          "id": "de-food-13",
+          "severity": "doubt",
+          "field": "note",
+          "problem": "'Zum Hieressen oder zum Mitnehmen?' exists but the question learners will actually hear far more often is 'Für hier oder zum Mitnehmen?'.",
+          "fix": {
+            "note": "You will be asked: Für hier oder zum Mitnehmen?"
+          }
+        },
+        {
+          "id": "de-food-13",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "Cue 'mitnehmen' (lowercase verb) vs required answer 'Mitnehmen' (capitalized nominalization). The answer is unique, but if answers are compared case-sensitively a learner typing 'mitnehmen' is marked wrong; the capital is grammatical, not sentence-initial. Acceptable only if the checker ignores case or the card explains it.",
+          "fix": {}
+        }
+      ],
+      "cloze": {
+        "checked": 132,
+        "defensible": 130
+      },
+      "translations": {
+        "fa": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "ar": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "es": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "vi": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "en": {
+          "checked": 150,
+          "wrong": 0
+        },
+        "tr": {
+          "checked": 150,
+          "wrong": 0
+        }
+      },
+      "summary": "The German pack is of high quality: the texts are idiomatic A1 chunks with correct grammar and spelling, register and notes are accurate and helpful, and the translations in all six languages are correct, with proper script (ی/ک, ZWNJ, hamza and taa marbuta, Vietnamese diacritics), and only a few stylistic doubts. The real problems are in the clozes: 'gern/gerne' accepts two answers, 'Haus → Hause' is a beginner trap, and 'leid' needs the separable-verb lemma 'leidtun'. The contraction cloze 'Wie geht's?' (blank 'Wie ___'s?', cue gehen → geht) and the separable 'Hier tut es weh' (cue wehtun → weh) were checked and each has exactly one defensible answer."
+    },
+    {
+      "round": "round2-recheck",
+      "recheck": [
+        {
+          "id": "de-polite-06",
+          "status": "clean"
+        },
+        {
+          "id": "de-polite-08",
+          "status": "clean"
+        },
+        {
+          "id": "de-places-10",
+          "status": "clean"
+        },
+        {
+          "id": "de-polite-12",
+          "status": "clean"
+        },
+        {
+          "id": "de-places-06",
+          "status": "clean"
+        },
+        {
+          "id": "de-needs-15",
+          "status": "clean"
+        },
+        {
+          "id": "de-places-15",
+          "status": "clean"
+        },
+        {
+          "id": "de-food-13",
+          "status": "clean"
+        },
+        {
+          "id": "de-time-03",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "de-work-10",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "Vietnamese asks for a number with 'bao nhiêu', not 'là gì'; a native teacher would correct 'Số điện thoại của bạn là gì?'.",
+          "fix": {
+            "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+          }
+        },
+        {
+          "id": "de-polite-13",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "Drops 'etwas' (a bit), which every other translation keeps (un poco, biraz, کمی, một chút); 'ببطء أكثر' on its own is also less idiomatic than the comparative.",
+          "fix": {
+            "translations.ar": "أبطأ قليلًا من فضلك."
+          }
+        },
+        {
+          "id": "de-greetings-02",
+          "severity": "doubt",
+          "field": "translations.es",
+          "problem": "'¡Hey!' is an anglicism; it is used informally, but the natural Spanish casual greeting is '¡Hola!' or '¡Buenas!'. Since '¡Hola!' is already used for greetings-01, '¡Buenas!' would be a distinct option.",
+          "fix": {
+            "translations.es": "¡Buenas!"
+          }
+        },
+        {
+          "id": "de-food-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The blanked word changes with the speaker gender (Vegetarier / Vegetarierin), and no translation forces one; a woman typing Vegetarierin would be marked wrong. Move the cloze to the invariant verb: \"Ich ___ Vegetarier.\" with cue sein gives bin (bin is the first substring match).",
+          "fix": {
+            "lemma": "sein",
+            "form": "bin"
+          }
+        },
+        {
+          "id": "de-work-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The blanked word changes with the speaker gender (Student / Studentin). Move the cloze to the invariant verb: \"Ich ___ Student.\" with cue sein gives bin.",
+          "fix": {
+            "lemma": "sein",
+            "form": "bin"
+          }
+        },
+        {
+          "id": "de-greetings-12",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"heißt\" changes with du/Sie register, and the translation does not force one register. But the pronoun stays visible in the card, so only \"heißt\" fits; it is defensible as rendered. Listed because of the register rule. Apply the fix if the rule should hold regardless of the visible pronoun.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-questions-05",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"kommst\" changes with du/Sie register, and the translation does not force one register. But the pronoun stays visible in the card, so only \"kommst\" fits; it is defensible as rendered. Listed because of the register rule. Apply the fix if the rule should hold regardless of the visible pronoun.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-questions-06",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"wohnst\" changes with du/Sie register, and the translation does not force one register. But the pronoun stays visible in the card, so only \"wohnst\" fits; it is defensible as rendered. Listed because of the register rule. Apply the fix if the rule should hold regardless of the visible pronoun.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-questions-14",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"meinst\" changes with du/Sie register (the du pronoun is visible, so it is defensible as rendered). The only other candidate, Welches, varies with the noun gender, so the fix is to drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-travel-14",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"Halten\" changes with register (Halten Sie / Halt). Sie is visible, so it is defensible as rendered. Invariant alternative: \"Halten Sie bitte ___.\" with cue hier gives hier, which is the first substring match.",
+          "fix": {
+            "lemma": "hier",
+            "form": "hier"
+          }
+        }
+      ],
+      "finalCleanItems": 140,
+      "doubtful": [
+        "de-greetings-02",
+        "de-greetings-12",
+        "de-questions-05",
+        "de-questions-06",
+        "de-questions-14",
+        "de-travel-14"
+      ]
+    },
+    {
+      "round": "round3-recheck",
+      "recheck": [
+        {
+          "id": "de-polite-06",
+          "status": "clean"
+        },
+        {
+          "id": "de-polite-08",
+          "status": "clean"
+        },
+        {
+          "id": "de-places-10",
+          "status": "clean"
+        },
+        {
+          "id": "de-polite-12",
+          "status": "clean"
+        },
+        {
+          "id": "de-places-06",
+          "status": "clean"
+        },
+        {
+          "id": "de-needs-15",
+          "status": "clean"
+        },
+        {
+          "id": "de-places-15",
+          "status": "clean"
+        },
+        {
+          "id": "de-food-13",
+          "status": "clean"
+        },
+        {
+          "id": "de-time-03",
+          "status": "clean"
+        }
+      ],
+      "newFindings": [
+        {
+          "id": "de-work-10",
+          "severity": "error",
+          "field": "translations.vi",
+          "problem": "Vietnamese asks for a number with 'bao nhiêu', not 'là gì'; a native teacher would correct 'Số điện thoại của bạn là gì?'.",
+          "fix": {
+            "translations.vi": "Số điện thoại của bạn là bao nhiêu?"
+          }
+        },
+        {
+          "id": "de-polite-13",
+          "severity": "error",
+          "field": "translations.ar",
+          "problem": "Drops 'etwas' (a bit), which every other translation keeps (un poco, biraz, کمی, một chút); 'ببطء أكثر' on its own is also less idiomatic than the comparative.",
+          "fix": {
+            "translations.ar": "أبطأ قليلًا من فضلك."
+          }
+        },
+        {
+          "id": "de-greetings-02",
+          "severity": "doubt",
+          "field": "translations.es",
+          "problem": "'¡Hey!' is an anglicism; it is used informally, but the natural Spanish casual greeting is '¡Hola!' or '¡Buenas!'. Since '¡Hola!' is already used for greetings-01, '¡Buenas!' would be a distinct option.",
+          "fix": {
+            "translations.es": "¡Buenas!"
+          }
+        },
+        {
+          "id": "de-food-09",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The blanked word changes with the speaker gender (Vegetarier / Vegetarierin), and no translation forces one; a woman typing Vegetarierin would be marked wrong. Move the cloze to the invariant verb: \"Ich ___ Vegetarier.\" with cue sein gives bin (bin is the first substring match).",
+          "fix": {
+            "lemma": "sein",
+            "form": "bin"
+          }
+        },
+        {
+          "id": "de-work-02",
+          "severity": "error",
+          "field": "cloze",
+          "problem": "The blanked word changes with the speaker gender (Student / Studentin). Move the cloze to the invariant verb: \"Ich ___ Student.\" with cue sein gives bin.",
+          "fix": {
+            "lemma": "sein",
+            "form": "bin"
+          }
+        },
+        {
+          "id": "de-greetings-12",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"heißt\" changes with du/Sie register, and the translation does not force one register. But the pronoun stays visible in the card, so only \"heißt\" fits; it is defensible as rendered. Listed because of the register rule. Apply the fix if the rule should hold regardless of the visible pronoun.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-questions-05",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"kommst\" changes with du/Sie register, and the translation does not force one register. But the pronoun stays visible in the card, so only \"kommst\" fits; it is defensible as rendered. Listed because of the register rule. Apply the fix if the rule should hold regardless of the visible pronoun.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-questions-06",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"wohnst\" changes with du/Sie register, and the translation does not force one register. But the pronoun stays visible in the card, so only \"wohnst\" fits; it is defensible as rendered. Listed because of the register rule. Apply the fix if the rule should hold regardless of the visible pronoun.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-questions-14",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"meinst\" changes with du/Sie register (the du pronoun is visible, so it is defensible as rendered). The only other candidate, Welches, varies with the noun gender, so the fix is to drop the cloze.",
+          "fix": {
+            "lemma": null,
+            "form": null
+          }
+        },
+        {
+          "id": "de-travel-14",
+          "severity": "doubt",
+          "field": "cloze",
+          "problem": "The blanked verb \"Halten\" changes with register (Halten Sie / Halt). Sie is visible, so it is defensible as rendered. Invariant alternative: \"Halten Sie bitte ___.\" with cue hier gives hier, which is the first substring match.",
+          "fix": {
+            "lemma": "hier",
+            "form": "hier"
+          }
+        }
+      ],
+      "finalCleanItems": 140,
+      "doubtful": [
+        "de-greetings-02",
+        "de-greetings-12",
+        "de-questions-05",
+        "de-questions-06",
+        "de-questions-14",
+        "de-travel-14"
+      ]
+    }
+  ],
+  "leadFixes": [
+    {
+      "id": "de-work-02",
+      "severity": "error",
+      "field": "cloze",
+      "problem": "Blank 'Student' rejects a woman's correct 'Studentin'.",
+      "fix": {
+        "lemma": "sein",
+        "form": "bin"
+      },
+      "source": "lead"
+    },
+    {
+      "id": "de-food-09",
+      "severity": "error",
+      "field": "cloze",
+      "problem": "Blank 'Vegetarier' rejects a woman's correct 'Vegetarierin'.",
+      "fix": {
+        "lemma": "sein",
+        "form": "bin"
+      },
+      "source": "lead"
+    }
+  ],
+  "crossPackFixes": [
+    {
+      "id": "de-feelings-12",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "تهانينا!"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "de-questions-08",
+      "severity": "error",
+      "field": "translations.ar",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.ar": "من ذلك؟"
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "de-places-02",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Ở đây này."
+      },
+      "source": "lead-propagation"
+    },
+    {
+      "id": "de-travel-11",
+      "severity": "error",
+      "field": "translations.vi",
+      "problem": "Same calque/wording fixed by the reviewer of another pack for this concept; applied for consistency.",
+      "fix": {
+        "translations.vi": "Tôi đến đây du lịch."
+      },
+      "source": "lead-propagation"
+    }
+  ],
+  "crossPackCheck": {
+    "checkedBy": "separate AI agent",
+    "problems": []
+  },
+  "notes": [
+    "round2-recheck is the reviewer second re-check (it overwrote its first re-check file); its errors had already been fixed by the lead."
+  ]
+}

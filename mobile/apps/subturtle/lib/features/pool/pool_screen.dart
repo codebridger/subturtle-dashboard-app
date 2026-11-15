@@ -255,7 +255,7 @@ class _PoolCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(child: Text(p.phrase, style: StType.headline.copyWith(color: c.textStrong), textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.6))),
-              SpeakButton(text: p.phrase),
+              SpeakButton(text: p.phrase, language: p.language),
             ],
           ),
           const SizedBox(height: 10),

@@ -171,10 +171,13 @@ Future<T?> showStBottomSheet<T>({
   bool isScrollControlled = true,
   bool useSafeArea = true,
   double? maxHeightFactor,
+  bool useRootNavigator = false,
 }) {
   final c = context.st;
   return showModalBottomSheet<T>(
     context: context,
+    // Over the tab bar and its floating button, when the sheet opens from a tab.
+    useRootNavigator: useRootNavigator,
     isScrollControlled: isScrollControlled,
     useSafeArea: useSafeArea,
     backgroundColor: c.surfaceCard,

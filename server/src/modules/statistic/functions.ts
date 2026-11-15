@@ -4,10 +4,60 @@ import type { PipelineStage } from "mongoose";
 
 import { DATABASE, BUNDLE_COLLECTION, PHRASE_COLLECTION } from "../../config";
 import { assertFeatureEnabled } from "../subscription/enforcement";
+import { LangCode, languageFilter } from "../../languages/helper";
+import { resolveLanguage } from "../../languages/learner";
 
+/**
+ * Progress per language (work list B-23). Both functions take an optional `language`
+ * (missing means the active one) and count that language only. The streak stays global:
+ * a day with a save in any language keeps it going (ADR-006: one streak per account).
+ */
 interface UserStatistic {
+  /** The language the counts are for. */
+  language: LangCode;
   totalPhrases: number;
   totalBundles: number;
+  /** Days in a row with at least one phrase saved, in any language (global). */
+  streak: number;
+}
+
+/** `language: "all"` asks for every language at once (for a global chart). */
+export const ALL_LANGUAGES = "all";
+
+// The collections the chart may count. The client used to name any database and
+// collection here, which let a signed-in user read collections they should not.
+const CHART_COLLECTIONS = [PHRASE_COLLECTION, BUNDLE_COLLECTION];
+
+// Kept phrases (B-32) wait for a language the learner has not added: not progress yet.
+const NOT_PENDING = { status: { $ne: "pending" } };
+
+const STREAK_WINDOW_DAYS = 400;
+
+const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * Consecutive days with at least one phrase saved, in any language, counting back from
+ * today (UTC days, as the chart). A today with no save yet does not break the run.
+ */
+export async function globalStreak(userId: string, now = new Date()): Promise<number> {
+  const phraseModel = getCollection(DATABASE, PHRASE_COLLECTION);
+  const since = date.addDays(now, -STREAK_WINDOW_DAYS);
+  const days = (await phraseModel
+    .aggregate([
+      { $match: { refId: userId, createdAt: { $gte: since }, ...NOT_PENDING } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } } } },
+    ])
+    .exec()) as { _id: string }[];
+  const saved = new Set(days.map((d) => d._id));
+
+  let day = new Date(now);
+  if (!saved.has(dayKey(day))) day = date.addDays(day, -1);
+  let run = 0;
+  while (saved.has(dayKey(day))) {
+    run++;
+    day = date.addDays(day, -1);
+  }
+  return run;
 }
 
 interface ChartDataItem {
@@ -19,6 +69,7 @@ type ChartDataPoint = [string, number];
 
 interface GetUserStatisticParams {
   userId: string;
+  language?: string;
 }
 
 interface GenerateChartDataParams {
@@ -26,6 +77,8 @@ interface GenerateChartDataParams {
   days: number;
   database: string;
   collection: string;
+  /** A language code, "all", or missing for the active language. */
+  language?: string;
 }
 
 const getUserStatistic = defineFunction({
@@ -33,19 +86,26 @@ const getUserStatistic = defineFunction({
   permissionTypes: ["user_access"],
   callback: async ({
     userId,
+    language,
   }: GetUserStatisticParams): Promise<UserStatistic> => {
     // Progress insights are a Learner+ entitlement (weekly_insights).
     await assertFeatureEnabled(userId, "weekly_insights");
 
     const phraseModel = getCollection(DATABASE, PHRASE_COLLECTION);
     const bundleModel = getCollection(DATABASE, BUNDLE_COLLECTION);
+    const lang = await resolveLanguage(userId, language);
 
-    const totalPhrases = await phraseModel.countDocuments({ refId: userId });
-    const totalBundles = await bundleModel.countDocuments({ refId: userId });
+    const [totalPhrases, totalBundles, streak] = await Promise.all([
+      phraseModel.countDocuments({ refId: userId, ...NOT_PENDING, ...languageFilter(lang) }),
+      bundleModel.countDocuments({ refId: userId, ...languageFilter(lang) }),
+      globalStreak(userId),
+    ]);
 
     return {
+      language: lang,
       totalPhrases,
       totalBundles,
+      streak,
     };
   },
 });
@@ -58,11 +118,18 @@ const generateChartDataForInsertionRatio = defineFunction({
     days,
     database,
     collection,
+    language,
   }: GenerateChartDataParams): Promise<ChartDataPoint[]> => {
     // Progress insights are a Learner+ entitlement (weekly_insights).
     await assertFeatureEnabled(userId, "weekly_insights");
 
-    const collectionModel = getCollection(database, collection);
+    if ((database && database !== DATABASE) || !CHART_COLLECTIONS.includes(collection)) {
+      throw new Error(`The chart counts ${CHART_COLLECTIONS.join(" or ")} only.`);
+    }
+    const collectionModel = getCollection(DATABASE, collection);
+    const scope =
+      language === ALL_LANGUAGES ? {} : languageFilter(await resolveLanguage(userId, language));
+    const pending = collection === PHRASE_COLLECTION ? NOT_PENDING : {};
 
     const startDate = date.addDays(new Date(), -days);
     const endDate = new Date();
@@ -77,6 +144,8 @@ const generateChartDataForInsertionRatio = defineFunction({
       {
         $match: {
           refId: userId,
+          ...scope,
+          ...pending,
           createdAt: {
             $gte: startDate,
             $lt: endDate,

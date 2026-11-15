@@ -6,6 +6,7 @@ import {
   FLUENT_WAITLIST_COLLECTION,
   FREEMIUM_DURATION_DAYS,
   FREEMIUM_DEFAULT_TEXT_CHATS,
+  FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES,
   SUBSCRIPTION_COLLECTION,
   USAGE_COLLECTION,
 } from "../../config";
@@ -339,6 +340,12 @@ const freeCreaditCollection = defineCollection({
       allowed_text_chats_used: {
         type: Number,
         default: 0,
+      },
+      // Starter's language limit (Council 008): how many languages a free learner
+      // studies at once. Read by modules/language/plan.ts.
+      allowed_learning_languages: {
+        type: Number,
+        default: FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES,
       },
       // Starter "taste" of voice (Council 004). Free-tier voice still debits the
       // credit pool; this mirrors the paid voice counter for schema symmetry.

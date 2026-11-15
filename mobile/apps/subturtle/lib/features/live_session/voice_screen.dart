@@ -9,6 +9,7 @@ import '../../app/providers.dart';
 import '../../shared/format.dart';
 import '../coach/coach_home_screen.dart';
 import 'chat_bubbles.dart';
+import 'explanation_flag.dart';
 import 'session_launch.dart';
 import 'voice_controller.dart';
 
@@ -124,7 +125,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                 ],
               ),
             ),
-            PhraseStrip(phrases: widget.launch.phrases, active: v.active, done: v.done, onTap: v.selectPhrase, showTranslations: v.showTranslations),
+            PhraseStrip(phrases: widget.launch.phrases, active: v.active, done: v.done, onTap: v.selectPhrase, showTranslations: v.showTranslations, l1Rtl: ref.watch(l1Provider).value?.rtl),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
               child: Text('${v.done.length} of ${widget.launch.phrases.length} practised', style: StType.bodySmall.copyWith(color: c.textMuted)),
@@ -224,6 +225,9 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
                           child: Text(l.fromUser ? 'You' : 'Coach', style: StType.labelMedium.copyWith(color: c.textFaint)),
                         ),
                         ChatBubble(text: l.text, fromUser: l.fromUser, phrases: l.fromUser ? const [] : widget.launch.phrases),
+                        // Under the Coach's explanation: "This looks wrong" (S13).
+                        if (!l.fromUser && ref.watch(multilingualProvider))
+                          ExplanationFlag(language: widget.launch.language, explanationLanguage: widget.launch.explanationLanguage, sessionId: v.sessionId, turnIndex: lines.take(lines.length - 1 - i).where((x) => !x.fromUser).length),
                       ],
                     );
                   },

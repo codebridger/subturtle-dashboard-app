@@ -63,6 +63,7 @@
 <script setup lang="ts">
 import { Button, Icon } from 'pilotui/elements';
 import { type PhraseType, type LeitnerItemType } from '~/types/database.type';
+import type { ReviewResult } from '~/types/language.type';
 
 const props = defineProps<{
 	items: LeitnerItemType[];
@@ -71,7 +72,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	(e: 'submit-result', phraseId: string, isCorrect: boolean): void;
+	(e: 'submit-result', phraseId: string, isCorrect: boolean, result?: ReviewResult): void;
 	(e: 'end-session'): void;
 }>();
 
@@ -79,7 +80,27 @@ const currentIndex = ref(0);
 const flashCardRef = ref(null);
 
 const currentItem = computed(() => props.items[currentIndex.value]);
-const currentPhrase = computed(() => currentItem.value?.phrase as PhraseType);
+/**
+ * The phrase, with the review item's cloze cue (contract section 3: items carry
+ * `cue: { lemma, form }` and `acceptedAnswers`) copied onto its primary chunk when the chunk
+ * itself has none, so the card shows the cue the server will check against.
+ */
+const currentPhrase = computed(() => {
+	const item = currentItem.value as any;
+	const phrase = item?.phrase as PhraseType | undefined;
+	const cue = item?.cue ?? item?._doc?.cue;
+	const accepted = item?.acceptedAnswers ?? item?._doc?.acceptedAnswers;
+	const chunks = (phrase as any)?.chunks as any[] | undefined;
+	if (!phrase || (!cue && !accepted) || !chunks?.length) return phrase as PhraseType;
+	// By index, not identity: a reactive array's reduce and map can hand back different wrappers.
+	const primary = chunks.reduce((best, c, i) => ((c?.confidence ?? 0) > (chunks[best]?.confidence ?? 0) ? i : best), 0);
+	const enriched = chunks.map((c, i) =>
+		i === primary
+			? { ...c, lemma: c.lemma ?? cue?.lemma, form: c.form ?? (cue?.form || undefined), acceptedAnswers: c.acceptedAnswers ?? accepted }
+			: c
+	);
+	return { ...phrase, chunks: enriched } as PhraseType;
+});
 const totalItems = computed(() => props.items.length);
 
 // Leitner level drives the L3+ cloze. get-review-session returns raw Mongoose docs, so schema fields
@@ -128,7 +149,12 @@ function handleKeyDown(event: KeyboardEvent) {
 function submitResult(isCorrect: boolean) {
 	if (!currentPhrase.value) return;
 
-	emit('submit-result', currentPhrase.value._id, isCorrect);
+	// A checked fill-the-gap card sends its three-way result (Q4). "Forgot" is always wrong;
+	// "Learned" after an "Almost" stays close, so the card keeps its box instead of moving up.
+	// @ts-ignore — the exposed ref is unwrapped on the component instance
+	const cloze = flashCardRef.value?.clozeResult as ReviewResult | null | undefined;
+	const result: ReviewResult | undefined = !isCorrect ? (cloze ? 'wrong' : undefined) : cloze === 'close' ? 'close' : cloze ? 'right' : undefined;
+	emit('submit-result', currentPhrase.value._id, isCorrect, result);
 
 	if (currentIndex.value < totalItems.value - 1) {
 		currentIndex.value++;

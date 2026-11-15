@@ -23,7 +23,26 @@ repository sends the signed-in user's id.
 - `AuthService`: Google access-token sign in, email + password, the code sign-up flow, restore, sign out.
 - Repositories: `BoardRepository` (Today + Pool), `ReviewRepository` (Leitner),
   `BundleRepository`, `TranslationRepository`, `ProfileRepository`,
-  `SubscriptionRepository`, `LiveSessionRepository` (voice + history), `TextChatRepository`.
+  `SubscriptionRepository`, `LiveSessionRepository` (voice + history), `TextChatRepository`,
+  `SaveAssistantRepository`, `LanguageRepository` (the learner's languages, chat test, kept
+  phrases) and `StarterPackRepository`.
+
+## Languages (2.0)
+
+Built to the multilingual API contract (`docs/tech/multilingual-api.md` in the docs repo).
+
+- `SubturtleApi.activeLanguage` is the active learning language. Every language-scoped
+  function (board, pool, review, bundles, sessions, save assistant) sends it as `language`
+  unless the call names another one. Data-provider queries filter on it; for English the
+  filter also matches documents saved before 2.0, which have no `language`.
+- A 1.x server has no `language` module. modular-rest answers "Function with name X not
+  found" (`ApiException.isMissingFunction`). `LanguageRepository.capabilities()` then returns
+  the English-only register, `state()` returns null, and the app builds
+  `LanguageState.englishOnly(...)`. `check-cloze-answer`, `get-coach-instructions` and
+  `flag-coach-explanation` return null / false the same way, so the app falls back to its
+  own checks and its own Coach prompt.
+- `add-language` refusals (`upgrade_needed`, `not_available`, `purging`) become an
+  `AddLanguageRefusal`, whether the server throws them or returns them.
 - `CoachPractice`: the coach prompt and tools, ported from `frontend/utils/livePractice.ts`.
 
 ## Base URLs
