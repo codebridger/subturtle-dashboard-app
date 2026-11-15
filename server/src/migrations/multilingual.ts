@@ -60,7 +60,7 @@ const DEFAULT_BATCH = 500;
 /** A stored document with no language: missing or null (both are English, `langOf`). */
 // Both forms, not `{ language: null }` alone: on Firestore with MongoDB compatibility a null
 // match is not promised to find a missing field.
-const NO_LANGUAGE = { $or: [{ language: null }, { language: { $exists: false } }] };
+export const NO_LANGUAGE = { $or: [{ language: null }, { language: { $exists: false } }] };
 
 const pluralize = mongoose.pluralize() as (name: string) => string;
 
@@ -84,7 +84,7 @@ function report(step: string, apply: boolean): StepReport {
 }
 
 /** Calls `fn` with each batch of matching documents, in `_id` order. */
-async function forEachBatch(collection: any, filter: Doc, batchSize: number, fn: (docs: Doc[]) => Promise<void>, projection?: Doc) {
+export async function forEachBatch(collection: any, filter: Doc, batchSize: number, fn: (docs: Doc[]) => Promise<void>, projection?: Doc) {
   let lastId: any = null;
   for (;;) {
     const query = lastId === null ? filter : { $and: [filter, { _id: { $gt: lastId } }] };
@@ -172,7 +172,7 @@ export async function measure(db: Db, opts: MigrationOptions = {}): Promise<Meas
 // ---------------------------------------------------------------------------------------
 
 /** The own language a learner translated into most, from their latest 200 phrases. */
-async function guessOwnLanguage(db: Db, userId: string): Promise<string | undefined> {
+export async function guessOwnLanguage(db: Db, userId: string): Promise<string | undefined> {
   const phrases: Doc[] = await col(db, PHRASE_COLLECTION)
     .find({ refId: userId }, { projection: { language_info: 1, translation_language: 1 } })
     .sort({ createdAt: -1 })
