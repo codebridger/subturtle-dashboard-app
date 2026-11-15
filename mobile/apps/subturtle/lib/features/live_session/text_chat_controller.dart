@@ -15,7 +15,7 @@ enum TextChatStatus { starting, ready, waiting, ended, error }
 /// the coach's tool calls (`activate_phrase`, `finish_practice`) locally, the
 /// same loop as the web store `liveSessionGeminiText`.
 class TextChatController extends ChangeNotifier {
-  TextChatController({required this.repo, required this.phrases, required this.instructions, required this.metadata, this.messageCap})
+  TextChatController({required this.repo, required this.phrases, required this.instructions, required this.metadata, this.messageCap, this.language, this.explanationLanguage})
       : active = LivePracticeSpec.singlePhraseStartsActive && phrases.length == 1 ? 0 : -1;
 
   final TextChatRepository repo;
@@ -25,6 +25,13 @@ class TextChatController extends ChangeNotifier {
 
   /// Per-chat cap on learner messages (null = unlimited).
   final int? messageCap;
+
+  /// The learning language and the explanation language, stored on the session.
+  final String? language;
+  final String? explanationLanguage;
+
+  /// The session record, once created.
+  String? get sessionId => _sessionId;
 
   final List<ChatMessage> messages = [];
   TextChatStatus status = TextChatStatus.starting;
@@ -52,7 +59,7 @@ class TextChatController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      _sessionId = await repo.create(instructions: instructions, tools: CoachPractice.tools, metadata: metadata);
+      _sessionId = await repo.create(instructions: instructions, tools: CoachPractice.tools, metadata: metadata, language: language, explanationLanguage: explanationLanguage);
       status = TextChatStatus.waiting;
       notifyListeners();
       await _run(await repo.sendSystem(_sessionId!, CoachPractice.welcomeText));
@@ -76,7 +83,7 @@ class TextChatController extends ChangeNotifier {
     if (_sessionId == null) {
       // The server closed the chat (the coach failed before its first reply): start a new one.
       try {
-        _sessionId = await repo.create(instructions: instructions, tools: CoachPractice.tools, metadata: metadata);
+        _sessionId = await repo.create(instructions: instructions, tools: CoachPractice.tools, metadata: metadata, language: language, explanationLanguage: explanationLanguage);
       } catch (e) {
         msg.failed = true;
         error = e;

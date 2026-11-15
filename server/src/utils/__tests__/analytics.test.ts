@@ -137,5 +137,21 @@ describe("server analytics", () => {
       });
       await expect(analytics.trackServerEvent("x", { userId: "u1" })).resolves.toBeUndefined();
     });
+
+    it("fireServerEvent sends on the learner without being awaited", async () => {
+      analytics.fireServerEvent("language_added", "u1", { language: "de" });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(mockTrack).toHaveBeenCalledWith("language_added", { language: "de", distinct_id: "u1" });
+    });
+
+    it("fireServerEvent never throws or rejects when Mixpanel or the identity lookup fails", async () => {
+      mockTrack.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+      expect(() => analytics.fireServerEvent("language_added", "u1", { language: "de" })).not.toThrow();
+      mockFindAnonymous.mockRejectedValueOnce(new Error("db down"));
+      expect(() => analytics.fireServerEvent("language_added", "u2")).not.toThrow();
+      await new Promise((resolve) => setImmediate(resolve));
+    });
   });
 });

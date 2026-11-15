@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { ref, watch, computed, nextTick } from 'vue';
+    import { withLanguage } from '~/utils/languageScope';
     import { functionProvider, dataProvider } from '@modular-rest/client';
     import { DATABASE, COLLECTIONS } from '~/types/database.type';
     import { useProfileStore } from '~/stores/profile';
@@ -91,7 +92,7 @@
         try {
             const info = (await functionProvider.run({
                 name: 'get-phrase-management-info',
-                args: { userId: authUser.value?.id },
+                args: withLanguage({ userId: authUser.value?.id }),
             })) as any;
             phraseToBoxMap.value = info?.phraseToBoxMap || {};
             boxPhraseIds.value = new Set(Object.keys(phraseToBoxMap.value));
@@ -145,11 +146,11 @@
         try {
             await functionProvider.run({
                 name: 'add-phrase-to-box',
-                args: {
+                args: withLanguage({
                     userId: authUser.value?.id,
                     phraseId: pid,
                     boxLevel: activeBox.value,
-                },
+                }),
             });
             phraseToBoxMap.value[pid] = activeBox.value;
             boxPhraseIds.value.add(pid);
@@ -164,10 +165,10 @@
         try {
             await functionProvider.run({
                 name: 'remove-phrase-from-box',
-                args: {
+                args: withLanguage({
                     userId: authUser.value?.id,
                     phraseId: pid,
-                },
+                }),
             });
             delete phraseToBoxMap.value[pid];
             boxPhraseIds.value.delete(pid);

@@ -14,5 +14,6 @@ export 'src/tokens/st_typography.dart';
 export 'src/widgets/st_button.dart';
 export 'src/widgets/st_display.dart';
 export 'src/widgets/st_form.dart';
+export 'src/widgets/st_language.dart';
 export 'src/widgets/st_mobile.dart';
 export 'src/widgets/st_pressable.dart';

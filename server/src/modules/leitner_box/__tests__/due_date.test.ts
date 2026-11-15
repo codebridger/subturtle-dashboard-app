@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -17,16 +18,19 @@ describe("LeitnerService Date Sensitivity", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockCollection = {
+		mockCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		mockPhraseCollection = {
 			find: jest.fn().mockReturnThis(),
 			toArray: jest.fn(),
 		};
 		(getCollection as any).mockImplementation((db: string, col: string) => {
+			// No profile and no language profile: an old account, English only.
+			if (col === "language_profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
+			if (col === "profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
 			if (col === "leitner_system") return Promise.resolve(mockCollection);
 			if (col === "phrase") return Promise.resolve(mockPhraseCollection);
 			return Promise.resolve({});

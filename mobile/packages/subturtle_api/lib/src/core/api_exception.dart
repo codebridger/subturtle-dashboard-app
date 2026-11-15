@@ -52,6 +52,12 @@ class ApiException implements Exception {
 
   bool get isTierLimit => code == tierLimitReached;
 
+  /// The server does not have this function: an older build (modular-rest
+  /// answers "Function with name X not found"). Callers fall back to the
+  /// behaviour from before the function existed.
+  bool get isMissingFunction => statusCode != 403 && _missingFunction.hasMatch(message);
+  static final _missingFunction = RegExp(r'^Function (with name )?\S+ not found', caseSensitive: false);
+
   /// The plan does not include the feature at all (cap 0), not just "used up".
   bool get isNotInPlan => isTierLimit && message.contains('is not included in your plan');
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 import { PoolService } from "../../pool/service";
@@ -40,13 +41,15 @@ describe("LeitnerService.submitReview — Forgot x2 at L1 -> Pool", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockSystemCollection = {
+		mockSystemCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		mockSystemCollection.updateOne.mockResolvedValue({});
 		(getCollection as any).mockImplementation((_db: string, col: string) => {
+			// No profile and no language profile: an old account, English only.
+			if (col === "language_profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
 			if (col === "leitner_system") return Promise.resolve(mockSystemCollection);
 			if (col === "profile") return Promise.resolve({ findOne: jest.fn(() => Promise.resolve(null)) });
 			return Promise.resolve({});
@@ -62,7 +65,7 @@ describe("LeitnerService.submitReview — Forgot x2 at L1 -> Pool", () => {
 
 		await LeitnerService.submitReview(userId, phraseId, false);
 
-		expect(PoolService.add).toHaveBeenCalledWith(userId, phraseId);
+		expect(PoolService.add).toHaveBeenCalledWith(userId, phraseId, "en");
 		// The item is $pull-ed, and no box $set (demote) is written.
 		const payloads = setPayloads();
 		expect(payloads.some((p: any) => p.$pull)).toBe(true);

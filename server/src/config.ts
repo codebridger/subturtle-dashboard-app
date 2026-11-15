@@ -6,6 +6,10 @@ export const BUNDLE_COLLECTION = "phrase_bundle";
 // Live session collections
 export const LIVE_SESSION_COLLECTION = "live_session";
 export const LIVE_SESSION_TEXT_COLLECTION = "live_session_text";
+// The AI level chat test (B-31): one document per test, the turns and the result.
+export const LEVEL_TEST_COLLECTION = "level_test";
+// "This explanation looks wrong" flags on Coach turns (B-19, Q10). Server only.
+export const COACH_EXPLANATION_FLAG_COLLECTION = "coach_explanation_flag";
 
 // Save assistant (mobile "Save a phrase" chat) conversations
 export const SAVE_ASSISTANT_SESSION_COLLECTION = "save_assistant_session";
@@ -37,6 +41,9 @@ export const FREEMIUM_DURATION_DAYS = 30; // 1 month
 // Schedule
 export const DATABASE_SCHEDULE = "cms";
 export const SCHEDULE_JOB_COLLECTION = "scheduled_job";
+// Daily counters of requests that still use an old field name (e.g. `targetLanguage`,
+// work list B-17), so the old name can be removed after 30 days with none. Server only.
+export const LEGACY_USAGE_COLLECTION = "legacy_usage";
 
 // Leitner System
 export const DATABASE_LEITNER = DATABASE;
@@ -49,3 +56,16 @@ export const BOARD_ACTIVITY_COLLECTION = "board_activity";
 // Pool Module (first-encounter queue — one doc per user, lives alongside phrases)
 export const DATABASE_POOL = DATABASE;
 export const POOL_COLLECTION = "pool";
+
+// Language module (multilingual, ADR-006): one language_profile per (user, language), the
+// source of truth for which languages a learner has; language_interest is the "Tell me"
+// counter for languages not offered yet.
+export const LANGUAGE_PROFILE_COLLECTION = "language_profile";
+export const LANGUAGE_INTEREST_COLLECTION = "language_interest";
+// Starter's language limit (Council 008). Paid tiers read `max_learning_languages` from
+// their Stripe product metadata (ADR-004); see modules/language/plan.ts.
+export const FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES = 1;
+
+// Review log (B-30): append-only answers and Pool sessions, one row per event, plus one
+// `snapshot` row per card from the one-time migration. Server-only; nobody reads it yet.
+export const REVIEW_LOG_COLLECTION = "review_log";

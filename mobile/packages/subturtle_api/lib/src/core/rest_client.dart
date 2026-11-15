@@ -49,15 +49,21 @@ class RestClient {
     return query == null || query.isEmpty ? u : u.replace(queryParameters: query);
   }
 
-  Map<String, String> _headers({bool json = true}) => {
-        if (json) 'content-type': 'application/json',
-        'accept': 'application/json',
-        if (token != null && token!.isNotEmpty) 'authorization': token!,
-      };
+  Map<String, String> _headers({bool json = true, String? as}) {
+    final t = as ?? token;
+    return {
+      if (json) 'content-type': 'application/json',
+      'accept': 'application/json',
+      if (t != null && t.isNotEmpty) 'authorization': t,
+    };
+  }
 
   /// POST a JSON body and return the decoded JSON answer.
-  Future<dynamic> post(String path, [Object? body]) {
-    return _send(() => _http.post(url(path), headers: _headers(), body: jsonEncode(body ?? const {})));
+  ///
+  /// [as] sends that token instead of [token] for this one request (the
+  /// anonymous token before sign in). An auth error on it never signs out.
+  Future<dynamic> post(String path, [Object? body, String? as]) {
+    return _send(() => _http.post(url(path), headers: _headers(as: as), body: jsonEncode(body ?? const {})), signedIn: as == null);
   }
 
   /// GET and return the decoded JSON answer.
@@ -65,8 +71,8 @@ class RestClient {
     return _send(() => _http.get(url(path, query), headers: _headers(json: false)));
   }
 
-  Future<dynamic> _send(Future<http.Response> Function() request) async {
-    final sentToken = token != null && token!.isNotEmpty;
+  Future<dynamic> _send(Future<http.Response> Function() request, {bool signedIn = true}) async {
+    final sentToken = signedIn && token != null && token!.isNotEmpty;
     http.Response res;
     try {
       res = await request().timeout(timeout);

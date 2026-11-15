@@ -2,7 +2,7 @@ import 'json.dart';
 
 /// A reusable language pattern inside a saved phrase (`chunks[]`).
 class Chunk {
-  const Chunk({required this.text, this.type = 'other', this.definition, this.transliteration, this.confidence = 0});
+  const Chunk({required this.text, this.type = 'other', this.definition, this.transliteration, this.confidence = 0, this.lemma, this.form, this.acceptedAnswers = const []});
 
   final String text;
 
@@ -12,6 +12,14 @@ class Chunk {
   final String? transliteration;
   final double confidence;
 
+  /// The base form for a fill-the-gap cue ("sein"), and the form asked for
+  /// ("present perfect, ich"). Set by 2.0 servers.
+  final String? lemma;
+  final String? form;
+
+  /// Every answer the server accepts for this chunk in a fill-the-gap card.
+  final List<String> acceptedAnswers;
+
   factory Chunk.fromJson(dynamic v) {
     final j = asJson(v);
     return Chunk(
@@ -20,6 +28,9 @@ class Chunk {
       definition: strOrNull(j['definition']),
       transliteration: strOrNull(j['transliteration']),
       confidence: number(j['confidence']),
+      lemma: strOrNull(j['lemma']),
+      form: strOrNull(j['form']),
+      acceptedAnswers: listOf(j['acceptedAnswers'], (e) => str(e)),
     );
   }
 
@@ -29,6 +40,9 @@ class Chunk {
         'definition': ?definition,
         'transliteration': ?transliteration,
         'confidence': confidence,
+        'lemma': ?lemma,
+        'form': ?form,
+        if (acceptedAnswers.isNotEmpty) 'acceptedAnswers': acceptedAnswers,
       };
 }
 
@@ -83,6 +97,9 @@ class Phrase {
     this.chunks = const [],
     this.sourceUrl,
     this.createdAt,
+    this.language,
+    this.languageSource,
+    this.status,
   });
 
   final String id;
@@ -106,6 +123,19 @@ class Phrase {
   final String? sourceUrl;
   final DateTime? createdAt;
 
+  /// The learning language the phrase belongs to. Null on phrases saved before
+  /// 2.0: read [languageCode], which treats them as English.
+  final String? language;
+
+  /// How the server chose [language]: `given`, `detected` or `active`.
+  final String? languageSource;
+
+  /// `pending` for a phrase kept for a language not added yet.
+  final String? status;
+
+  /// The phrase's language, with old phrases read as English (ADR-006).
+  String get languageCode => language ?? 'en';
+
   bool get translationIsRtl => targetDirection == 'rtl';
 
   factory Phrase.fromJson(dynamic v) {
@@ -127,6 +157,9 @@ class Phrase {
       chunks: listOf(j['chunks'], Chunk.fromJson),
       sourceUrl: strOrNull(j['sourceUrl']),
       createdAt: date(j['createdAt']),
+      language: strOrNull(j['language']),
+      languageSource: strOrNull(j['languageSource']),
+      status: strOrNull(j['status']),
     );
   }
 
@@ -145,12 +178,15 @@ class Phrase {
         chunks: chunks,
         sourceUrl: sourceUrl,
         createdAt: createdAt,
+        language: language,
+        languageSource: languageSource,
+        status: status,
       );
 }
 
 /// A phrase bundle (`user_content.phrase_bundle`).
 class Bundle {
-  const Bundle({required this.id, required this.title, this.desc, this.phraseIds = const [], this.createdAt, this.updatedAt});
+  const Bundle({required this.id, required this.title, this.desc, this.phraseIds = const [], this.createdAt, this.updatedAt, this.language});
 
   final String id;
   final String title;
@@ -160,6 +196,11 @@ class Bundle {
   final List<String> phraseIds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// The learning language. Null on bundles from before 2.0 (English).
+  final String? language;
+
+  String get languageCode => language ?? 'en';
 
   int get phraseCount => phraseIds.length;
 
@@ -172,13 +213,25 @@ class Bundle {
       phraseIds: listOf(j['phrases'], (e) => str(e)),
       createdAt: date(j['createdAt']),
       updatedAt: date(j['updatedAt']),
+      language: strOrNull(j['language']),
     );
   }
 }
 
 /// A Smart Review card (`get-review-session` / `get-custom-review-session`).
 class ReviewItem {
-  const ReviewItem({required this.phraseId, required this.boxLevel, required this.phrase, this.confirmedChunk, this.sourceSentence, this.nextReviewDate, this.consecutiveIncorrect = 0});
+  const ReviewItem({
+    required this.phraseId,
+    required this.boxLevel,
+    required this.phrase,
+    this.confirmedChunk,
+    this.sourceSentence,
+    this.nextReviewDate,
+    this.consecutiveIncorrect = 0,
+    this.cueLemma,
+    this.cueForm,
+    this.acceptedAnswers = const [],
+  });
 
   final String phraseId;
 
@@ -194,8 +247,18 @@ class ReviewItem {
   final DateTime? nextReviewDate;
   final int consecutiveIncorrect;
 
+  /// The fill-the-gap cue (`cue: {lemma, form}`), from 2.0 servers.
+  final String? cueLemma;
+  final String? cueForm;
+
+  /// Answers the server accepts. When empty, the app checks the answer itself.
+  final List<String> acceptedAnswers;
+
+  bool get hasCue => cueLemma != null && cueLemma!.isNotEmpty;
+
   factory ReviewItem.fromJson(dynamic v) {
     final j = docOf(v);
+    final cue = asJson(j['cue']);
     return ReviewItem(
       phraseId: str(j['phraseId']),
       boxLevel: integer(j['boxLevel'], 1),
@@ -204,6 +267,9 @@ class ReviewItem {
       sourceSentence: strOrNull(j['source_sentence']),
       nextReviewDate: date(j['nextReviewDate']),
       consecutiveIncorrect: integer(j['consecutiveIncorrect']),
+      cueLemma: strOrNull(cue['lemma']),
+      cueForm: strOrNull(cue['form']),
+      acceptedAnswers: listOf(j['acceptedAnswers'], (e) => str(e)),
     );
   }
 }
@@ -263,6 +329,25 @@ class BoardActivity {
   }
 }
 
+/// What `get-board` returns. A 1.x server sends a bare list of activities; a
+/// 2.0 server sends `{language, newLanguage, activities}`.
+class BoardSnapshot {
+  const BoardSnapshot({this.language, this.newLanguage = false, this.activities = const []});
+
+  final String? language;
+
+  /// The language has no phrases yet: Today asks for a first phrase.
+  final bool newLanguage;
+  final List<BoardActivity> activities;
+
+  factory BoardSnapshot.fromJson(dynamic v) {
+    if (v is List) return BoardSnapshot(activities: listOf(v, BoardActivity.fromJson));
+    final j = asJson(v);
+    final list = j['activities'] ?? j['items'] ?? j['board'] ?? j['records'];
+    return BoardSnapshot(language: strOrNull(j['language']), newLanguage: boolean(j['newLanguage']), activities: listOf(list, BoardActivity.fromJson));
+  }
+}
+
 /// Leitner stats and settings (`get-stats`).
 class LeitnerStats {
   const LeitnerStats({this.distribution = const {}, this.totalItems = 0, this.dailyLimit = 20, this.reviewHour = 9, this.poolChunkSize = 10, this.totalBoxes = 5});
@@ -313,24 +398,64 @@ class PhraseManagementInfo {
   }
 }
 
-/// The user's profile (`user_content.profile`). It has no language field.
+/// The user's profile (`user_content.profile`). The language fields are
+/// server-owned (written by the `language` functions, never by the app) and
+/// only set on 2.0 servers. The app reads languages from `get-language-state`;
+/// these fields are a copy.
 class Profile {
-  const Profile({required this.id, this.name, this.pictureUrl, this.timeZone});
+  const Profile({
+    required this.id,
+    this.name,
+    this.pictureUrl,
+    this.timeZone,
+    this.translationLanguage,
+    this.learningLanguage,
+    this.learningLanguages = const [],
+    this.pausedLanguages = const [],
+    this.onboardingState,
+  });
 
   final String id;
   final String? name;
   final String? pictureUrl;
   final String? timeZone;
+  final String? translationLanguage;
+  final String? learningLanguage;
+  final List<String> learningLanguages;
+  final List<String> pausedLanguages;
+  final String? onboardingState;
 
   factory Profile.fromJson(dynamic v) {
     final j = docOf(v);
-    return Profile(id: idOf(j), name: strOrNull(j['name']), pictureUrl: strOrNull(j['gPicture']), timeZone: strOrNull(j['timeZone']));
+    String code(dynamic e) => e is Map ? str(e['code'] ?? e['language']) : str(e);
+    return Profile(
+      id: idOf(j),
+      name: strOrNull(j['name']),
+      pictureUrl: strOrNull(j['gPicture']),
+      timeZone: strOrNull(j['timeZone']),
+      translationLanguage: strOrNull(j['translationLanguage']),
+      learningLanguage: strOrNull(j['learningLanguage']),
+      learningLanguages: listOf(j['learningLanguages'], code),
+      pausedLanguages: listOf(j['pausedLanguages'], code),
+      onboardingState: strOrNull(j['onboardingState']),
+    );
   }
 }
 
 /// Result of `translateWithContext` with `translationType: detailed`.
 class DetailedTranslation {
-  const DetailedTranslation({required this.translation, this.chunks = const [], this.sourceDirection = 'ltr', this.targetDirection = 'ltr', this.sourceLanguage, this.targetLanguage, this.linguistic});
+  const DetailedTranslation({
+    required this.translation,
+    this.chunks = const [],
+    this.sourceDirection = 'ltr',
+    this.targetDirection = 'ltr',
+    this.sourceLanguage,
+    this.targetLanguage,
+    this.linguistic,
+    this.detectedLanguage,
+    this.resolvedLanguage,
+    this.inProfile = true,
+  });
 
   final String translation;
   final List<Chunk> chunks;
@@ -339,6 +464,16 @@ class DetailedTranslation {
   final String? sourceLanguage;
   final String? targetLanguage;
   final LinguisticData? linguistic;
+
+  /// The language the server detected in the phrase (2.0 servers).
+  final String? detectedLanguage;
+
+  /// The learning language the phrase would be saved to.
+  final String? resolvedLanguage;
+
+  /// false when [detectedLanguage] is not one of the learner's languages:
+  /// the save sheet offers "Save to English" or "Keep for German".
+  final bool inProfile;
 
   bool get targetIsRtl => targetDirection == 'rtl';
 
@@ -354,6 +489,9 @@ class DetailedTranslation {
       sourceLanguage: strOrNull(lang['source']),
       targetLanguage: strOrNull(lang['target']),
       linguistic: j['linguistic_data'] is Map ? LinguisticData.fromJson(j['linguistic_data']) : null,
+      detectedLanguage: strOrNull(j['detectedLanguage']),
+      resolvedLanguage: strOrNull(j['resolvedLanguage']),
+      inProfile: boolean(j['inProfile'], true),
     );
   }
 }

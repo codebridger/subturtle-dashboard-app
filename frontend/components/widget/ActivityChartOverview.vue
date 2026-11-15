@@ -5,6 +5,7 @@
 
 <script setup lang="ts">
 import { functionProvider } from '@modular-rest/client';
+import { withLanguage } from '~/utils/languageScope';
 import { COLLECTIONS, DATABASE } from '~/types/database.type';
 import { Card } from 'pilotui/elements';
 
@@ -13,8 +14,8 @@ const props = defineProps<{
 }>();
 
 const series = ref([
-  { name: 'Phrases', data: <[Date, number][]>[] },
-  { name: 'Bundles', data: <[Date, number][]>[] },
+  { name: 'Phrases', data: [] as [Date, number][] },
+  { name: 'Bundles', data: [] as [Date, number][] },
 ]);
 
 const primary = '#3498db'; // example color
@@ -81,12 +82,12 @@ onMounted(() => {
 function getSeries(collection: string) {
   return functionProvider.run<[Date, number][]>({
     name: 'generateChartDataForInsertionRatio',
-    args: {
+    args: withLanguage({
       database: DATABASE.USER_CONTENT,
       collection: collection,
       userId: authUser.value?.id,
       days: 7,
-    },
+    }),
   });
 }
 

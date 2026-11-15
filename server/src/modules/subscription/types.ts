@@ -87,6 +87,7 @@ export interface FreeCredit {
   allowed_lived_sessions_used: number;
   allowed_text_chats?: number;
   allowed_text_chats_used?: number;
+  allowed_learning_languages?: number;
   voice_minutes_total?: number;
   voice_minutes_used?: number;
   ai_exhausted_flagged?: boolean;

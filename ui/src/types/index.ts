@@ -36,3 +36,29 @@ export type StTone = 'primary' | 'accent' | 'neutral' | 'danger';
 export type StSize = 'sm' | 'md' | 'lg';
 export type StPadding = 'none' | 'sm' | 'md' | 'lg';
 export type StElevation = 'none' | 'sm' | 'md' | 'lg';
+
+/** One of the learner's languages in StLanguageMenu. */
+export interface StLanguageMenuItem {
+    code: string;
+    /** Two-letter chip, e.g. 'DE'. */
+    chip: string;
+    /** "German · Deutsch" — English and native name (Q13). */
+    label: string;
+    /** "Starting at A1 · 7 due · 38 phrases". */
+    meta?: string;
+    active?: boolean;
+}
+
+/** A row under the languages in StLanguageMenu (Add a language, Manage, own language). */
+export interface StLanguageMenuAction {
+    label: string;
+    icon?: string;
+    /** A text chip instead of an icon, e.g. 'فا' for the own language. */
+    chip?: string;
+    /** `lang` of the chip, so its script gets the right font. */
+    chipLang?: string;
+    meta?: string;
+    dividerBefore?: boolean;
+    chevron?: boolean;
+    onClick?: () => void;
+}

@@ -6,10 +6,14 @@ import {
 } from "./service";
 import { TRANSLATION_TRIGGERS, TranslateWithContextParams, TranslationAdviceParams, TranslationTrigger } from "./types";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
+import { synthesizeSpeech } from "./tts";
+import { getLearningLanguage } from "../../languages/registry";
 import {
   trackServerEvent,
   SERVER_ANALYTICS_EVENTS,
 } from "../../utils/analytics";
+import { isAutoOrUnknown, toCode } from "../../languages/helper";
+import { loadLearnerLanguages, readTranslationLanguage, resolveLanguage } from "./language";
 
 /** The client's `trigger` (B-03) if it is one we know, else "unknown" (old clients, typos). */
 function readTrigger(value: unknown): TranslationTrigger | "unknown" {
@@ -17,26 +21,32 @@ function readTrigger(value: unknown): TranslationTrigger | "unknown" {
 }
 
 /**
- * Function to translate a phrase with its context
- * Uses OpenRouter to generate linguistic data in the required schema format
+ * Translate a phrase with its context (B-14, B-15, B-17).
+ *
+ * - The own language comes from `translationLanguage`, or the old `targetLanguage`.
+ * - The learning language (`language`, else the learner's active one) is sent to the
+ *   prompt, so an "auto" source no longer reads "from  to Persian".
+ * - Detailed mode returns the full data plus `detectedLanguage`, `resolvedLanguage` and
+ *   `inProfile`. Simple mode keeps returning the bare translation string unless the caller
+ *   sends `withLanguage: true`; then it returns `{ translation, detectedLanguage,
+ *   resolvedLanguage, inProfile }`.
  */
 const translateWithContext = defineFunction({
   name: "translateWithContext",
   permissionTypes: ["anonymous_access"],
   callback: async (params: TranslateWithContextParams) => {
-    // Extract parameters
-    let {
-      phrase,
-      context,
-      translationType = "simple",
-      sourceLanguage = "",
-      targetLanguage = "",
-    } = params;
+    const { phrase, context, translationType = "simple" } = params;
 
-    // normalize the source language
-    if (sourceLanguage.toLowerCase() === "auto") {
-      sourceLanguage = "";
-    }
+    // "auto" (or nothing) lets the model detect the language.
+    let sourceLanguage = typeof params.sourceLanguage === "string" ? params.sourceLanguage.trim() : "";
+    if (isAutoOrUnknown(sourceLanguage)) sourceLanguage = "";
+
+    const own = readTranslationLanguage(params, "translateWithContext");
+    const learner = await loadLearnerLanguages(params.userId);
+    const requested = toCode(params.language);
+    // A `language` the learner has stands in for the active one in the resolution.
+    const scope = requested && learner.languages.includes(requested) ? { ...learner, active: requested } : learner;
+    const learningLanguage = requested ?? learner.active ?? undefined;
 
     // Server-truth usage event (docs/metrics: Backend Tracking Plan). Fired on
     // every request, before the call, so failures are counted too — the error
@@ -49,30 +59,39 @@ const translateWithContext = defineFunction({
         translation_type: translationType,
         trigger: readTrigger(params.trigger),
         source_lang: sourceLanguage || "auto",
-        target_lang: targetLanguage,
+        target_lang: own.value,
+        learning_lang: learningLanguage || "unknown",
+        legacy_target_language: own.usedOldName,
       }
     );
 
+    const languages = {
+      sourceLanguage,
+      translationLanguage: own.value,
+      learningLanguage,
+    };
+
     try {
       if (translationType === "detailed") {
-        return getDetailedTranslation({
-          phrase,
-          context,
-          sourceLanguage,
-          targetLanguage,
-        });
+        const result = await getDetailedTranslation({ phrase, context, ...languages });
+        const detected = result?.language_info?.source || sourceLanguage;
+        return { ...result, ...resolveLanguage(detected, scope) };
       }
 
-      return getSimpleTranslation({
-        phrase,
-        context,
-        sourceLanguage,
-        targetLanguage,
-      });
+      if (params.withLanguage === true) {
+        const result = await getSimpleTranslation({ phrase, context, ...languages, withLanguage: true });
+        return {
+          translation: result?.translation ?? "",
+          ...resolveLanguage(result?.source || sourceLanguage, scope),
+        };
+      }
+
+      return await getSimpleTranslation({ phrase, context, ...languages });
     } catch (error: unknown) {
       console.error("Translation error:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      if (errorMessage.startsWith("Failed to translate text")) throw error;
       throw new Error(`Failed to translate text: ${errorMessage}`);
     }
   },
@@ -83,6 +102,36 @@ interface TextToSpeechParams {
   languageCode?: string;
   voiceName?: string;
   speakingRate?: number;
+  /** A learning language ("de"): with no voiceName, its register `speechVoice` is used. */
+  language?: string;
+}
+
+/** The BCP-47 code a Google voice name starts with: "de-DE-Neural2-G" → "de-DE". */
+function voiceLanguageCode(voiceName: string): string | undefined {
+  return /^([a-z]{2,3}-[A-Z]{2})-/.exec(voiceName)?.[1];
+}
+
+/**
+ * The voice and language code to speak with. Rules:
+ * - a non-HD voice the caller names is used as before;
+ * - no voice, but a learning `language`: that language's register `speechVoice`;
+ * - an HD voice (refused: it costs more per character): the `speechVoice` of the caller's
+ *   `language`, or of the voice's own language ("de-DE-Chirp3-HD-Kore" → German);
+ * - nothing: today's English default.
+ */
+export function resolveSpeechVoice(params: Pick<TextToSpeechParams, "languageCode" | "voiceName" | "language">): { languageCode: string; voiceName: string } {
+  const requested = typeof params.voiceName === "string" ? params.voiceName.trim() : "";
+  if (requested && !requested.includes("HD")) {
+    return { languageCode: params.languageCode || voiceLanguageCode(requested) || "en-US", voiceName: requested };
+  }
+
+  const fromLanguage = getLearningLanguage(params.language)?.speechVoice;
+  const fromVoice = requested ? getLearningLanguage(voiceLanguageCode(requested))?.speechVoice : undefined;
+  const voice = fromLanguage || fromVoice;
+  if (voice) return { languageCode: voiceLanguageCode(voice) || "en-US", voiceName: voice };
+
+  if (requested) throw new Error("HD voices are not supported");
+  return { languageCode: params.languageCode || "en-US", voiceName: "en-US-Standard-A" };
 }
 
 /**
@@ -93,56 +142,12 @@ const textToSpeech = defineFunction({
   name: "textToSpeechBase64",
   permissionTypes: ["anonymous_access"],
   callback: async (params: TextToSpeechParams) => {
-    const {
-      text,
-      languageCode = "en-US",
-      voiceName = "en-US-Standard-A",
-      speakingRate = 1.0,
-    } = params;
-
-    if (voiceName.includes("HD")) {
-      throw new Error("HD voices are not supported");
-    }
+    const { text, speakingRate = 1.0 } = params;
+    const { languageCode, voiceName } = resolveSpeechVoice(params);
 
     try {
-      const client = new TextToSpeechClient({
-        apiKey: process.env.GCP_API_KEY,
-      });
-
-      const request = {
-        input: { text },
-        voice: {
-          languageCode,
-          name: voiceName,
-        },
-        audioConfig: {
-          audioEncoding: "MP3",
-          speakingRate,
-        },
-      };
-
-      const [response] = await client.synthesizeSpeech(request as any);
-
-      if (!response.audioContent) {
-        throw new Error("No audio content returned from TTS");
-      }
-
-      // Convert the audio content to base64 from (Uint8Array|string|null)
-      let audioContentBase64: string;
-
-      if (response.audioContent instanceof Uint8Array) {
-        audioContentBase64 = Buffer.from(response.audioContent).toString(
-          "base64"
-        );
-      } else if (typeof response.audioContent === "string") {
-        audioContentBase64 = Buffer.from(
-          response.audioContent,
-          "binary"
-        ).toString("base64");
-      } else {
-        throw new Error("Invalid audio content format");
-      }
-
+      const audio = await synthesizeSpeech({ text, languageCode, voiceName, speakingRate });
+      const audioContentBase64 = audio.toString("base64");
       return `data:audio/mp3;base64,${audioContentBase64}`;
     } catch (error: unknown) {
       console.error("Text-to-speech error:", error);
@@ -214,14 +219,16 @@ const translationAdvice = defineFunction({
     }
 
     try {
-      return getTranslationAdvice({
+      const own = readTranslationLanguage(params, "translationAdvice");
+      return await getTranslationAdvice({
         phrase,
         context,
         message,
         currentChunks: params.currentChunks,
         history: params.history,
         sourceLanguage: params.sourceLanguage,
-        targetLanguage: params.targetLanguage,
+        translationLanguage: own.value,
+        learningLanguage: toCode(params.learningLanguage),
       });
     } catch (error: unknown) {
       console.error("Translation advice error:", error);

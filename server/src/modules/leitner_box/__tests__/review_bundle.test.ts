@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -38,11 +39,11 @@ describe("LeitnerService review bundle — confirmed_chunk + source_sentence", (
 		jest.setSystemTime(new Date("2026-01-28T10:00:00Z"));
 		jest.clearAllMocks();
 
-		mockSystemCollection = {
+		mockSystemCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		// Access through the `any`-typed var so the mock isn't concretely typed to `never`.
 		mockSystemCollection.findOne.mockResolvedValue({
 			_id: "sys_1",
@@ -54,6 +55,9 @@ describe("LeitnerService review bundle — confirmed_chunk + source_sentence", (
 		mockPhraseCollection = { find: jest.fn() };
 
 		(getCollection as any).mockImplementation((_db: string, col: string) => {
+			// No profile and no language profile: an old account, English only.
+			if (col === "language_profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
+			if (col === "profile") return Promise.resolve({ findOne: jest.fn(async () => null) });
 			if (col === "leitner_system") return Promise.resolve(mockSystemCollection);
 			if (col === "phrase") return Promise.resolve(mockPhraseCollection);
 			return Promise.resolve({});

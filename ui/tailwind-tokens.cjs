@@ -27,6 +27,7 @@ module.exports = {
             'primary-tint': c('--color-primary-tint'),
             accent: c('--color-accent'),
             'accent-soft': c('--color-accent-soft'),
+            'accent-tint': c('--color-accent-tint'),
 
             strong: c('--text-strong'),
             body: c('--text-body'),
@@ -39,6 +40,7 @@ module.exports = {
             sunken: c('--surface-sunken'),
             inverse: c('--surface-inverse'),
             line: c('--border-subtle'),
+            'line-strong': c('--border-strong'),
 
             success: c('--color-success'),
             'success-soft': c('--color-success-soft'),
@@ -52,6 +54,7 @@ module.exports = {
             'rose-400': c('--rose-400'),
             'rose-600': c('--rose-600'),
             'rose-700': c('--rose-700'),
+            'jade-500': c('--jade-500'),
             'jade-600': c('--jade-600'),
             'jade-700': c('--jade-700'),
             'amber-600': c('--amber-600'),

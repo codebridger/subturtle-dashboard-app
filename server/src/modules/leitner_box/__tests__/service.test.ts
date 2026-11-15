@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { findFromFindOne } from "../../../test-utils/find-from-find-one";
 import { LeitnerService } from "../service";
 import { getCollection } from "@modular-rest/server";
 
@@ -41,11 +42,11 @@ describe("LeitnerService", () => {
 		// test starts from an unsynced state.
 		(LeitnerService as any).syncedUsers.clear();
 		mockProfileCollection = undefined;
-		mockCollection = {
+		mockCollection = findFromFindOne({
 			findOne: jest.fn(),
 			create: jest.fn(),
 			updateOne: jest.fn(),
-		};
+		});
 		// Default mock for getCollection to return generic collection
 		(getCollection as any).mockImplementation((db: string, col: string) => {
 			if (col === PROFILE_COLLECTION) {
@@ -106,11 +107,17 @@ describe("LeitnerService", () => {
 
 			await LeitnerService.ensureInitialized("user1");
 
-			expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({
-				userId: "user1",
-				settings: expect.objectContaining({ autoEntry: true }),
-				items: [],
-			}));
+			// Get-or-create is one upsert for (userId, language) (ADR-006 point 3); an
+			// account with no language fields is English.
+			expect(mockCollection.create).not.toHaveBeenCalled();
+			expect(mockCollection.updateOne).toHaveBeenCalledWith(
+				{ userId: "user1", language: "en" },
+				{ $setOnInsert: expect.objectContaining({
+					settings: expect.objectContaining({ autoEntry: true }),
+					items: [],
+				}) },
+				{ upsert: true }
+			);
 		});
 
 		it("should not create a new system doc if one already exists", async () => {
@@ -119,6 +126,7 @@ describe("LeitnerService", () => {
 			await LeitnerService.ensureInitialized("user1");
 
 			expect(mockCollection.create).not.toHaveBeenCalled();
+			expect(mockCollection.updateOne).not.toHaveBeenCalled();
 		});
 	});
 
@@ -209,7 +217,7 @@ describe("LeitnerService", () => {
 
 			// Before the fix this rejection propagated out of the insert-one auth
 			// trigger as an unhandled rejection and killed the server process.
-			await expect(LeitnerService.ensureInitialized(userId)).resolves.toBeUndefined();
+			await expect(LeitnerService.ensureInitialized(userId)).resolves.toBe("en");
 
 			// The failed sync releases its claim so a later request can retry.
 			expect((LeitnerService as any).syncedUsers.has(userId)).toBe(false);

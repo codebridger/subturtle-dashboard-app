@@ -13,6 +13,8 @@ import 'package:subturtle/features/capture/save_engine.dart';
 import 'package:subturtle/features/plans/local_pricing.dart';
 import 'package:subturtle_api/subturtle_api.dart';
 
+import 'fake_languages.dart';
+
 /// A fake Subturtle backend for widget tests. No network, no real account.
 class FakeBackend {
   final calls = <(String, Map<String, dynamic>)>[];
@@ -79,7 +81,7 @@ class FakeBackend {
             'phrase': {'_id': 'p2', 'phrase': 'get out of', 'translation': 'بیرون رفتن', 'context': 'I had to get out of there.'},
           },
         ];
-    functions['submit-review'] = (_) => {'success': true};
+    functions['submit-review'] = (a) => {'success': true, 'language': a['language'] ?? 'en', 'result': a['result'] ?? (a['isCorrect'] == true ? 'right' : 'wrong')};
     functions['generateChartDataForInsertionRatio'] = (_) => throw ApiException('TIER_LIMIT_REACHED: "weekly_insights" is not included in your plan');
     paths['/data-provider/find'] = (body) => body['collection'] == 'phrase_bundle'
         ? [
@@ -104,10 +106,13 @@ Future<FakeBackend> pumpApp(
   Key? boundaryKey,
   bool saveAssistantBackend = false,
   PricingProbe? pricingProbe,
+  FakeLanguageServer? languages,
 }) async {
   final backend = FakeBackend()..signedIn = signedIn;
   backend.seedDefaults();
   seed?.call(backend);
+  // After the seed: it scopes the seeded (English) board and bundles by language.
+  languages?.install(backend);
   SharedPreferences.setMockInitialValues({'language': 'Persian', 'haptics': false, 'theme': ?theme?.name});
   final prefs = await SharedPreferences.getInstance();
   final api = SubturtleApi(baseUrl: 'https://api.test', httpClient: backend.client, tokenStore: MemoryTokenStore(signedIn ? 'header.eyJpZCI6InUxIn0.sig' : null));

@@ -12,6 +12,7 @@ import {
   FREEMIUM_DEFAULT_VOICE_MINUTES,
   FREEMIUM_DEFAULT_TEXT_CHATS,
   FREEMIUM_DEFAULT_TEXT_CHAT_MAX_MESSAGES,
+  FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES,
 } from "../../config";
 import {
   LOW_CREDITS_THRESHOLD,
@@ -97,6 +98,7 @@ export async function getOrCreateFreemiumAllocation(userId: string) {
       allowed_lived_sessions_used: 0,
       allowed_text_chats: FREEMIUM_DEFAULT_TEXT_CHATS,
       allowed_text_chats_used: 0,
+      allowed_learning_languages: FREEMIUM_DEFAULT_MAX_LEARNING_LANGUAGES,
       voice_minutes_total: FREEMIUM_DEFAULT_VOICE_MINUTES,
       voice_minutes_used: 0,
     };

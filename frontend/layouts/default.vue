@@ -22,15 +22,22 @@
                 <!-- Breadcrumb built from the nav itself, so it can never drift from the menu.
                      A detail route may name the record instead (usePageCrumb). -->
                 <template #title>
-                    <span v-if="crumb" class="inline-flex items-center gap-2 text-st-sm font-bold text-st-faint">
-                        <span>{{ crumb.section }}</span>
-                        <StIcon name="solar:alt-arrow-right-linear" :size="16" />
-                        <span class="text-st-body">{{ crumb.label }}</span>
-                        <StBadge v-if="crumb.badge">{{ crumb.badge }}</StBadge>
+                    <!-- At phone width only the page name shows: the section, arrow and badge
+                         would run under the language pill (375 px). -->
+                    <span v-if="crumb" class="flex min-w-0 items-center gap-2 text-st-sm font-bold text-st-faint" data-testid="page-crumb">
+                        <span class="hidden shrink-0 items-center gap-2 sm:inline-flex" data-testid="page-crumb-section">
+                            <span>{{ crumb.section }}</span>
+                            <StIcon name="solar:alt-arrow-right-linear" :size="16" />
+                        </span>
+                        <span class="min-w-0 truncate text-st-body">{{ crumb.label }}</span>
+                        <span v-if="crumb.badge" class="hidden shrink-0 sm:inline-flex"><StBadge>{{ crumb.badge }}</StBadge></span>
                     </span>
                 </template>
 
                 <template #header-right>
+                    <!-- The language menu (D-02): left of the theme switch, hidden while
+                         multilingual is off. -->
+                    <LanguageMenu />
                     <PartialThemeSwitcher />
                     <PartialProfileMenu />
                 </template>
@@ -88,6 +95,7 @@ import { useTierLimitModal } from '~/composables/useTierLimitModal';
 import { DASHBOARD_NAV_ROUTES, activeNavId } from '~/composables/useDashboardNavigatorItems';
 import { useLeitnerStore } from '~/stores/leitner';
 import { usePageCrumbState } from '~/composables/usePageCrumb';
+import LanguageMenu from '~/components/language/LanguageMenu.vue';
 
 const { t, te } = useI18n();
 const { open: tierLimitOpen, feature: tierLimitFeature, closeTierLimitModal } = useTierLimitModal();

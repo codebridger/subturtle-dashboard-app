@@ -38,6 +38,10 @@ export type TextTurnInput =
     };
 
 export interface TextSessionRecordType {
+  /** The learning language (B-13). Missing on sessions from before multilingual: English. */
+  language?: string;
+  /** The language the Coach explained in. */
+  explanationLanguage?: string;
   _id: string;
   refId: string;
   instructions: string;

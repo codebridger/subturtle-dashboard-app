@@ -2,7 +2,7 @@
     <div class="flex flex-col gap-[22px]">
         <StPageHeader
             :title="t('statistic.your-statistic')"
-            :overline="t('statistic.overline')"
+            :overline="progressOverline"
             :subtitle="t('statistic.subtitle')"
         >
             <template v-if="showInstallCta" #actions>
@@ -158,7 +158,9 @@
 </template>
 
 <script setup lang="ts">
+    import { useLanguageStore } from '~/stores/language';
     import { dataProvider } from '@modular-rest/client';
+    import { languageQuery } from '~/utils/languageScope';
     import { COLLECTIONS, DATABASE, type PhraseBundleType } from '~/types/database.type';
     import { StBadge, StButton, StCard, StEmptyState, StIcon, StIconButton, StSkeleton, StStatTile } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
@@ -167,6 +169,11 @@
     import { useLeitnerStore } from '~/stores/leitner';
 
     const { t } = useI18n();
+    const language = useLanguageStore();
+    // "Your German progress": counts and the chart are per language, the streak global (D-18).
+    const progressOverline = computed(() =>
+        language.enabled ? t('languages.progress-in', { language: language.nameOf(language.activeLanguage) }) : t('statistic.overline')
+    );
     const router = useRouter();
     const config = useRuntimeConfig();
     const { extensionPresent } = useExtensionPresence();
@@ -224,16 +231,17 @@
 
     async function getRecentBundles() {
         const [recent, all] = await Promise.all([
+            // The active language's bundles only: no number on this page mixes languages (D-12).
             dataProvider.find<PhraseBundleType>({
                 database: DATABASE.USER_CONTENT,
                 collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: { refId: authUser.value?.id },
+                query: { refId: authUser.value?.id, ...languageQuery() },
                 options: { limit: 3, sort: { updatedAt: -1 } },
             }),
             dataProvider.count({
                 database: DATABASE.USER_CONTENT,
                 collection: COLLECTIONS.PHRASE_BUNDLE,
-                query: { refId: authUser.value?.id },
+                query: { refId: authUser.value?.id, ...languageQuery() },
             }),
         ]);
 
@@ -248,7 +256,7 @@
                     await dataProvider.count({
                         database: DATABASE.USER_CONTENT,
                         collection: COLLECTIONS.PHRASE,
-                        query: { refId: authUser.value?.id },
+                        query: { refId: authUser.value?.id, ...languageQuery() },
                     })
                 ) || 0;
         } catch (error) {

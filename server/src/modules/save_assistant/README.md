@@ -29,12 +29,20 @@ const { sessionId, candidates, translation } = await functionProvider.run({
 
 ### `createSaveSession`
 
-- **In**: `{ message, targetLanguage, sourceLanguage?, source? }`
+- **In**: `{ message, translationLanguage, sourceLanguage?, language?, source? }`
+  - `translationLanguage`: the learner's own language. The old name
+    `targetLanguage` still works; each request that uses it is counted in
+    `cms.legacy_usage` (B-17).
+  - `language`: the learning language to save into. Missing: the detected
+    language if the learner has it, then the active language (B-16).
   - `sourceLanguage` empty or `"auto"` lets the model detect it.
   - `source`: `{ kind: "share" | "paste" | "typed", app?, pageUrl?, pageTitle? }`.
 - **Does**: translates the whole message; stores the user message and an
   assistant `translation` message; bills the AI call.
-- **Out**: `{ sessionId, candidates, translation, messageId }`
+- **Out**: `{ sessionId, candidates, translation, messageId, detectedLanguage, language, inProfile }`
+  - `detectedLanguage`: what the model found (`"unknown"` when unsure);
+    `language`: where the session saves; `inProfile`: the learner has the
+    detected language.
   - `candidates`: `[{ text, type }]`. The first one is the whole message
     (`type: "full"`); the rest are the translation's chunks.
   - `translation`: the same shape `translateWithContext` returns for
@@ -46,10 +54,10 @@ const { sessionId, candidates, translation } = await functionProvider.run({
 - **pick**: the text of one of the session's `candidates`. Returns its
   translation. If this session already translated that phrase, the stored one
   is reused, with no AI call and no charge.
-  - **Out**: `{ translation, messageId, cached, wrapUp }`
+  - **Out**: `{ translation, messageId, cached, wrapUp, detectedLanguage }`
 - **message**: a follow-up question. The assistant answers about the phrase
   whose translation was shown last, using the stored history.
-  - **Out**: `{ reply, messageId, wrapUp, candidates? }`. `candidates` is
+  - **Out**: `{ reply, messageId, wrapUp, detectedLanguage, candidates? }`. `candidates` is
     present only when the answer added new phrase options.
 - `wrapUp` turns `true` a few messages before the per-session cap.
 
@@ -68,7 +76,9 @@ conversation.
 
 ### `listSaveSessions`
 
-- **In**: `{ query?, onlySaved?, limit = 20, before? }`
+- **In**: `{ query?, onlySaved?, limit = 20, before?, language? }`
+  - `language`: only that learning language's sessions (old sessions are English).
+    Each row also carries `language`.
   - `query`: matches the title or any message text (case-insensitive).
   - `onlySaved`: only sessions with at least one saved phrase.
   - `limit`: 1 to 50.
@@ -81,7 +91,7 @@ conversation.
 
 - **In**: `{ sessionId }`
 - **Out**: the full session: `{ sessionId, title, source, sourceLanguage,
-  targetLanguage, messages, candidates, savedPhraseIds, savedPhrases,
+  targetLanguage, translationLanguage, language, detectedLanguage, messages, candidates, savedPhraseIds, savedPhrases,
   savedCount, lastMessageAt, usage, createdAt, updatedAt }`.
 
 Message shape: `{ id, role: "user" | "assistant", kind: "text" | "translation" | "saved", text?, payload?, createdAt }`.

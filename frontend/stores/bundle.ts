@@ -1,4 +1,5 @@
 import { createPagination, dataProvider, functionProvider } from '@modular-rest/client';
+import { withLanguage } from '~/utils/languageScope';
 import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
@@ -193,13 +194,13 @@ export const useBundleStore = defineStore('bundle', () => {
             try {
                 const insertedPhrase = (await functionProvider.run({
                     name: 'createPhrase',
-                    args: {
+                    args: withLanguage({
                         phrase: newPhrase.phrase,
                         translation: newPhrase.translation,
                         bundleIds: [bundleDetail.value?._id],
                         refId: authUser.value?.id,
                         type: 'normal',
-                    },
+                    }),
                 })) as PhraseType;
 
                 if (insertedPhrase) {

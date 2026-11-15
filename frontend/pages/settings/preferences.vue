@@ -46,6 +46,7 @@
 
 <script lang="ts" setup>
     import { StIcon, StSkeleton } from 'subturtle-ui';
+    import { withLanguage } from '~/utils/languageScope';
     import LeitnerSettings from '~/components/Leitner/LeitnerSettings.vue';
     import PoolSettings from '~/components/Pool/PoolSettings.vue';
     import { functionProvider } from '@modular-rest/client';
@@ -83,7 +84,7 @@
             const userId = authUser.value?.id;
             const res: any = await functionProvider.run({
                 name: 'get-stats',
-                args: { userId },
+                args: withLanguage({ userId }),
             });
             if (res) {
                 stats.value = res;
