@@ -10,6 +10,11 @@ vi.mock('@modular-rest/client', () => ({
     createPagination: () => ({ pages: 1 }),
     authentication: { user: { id: 'u1' } },
 }));
+// The real module re-exports the server's schemas, whose packages the frontend job does not install.
+vi.mock('~/types/database.type', () => ({
+    DATABASE: { USER_CONTENT: 'user_content' },
+    COLLECTIONS: { PHRASE_BUNDLE: 'phrase_bundle', PHRASE: 'phrase' },
+}));
 vi.mock('~/plugins/mixpanel', () => ({ analytic: { track: vi.fn() }, registerLanguageAnalytics: vi.fn() }));
 
 const vue = await vi.importActual<typeof import('vue')>('vue');
