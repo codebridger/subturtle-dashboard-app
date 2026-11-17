@@ -18,6 +18,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: read
     uses: ./.github/workflows/deploy.yml
     with:
       environment: dev

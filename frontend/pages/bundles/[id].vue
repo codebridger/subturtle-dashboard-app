@@ -83,6 +83,16 @@
             </template>
         </section>
 
+        <!-- Leaving with a written phrase that was never saved (D-31). -->
+        <LeaveGuardModal
+            :open="leaveOpen"
+            :title="t('bundle.leave_draft.title')"
+            :message="t('bundle.leave_draft.message')"
+            :leave-label="t('bundle.leave_draft.leave')"
+            :stay-label="t('bundle.leave_draft.stay')"
+            @choose="chooseLeave"
+        />
+
         <BundleSettingsModal v-if="bundleStore.bundleDetail" :open="isSettingsOpen" :bundle="bundleStore.bundleDetail" @close="isSettingsOpen = false" />
 
         <!-- Flashcards run over a chosen subset, so the picker is the step between the button
@@ -157,6 +167,8 @@
     import StPagination from '~/components/common/StPagination.vue';
     import BundleSaveQuotaCard from '~/components/bundle/SaveQuotaCard.vue';
     import BundleSettingsModal from '~/components/bundle/SettingsModal.vue';
+    import LeaveGuardModal from '~/components/common/LeaveGuardModal.vue';
+    import { useLeaveGuard } from '~/composables/useLeaveGuard';
     import { useBundleStore } from '~/stores/bundle';
     import { useLeitnerStore } from '~/stores/leitner';
     import { useProfileStore } from '~/stores/profile';
@@ -242,6 +254,9 @@
                 isPhraseListLoading.value = false;
             });
     });
+
+    // Registered before the clearing guard below: that one runs only if the learner is allowed to leave.
+    const { open: leaveOpen, choose: chooseLeave } = useLeaveGuard({ when: () => bundleStore.hasUnsavedDraft });
 
     onBeforeRouteLeave(() => {
         bundleStore.clear();

@@ -23,8 +23,10 @@ export default defineNuxtConfig({
                 process.env.NUXT_PUBLIC_CHROME_WEB_STORE_URL ||
                 'https://chromewebstore.google.com/detail/subturtle-learn-english-w/gaplicnpaiidofkoeonioomcnadoofkf',
             STRIPE_PUBLISHABLE_KEY: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-            // Baked in at build time from package.json (owned by semantic-release).
-            APP_VERSION,
+            // Baked in at build time from package.json (owned by semantic-release). A deploy builds
+            // the pushed commit, before semantic-release has bumped package.json, so CI passes the
+            // version it just released as APP_VERSION_OVERRIDE (see infra/release-version.sh).
+            APP_VERSION: process.env.APP_VERSION_OVERRIDE || APP_VERSION,
         },
     },
 

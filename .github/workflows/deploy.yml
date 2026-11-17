@@ -25,6 +25,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: read # infra/release-version.sh asks which Release run belongs to this commit
     concurrency:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
@@ -51,7 +52,18 @@ jobs:
       - name: Deploy the API to Cloud Run
         run: infra/deploy-api.sh ${{ inputs.environment }} ${{ github.sha }}
 
+      # The footer shows the version in package.json, but this commit still carries the previous
+      # one: semantic-release bumps it in a follow-up commit. Take it from there (see the script).
+      # Resolving it never fails the deploy; on any doubt the build keeps package.json's version.
+      - name: Find the version the Release workflow cut for this commit
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "version=$(infra/release-version.sh '${{ github.ref_name }}' '${{ github.sha }}')" >> "$GITHUB_OUTPUT"
+
       - name: Deploy the dashboard to Firebase Hosting
+        env:
+          APP_VERSION_OVERRIDE: ${{ steps.release.outputs.version }}
         run: infra/deploy-hosting.sh ${{ inputs.environment }}
 
       # Nuxt 4 needs a newer Node 22 than the dashboard pins, so switch to landing/.nvmrc.
