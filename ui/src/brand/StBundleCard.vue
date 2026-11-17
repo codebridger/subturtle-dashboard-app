@@ -93,7 +93,9 @@
         jade: 'linear-gradient(135deg, rgb(var(--jade-400)), rgb(var(--jade-600)))',
         sky: 'linear-gradient(135deg, rgb(var(--sky-500)), rgb(var(--sky-600)))',
         amber: 'linear-gradient(135deg, rgb(var(--amber-500)), rgb(var(--amber-600)))',
-        ink: 'linear-gradient(135deg, rgb(var(--ink-700)), rgb(var(--ink-950)))',
+        // Literal channels (the light-mode --ink-700 / --ink-950), not the tokens: the dark layer
+        // inverts the ink ramp, which turned this into a near-white cover under white text.
+        ink: 'linear-gradient(135deg, rgb(77 68 85), rgb(27 22 32))',
     };
 
     const coverStyle = computed(() => ({ background: COVERS[props.cover] ?? COVERS.rose }));
