@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.5.0...v1.5.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **D-26:** make the collapsed sidebar label readable in dark mode ([5fe4049](https://github.com/codebridger/subturtle-dashboard-app/commit/5fe40495ccc501a81e51e3adc26267444ce59c62)), closes [#fff](https://github.com/codebridger/subturtle-dashboard-app/issues/fff)
+
 # [1.5.0](https://github.com/codebridger/subturtle-dashboard-app/compare/v1.4.0...v1.5.0) (2026-11-15)
 
 
