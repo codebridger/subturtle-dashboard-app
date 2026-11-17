@@ -113,7 +113,7 @@
     import { useBundleStore } from '~/stores/bundle';
     import * as yup from 'yup';
     import type { NewPhraseType, PhraseType } from '~/types/database.type';
-    import { useTemplateRef } from 'vue';
+    import { useTemplateRef, watch } from 'vue';
     import { functionProvider } from '@modular-rest/client';
     import { isVideoSource, phraseSourceLabel } from '~/utils/url';
 
@@ -173,6 +173,11 @@
 
     const [phrase] = defineField('phrase');
     const [translation] = defineField('translation');
+
+    // A draft mirrors what is typed into the store, so the page can warn before it is thrown away.
+    watch([phrase, translation], ([typedPhrase, typedTranslation]) => {
+        if (props.newPhrase) bundleStore.updateTemporarilyPhrase(props.newPhrase.id, { phrase: typedPhrase ?? '', translation: typedTranslation ?? '' });
+    });
 
     /** A linguistic phrase is read-only, so it never offers a save button. */
     const isDirty = computed(() => isFieldDirty('phrase') || isFieldDirty('translation') || Object.keys(errors.value).length > 0);

@@ -226,7 +226,8 @@
     onMounted(async () => {
         loading.value = true;
         try {
-            await Promise.all([leitnerStore.fetchBoard(), poolStore.fetchPool()]);
+            // The language state feeds the empty-board check and the header menu's counts (D-30).
+            await Promise.all([leitnerStore.fetchBoard(), poolStore.fetchPool(), language.refreshState()]);
         } catch (e) {
             console.error('Failed to fetch board:', e);
         } finally {

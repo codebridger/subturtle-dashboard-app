@@ -3,6 +3,8 @@ vi.mock('vue', async () => await vi.importActual('vue'));
 vi.mock('pilotui/elements', () => ({ Button: { template: '<button><slot /></button>' }, Icon: { template: '<i />' } }));
 vi.mock('~/stores/language', () => ({ trackLanguageEvent: vi.fn() }));
 vi.mock('~/types/database.type', () => ({}));
+const finishReviewSession = vi.hoisted(() => vi.fn());
+vi.mock('~/stores/leitner', () => ({ useLeitnerStore: () => ({ finishReviewSession }) }));
 import { mount } from '@vue/test-utils';
 import * as vue from 'vue';
 Object.assign(globalThis, { ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, onUnmounted: vue.onUnmounted });
@@ -17,5 +19,19 @@ describe('LeitnerReviewSession cloze cue (D-14)', () => {
         });
         const chunk = (w.findComponent({ name: 'WidgetFlashCard' }).props('phrase') as any)?.chunks?.[0];
         expect(chunk).toMatchObject({ lemma: 'gehen', form: 'past participle', acceptedAnswers: ['gegangen'] });
+    });
+});
+
+describe('LeitnerReviewSession end of session (D-30)', () => {
+    it('asks the Leitner store to refresh the language counts when the session is left', () => {
+        const w = mount(LeitnerReviewSession, {
+            props: { items: [], loading: false, title: 'Review' },
+            global: { mocks: { $t: (k: string) => k }, stubs: { MaterialPracticeToolScaffold: { template: '<div><slot /></div>' }, Transition: false } },
+        });
+        expect(finishReviewSession).not.toHaveBeenCalled();
+
+        w.unmount();
+
+        expect(finishReviewSession).toHaveBeenCalledTimes(1);
     });
 });

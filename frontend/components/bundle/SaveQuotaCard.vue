@@ -25,8 +25,8 @@
                 :aria-label="headline"
             />
 
-            <StButton color="primary" :icon="isAtLimit ? 'solar:crown-bold' : 'solar:add-circle-bold'" class="flex-none" @click="onAction">
-                {{ isAtLimit ? t('freemium.limitation.upgrade_now') : t('bundle.add_phrase') }}
+            <StButton color="primary" :icon="noRoomForDraft ? 'solar:crown-bold' : 'solar:add-circle-bold'" class="flex-none" @click="onAction">
+                {{ noRoomForDraft ? t('freemium.limitation.upgrade_now') : t('bundle.add_phrase') }}
             </StButton>
         </div>
     </StCard>
@@ -43,10 +43,12 @@
      * session flows still use.
      */
     import { StButton, StCard, StIcon, StProgressBar } from 'subturtle-ui';
+    import { useBundleStore } from '~/stores/bundle';
     import { useProfileStore } from '~/stores/profile';
 
     const { t } = useI18n();
     const profileStore = useProfileStore();
+    const bundleStore = useBundleStore();
 
     const emit = defineEmits<{
         /** There is room to save: add an empty phrase row. */
@@ -59,6 +61,9 @@
     const usedCount = computed(() => profileStore.freemiumAllocation?.allowed_save_words_used ?? 0);
     const totalCount = computed(() => profileStore.freemiumAllocation?.allowed_save_words ?? 0);
     const isAtLimit = computed(() => isFreemium.value && totalCount.value > 0 && usedCount.value >= totalCount.value);
+    // Drafts are not counted as used (the number changes only on a save), but each one will
+    // take a save when written, so "Add Phrase" stops when the open drafts already fill the rest.
+    const noRoomForDraft = computed(() => isFreemium.value && totalCount.value > 0 && usedCount.value + bundleStore.tempPhrases.length >= totalCount.value);
 
     const headline = computed(() =>
         isFreemium.value ? t('bundle.saves.used', { used: usedCount.value, total: totalCount.value }) : t('bundle.saves.unlimited')
@@ -80,7 +85,7 @@
     });
 
     function onAction() {
-        if (isAtLimit.value) emit('upgrade-needed');
+        if (noRoomForDraft.value) emit('upgrade-needed');
         else emit('add');
     }
 </script>

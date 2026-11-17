@@ -3,7 +3,7 @@ import { functionProvider } from '@modular-rest/client';
 import { type BoardActivityType, type LeitnerItemType } from '~/types/database.type';
 import { analytic } from '~/plugins/mixpanel';
 import { scopedLanguage, withLanguage } from '~/utils/languageScope';
-import { onLanguageSwitch } from '~/stores/language';
+import { onLanguageSwitch, useLanguageStore } from '~/stores/language';
 import type { ReviewResult } from '~/types/language.type';
 
 export const useLeitnerStore = defineStore('leitner', () => {
@@ -106,13 +106,20 @@ export const useLeitnerStore = defineStore('leitner', () => {
 	 * "close" keeps the card in its box on the new server and counts as right on the old one,
 	 * which is the kinder of the two readings for a learner who had the right word.
 	 */
+	/** Answers still on their way to the server; `finishReviewSession` waits for them. */
+	const pendingSubmits = new Set<Promise<unknown>>();
+	let answeredSinceRefresh = 0;
+
 	async function submitReview(phraseId: string, isCorrect: boolean, result?: ReviewResult) {
+		answeredSinceRefresh++;
+		const call = functionProvider.run({
+			name: 'submit-review',
+			// `result` only to a multilingual server; today's server reads `isCorrect` alone.
+			args: withLanguage({ phraseId, isCorrect, ...(result && scopedLanguage() ? { result } : {}), userId: authUser.value?.id })
+		});
+		pendingSubmits.add(call);
 		try {
-			await functionProvider.run({
-				name: 'submit-review',
-				// `result` only to a multilingual server; today's server reads `isCorrect` alone.
-				args: withLanguage({ phraseId, isCorrect, ...(result && scopedLanguage() ? { result } : {}), userId: authUser.value?.id })
-			});
+			await call;
 
 			// Remove from local session to show progress (if needed)
 			// Or just keep it. Typically we move to next card.
@@ -120,7 +127,23 @@ export const useLeitnerStore = defineStore('leitner', () => {
 			analytic.track('leitner_review_submitted', { isCorrect, ...(result ? { result } : {}) });
 		} catch (error) {
 			console.error('Failed to submit review:', error);
+		} finally {
+			pendingSubmits.delete(call);
 		}
+	}
+
+	/**
+	 * A review session is over (finished, or left half-way): the "due" and phrase counts in the
+	 * language state (Languages page, header menu) moved with every answer, so reload them. Waits
+	 * for the last answers to land first, or the refresh would read the old numbers. Does nothing
+	 * when no card was answered since the last refresh, so a second call (a page unmounting after
+	 * the session already ended) costs nothing.
+	 */
+	async function finishReviewSession() {
+		if (!answeredSinceRefresh) return;
+		answeredSinceRefresh = 0;
+		await Promise.allSettled([...pendingSubmits]);
+		await useLanguageStore().refreshState();
 	}
 
 	function setPendingBundleReview(phraseIds: string[]) {
@@ -168,6 +191,7 @@ export const useLeitnerStore = defineStore('leitner', () => {
 		fetchReviewSession,
 		fetchCustomReviewSession,
 		submitReview,
+		finishReviewSession,
 		setPendingBundleReview,
 		stats,
 		fetchStats

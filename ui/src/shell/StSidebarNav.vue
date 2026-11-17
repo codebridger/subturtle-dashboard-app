@@ -101,9 +101,11 @@
         clip-path: none;
         padding: 6px 11px;
         border-radius: var(--radius-sm);
-        background: rgb(var(--ink-950));
-        /* Literal, not var(--white): the dark layer redeclares that as the card neutral. */
-        color: #fff;
+        /* The inverse pair, same as StBadge/StButton `neutral`: a dark chip in light mode and a
+           light chip in dark. Never --ink-950 with a fixed #fff: the dark layer inverts the ink
+           ramp, which made this a near-white box with white text. */
+        background: rgb(var(--surface-inverse));
+        color: rgb(var(--surface-page));
         font-size: var(--text-xs);
         font-weight: 700;
         box-shadow: var(--shadow-md);

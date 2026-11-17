@@ -64,6 +64,9 @@
 import { Button, Icon } from 'pilotui/elements';
 import { type PhraseType, type LeitnerItemType } from '~/types/database.type';
 import type { ReviewResult } from '~/types/language.type';
+import { useLeitnerStore } from '~/stores/leitner';
+
+const leitnerStore = useLeitnerStore();
 
 const props = defineProps<{
 	items: LeitnerItemType[];
@@ -116,6 +119,8 @@ onMounted(() => {
 
 onUnmounted(() => {
 	window.removeEventListener('keydown', handleKeyDown);
+	// Finished or left half-way, the answers changed the due counts shown elsewhere (D-30).
+	void leitnerStore.finishReviewSession();
 });
 
 function handleKeyDown(event: KeyboardEvent) {
