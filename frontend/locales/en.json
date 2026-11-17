@@ -75,6 +75,12 @@
             "unlimited": "Unlimited saves on your plan",
             "unlimited_description": "Add as many phrases to this bundle as you like."
         },
+        "leave_draft": {
+            "title": "Leave without saving?",
+            "message": "You have a phrase you have not saved yet. If you leave now, it is lost.",
+            "leave": "Leave without saving",
+            "stay": "Keep editing"
+        },
         "settings": {
             "title": "Bundle settings",
             "description": "Rename this bundle, or remove it along with its phrases.",
@@ -1065,7 +1071,13 @@
             "retake": "Retake the test",
             "a1-instead": "Start at A1 instead",
             "failed": "The chat test is not working right now. You can start at A1 and take it later.",
-            "unavailable": "The chat test is not ready for {language} yet. Start at A1 and take it later."
+            "unavailable": "The chat test is not ready for {language} yet. Start at A1 and take it later.",
+            "leave": {
+                "title": "Save your start point?",
+                "message": "Your test result, starting at {level}, is not saved yet. If you leave now it is lost and your level stays as it is.",
+                "save": "Save start point",
+                "discard": "Leave without saving"
+            }
         },
         "profile": {
             "own-language": "Your own language",

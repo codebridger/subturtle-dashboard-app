@@ -4,6 +4,7 @@ import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
 import { useProfileStore } from './profile';
+import { useLanguageStore } from './language';
 import { analytic } from '~/plugins/mixpanel';
 
 export const useBundleStore = defineStore('bundle', () => {
@@ -156,35 +157,38 @@ export const useBundleStore = defineStore('bundle', () => {
                     }
                 }
 
+                // The language's phrase count (Languages page, header menu) just changed.
+                void useLanguageStore().refreshState();
+
                 analytic.track('phrase_removed');
             });
     }
 
+    /**
+     * A draft is not a save: the "N of 200 saves used" counter changes only when `createPhrase`
+     * succeeds. Pressing "Add Phrase" used to count it at once, so the number rose before a word
+     * was typed, and stayed up if the draft was dropped.
+     */
     function addEmptyTemporarilyPhrase() {
         tempPhrases.value.unshift({
             phrase: '',
             translation: '',
             id: new Date().getTime().toString(),
         });
-
-        const profileStore = useProfileStore();
-        if (profileStore.isFreemium) {
-            profileStore.freemiumAllocation!.allowed_save_words_used++;
-        }
     }
 
     function removeTemporarilyPhrase(id: string) {
         tempPhrases.value = tempPhrases.value.filter((p) => p.id !== id);
-
-        const profileStore = useProfileStore();
-        if (profileStore.isFreemium) {
-            const currentValue = profileStore.freemiumAllocation!.allowed_save_words_used;
-            // Prevent going below 0
-            if (currentValue > 0) {
-                profileStore.freemiumAllocation!.allowed_save_words_used--;
-            }
-        }
     }
+
+    /** The card mirrors what is typed into its draft, so leaving the page can tell a blank draft from a written one. */
+    function updateTemporarilyPhrase(id: string, text: { phrase: string; translation: string }) {
+        const draft = tempPhrases.value.find((p) => p.id === id);
+        if (draft) Object.assign(draft, text);
+    }
+
+    /** True when a draft has text that a page change would throw away. */
+    const hasUnsavedDraft = computed(() => tempPhrases.value.some((p) => p.phrase.trim() || p.translation.trim()));
 
     async function createPhrase(newPhrase: NewPhraseType) {
         const index = tempPhrases.value.findIndex((p) => p.id === newPhrase.id);
@@ -214,8 +218,17 @@ export const useBundleStore = defineStore('bundle', () => {
                 reject(error);
             }
         }).then((phrase) => {
+            // The language's phrase count (Languages page, header menu) just changed.
+            void useLanguageStore().refreshState();
+
+            // This is the moment a save is used up; the server counts it the same way.
+            const profileStore = useProfileStore();
+            if (profileStore.isFreemium && profileStore.freemiumAllocation) {
+                profileStore.freemiumAllocation.allowed_save_words_used++;
+            }
+
             analytic.track('phrase_saved', {
-                freemium: useProfileStore().isFreemium,
+                freemium: profileStore.isFreemium,
             });
             return phrase;
         });
@@ -235,6 +248,8 @@ export const useBundleStore = defineStore('bundle', () => {
         removePhrase,
         addEmptyTemporarilyPhrase,
         removeTemporarilyPhrase,
+        updateTemporarilyPhrase,
+        hasUnsavedDraft,
         createPhrase,
         clear,
     };
