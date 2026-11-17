@@ -215,6 +215,10 @@
     const addableNames = computed(() => language.addable.map((c) => c.name).join(', '));
     const confirmName = computed(() => (confirmCode.value ? language.nameOf(confirmCode.value) : ''));
 
+    // The language state is loaded once at sign-in, so the "138 phrases · 20 due" lines would
+    // show the numbers from then. Reload them every time the page opens (D-30).
+    onMounted(() => language.refreshState());
+
     async function makeActive(code: string) {
         busy.value = true;
         // Make active shows a confirmation here, then the learner can head to Today from the menu.

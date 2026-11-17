@@ -4,6 +4,7 @@ import type { Types } from '@modular-rest/client';
 import { defineStore } from 'pinia';
 import { type PhraseBundleType, DATABASE, COLLECTIONS, type PhraseType, type NewPhraseType } from '~/types/database.type';
 import { useProfileStore } from './profile';
+import { useLanguageStore } from './language';
 import { analytic } from '~/plugins/mixpanel';
 
 export const useBundleStore = defineStore('bundle', () => {
@@ -156,6 +157,9 @@ export const useBundleStore = defineStore('bundle', () => {
                     }
                 }
 
+                // The language's phrase count (Languages page, header menu) just changed.
+                void useLanguageStore().refreshState();
+
                 analytic.track('phrase_removed');
             });
     }
@@ -214,6 +218,8 @@ export const useBundleStore = defineStore('bundle', () => {
                 reject(error);
             }
         }).then((phrase) => {
+            // The language's phrase count (Languages page, header menu) just changed.
+            void useLanguageStore().refreshState();
             analytic.track('phrase_saved', {
                 freemium: useProfileStore().isFreemium,
             });
