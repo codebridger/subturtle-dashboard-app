@@ -72,6 +72,17 @@
                 <button v-if="!isManage" type="button" class="text-st-sm font-bold text-st-link" :disabled="busy" @click="startAtA1">{{ t('languages.test.a1-instead') }}</button>
             </div>
         </template>
+
+        <!-- Leaving with a result that is neither saved nor declined (D-29). -->
+        <LeaveGuardModal
+            :open="leaveOpen"
+            :title="t('languages.test.leave.title')"
+            :message="t('languages.test.leave.message', { level: result?.startLevel ?? '' })"
+            :save-label="t('languages.test.leave.save')"
+            :leave-label="t('languages.test.leave.discard')"
+            :busy="busy"
+            @choose="chooseLeave"
+        />
     </div>
 </template>
 
@@ -80,6 +91,8 @@
     import { StButton, StProgressBar } from 'subturtle-ui';
     import StPageHeader from '~/components/common/StPageHeader.vue';
     import LangText from '~/components/language/LangText.vue';
+    import LeaveGuardModal from '~/components/common/LeaveGuardModal.vue';
+    import { useLeaveGuard } from '~/composables/useLeaveGuard';
     import { useLanguageStore, trackLanguageEvent } from '~/stores/language';
     import { usePageCrumb } from '~/composables/usePageCrumb';
     import { languageApi } from '~/utils/languageApi';
@@ -94,6 +107,10 @@
      *
      * `?manage=1` is the retake from the Languages page: the language is already added, so the
      * result only updates its start level and returns to Languages.
+     *
+     * A result on screen is not saved until the learner presses the main button, so leaving the
+     * page (sidebar, back button, reload) while it shows asks first: save the start point or
+     * leave without saving. Retake and "Start at A1" are decisions of their own and never ask.
      */
     definePageMeta({
         layout: 'default',
@@ -125,6 +142,13 @@
     const failed = ref('');
     const result = ref<{ startLevel: CefrStart; reason: string } | null>(null);
     const rootRef = ref<HTMLElement | null>(null);
+    /** The learner has decided about the result (saved it, or chose A1), so leaving is not a loss. */
+    const settled = ref(false);
+
+    const { open: leaveOpen, choose: chooseLeave } = useLeaveGuard({
+        when: () => !!result.value && !settled.value,
+        save: saveFromGuard,
+    });
 
     /**
      * The chat is taller than the result, so the shell's scroll area is still scrolled down
@@ -143,6 +167,7 @@
     async function begin() {
         testId.value = null;
         result.value = null;
+        settled.value = false;
         failed.value = '';
         log.value = [];
         index.value = 1;
@@ -198,32 +223,42 @@
         await language.addLanguage({ language: lang.value, startLevel, startLevelSource });
     }
 
+    /**
+     * Save the result: tell the server, then make sure the language is in the learner's list.
+     * Throws when the language cannot be added (the caller decides what the learner sees).
+     */
+    async function saveResult() {
+        if (!result.value) return;
+        let applied: boolean | undefined;
+        let level = result.value.startLevel;
+        if (testId.value) {
+            const res = await languageApi.finishLevelTest(testId.value, true).catch((e) => {
+                console.error('finish-level-test failed:', e);
+                return null;
+            });
+            if (res?.state) language.setState(res.state);
+            applied = res?.applied;
+            if (res?.result?.startLevel) level = res.result.startLevel;
+        }
+        if (isManage.value) {
+            await language.refreshState();
+            return;
+        }
+        // `applied: false` means the language is not added yet; add it with the test's level.
+        if (applied !== true || language.summaryFor(lang.value)?.status !== 'active') await ensureAdded(level, 'test');
+        else if (language.activeLanguage !== lang.value) await language.switchLanguage(lang.value);
+        if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'test' });
+    }
+
     async function accept() {
         if (!result.value) return;
         busy.value = true;
         failed.value = '';
+        // The navigation below must not trip the leave guard.
+        settled.value = true;
         try {
-            let applied: boolean | undefined;
-            let level = result.value.startLevel;
-            if (testId.value) {
-                const res = await languageApi.finishLevelTest(testId.value, true).catch((e) => {
-                    console.error('finish-level-test failed:', e);
-                    return null;
-                });
-                if (res?.state) language.setState(res.state);
-                applied = res?.applied;
-                if (res?.result?.startLevel) level = res.result.startLevel;
-            }
-            if (isManage.value) {
-                await language.refreshState();
-                router.push('/settings/languages');
-                return;
-            }
-            // `applied: false` means the language is not added yet; add it with the test's level.
-            if (applied !== true || language.summaryFor(lang.value)?.status !== 'active') await ensureAdded(level, 'test');
-            else if (language.activeLanguage !== lang.value) await language.switchLanguage(lang.value);
-            if (isFirstRun.value) trackLanguageEvent(ANALYTICS_EVENTS.FIRST_RUN_DONE, { language: lang.value, start_level_source: 'test' });
-            router.push('/board');
+            await saveResult();
+            router.push(isManage.value ? '/settings/languages' : '/board');
         } catch (error: any) {
             // Starter's place is held by a removed language (B-33): the steps offer the upgrade
             // and the restore.
@@ -232,7 +267,28 @@
                 return;
             }
             console.error('Accepting the level test failed:', error);
+            settled.value = false;
             failed.value = t('languages.add.error', { language: langName.value });
+        } finally {
+            busy.value = false;
+        }
+    }
+
+    /**
+     * "Save my start point" in the leave dialog. Resolves true once saved, so the navigation the
+     * learner asked for goes on; false keeps them here with the error showing.
+     */
+    async function saveFromGuard() {
+        busy.value = true;
+        failed.value = '';
+        try {
+            await saveResult();
+            settled.value = true;
+            return true;
+        } catch (error) {
+            console.error('Saving the level test result on leave failed:', error);
+            failed.value = t('languages.add.error', { language: langName.value });
+            return false;
         } finally {
             busy.value = false;
         }
@@ -247,6 +303,7 @@
     async function startAtA1() {
         busy.value = true;
         failed.value = '';
+        settled.value = true;
         try {
             if (testId.value) await languageApi.finishLevelTest(testId.value, false).catch(() => null);
             if (isManage.value) {
@@ -258,7 +315,10 @@
             router.push(language.features(lang.value).starterPack ? '/practice/starter-pack' : '/board');
         } catch (error: any) {
             if (error?.code === 'upgrade_needed') router.push({ path: '/settings/languages/add', query: isFirstRun.value ? { first: '1' } : {} });
-            else failed.value = t('languages.add.error', { language: langName.value });
+            else {
+                settled.value = false;
+                failed.value = t('languages.add.error', { language: langName.value });
+            }
         } finally {
             busy.value = false;
         }
