@@ -75,6 +75,12 @@
             "unlimited": "Unlimited saves on your plan",
             "unlimited_description": "Add as many phrases to this bundle as you like."
         },
+        "leave_draft": {
+            "title": "Leave without saving?",
+            "message": "You have a phrase you have not saved yet. If you leave now, it is lost.",
+            "leave": "Leave without saving",
+            "stay": "Keep editing"
+        },
         "settings": {
             "title": "Bundle settings",
             "description": "Rename this bundle, or remove it along with its phrases.",
